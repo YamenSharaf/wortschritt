@@ -11,6 +11,30 @@ const askBody = z.object({
   context: z.string().max(4000).optional(),
 });
 
+const gradeBody = z.object({
+  prompt: z.string().max(2000).optional(),
+  expected: z.array(z.string().min(1)).min(1),
+  response: z.string().min(1).max(2000),
+});
+
+function parseVerdict(content: string): { correct: boolean; feedback: string } {
+  const match = content.match(/\{[\s\S]*\}/);
+  if (match) {
+    try {
+      const o = JSON.parse(match[0]) as { correct?: unknown; feedback?: unknown };
+      if (typeof o.correct === "boolean") {
+        return { correct: o.correct, feedback: String(o.feedback ?? "") };
+      }
+    } catch {
+      /* fall through to heuristic */
+    }
+  }
+  const correct =
+    /"?correct"?\s*[:=]\s*true/i.test(content) ||
+    (/\brichtig\b/i.test(content) && !/falsch|nicht richtig/i.test(content));
+  return { correct, feedback: content.slice(0, 200).trim() };
+}
+
 export async function assistantRoutes(app: FastifyInstance) {
   const r = app.withTypeProvider<ZodTypeProvider>();
 
@@ -27,6 +51,75 @@ export async function assistantRoutes(app: FastifyInstance) {
       },
     },
     async () => ({ enabled: isAssistantEnabled, model: env.ASSISTANT_MODEL }),
+  );
+
+  // Judge a free-text answer (used as a lenient fallback when local grading
+  // misses). Non-streaming: returns a single verdict.
+  r.post(
+    "/api/assistant/grade",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["assistant"],
+        body: gradeBody,
+        response: {
+          200: z.object({ correct: z.boolean(), feedback: z.string() }),
+          502: z.object({ error: z.string() }),
+          503: z.object({ error: z.string() }),
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!isAssistantEnabled) {
+        return reply.code(503).send({ error: "assistant not configured" });
+      }
+      const { prompt, expected, response } = req.body;
+      const system =
+        "You grade short German-learning answers. Decide if the learner's answer is acceptable German for the task, allowing valid variants (word order, punctuation, equivalent spellings) but requiring correct grammar and meaning. Reply with ONLY a compact JSON object: {\"correct\": boolean, \"feedback\": \"one short sentence in English\"}.";
+      const user = [
+        prompt ? `Task: ${prompt}` : null,
+        `Reference answer(s): ${expected.join(" | ")}`,
+        `Learner answer: ${response}`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      try {
+        const upstream = await fetch(
+          `${env.ASSISTANT_BASE_URL.replace(/\/$/, "")}/chat/completions`,
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              ...(env.ASSISTANT_API_KEY
+                ? { authorization: `Bearer ${env.ASSISTANT_API_KEY}` }
+                : {}),
+            },
+            body: JSON.stringify({
+              model: env.ASSISTANT_MODEL,
+              temperature: 0,
+              messages: [
+                { role: "system", content: system },
+                { role: "user", content: user },
+              ],
+            }),
+          },
+        );
+        if (!upstream.ok) {
+          const detail = await upstream.text().catch(() => "");
+          app.log.error({ status: upstream.status, detail }, "grade upstream error");
+          return reply.code(502).send({ error: "grading failed" });
+        }
+        const json = (await upstream.json()) as {
+          choices?: Array<{ message?: { content?: string } }>;
+        };
+        const content = json?.choices?.[0]?.message?.content ?? "";
+        return parseVerdict(content);
+      } catch (err) {
+        app.log.error(err, "grade request failed");
+        return reply.code(502).send({ error: "grading failed" });
+      }
+    },
   );
 
   // Server-side proxy: the API key never reaches the browser. Streams tokens

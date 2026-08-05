@@ -1,4 +1,5 @@
 {
+  "schemaVersion": 1,
   "id": "dativ-basics",
   "title": "Dativ — Grundlagen",
   "description": "Die Dativ-Artikel und häufige Präpositionen.",
@@ -22,17 +23,17 @@
       "explanation": "Dativ Plural bekommt -n am Nomen und 'den' als Artikel."
     },
     {
-      "type": "fill_in_blank",
+      "type": "cloze",
       "id": "d3",
-      "prompt": "Sie fährt mit ___ Bus. (der)",
-      "answer": "dem",
-      "acceptable": []
+      "text": "Sie fährt mit {{1}} Bus.",
+      "blanks": [{ "ref": "1", "cue": "der", "answer": { "accept": ["dem"] } }],
+      "explanation": "'mit' + Dativ: der → dem."
     },
     {
-      "type": "sentence_order",
+      "type": "sentence_build",
       "id": "d4",
       "tokens": ["Ich", "danke", "dir", "sehr"],
-      "order": [0, 1, 2, 3],
+      "answer": { "accept": ["Ich danke dir sehr."], "grading": "caseInsensitive" },
       "explanation": "'danken' verlangt den Dativ: dir."
     },
     {

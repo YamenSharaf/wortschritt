@@ -74,6 +74,15 @@ export const api = {
   // assistant
   assistantStatus: () =>
     req<{ enabled: boolean; model: string }>("/api/assistant/status"),
+  gradeAnswer: (body: {
+    prompt?: string;
+    expected: string[];
+    response: string;
+  }) =>
+    req<{ correct: boolean; feedback: string }>("/api/assistant/grade", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };
 
 /**

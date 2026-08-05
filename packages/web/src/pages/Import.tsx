@@ -5,6 +5,7 @@ import { api } from "../lib/api";
 type Kind = "exercise" | "cheatsheet";
 
 const SAMPLE_EXERCISE = {
+  schemaVersion: 1,
   id: "akkusativ-basics",
   title: "Akkusativ — Grundlagen",
   description: "Übe die Akkusativ-Artikel.",
@@ -20,11 +21,10 @@ const SAMPLE_EXERCISE = {
       explanation: "Akkusativ maskulin: der → den.",
     },
     {
-      type: "fill_in_blank",
+      type: "cloze",
       id: "q2",
-      prompt: "Er kauft ___ Apfel. (ein)",
-      answer: "einen",
-      acceptable: [],
+      text: "Er kauft {{1}} Apfel.",
+      blanks: [{ ref: "1", cue: "ein", answer: { accept: ["einen"] } }],
     },
   ],
 };
@@ -161,6 +161,7 @@ Output ONLY the JSON, with no explanation.`;
   }
   return `Generate a German-learning exercise as JSON in exactly this format:
 {
+  "schemaVersion": 1,
   "id": "short-slug",
   "title": "Title",
   "description": "short description",
@@ -168,11 +169,20 @@ Output ONLY the JSON, with no explanation.`;
   "tags": ["topic"],
   "items": [
     { "type": "multiple_choice", "id": "q1", "prompt": "...", "choices": ["a","b"], "answerIndex": 0, "explanation": "optional" },
-    { "type": "fill_in_blank", "id": "q2", "prompt": "... ___ ...", "answer": "word", "acceptable": [] },
+    { "type": "cloze", "id": "q2", "text": "Ich {{1}} früh {{2}}.", "blanks": [ { "ref": "1", "cue": "aufstehen", "answer": { "accept": ["stehe"] } }, { "ref": "2", "answer": { "accept": ["auf"] } } ] },
     { "type": "flashcard", "id": "q3", "front": "Front", "back": "Back" },
-    { "type": "sentence_order", "id": "q4", "tokens": ["Ich","bin","müde"], "order": [0,1,2] }
+    { "type": "sentence_build", "id": "q4", "tokens": ["Ich","bin","müde"], "answer": { "accept": ["Ich bin müde."], "grading": "caseInsensitive" } },
+    { "type": "transform", "id": "q5", "instructions": "Ins Perfekt setzen.", "source": "Ich lerne Deutsch.", "answer": { "accept": ["Ich habe Deutsch gelernt."] } },
+    { "type": "true_false", "id": "q6", "statement": "Sie hat gegangen nach Hause.", "correct": false, "correction": "Sie ist nach Hause gegangen." },
+    { "type": "conjugation_table", "id": "q7", "rows": ["ich","du","er/sie/es","wir","ihr","sie/Sie"], "columns": [ { "header": "müssen", "answers": ["muss","musst","muss","müssen","müsst","müssen"] } ] }
   ]
 }
+Item type notes:
+- cloze: put {{ref}} placeholders in "text"; every placeholder needs a blank with
+  the same "ref". Use "cue" to show a hint (e.g. the infinitive) beside a blank.
+- sentence_build: give the word bank in "tokens"; the ordered sentence is in
+  "answer". Use grading "caseInsensitive" so capitalisation of the bank is ignored.
+- conjugation_table: each column's "answers" must have one entry per row.
 Use only these item types. The learning content is in German; keep the JSON keys
 exactly as shown. Output ONLY the JSON, with no explanation.`;
 }
