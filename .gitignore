@@ -147,3 +147,9 @@ vite.config.ts.timestamp-*
 *.db
 *.db-shm
 *.db-wal
+
+
+# Macos files
+.DS_Store
+.AppleDouble
+.LS
