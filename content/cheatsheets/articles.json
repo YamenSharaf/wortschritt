@@ -5,15 +5,15 @@
   "sections": [
     {
       "heading": "Bestimmte Artikel (der/die/das)",
-      "body": "            maskulin   feminin   neutrum   Plural\nNominativ   der        die       das       die\nAkkusativ   den        die       das       die\nDativ       dem        der       dem       den (+n)\nGenitiv     des (+s)   der       des (+s)  der"
+      "body": "| Fall | maskulin | feminin | neutrum | Plural |\n| --- | --- | --- | --- | --- |\n| Nominativ | der | die | das | die |\n| Akkusativ | den | die | das | die |\n| Dativ | dem | der | dem | den (+n) |\n| Genitiv | des (+s) | der | des (+s) | der |"
     },
     {
       "heading": "Merkhilfe Dativ",
-      "body": "Wechselpräpositionen mit Dativ (Ort, 'wo?'):\naus, bei, mit, nach, seit, von, zu — immer Dativ.\n\nBeispiel: Ich komme aus der Türkei. Ich fahre mit dem Zug."
+      "body": "Diese Präpositionen stehen **immer mit Dativ**:\n\n`aus, bei, mit, nach, seit, von, zu`\n\nBeispiel: Ich komme **aus der** Türkei. Ich fahre **mit dem** Zug."
     },
     {
       "heading": "Akkusativ-Präpositionen",
-      "body": "durch, für, gegen, ohne, um — immer Akkusativ.\n\nBeispiel: Ein Geschenk für den Freund."
+      "body": "Diese Präpositionen stehen **immer mit Akkusativ**:\n\n`durch, für, gegen, ohne, um`\n\nBeispiel: Ein Geschenk **für den** Freund."
     }
   ]
 }
