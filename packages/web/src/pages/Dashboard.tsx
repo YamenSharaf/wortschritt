@@ -43,12 +43,15 @@ export function Dashboard() {
                 to={`/exercises/${set.id}`}
                 className="rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="font-medium">{set.title}</span>
-                  <span className="rounded bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800">
+                  <span className="shrink-0 rounded bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800">
                     {set.level}
                   </span>
                 </div>
+                {set.subtitle && (
+                  <p className="text-xs text-slate-400">{set.subtitle}</p>
+                )}
                 <p className="mt-1 text-sm text-slate-500">
                   {set.items.length} tasks
                 </p>

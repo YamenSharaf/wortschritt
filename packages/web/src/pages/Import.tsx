@@ -8,6 +8,7 @@ const SAMPLE_EXERCISE = {
   schemaVersion: 1,
   id: "akkusativ-basics",
   title: "Akkusativ — Grundlagen",
+  subtitle: "Accusative — the basics",
   description: "Übe die Akkusativ-Artikel.",
   level: "A1",
   tags: ["grammatik", "akkusativ"],
@@ -150,7 +151,8 @@ function buildLlmPrompt(kind: Kind): string {
     return `Generate a German-learning cheat sheet as JSON in exactly this format:
 {
   "id": "short-slug",
-  "title": "Title",
+  "title": "Titel (German)",
+  "subtitle": "short English gloss of the title (optional)",
   "category": "grammar | vocabulary | ...",
   "sections": [
     { "heading": "Heading", "body": "Markdown text" }
@@ -163,7 +165,8 @@ Output ONLY the JSON, with no explanation.`;
 {
   "schemaVersion": 1,
   "id": "short-slug",
-  "title": "Title",
+  "title": "Titel (German)",
+  "subtitle": "short English gloss of the title (optional)",
   "description": "short description",
   "level": "A1 | A2 | B1 | B2 | C1 | C2",
   "tags": ["topic"],

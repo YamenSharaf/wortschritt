@@ -32,7 +32,12 @@ export function CheatsheetView() {
       )}
       {sheet.status === "ready" && (
         <article className="mt-3 space-y-6">
-          <h1 className="text-2xl font-bold">{sheet.data.title}</h1>
+          <div>
+            <h1 className="text-2xl font-bold">{sheet.data.title}</h1>
+            {sheet.data.subtitle && (
+              <p className="text-sm text-slate-500">{sheet.data.subtitle}</p>
+            )}
+          </div>
           {sheet.data.sections.map((sec, i) => (
             <section
               key={i}
