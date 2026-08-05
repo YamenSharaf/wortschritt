@@ -10,7 +10,7 @@ import { api } from "../lib/api";
 type Props = {
   item: ExerciseItem;
   /** Called exactly once when the learner resolves the item. */
-  onAnswered: (correct: boolean) => void;
+  onAnswered: (correct: boolean, response?: string) => void;
   /** Whether to consult the AI tutor when local grading misses. */
   llmGrading?: boolean;
 };
@@ -90,7 +90,7 @@ function MultipleChoice({
   onAnswered,
 }: {
   item: Extract<ExerciseItem, { type: "multiple_choice" }>;
-  onAnswered: (c: boolean) => void;
+  onAnswered: (c: boolean, response?: string) => void;
 }) {
   const [picked, setPicked] = useState<number | null>(null);
   const done = picked !== null;
@@ -115,7 +115,7 @@ function MultipleChoice({
               disabled={done}
               onClick={() => {
                 setPicked(i);
-                onAnswered(i === item.answerIndex);
+                onAnswered(i === item.answerIndex, item.choices[i]);
               }}
               className={`rounded-lg border px-4 py-2 text-left ${
                 state === "correct"
@@ -144,7 +144,7 @@ function Cloze({
   onAnswered,
 }: {
   item: Extract<ExerciseItem, { type: "cloze" }>;
-  onAnswered: (c: boolean) => void;
+  onAnswered: (c: boolean, response?: string) => void;
 }) {
   const segments = useMemo<Segment[]>(() => {
     const out: Segment[] = [];
@@ -174,7 +174,10 @@ function Cloze({
       gradeText(values[b.ref] ?? "", b.answer),
     );
     setDone(true);
-    onAnswered(allCorrect);
+    onAnswered(
+      allCorrect,
+      item.blanks.map((b) => values[b.ref] ?? "").join(" / "),
+    );
   }
 
   return (
@@ -237,7 +240,7 @@ function Flashcard({
   onAnswered,
 }: {
   item: Extract<ExerciseItem, { type: "flashcard" }>;
-  onAnswered: (c: boolean) => void;
+  onAnswered: (c: boolean, response?: string) => void;
 }) {
   const [flipped, setFlipped] = useState(false);
   const [rated, setRated] = useState(false);
@@ -313,7 +316,7 @@ function SentenceBuild({
   llmGrading,
 }: {
   item: Extract<ExerciseItem, { type: "sentence_build" }>;
-  onAnswered: (c: boolean) => void;
+  onAnswered: (c: boolean, response?: string) => void;
   llmGrading?: boolean;
 }) {
   const [text, setText] = useState("");
@@ -338,7 +341,7 @@ function SentenceBuild({
     });
     setBusy(false);
     setResult(r);
-    onAnswered(r.correct);
+    onAnswered(r.correct, built);
   }
 
   return (
@@ -419,7 +422,7 @@ function Transform({
   llmGrading,
 }: {
   item: Extract<ExerciseItem, { type: "transform" }>;
-  onAnswered: (c: boolean) => void;
+  onAnswered: (c: boolean, response?: string) => void;
   llmGrading?: boolean;
 }) {
   const [text, setText] = useState("");
@@ -436,7 +439,7 @@ function Transform({
     });
     setBusy(false);
     setResult(r);
-    onAnswered(r.correct);
+    onAnswered(r.correct, text);
   }
 
   return (
@@ -483,14 +486,14 @@ function TrueFalse({
   onAnswered,
 }: {
   item: Extract<ExerciseItem, { type: "true_false" }>;
-  onAnswered: (c: boolean) => void;
+  onAnswered: (c: boolean, response?: string) => void;
 }) {
   const [picked, setPicked] = useState<boolean | null>(null);
   const done = picked !== null;
 
   function pick(value: boolean) {
     setPicked(value);
-    onAnswered(value === item.correct);
+    onAnswered(value === item.correct, value ? "Correct" : "Incorrect");
   }
 
   return (
@@ -546,7 +549,7 @@ function ConjugationTable({
   onAnswered,
 }: {
   item: Extract<ExerciseItem, { type: "conjugation_table" }>;
-  onAnswered: (c: boolean) => void;
+  onAnswered: (c: boolean, response?: string) => void;
 }) {
   // values[colIndex][rowIndex]
   const [values, setValues] = useState<Record<string, string>>({});

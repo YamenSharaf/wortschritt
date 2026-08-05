@@ -89,8 +89,17 @@ export const api = {
  * Stream a tutor answer. Reads the server's SSE response and calls `onToken`
  * for each text delta. Resolves when the stream ends; rejects on error.
  */
+export type AskBody = {
+  task?: "highlight" | "hint" | "why_wrong";
+  selection?: string;
+  question?: string;
+  context?: string;
+  item?: { type: string; label: string; expected: string[] };
+  response?: string;
+};
+
 export async function askAssistant(
-  body: { selection: string; question?: string; context?: string },
+  body: AskBody,
   onToken: (token: string) => void,
   signal?: AbortSignal,
 ): Promise<void> {

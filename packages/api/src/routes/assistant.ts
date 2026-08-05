@@ -2,13 +2,25 @@ import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { requireAuth } from "../auth/session";
+import { buildMessages } from "../assistant/prompts";
 import { env, isAssistantEnabled } from "../env";
 import { getSettings } from "../services/settings";
 
 const askBody = z.object({
-  selection: z.string().min(1).max(4000),
+  task: z.enum(["highlight", "hint", "why_wrong"]).default("highlight"),
+  // highlight-to-explain
+  selection: z.string().max(4000).optional(),
   question: z.string().max(1000).optional(),
   context: z.string().max(4000).optional(),
+  // per-exercise help (hint / why_wrong)
+  item: z
+    .object({
+      type: z.string(),
+      label: z.string().max(4000),
+      expected: z.array(z.string()).default([]),
+    })
+    .optional(),
+  response: z.string().max(2000).optional(),
 });
 
 const gradeBody = z.object({
@@ -132,21 +144,19 @@ export async function assistantRoutes(app: FastifyInstance) {
         return reply.code(503).send({ error: "assistant not configured" });
       }
 
-      const { selection, question, context } = req.body;
-      const level = getSettings().level;
-
-      const system = [
-        `You are a concise, friendly German tutor for a learner at CEFR level ${level}.`,
-        "The learner highlighted some text in a German-learning app and wants help.",
-        "Explain briefly in English what is most relevant: meaning, grammar (case,",
-        "gender, verb form, word order), or a natural translation. Prefer short",
-        "answers with a small example when it helps. Do not be verbose.",
-      ].join(" ");
-
-      const userParts = [`Highlighted text:\n"""${selection}"""`];
-      if (context) userParts.push(`Surrounding context:\n"""${context}"""`);
-      userParts.push(question ? `Question: ${question}` : "Explain this.");
-      const user = userParts.join("\n\n");
+      const { task, selection, question, context, item, response } = req.body;
+      const messages = buildMessages(task, {
+        level: getSettings().level,
+        selection,
+        question,
+        context,
+        item,
+        response,
+      });
+      if (!messages) {
+        return reply.code(400).send({ error: "missing inputs for task" });
+      }
+      const { system, user } = messages;
 
       // Take over the raw socket for SSE; Fastify won't send its own response.
       reply.hijack();
