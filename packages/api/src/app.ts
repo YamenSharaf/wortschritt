@@ -12,6 +12,7 @@ import {
 } from "fastify-type-provider-zod";
 import { ensureSchema } from "./db/client";
 import { env, isProd } from "./env";
+import { assistantRoutes } from "./routes/assistant";
 import { authRoutes } from "./routes/auth";
 import { contentRoutes } from "./routes/content";
 import { importRoutes } from "./routes/import";
@@ -45,6 +46,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(progressRoutes);
   await app.register(settingsRoutes);
   await app.register(importRoutes);
+  await app.register(assistantRoutes);
 
   // In production, serve the built SPA from the same container/origin.
   const webDist = resolve(process.cwd(), "../web/dist");

@@ -1,4 +1,5 @@
 import { Navigate, NavLink, Outlet } from "react-router-dom";
+import { SelectionAssistant } from "./components/SelectionAssistant";
 import { useAuth } from "./lib/auth";
 
 const navItems = [
@@ -60,6 +61,7 @@ export function App() {
       <main className="mx-auto max-w-4xl px-4 py-8">
         <Outlet />
       </main>
+      <SelectionAssistant />
     </div>
   );
 }

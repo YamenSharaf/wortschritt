@@ -21,6 +21,12 @@ services:
       PORT: "3000"
       DATABASE_PATH: /app/data/app.db
       CONTENT_DIR: /app/content
+      # AI tutor (optional). Set these to enable highlight-to-explain.
+      # Hosted: set ASSISTANT_API_KEY (+ optionally ASSISTANT_MODEL).
+      # Local model: set ASSISTANT_BASE_URL to your endpoint, key can stay empty.
+      ASSISTANT_BASE_URL: ${ASSISTANT_BASE_URL:-https://api.openai.com/v1}
+      ASSISTANT_API_KEY: ${ASSISTANT_API_KEY:-}
+      ASSISTANT_MODEL: ${ASSISTANT_MODEL:-gpt-4o-mini}
     volumes:
       # SQLite database (progress, settings, imported content) — back this up.
       - ./data:/app/data

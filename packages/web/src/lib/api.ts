@@ -70,4 +70,61 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  // assistant
+  assistantStatus: () =>
+    req<{ enabled: boolean; model: string }>("/api/assistant/status"),
 };
+
+/**
+ * Stream a tutor answer. Reads the server's SSE response and calls `onToken`
+ * for each text delta. Resolves when the stream ends; rejects on error.
+ */
+export async function askAssistant(
+  body: { selection: string; question?: string; context?: string },
+  onToken: (token: string) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const res = await fetch("/api/assistant/ask", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+    signal,
+  });
+  if (res.status === 401) throw new ApiError(401, "unauthenticated");
+  if (!res.ok || !res.body) {
+    let message = res.statusText;
+    try {
+      message = (await res.json()).error ?? message;
+    } catch {
+      /* ignore */
+    }
+    throw new ApiError(res.status, message);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      const s = line.trim();
+      if (!s.startsWith("data:")) continue;
+      const data = s.slice(5).trim();
+      if (data === "[DONE]") return;
+      let parsed: { token?: string; error?: string };
+      try {
+        parsed = JSON.parse(data);
+      } catch {
+        continue;
+      }
+      if (parsed.error) throw new Error(parsed.error);
+      if (parsed.token) onToken(parsed.token);
+    }
+  }
+}

@@ -12,6 +12,10 @@ services:
       PORT: "3000"
       DATABASE_PATH: /app/data/app.db
       CONTENT_DIR: /app/content
+      # AI tutor (optional) — see .env.example for details.
+      ASSISTANT_BASE_URL: ${ASSISTANT_BASE_URL:-https://api.openai.com/v1}
+      ASSISTANT_API_KEY: ${ASSISTANT_API_KEY:-}
+      ASSISTANT_MODEL: ${ASSISTANT_MODEL:-gpt-4o-mini}
     volumes:
       # Persist the SQLite database across restarts/upgrades.
       - ./data:/app/data
