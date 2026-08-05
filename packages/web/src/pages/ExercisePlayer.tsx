@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import type { ExerciseItem } from "@mdb/shared";
 import { ExerciseItemView } from "../components/ExerciseItemView";
-import { api } from "../lib/api";
+import { api, askAssistant } from "../lib/api";
+import { describeItem } from "../lib/describeItem";
 import { useAsync } from "../lib/useAsync";
 
 export function ExercisePlayer() {
@@ -35,22 +37,30 @@ function Runner({
   const [index, setIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [answered, setAnswered] = useState(false);
+  const [lastCorrect, setLastCorrect] = useState(false);
+  const [lastResponse, setLastResponse] = useState<string | undefined>();
   const [done, setDone] = useState(false);
+  const [assistantEnabled, setAssistantEnabled] = useState(false);
   const [llmGrading, setLlmGrading] = useState(false);
 
   useEffect(() => {
-    // Free-text grading uses the tutor only when it's configured AND enabled
-    // in settings.
+    // The tutor powers the Hint / Why-wrong buttons; llmGrading additionally
+    // gates AI grading of free-text answers.
     Promise.all([api.assistantStatus(), api.settings()])
-      .then(([st, se]) => setLlmGrading(Boolean(st.enabled && se.llmGrading)))
-      .catch(() => setLlmGrading(false));
+      .then(([st, se]) => {
+        setAssistantEnabled(st.enabled);
+        setLlmGrading(Boolean(st.enabled && se.llmGrading));
+      })
+      .catch(() => {});
   }, []);
 
   const item = items[index]!;
 
-  function handleAnswered(correct: boolean) {
+  function handleAnswered(correct: boolean, response?: string) {
     if (answered) return;
     setAnswered(true);
+    setLastCorrect(correct);
+    setLastResponse(response);
     if (correct) setCorrectCount((c) => c + 1);
     // Fire-and-forget; a failed save shouldn't block practice.
     void api.recordAttempt(setId, item.id, correct).catch(() => {});
@@ -62,6 +72,7 @@ function Runner({
     } else {
       setIndex((i) => i + 1);
       setAnswered(false);
+      setLastResponse(undefined);
     }
   }
 
@@ -108,6 +119,16 @@ function Runner({
         />
       </div>
 
+      {assistantEnabled && (
+        <TutorHelp
+          key={item.id}
+          item={item}
+          answered={answered}
+          lastCorrect={lastCorrect}
+          lastResponse={lastResponse}
+        />
+      )}
+
       {answered && (
         <button
           type="button"
@@ -116,6 +137,80 @@ function Runner({
         >
           {index + 1 >= items.length ? "Finish" : "Next"}
         </button>
+      )}
+    </div>
+  );
+}
+
+/** Inline AI help: a no-spoiler Hint, plus Why-was-I-wrong after a miss. */
+function TutorHelp({
+  item,
+  answered,
+  lastCorrect,
+  lastResponse,
+}: {
+  item: ExerciseItem;
+  answered: boolean;
+  lastCorrect: boolean;
+  lastResponse?: string;
+}) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const showWhyWrong = answered && !lastCorrect && lastResponse !== undefined;
+
+  function run(task: "hint" | "why_wrong") {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setBusy(true);
+    setError(null);
+    setText("");
+    askAssistant(
+      { task, item: describeItem(item), response: lastResponse },
+      (t) => setText((a) => a + t),
+      controller.signal,
+    )
+      .catch((e) => {
+        if (!controller.signal.aborted) {
+          setError(e instanceof Error ? e.message : String(e));
+        }
+      })
+      .finally(() => setBusy(false));
+  }
+
+  return (
+    <div className="mt-3">
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => run("hint")}
+          className="rounded-full border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700"
+        >
+          💡 Hint
+        </button>
+        {showWhyWrong && (
+          <button
+            type="button"
+            onClick={() => run("why_wrong")}
+            className="rounded-full border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700"
+          >
+            Why was I wrong?
+          </button>
+        )}
+      </div>
+      {(busy || text || error) && (
+        <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-800 dark:bg-slate-900">
+          {error ? (
+            <span className="text-red-600">{error}</span>
+          ) : (
+            <p className="whitespace-pre-wrap leading-relaxed">
+              {text}
+              {busy && <span className="animate-pulse">▍</span>}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );
