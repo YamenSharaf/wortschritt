@@ -149,6 +149,8 @@ export const exerciseSet = z
     schemaVersion: z.literal(1).default(1),
     id: z.string().min(1),
     title: z.string().min(1),
+    /** Optional short English gloss of the (German) title. */
+    subtitle: z.string().optional(),
     description: z.string().default(""),
     level: cefrLevel,
     tags: z.array(z.string()).default([]),
@@ -212,6 +214,8 @@ export const cheatsheetSection = z.object({
 export const cheatsheet = z.object({
   id: z.string().min(1),
   title: z.string().min(1),
+  /** Optional short English gloss of the (German) title. */
+  subtitle: z.string().optional(),
   category: z.string().default("general"),
   sections: z.array(cheatsheetSection).min(1),
 });

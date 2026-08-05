@@ -137,14 +137,17 @@ function Runner({ set }: { set: ExerciseSet }) {
 
   return (
     <div className="mx-auto max-w-xl">
-      <div className="mb-4 flex items-center justify-between text-sm text-slate-500">
+      <div className="mb-1 flex items-center justify-between gap-2 text-sm text-slate-500">
         <Link to="/exercises" className="hover:underline">
           ← {title}
         </Link>
-        <span>
+        <span className="shrink-0">
           {index + 1} / {items.length}
         </span>
       </div>
+      {set.subtitle && (
+        <p className="mb-4 text-xs text-slate-400">{set.subtitle}</p>
+      )}
       <div className="mb-6 h-1.5 w-full overflow-hidden rounded bg-slate-200 dark:bg-slate-800">
         <div
           className="h-full bg-slate-900 transition-all dark:bg-white"

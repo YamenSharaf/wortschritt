@@ -21,6 +21,9 @@ export function Cheatsheets() {
               className="rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900"
             >
               <div className="font-medium">{s.title}</div>
+              {s.subtitle && (
+                <div className="text-xs text-slate-400">{s.subtitle}</div>
+              )}
               <div className="mt-1 text-xs uppercase tracking-wide text-slate-500">
                 {s.category}
               </div>
