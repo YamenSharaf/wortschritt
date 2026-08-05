@@ -3,7 +3,7 @@ import { cefrLevel, cheatsheet, exerciseSet } from "./exercises";
 
 /** User-configurable settings. Persisted as a single JSON row. */
 export const settingsSchema = z.object({
-  displayName: z.string().min(1).default("Lerner"),
+  displayName: z.string().min(1).default("Learner"),
   level: cefrLevel.default("A1"),
   dailyGoal: z.number().int().min(1).max(500).default(20),
   theme: z.enum(["light", "dark", "system"]).default("system"),

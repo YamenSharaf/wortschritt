@@ -1,17 +1,16 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 
 export function Login() {
   const { login, authenticated } = useAuth();
-  const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Once authenticated, redirect declaratively instead of navigating in render.
   if (authenticated) {
-    navigate("/", { replace: true });
-    return null;
+    return <Navigate to="/" replace />;
   }
 
   async function onSubmit(e: FormEvent) {
@@ -20,9 +19,9 @@ export function Login() {
     setError(null);
     try {
       await login(password);
-      navigate("/", { replace: true });
+      // The `authenticated` guard above handles the redirect on next render.
     } catch {
-      setError("Falsches Passwort");
+      setError("Incorrect password");
     } finally {
       setBusy(false);
     }
@@ -35,8 +34,8 @@ export function Login() {
         className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
       >
         <h1 className="mb-1 text-xl font-bold">mit dem baby 🍼</h1>
-        <p className="mb-6 text-sm text-slate-500">Deutsch lernen — anmelden</p>
-        <label className="mb-1 block text-sm font-medium">Passwort</label>
+        <p className="mb-6 text-sm text-slate-500">Sign in</p>
+        <label className="mb-1 block text-sm font-medium">Password</label>
         <input
           type="password"
           autoFocus
@@ -50,7 +49,7 @@ export function Login() {
           disabled={busy}
           className="w-full rounded-lg bg-slate-900 px-4 py-2 font-medium text-white disabled:opacity-50 dark:bg-white dark:text-slate-900"
         >
-          {busy ? "…" : "Anmelden"}
+          {busy ? "…" : "Sign in"}
         </button>
       </form>
     </div>

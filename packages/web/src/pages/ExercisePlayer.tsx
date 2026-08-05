@@ -9,13 +9,13 @@ export function ExercisePlayer() {
   const set = useAsync(() => api.exercise(id!), [id]);
 
   if (set.status === "loading")
-    return <p className="text-slate-500">Lädt…</p>;
+    return <p className="text-slate-500">Loading…</p>;
   if (set.status === "error")
     return (
       <div>
-        <p className="text-red-600">Übung nicht gefunden.</p>
+        <p className="text-red-600">Exercise not found.</p>
         <Link to="/exercises" className="text-sm underline">
-          ← Übungen
+          ← Exercises
         </Link>
       </div>
     );
@@ -59,15 +59,15 @@ function Runner({
   if (done) {
     return (
       <div className="mx-auto max-w-md text-center">
-        <h1 className="mb-2 text-2xl font-bold">Geschafft! 🎉</h1>
+        <h1 className="mb-2 text-2xl font-bold">Done! 🎉</h1>
         <p className="mb-6 text-slate-500">
-          {correctCount} / {items.length} richtig
+          {correctCount} / {items.length} correct
         </p>
         <Link
           to="/exercises"
           className="rounded-lg bg-slate-900 px-4 py-2 text-white dark:bg-white dark:text-slate-900"
         >
-          Zurück zu den Übungen
+          Back to exercises
         </Link>
       </div>
     );
@@ -100,7 +100,7 @@ function Runner({
           onClick={next}
           className="mt-4 w-full rounded-lg bg-slate-900 px-4 py-2 font-medium text-white dark:bg-white dark:text-slate-900"
         >
-          {index + 1 >= items.length ? "Fertig" : "Weiter"}
+          {index + 1 >= items.length ? "Finish" : "Next"}
         </button>
       )}
     </div>

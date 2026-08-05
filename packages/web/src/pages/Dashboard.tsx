@@ -9,14 +9,14 @@ export function Dashboard() {
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="mb-4 text-2xl font-bold">Willkommen zurück 👋</h1>
+        <h1 className="mb-4 text-2xl font-bold">Welcome back 👋</h1>
         {progress.status === "ready" && (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <Stat label="Heute" value={`${progress.data.answeredToday}/${progress.data.dailyGoal}`} />
-            <Stat label="Beantwortet" value={progress.data.totalAnswered} />
-            <Stat label="Richtig" value={progress.data.totalCorrect} />
+            <Stat label="Today" value={`${progress.data.answeredToday}/${progress.data.dailyGoal}`} />
+            <Stat label="Answered" value={progress.data.totalAnswered} />
+            <Stat label="Correct" value={progress.data.totalCorrect} />
             <Stat
-              label="Genauigkeit"
+              label="Accuracy"
               value={
                 progress.data.totalAnswered
                   ? `${Math.round((progress.data.totalCorrect / progress.data.totalAnswered) * 100)}%`
@@ -28,11 +28,11 @@ export function Dashboard() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Übungen</h2>
-        {exercises.status === "loading" && <p className="text-slate-500">Lädt…</p>}
+        <h2 className="mb-3 text-lg font-semibold">Exercises</h2>
+        {exercises.status === "loading" && <p className="text-slate-500">Loading…</p>}
         {exercises.status === "ready" && exercises.data.length === 0 && (
           <p className="text-slate-500">
-            Noch keine Übungen. Füge welche über <Link className="underline" to="/import">Import</Link> hinzu.
+            No exercises yet. Add some via <Link className="underline" to="/import">Import</Link>.
           </p>
         )}
         {exercises.status === "ready" && (
@@ -50,7 +50,7 @@ export function Dashboard() {
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-slate-500">
-                  {set.items.length} Aufgaben
+                  {set.items.length} tasks
                 </p>
               </Link>
             ))}

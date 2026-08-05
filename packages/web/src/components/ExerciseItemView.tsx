@@ -111,7 +111,7 @@ function FillInBlank({
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && result === null && check()}
         className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 dark:border-slate-700"
-        placeholder="Antwort eingeben…"
+        placeholder="Type your answer…"
       />
       {result === null ? (
         <button
@@ -119,11 +119,11 @@ function FillInBlank({
           onClick={check}
           className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-white dark:bg-white dark:text-slate-900"
         >
-          Prüfen
+          Check
         </button>
       ) : (
         <p className={`mt-3 font-medium ${result ? "text-green-600" : "text-red-600"}`}>
-          {result ? "Richtig!" : `Falsch — richtig: ${item.answer}`}
+          {result ? "Correct!" : `Incorrect — answer: ${item.answer}`}
         </p>
       )}
       {result !== null && <Explanation text={item.explanation} />}
@@ -151,7 +151,7 @@ function Flashcard({
         {flipped ? item.back : item.front}
       </button>
       <p className="mt-2 text-center text-xs text-slate-400">
-        {flipped ? "" : "Zum Umdrehen klicken"}
+        {flipped ? "" : "Click to flip"}
       </p>
       {flipped && !rated && (
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -163,7 +163,7 @@ function Flashcard({
             }}
             className="rounded-lg border border-red-400 px-4 py-2 text-red-600"
           >
-            Wusste ich nicht
+            Didn't know
           </button>
           <button
             type="button"
@@ -173,7 +173,7 @@ function Flashcard({
             }}
             className="rounded-lg border border-green-400 px-4 py-2 text-green-600"
           >
-            Wusste ich
+            Knew it
           </button>
         </div>
       )}
@@ -203,7 +203,7 @@ function SentenceOrder({
 
   return (
     <div>
-      <p className="mb-3 text-sm text-slate-500">Bring die Wörter in die richtige Reihenfolge:</p>
+      <p className="mb-3 text-sm text-slate-500">Put the words in the correct order:</p>
       <div className="mb-3 min-h-12 rounded-lg border border-dashed border-slate-300 p-2 dark:border-slate-700">
         <div className="flex flex-wrap gap-2">
           {chosen.map((tokenIdx, pos) => (
@@ -239,13 +239,13 @@ function SentenceOrder({
           onClick={check}
           className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-white disabled:opacity-40 dark:bg-white dark:text-slate-900"
         >
-          Prüfen
+          Check
         </button>
       ) : (
         <p className={`mt-4 font-medium ${result ? "text-green-600" : "text-red-600"}`}>
           {result
-            ? "Richtig!"
-            : `Falsch — richtig: ${item.order.map((i) => item.tokens[i]).join(" ")}`}
+            ? "Correct!"
+            : `Incorrect — answer: ${item.order.map((i) => item.tokens[i]).join(" ")}`}
         </p>
       )}
       {result !== null && <Explanation text={item.explanation} />}
