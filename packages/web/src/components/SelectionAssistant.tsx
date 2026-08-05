@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, askAssistant } from "../lib/api";
+import { TutorMarkdown } from "./TutorMarkdown";
 
 type Anchor = { text: string; x: number; y: number };
 
@@ -125,10 +126,7 @@ export function SelectionAssistant() {
             {error ? (
               <p className="text-sm text-red-600">{error}</p>
             ) : (
-              <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                {answer}
-                {busy && <span className="animate-pulse">▍</span>}
-              </p>
+              <TutorMarkdown text={answer} busy={busy} />
             )}
           </div>
 

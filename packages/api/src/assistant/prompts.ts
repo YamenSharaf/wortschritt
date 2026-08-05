@@ -22,7 +22,8 @@ export type TutorContext = {
 const preamble = (level: string) =>
   `You are a friendly, concise German tutor for one learner at CEFR level ${level}. ` +
   `Write all explanations in English, but keep German words, examples, and corrections in German — never translate the German away. ` +
-  `Be brief and concrete: a short example beats a long rule. Do not use headings or long lists.`;
+  `Be brief and concrete: a short example beats a long rule. ` +
+  `You may use light Markdown — **bold**, \`inline code\`, and short bullet lists — which the app renders. Keep it compact; avoid large headings.`;
 
 /** Build the {system, user} messages for a task, or null if inputs are missing. */
 export function buildMessages(

@@ -54,4 +54,10 @@ body {
   .md :where(td) {
     @apply whitespace-nowrap border border-slate-300 px-2 py-1 dark:border-slate-700;
   }
+  .md :where(> :first-child) {
+    @apply mt-0;
+  }
+  .md :where(> :last-child) {
+    @apply mb-0;
+  }
 }
