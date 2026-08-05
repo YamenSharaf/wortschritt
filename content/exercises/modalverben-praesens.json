@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "id": "modalverben-praesens",
+  "title": "Modalverben im Präsens",
+  "description": "Konjugation und Gebrauch der Modalverben.",
+  "level": "A2",
+  "tags": ["grammatik", "modalverben", "verben"],
+  "items": [
+    {
+      "type": "conjugation_table",
+      "id": "mv-tabelle",
+      "instructions": "Konjugiere die Modalverben im Präsens.",
+      "rows": ["ich", "du", "er/sie/es", "wir", "ihr", "sie/Sie"],
+      "columns": [
+        { "header": "müssen", "answers": ["muss", "musst", "muss", "müssen", "müsst", "müssen"] },
+        { "header": "können", "answers": ["kann", "kannst", "kann", "können", "könnt", "können"] },
+        { "header": "sollen", "answers": ["soll", "sollst", "soll", "sollen", "sollt", "sollen"] },
+        { "header": "wollen", "answers": ["will", "willst", "will", "wollen", "wollt", "wollen"] }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv-moechten",
+      "text": "Ich {{1}} keinen Kaffee trinken.",
+      "blanks": [{ "ref": "1", "cue": "möchten", "answer": { "accept": ["möchte"] } }]
+    },
+    {
+      "type": "cloze",
+      "id": "mv-koennen",
+      "text": "Du {{1}} Klavier spielen und singen.",
+      "blanks": [{ "ref": "1", "cue": "können", "answer": { "accept": ["kannst"] } }]
+    },
+    {
+      "type": "cloze",
+      "id": "mv-muessen",
+      "text": "Er {{1}} sein Zimmer aufräumen.",
+      "blanks": [{ "ref": "1", "cue": "müssen", "answer": { "accept": ["muss"] } }]
+    },
+    {
+      "type": "cloze",
+      "id": "mv-duerfen",
+      "text": "Wir {{1}} hier nicht laut sprechen.",
+      "blanks": [{ "ref": "1", "cue": "dürfen", "answer": { "accept": ["dürfen"] } }],
+      "explanation": "wir-Form = Infinitiv: dürfen."
+    },
+    {
+      "type": "cloze",
+      "id": "mv-wollen",
+      "text": "Ihr {{1}} immer Eis essen.",
+      "blanks": [{ "ref": "1", "cue": "wollen", "answer": { "accept": ["wollt"] } }]
+    },
+    {
+      "type": "multiple_choice",
+      "id": "mv-mc-1",
+      "prompt": "Du ___ sehr gut Deutsch sprechen.",
+      "choices": ["müssen", "können", "sollen"],
+      "answerIndex": 1,
+      "explanation": "Fähigkeit → können: Du kannst sehr gut Deutsch sprechen."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "mv-mc-2",
+      "prompt": "Er ___ nicht laut singen.",
+      "choices": ["dürfen", "wollen", "können"],
+      "answerIndex": 0,
+      "explanation": "Verbot/Erlaubnis → dürfen: Er darf nicht laut singen."
+    }
+  ]
+}

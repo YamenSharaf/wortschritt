@@ -81,6 +81,21 @@ export function SettingsPage() {
             <option value="dark">Dark</option>
           </select>
         </Field>
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={form.llmGrading}
+            onChange={(e) => setForm({ ...form, llmGrading: e.target.checked })}
+            className="h-4 w-4"
+          />
+          <span className="text-sm font-medium">
+            Let the AI tutor grade written answers
+          </span>
+        </label>
+        <p className="-mt-2 text-xs text-slate-400">
+          Only used when the tutor is configured. Falls back to exact matching
+          otherwise.
+        </p>
         <button
           type="button"
           onClick={save}

@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "id": "trennbare-verben",
+  "title": "Trennbare Verben im Präsens",
+  "description": "Das Verb steht auf Position 2, die Vorsilbe am Satzende.",
+  "level": "A2",
+  "tags": ["grammatik", "trennbare-verben", "verben"],
+  "items": [
+    {
+      "type": "cloze",
+      "id": "tv-aufwachen",
+      "text": "Ich {{1}} sehr früh {{2}}.",
+      "blanks": [
+        { "ref": "1", "cue": "aufwachen", "answer": { "accept": ["wache"] } },
+        { "ref": "2", "answer": { "accept": ["auf"] } }
+      ],
+      "explanation": "aufwachen → Ich wache … auf."
+    },
+    {
+      "type": "cloze",
+      "id": "tv-einkaufen",
+      "text": "Heute {{1}} ich im Supermarkt {{2}}.",
+      "blanks": [
+        { "ref": "1", "cue": "einkaufen", "answer": { "accept": ["kaufe"] } },
+        { "ref": "2", "answer": { "accept": ["ein"] } }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv-aufraeumen",
+      "text": "Ich {{1}} mein Zimmer {{2}}.",
+      "blanks": [
+        { "ref": "1", "cue": "aufräumen", "answer": { "accept": ["räume"] } },
+        { "ref": "2", "answer": { "accept": ["auf"] } }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv-fernsehen",
+      "text": "Die Kinder {{1}} gern {{2}}.",
+      "blanks": [
+        { "ref": "1", "cue": "fernsehen", "answer": { "accept": ["sehen"] } },
+        { "ref": "2", "answer": { "accept": ["fern"] } }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv-anrufen",
+      "text": "Meine Mutter {{1}} mich heute {{2}}.",
+      "blanks": [
+        { "ref": "1", "cue": "anrufen", "answer": { "accept": ["ruft"] } },
+        { "ref": "2", "answer": { "accept": ["an"] } }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv-abfahren",
+      "text": "Wann {{1}} der Zug nach Lindau {{2}}?",
+      "blanks": [
+        { "ref": "1", "cue": "abfahren", "answer": { "accept": ["fährt"] } },
+        { "ref": "2", "answer": { "accept": ["ab"] } }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ExerciseItemView } from "../components/ExerciseItemView";
 import { api } from "../lib/api";
@@ -36,6 +36,15 @@ function Runner({
   const [correctCount, setCorrectCount] = useState(0);
   const [answered, setAnswered] = useState(false);
   const [done, setDone] = useState(false);
+  const [llmGrading, setLlmGrading] = useState(false);
+
+  useEffect(() => {
+    // Free-text grading uses the tutor only when it's configured AND enabled
+    // in settings.
+    Promise.all([api.assistantStatus(), api.settings()])
+      .then(([st, se]) => setLlmGrading(Boolean(st.enabled && se.llmGrading)))
+      .catch(() => setLlmGrading(false));
+  }, []);
 
   const item = items[index]!;
 
@@ -91,7 +100,12 @@ function Runner({
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        <ExerciseItemView key={item.id} item={item} onAnswered={handleAnswered} />
+        <ExerciseItemView
+          key={item.id}
+          item={item}
+          onAnswered={handleAnswered}
+          llmGrading={llmGrading}
+        />
       </div>
 
       {answered && (
