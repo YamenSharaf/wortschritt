@@ -1,0 +1,19 @@
+{
+  "name": "mit-dem-baby",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Self-hosted German learning app (single user)",
+  "type": "module",
+  "packageManager": "pnpm@9.12.0",
+  "scripts": {
+    "dev": "pnpm --parallel -r dev",
+    "dev:api": "pnpm --filter @mdb/api dev",
+    "dev:web": "pnpm --filter @mdb/web dev",
+    "build": "pnpm --filter @mdb/web build",
+    "typecheck": "pnpm -r typecheck",
+    "start": "pnpm --filter @mdb/api start"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
