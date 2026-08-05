@@ -1,8 +1,9 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
+import { exerciseItem, exerciseSet, type ExerciseItem } from "@mdb/shared";
 import { requireAuth } from "../auth/session";
-import { buildMessages } from "../assistant/prompts";
+import { buildMessages, buildGenerateMessages } from "../assistant/prompts";
 import { env, isAssistantEnabled } from "../env";
 import { getSettings } from "../services/settings";
 
@@ -28,6 +29,35 @@ const gradeBody = z.object({
   expected: z.array(z.string().min(1)).min(1),
   response: z.string().min(1).max(2000),
 });
+
+const generateBody = z.object({
+  count: z.number().int().min(1).max(6).default(3),
+  set: z.object({
+    title: z.string().default(""),
+    level: z.string().default("A2"),
+    tags: z.array(z.string()).default([]),
+    types: z.array(z.string()).min(1),
+    samples: z.array(z.unknown()).max(4).default([]),
+  }),
+});
+
+/**
+ * Validate one generated item against BOTH the item schema and the structural
+ * checks (cloze placeholders, table answer counts) by round-tripping it through
+ * a one-item exerciseSet. Returns the clean item or null.
+ */
+function validGeneratedItem(raw: unknown, id: string): ExerciseItem | null {
+  const parsed = exerciseItem.safeParse(raw);
+  if (!parsed.success) return null;
+  const item = { ...parsed.data, id };
+  const set = exerciseSet.safeParse({
+    id: "gen",
+    title: "gen",
+    level: "A1",
+    items: [item],
+  });
+  return set.success ? item : null;
+}
 
 function parseVerdict(content: string): { correct: boolean; feedback: string } {
   const match = content.match(/\{[\s\S]*\}/);
@@ -130,6 +160,89 @@ export async function assistantRoutes(app: FastifyInstance) {
       } catch (err) {
         app.log.error(err, "grade request failed");
         return reply.code(502).send({ error: "grading failed" });
+      }
+    },
+  );
+
+  // Generate a few fresh items in the style of a completed set. Ephemeral:
+  // validated and returned, never persisted. Malformed items are dropped.
+  r.post(
+    "/api/assistant/generate",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["assistant"],
+        body: generateBody,
+        response: {
+          200: z.object({ items: z.array(exerciseItem) }),
+          502: z.object({ error: z.string() }),
+          503: z.object({ error: z.string() }),
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!isAssistantEnabled) {
+        return reply.code(503).send({ error: "assistant not configured" });
+      }
+      const { count, set } = req.body;
+      const { system, user } = buildGenerateMessages({
+        title: set.title,
+        level: set.level,
+        tags: set.tags,
+        types: set.types,
+        count,
+        samples: JSON.stringify(set.samples).slice(0, 3000),
+      });
+
+      try {
+        const upstream = await fetch(
+          `${env.ASSISTANT_BASE_URL.replace(/\/$/, "")}/chat/completions`,
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              ...(env.ASSISTANT_API_KEY
+                ? { authorization: `Bearer ${env.ASSISTANT_API_KEY}` }
+                : {}),
+            },
+            body: JSON.stringify({
+              model: env.ASSISTANT_MODEL,
+              temperature: 0.8,
+              messages: [
+                { role: "system", content: system },
+                { role: "user", content: user },
+              ],
+            }),
+          },
+        );
+        if (!upstream.ok) {
+          const detail = await upstream.text().catch(() => "");
+          app.log.error({ status: upstream.status, detail }, "generate upstream error");
+          return reply.code(502).send({ error: "generation failed" });
+        }
+        const json = (await upstream.json()) as {
+          choices?: Array<{ message?: { content?: string } }>;
+        };
+        const content = json?.choices?.[0]?.message?.content ?? "";
+        const match = content.match(/\{[\s\S]*\}/);
+        let rawItems: unknown[] = [];
+        if (match) {
+          try {
+            const parsed = JSON.parse(match[0]) as { items?: unknown };
+            if (Array.isArray(parsed.items)) rawItems = parsed.items;
+          } catch {
+            /* leave empty → 0 valid items */
+          }
+        }
+        const stamp = Date.now().toString(36);
+        const items = rawItems
+          .map((raw, i) => validGeneratedItem(raw, `gen-${stamp}-${i}`))
+          .filter((x): x is ExerciseItem => x !== null)
+          .slice(0, count);
+        return { items };
+      } catch (err) {
+        app.log.error(err, "generate request failed");
+        return reply.code(502).send({ error: "generation failed" });
       }
     },
   );
