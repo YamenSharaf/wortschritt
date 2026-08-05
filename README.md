@@ -76,14 +76,51 @@ pnpm build          # build the web SPA
 
 ## Self-hosting with Docker
 
+### Option A — homelab, from the published image (recommended)
+
+A GitHub Actions pipeline (`.github/workflows/docker-publish.yml`) builds a
+multi-arch image (`linux/amd64` + `linux/arm64`) and publishes it to the GitHub
+Container Registry on every push to `main` and every `v*` tag. To run it you
+only need `docker-compose.prod.yml` and a `.env` — no repo checkout, no build:
+
+```bash
+# On your homelab host, in an empty directory:
+curl -O https://raw.githubusercontent.com/YamenSharaf/mit-dem-baby/main/docker-compose.prod.yml
+cat > .env <<'EOF'
+APP_PASSWORD=your-strong-password
+SESSION_SECRET=some-long-random-string
+EOF
+
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Open http://your-host:3000. Update to a newer image later with:
+
+```bash
+docker compose -f docker-compose.prod.yml pull && \
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Image tags: `latest` (default branch), `vX.Y.Z` / `vX.Y` (git tags), the branch
+name, and a short commit sha. Pin to a version tag in `docker-compose.prod.yml`
+if you'd rather not track `latest`.
+
+> First publish: the GHCR package defaults to private. Either make it public
+> (repo → Packages → the image → Package settings → Change visibility), or
+> `docker login ghcr.io` on the host with a token that has `read:packages`.
+> Cutting a release is just a tag: `git tag v0.1.0 && git push origin v0.1.0`.
+
+### Option B — build from source
+
 ```bash
 cp .env.example .env        # set a real APP_PASSWORD and SESSION_SECRET
 docker compose up -d --build
 ```
 
-Then open http://localhost:3000. The SQLite database persists in `./data`
-(mounted volume) and `./content` is mounted read-only so you can edit
-git-versioned content without rebuilding.
+Both options serve on port 3000. The SQLite database persists in `./data`
+(mounted volume). In the build-from-source compose, `./content` is also mounted
+read-only so you can edit git-versioned content without rebuilding; from the
+published image, content is baked in (uncomment the mount to override it).
 
 Backups are trivial — copy `data/app.db`.
 
