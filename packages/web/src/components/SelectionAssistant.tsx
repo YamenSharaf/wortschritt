@@ -104,7 +104,7 @@ export function SelectionAssistant() {
       {open && (
         <div
           ref={panelRef}
-          className="fixed bottom-4 right-4 z-50 flex max-h-[70vh] w-96 max-w-[calc(100vw-2rem)] flex-col rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900"
+          className="fixed bottom-20 right-4 z-50 flex max-h-[70vh] w-96 max-w-[calc(100vw-2rem)] flex-col rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900 md:bottom-4"
         >
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2 dark:border-slate-800">
             <span className="text-sm font-semibold">Tutor ✨</span>

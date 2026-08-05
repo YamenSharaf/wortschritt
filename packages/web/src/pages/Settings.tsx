@@ -2,26 +2,17 @@ import { useEffect, useState } from "react";
 import type { Settings } from "@mdb/shared";
 import { api } from "../lib/api";
 import { useAsync } from "../lib/useAsync";
+import { useTheme } from "../lib/theme";
 
 export function SettingsPage() {
   const loaded = useAsync(() => api.settings(), []);
+  const { theme, setTheme } = useTheme();
   const [form, setForm] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (loaded.status === "ready") setForm(loaded.data);
   }, [loaded.status]);
-
-  // Apply theme immediately for a live preview.
-  useEffect(() => {
-    if (!form) return;
-    const root = document.documentElement;
-    const dark =
-      form.theme === "dark" ||
-      (form.theme === "system" &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches);
-    root.classList.toggle("dark", dark);
-  }, [form]);
 
   if (!form) return <p className="text-slate-500">Loading…</p>;
 
@@ -70,10 +61,12 @@ export function SettingsPage() {
         </Field>
         <Field label="Theme">
           <select
-            value={form.theme}
-            onChange={(e) =>
-              setForm({ ...form, theme: e.target.value as Settings["theme"] })
-            }
+            value={theme}
+            onChange={(e) => {
+              const next = e.target.value as Settings["theme"];
+              setForm({ ...form, theme: next });
+              setTheme(next); // live preview + per-device preference
+            }}
             className="input"
           >
             <option value="system">System</option>

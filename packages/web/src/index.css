@@ -2,8 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+html {
+  /* colorScheme is set dynamically by the theme manager; this is the fallback. */
   color-scheme: light dark;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -13,5 +15,43 @@ body {
 @layer components {
   .input {
     @apply w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 outline-none focus:border-slate-900 dark:border-slate-700 dark:focus:border-white;
+  }
+
+  /* Rendered markdown (cheat sheets). Low-specificity :where() so utilities win. */
+  .md :where(h1) {
+    @apply mb-2 mt-4 text-lg font-bold;
+  }
+  .md :where(h2) {
+    @apply mb-2 mt-4 text-base font-semibold;
+  }
+  .md :where(p) {
+    @apply my-2 leading-relaxed;
+  }
+  .md :where(ul) {
+    @apply my-2 list-disc pl-5;
+  }
+  .md :where(ol) {
+    @apply my-2 list-decimal pl-5;
+  }
+  .md :where(li) {
+    @apply my-1;
+  }
+  .md :where(a) {
+    @apply text-blue-600 underline dark:text-blue-400;
+  }
+  .md :where(strong) {
+    @apply font-semibold;
+  }
+  .md :where(code) {
+    @apply rounded bg-slate-100 px-1 py-0.5 text-[0.85em] dark:bg-slate-800;
+  }
+  .md :where(table) {
+    @apply my-2 w-full border-collapse text-sm;
+  }
+  .md :where(th) {
+    @apply border border-slate-300 bg-slate-100 px-2 py-1 text-left font-semibold dark:border-slate-700 dark:bg-slate-800;
+  }
+  .md :where(td) {
+    @apply whitespace-nowrap border border-slate-300 px-2 py-1 dark:border-slate-700;
   }
 }
