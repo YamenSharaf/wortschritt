@@ -96,8 +96,11 @@ export function App() {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
-        <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-2.5">
-          <NavLink to="/" className="text-base font-bold">
+        <div className="mx-auto flex max-w-4xl items-center gap-2 px-4 py-2.5">
+          <NavLink
+            to="/"
+            className="min-w-0 shrink truncate text-base font-bold"
+          >
             mit dem baby 🍼
           </NavLink>
           <nav className="ml-3 hidden flex-1 gap-1 text-sm md:flex">
@@ -118,12 +121,12 @@ export function App() {
               </NavLink>
             ))}
           </nav>
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex shrink-0 items-center gap-1">
             <ThemeToggle />
             <button
               type="button"
               onClick={() => void logout()}
-              className="rounded-lg px-3 py-1.5 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
+              className="rounded-lg px-2.5 py-1.5 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
             >
               Log out
             </button>
@@ -135,23 +138,25 @@ export function App() {
         <Outlet />
       </main>
 
-      {/* Mobile bottom tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
+      {/* Mobile bottom tab bar — fixed 5 columns, each capped to 1/5 width */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 overflow-hidden border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
         {navItems.map(({ to, label, end, Icon }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-0.5 py-2 text-[11px] ${
+              `flex min-w-0 flex-col items-center gap-0.5 border-t-2 px-0.5 pb-1.5 pt-1 ${
                 isActive
-                  ? "text-slate-900 dark:text-white"
-                  : "text-slate-400 dark:text-slate-500"
+                  ? "border-slate-900 text-slate-900 dark:border-white dark:text-white"
+                  : "border-transparent text-slate-400 dark:text-slate-500"
               }`
             }
           >
-            <Icon className="h-5 w-5" />
-            {label}
+            <Icon className="h-5 w-5 shrink-0" />
+            <span className="w-full truncate text-center text-[10px] leading-tight">
+              {label}
+            </span>
           </NavLink>
         ))}
       </nav>
