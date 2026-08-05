@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+/**
+ * Treat empty strings as "unset" so a schema's default applies. docker-compose
+ * turns an absent `.env` var into an empty string (e.g. `FOO: ${FOO}`), which
+ * would otherwise fail validation (an empty URL) and crash the container.
+ */
+const optionalEnv = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess((v) => (v === "" ? undefined : v), schema);
+
 const envSchema = z.object({
   APP_PASSWORD: z.string().min(1, "APP_PASSWORD must be set"),
   SESSION_SECRET: z.string().min(8, "SESSION_SECRET must be at least 8 chars"),
@@ -9,10 +17,12 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 
   // Optional AI tutor. OpenAI-compatible endpoint (OpenAI, Ollama, LM Studio,
-  // OpenRouter, vLLM, …). Leave unset to disable the feature entirely.
-  ASSISTANT_BASE_URL: z.string().url().default("https://api.openai.com/v1"),
-  ASSISTANT_API_KEY: z.string().default(""),
-  ASSISTANT_MODEL: z.string().default("gpt-4o-mini"),
+  // OpenRouter, vLLM, …). Leave unset/blank to disable the feature entirely.
+  ASSISTANT_BASE_URL: optionalEnv(
+    z.string().url().default("https://api.openai.com/v1"),
+  ),
+  ASSISTANT_API_KEY: optionalEnv(z.string().default("")),
+  ASSISTANT_MODEL: optionalEnv(z.string().min(1).default("gpt-4o-mini")),
 });
 
 const parsed = envSchema.safeParse(process.env);
