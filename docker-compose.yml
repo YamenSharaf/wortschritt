@@ -1,0 +1,20 @@
+services:
+  app:
+    build: .
+    image: mit-dem-baby
+    ports:
+      - "3000:3000"
+    environment:
+      # Override these — do NOT ship the defaults.
+      APP_PASSWORD: ${APP_PASSWORD:-change-me}
+      SESSION_SECRET: ${SESSION_SECRET:-please-change-this-to-a-long-random-string}
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_PATH: /app/data/app.db
+      CONTENT_DIR: /app/content
+    volumes:
+      # Persist the SQLite database across restarts/upgrades.
+      - ./data:/app/data
+      # Optional: edit git-versioned content without rebuilding the image.
+      - ./content:/app/content:ro
+    restart: unless-stopped

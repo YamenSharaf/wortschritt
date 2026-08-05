@@ -1,0 +1,39 @@
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { App } from "./App";
+import "./index.css";
+import { AuthProvider } from "./lib/auth";
+import { Cheatsheets } from "./pages/Cheatsheets";
+import { CheatsheetView } from "./pages/CheatsheetView";
+import { Dashboard } from "./pages/Dashboard";
+import { ExercisePlayer } from "./pages/ExercisePlayer";
+import { Exercises } from "./pages/Exercises";
+import { ImportPage } from "./pages/Import";
+import { Login } from "./pages/Login";
+import { SettingsPage } from "./pages/Settings";
+
+const router = createBrowserRouter([
+  { path: "/login", element: <Login /> },
+  {
+    path: "/",
+    element: <App />,
+    children: [
+      { index: true, element: <Dashboard /> },
+      { path: "cheatsheets", element: <Cheatsheets /> },
+      { path: "cheatsheets/:id", element: <CheatsheetView /> },
+      { path: "exercises", element: <Exercises /> },
+      { path: "exercises/:id", element: <ExercisePlayer /> },
+      { path: "settings", element: <SettingsPage /> },
+      { path: "import", element: <ImportPage /> },
+    ],
+  },
+]);
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  </StrictMode>,
+);
