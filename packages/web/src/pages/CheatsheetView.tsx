@@ -11,9 +11,9 @@ export function CheatsheetView() {
       <Link to="/cheatsheets" className="text-sm text-slate-500 hover:underline">
         ← Cheat sheets
       </Link>
-      {sheet.status === "loading" && <p className="mt-4 text-slate-500">Lädt…</p>}
+      {sheet.status === "loading" && <p className="mt-4 text-slate-500">Loading…</p>}
       {sheet.status === "error" && (
-        <p className="mt-4 text-red-600">Nicht gefunden.</p>
+        <p className="mt-4 text-red-600">Not found.</p>
       )}
       {sheet.status === "ready" && (
         <article className="mt-3 space-y-6">

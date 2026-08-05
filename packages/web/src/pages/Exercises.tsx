@@ -7,15 +7,15 @@ export function Exercises() {
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold">Übungen</h1>
-      {exercises.status === "loading" && <p className="text-slate-500">Lädt…</p>}
+      <h1 className="mb-4 text-2xl font-bold">Exercises</h1>
+      {exercises.status === "loading" && <p className="text-slate-500">Loading…</p>}
       {exercises.status === "ready" && exercises.data.length === 0 && (
         <p className="text-slate-500">
-          Noch keine Übungen. Füge welche über{" "}
+          No exercises yet. Add some via{" "}
           <Link className="underline" to="/import">
             Import
-          </Link>{" "}
-          hinzu.
+          </Link>
+          .
         </p>
       )}
       {exercises.status === "ready" && (
@@ -36,7 +36,7 @@ export function Exercises() {
                 <p className="mt-1 text-sm text-slate-500">{set.description}</p>
               )}
               <p className="mt-2 text-xs text-slate-400">
-                {set.items.length} Aufgaben · {set.tags.join(", ")}
+                {set.items.length} tasks · {set.tags.join(", ")}
               </p>
             </Link>
           ))}

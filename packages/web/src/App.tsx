@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Navigate, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "./lib/auth";
 
 const navItems = [
@@ -11,19 +11,18 @@ const navItems = [
 
 export function App() {
   const { authenticated, loading, logout } = useAuth();
-  const navigate = useNavigate();
 
   if (loading) {
     return (
       <div className="grid min-h-screen place-items-center text-slate-500">
-        Lädt…
+        Loading…
       </div>
     );
   }
 
+  // Declarative redirect — never call navigate() during render.
   if (!authenticated) {
-    navigate("/login", { replace: true });
-    return null;
+    return <Navigate to="/login" replace />;
   }
 
   return (
@@ -51,7 +50,7 @@ export function App() {
           </nav>
           <button
             type="button"
-            onClick={() => logout().then(() => navigate("/login"))}
+            onClick={() => void logout()}
             className="text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white"
           >
             Log out

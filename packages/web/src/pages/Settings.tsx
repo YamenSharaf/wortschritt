@@ -23,7 +23,7 @@ export function SettingsPage() {
     root.classList.toggle("dark", dark);
   }, [form]);
 
-  if (!form) return <p className="text-slate-500">Lädt…</p>;
+  if (!form) return <p className="text-slate-500">Loading…</p>;
 
   async function save() {
     if (!form) return;
@@ -34,16 +34,16 @@ export function SettingsPage() {
 
   return (
     <div className="max-w-md">
-      <h1 className="mb-6 text-2xl font-bold">Einstellungen</h1>
+      <h1 className="mb-6 text-2xl font-bold">Settings</h1>
       <div className="space-y-4">
-        <Field label="Anzeigename">
+        <Field label="Display name">
           <input
             value={form.displayName}
             onChange={(e) => setForm({ ...form, displayName: e.target.value })}
             className="input"
           />
         </Field>
-        <Field label="Niveau (CEFR)">
+        <Field label="Level (CEFR)">
           <select
             value={form.level}
             onChange={(e) =>
@@ -56,7 +56,7 @@ export function SettingsPage() {
             ))}
           </select>
         </Field>
-        <Field label="Tagesziel (Aufgaben)">
+        <Field label="Daily goal (tasks)">
           <input
             type="number"
             min={1}
@@ -68,7 +68,7 @@ export function SettingsPage() {
             className="input"
           />
         </Field>
-        <Field label="Design">
+        <Field label="Theme">
           <select
             value={form.theme}
             onChange={(e) =>
@@ -77,8 +77,8 @@ export function SettingsPage() {
             className="input"
           >
             <option value="system">System</option>
-            <option value="light">Hell</option>
-            <option value="dark">Dunkel</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
           </select>
         </Field>
         <button
@@ -86,9 +86,9 @@ export function SettingsPage() {
           onClick={save}
           className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white dark:bg-white dark:text-slate-900"
         >
-          Speichern
+          Save
         </button>
-        {saved && <span className="ml-3 text-sm text-green-600">Gespeichert ✓</span>}
+        {saved && <span className="ml-3 text-sm text-green-600">Saved ✓</span>}
       </div>
     </div>
   );

@@ -8,9 +8,9 @@ export function Cheatsheets() {
   return (
     <div>
       <h1 className="mb-4 text-2xl font-bold">Cheat sheets</h1>
-      {sheets.status === "loading" && <p className="text-slate-500">Lädt…</p>}
+      {sheets.status === "loading" && <p className="text-slate-500">Loading…</p>}
       {sheets.status === "ready" && sheets.data.length === 0 && (
-        <p className="text-slate-500">Noch keine Cheat sheets.</p>
+        <p className="text-slate-500">No cheat sheets yet.</p>
       )}
       {sheets.status === "ready" && (
         <div className="grid gap-3 sm:grid-cols-2">
