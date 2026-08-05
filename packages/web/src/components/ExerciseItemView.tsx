@@ -7,6 +7,19 @@ import {
 } from "@mdb/shared";
 import { api } from "../lib/api";
 
+/**
+ * German answers are often mid-sentence and lowercase (verbs like "geht",
+ * "muss"), so stop mobile keyboards from forcing a capital or "correcting"
+ * German words. The learner can still type capitals when needed (nouns, etc.).
+ */
+const answerInputProps = {
+  autoCapitalize: "none",
+  autoCorrect: "off",
+  autoComplete: "off",
+  spellCheck: false,
+  lang: "de",
+} as const;
+
 type Props = {
   item: ExerciseItem;
   /** Called exactly once when the learner resolves the item. */
@@ -198,6 +211,7 @@ function Cloze({
                   setValues((v) => ({ ...v, [seg.ref]: e.target.value }))
                 }
                 onKeyDown={(e) => e.key === "Enter" && !done && check()}
+                {...answerInputProps}
                 className={`mx-1 w-28 rounded border-b-2 bg-transparent px-1 text-center outline-none ${
                   !done
                     ? "border-slate-400 focus:border-slate-900 dark:focus:border-white"
@@ -387,6 +401,7 @@ function SentenceBuild({
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && result === null && check()}
           placeholder="Type the sentence…"
+          {...answerInputProps}
           className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 dark:border-slate-700"
         />
       )}
@@ -454,6 +469,7 @@ function Transform({
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && result === null && check()}
         placeholder="Your answer…"
+        {...answerInputProps}
         className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 dark:border-slate-700"
       />
       {result === null ? (
@@ -605,6 +621,7 @@ function ConjugationTable({
                         onChange={(e) =>
                           setValues((v) => ({ ...v, [key(c, r)]: e.target.value }))
                         }
+                        {...answerInputProps}
                         className={`w-24 rounded border bg-transparent px-2 py-1 outline-none ${
                           !done
                             ? "border-slate-300 focus:border-slate-900 dark:border-slate-700 dark:focus:border-white"

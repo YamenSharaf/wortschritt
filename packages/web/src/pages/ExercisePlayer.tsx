@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { ExerciseItem, ExerciseSet } from "@mdb/shared";
 import { ExerciseItemView } from "../components/ExerciseItemView";
+import { TutorMarkdown } from "../components/TutorMarkdown";
 import { api, askAssistant } from "../lib/api";
 import { describeItem } from "../lib/describeItem";
 import { useAsync } from "../lib/useAsync";
@@ -242,14 +243,11 @@ function TutorHelp({
         )}
       </div>
       {(busy || text || error) && (
-        <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900">
           {error ? (
-            <span className="text-red-600">{error}</span>
+            <span className="text-sm text-red-600">{error}</span>
           ) : (
-            <p className="whitespace-pre-wrap leading-relaxed">
-              {text}
-              {busy && <span className="animate-pulse">▍</span>}
-            </p>
+            <TutorMarkdown text={text} busy={busy} />
           )}
         </div>
       )}
