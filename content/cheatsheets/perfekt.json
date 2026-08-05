@@ -1,0 +1,23 @@
+{
+  "id": "perfekt-ueberblick",
+  "title": "Perfekt — Überblick",
+  "category": "grammatik",
+  "sections": [
+    {
+      "heading": "Aufbau",
+      "body": "**haben** oder **sein** (konjugiert, Position 2) + **Partizip II** (am Satzende):\n\n> Ich **habe** gestern Deutsch **gelernt**.\n> Er **ist** nach Hause **gegangen**."
+    },
+    {
+      "heading": "haben oder sein?",
+      "body": "Mit **sein**:\n- Verben der **Bewegung** (A → B): gehen, fahren, fliegen, kommen, laufen …\n- Verben der **Zustandsänderung**: aufstehen, aufwachen, einschlafen, sterben, werden …\n- Sonderfälle: **sein**, **bleiben**, **passieren**\n\nMit **haben**: alle anderen Verben (die meisten), besonders Verben mit Akkusativobjekt und reflexive Verben."
+    },
+    {
+      "heading": "Partizip II bilden",
+      "body": "| Verbtyp | Muster | Beispiel |\n| --- | --- | --- |\n| regelmäßig | ge- + Stamm + -t | lernen → **gelernt** |\n| unregelmäßig | ge- + Stamm + -en | gehen → **gegangen** |\n| trennbar | Vorsilbe + ge + … | einkaufen → **eingekauft** |\n| untrennbar | **kein** ge- | verstehen → **verstanden** |\n| Verben auf -ieren | **kein** ge- | telefonieren → **telefoniert** |"
+    },
+    {
+      "heading": "Wortstellung",
+      "body": "Das Partizip steht **immer am Ende**. Zeitangaben stehen früh, meist direkt nach dem Verb:\n\n> ✅ Gestern **habe** ich Deutsch **gelernt**.\n> ❌ Gestern ich habe Deutsch gelernt.\n> ❌ Sie hat gegangen nach Hause. → ✅ Sie **ist** nach Hause **gegangen**."
+    }
+  ]
+}
