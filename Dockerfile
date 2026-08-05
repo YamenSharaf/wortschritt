@@ -22,7 +22,8 @@ FROM node:22-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN corepack enable
+# Bake pnpm into the image so the container needs no network on first run.
+RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 
 # better-sqlite3 ships prebuilt binaries; no compiler needed at runtime.
 COPY --from=build /app/node_modules ./node_modules
@@ -37,5 +38,8 @@ WORKDIR /app/packages/api
 ENV DATABASE_PATH=/app/data/app.db
 ENV CONTENT_DIR=/app/content
 EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD node -e "fetch('http://localhost:'+(process.env.PORT||3000)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 CMD ["pnpm", "start"]

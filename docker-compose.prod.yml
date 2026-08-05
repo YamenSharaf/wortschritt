@@ -1,0 +1,29 @@
+# Homelab deployment — pulls the pre-built image from GHCR. No repo checkout
+# or build needed. Just this file + a .env alongside it.
+#
+#   1. Create a .env next to this file:
+#        APP_PASSWORD=your-strong-password
+#        SESSION_SECRET=some-long-random-string
+#   2. docker compose -f docker-compose.prod.yml up -d
+#   3. Update later with:
+#        docker compose -f docker-compose.prod.yml pull && \
+#        docker compose -f docker-compose.prod.yml up -d
+#
+services:
+  app:
+    image: ghcr.io/yamensharaf/mit-dem-baby:latest
+    ports:
+      - "3000:3000"
+    environment:
+      APP_PASSWORD: ${APP_PASSWORD:?set APP_PASSWORD in .env}
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
+      NODE_ENV: production
+      PORT: "3000"
+      DATABASE_PATH: /app/data/app.db
+      CONTENT_DIR: /app/content
+    volumes:
+      # SQLite database (progress, settings, imported content) — back this up.
+      - ./data:/app/data
+      # Optional: override the baked-in git content without rebuilding.
+      # - ./content:/app/content:ro
+    restart: unless-stopped
