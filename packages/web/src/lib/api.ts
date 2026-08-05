@@ -1,5 +1,6 @@
 import type {
   Cheatsheet,
+  ExerciseItem,
   ExerciseSet,
   ImportBody,
   ProgressSummary,
@@ -80,6 +81,20 @@ export const api = {
     response: string;
   }) =>
     req<{ correct: boolean; feedback: string }>("/api/assistant/grade", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  generateMore: (body: {
+    count?: number;
+    set: {
+      title: string;
+      level: string;
+      tags: string[];
+      types: string[];
+      samples: ExerciseItem[];
+    };
+  }) =>
+    req<{ items: ExerciseItem[] }>("/api/assistant/generate", {
       method: "POST",
       body: JSON.stringify(body),
     }),

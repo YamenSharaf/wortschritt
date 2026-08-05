@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { ExerciseItem } from "@mdb/shared";
+import type { ExerciseItem, ExerciseSet } from "@mdb/shared";
 import { ExerciseItemView } from "../components/ExerciseItemView";
 import { api, askAssistant } from "../lib/api";
 import { describeItem } from "../lib/describeItem";
@@ -22,18 +22,13 @@ export function ExercisePlayer() {
       </div>
     );
 
-  return <Runner setId={set.data.id} items={set.data.items} title={set.data.title} />;
+  return <Runner set={set.data} />;
 }
 
-function Runner({
-  setId,
-  items,
-  title,
-}: {
-  setId: string;
-  items: import("@mdb/shared").ExerciseItem[];
-  title: string;
-}) {
+function Runner({ set }: { set: ExerciseSet }) {
+  const setId = set.id;
+  const title = set.title;
+  const [items, setItems] = useState<ExerciseItem[]>(set.items);
   const [index, setIndex] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [answered, setAnswered] = useState(false);
@@ -42,6 +37,8 @@ function Runner({
   const [done, setDone] = useState(false);
   const [assistantEnabled, setAssistantEnabled] = useState(false);
   const [llmGrading, setLlmGrading] = useState(false);
+  const [genBusy, setGenBusy] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
 
   useEffect(() => {
     // The tutor powers the Hint / Why-wrong buttons; llmGrading additionally
@@ -76,6 +73,37 @@ function Runner({
     }
   }
 
+  async function generateMore() {
+    setGenBusy(true);
+    setGenError(null);
+    const startAt = items.length;
+    try {
+      const res = await api.generateMore({
+        count: 3,
+        set: {
+          title: set.title,
+          level: set.level,
+          tags: set.tags,
+          types: [...new Set(set.items.map((i) => i.type))],
+          samples: set.items.slice(0, 3),
+        },
+      });
+      if (res.items.length === 0) {
+        setGenError("The tutor couldn't produce valid items — try again.");
+        return;
+      }
+      setItems((cur) => [...cur, ...res.items]);
+      setIndex(startAt);
+      setAnswered(false);
+      setLastResponse(undefined);
+      setDone(false);
+    } catch (e) {
+      setGenError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setGenBusy(false);
+    }
+  }
+
   if (done) {
     return (
       <div className="mx-auto max-w-md text-center">
@@ -83,9 +111,22 @@ function Runner({
         <p className="mb-6 text-slate-500">
           {correctCount} / {items.length} correct
         </p>
+        {assistantEnabled && (
+          <div className="mb-4">
+            <button
+              type="button"
+              onClick={generateMore}
+              disabled={genBusy}
+              className="w-full rounded-lg border border-slate-300 px-4 py-2 font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+            >
+              {genBusy ? "Generating…" : "✨ Generate 3 more like these"}
+            </button>
+            {genError && <p className="mt-2 text-sm text-red-600">{genError}</p>}
+          </div>
+        )}
         <Link
           to="/exercises"
-          className="rounded-lg bg-slate-900 px-4 py-2 text-white dark:bg-white dark:text-slate-900"
+          className="inline-block rounded-lg bg-slate-900 px-4 py-2 text-white dark:bg-white dark:text-slate-900"
         >
           Back to exercises
         </Link>
