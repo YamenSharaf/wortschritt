@@ -1,0 +1,63 @@
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+import cookie from "@fastify/cookie";
+import fastifyStatic from "@fastify/static";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
+import Fastify, { type FastifyInstance } from "fastify";
+import {
+  jsonSchemaTransform,
+  serializerCompiler,
+  validatorCompiler,
+} from "fastify-type-provider-zod";
+import { ensureSchema } from "./db/client";
+import { env, isProd } from "./env";
+import { authRoutes } from "./routes/auth";
+import { contentRoutes } from "./routes/content";
+import { importRoutes } from "./routes/import";
+import { progressRoutes } from "./routes/progress";
+import { settingsRoutes } from "./routes/settings";
+
+export async function buildApp(): Promise<FastifyInstance> {
+  ensureSchema();
+
+  const app = Fastify({
+    logger: { level: isProd ? "info" : "debug" },
+  });
+
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
+
+  await app.register(cookie, { secret: env.SESSION_SECRET });
+
+  await app.register(swagger, {
+    openapi: {
+      info: { title: "mit-dem-baby API", version: "0.1.0" },
+    },
+    transform: jsonSchemaTransform,
+  });
+  await app.register(swaggerUi, { routePrefix: "/api/docs" });
+
+  app.get("/api/health", async () => ({ status: "ok" }));
+
+  await app.register(authRoutes);
+  await app.register(contentRoutes);
+  await app.register(progressRoutes);
+  await app.register(settingsRoutes);
+  await app.register(importRoutes);
+
+  // In production, serve the built SPA from the same container/origin.
+  const webDist = resolve(process.cwd(), "../web/dist");
+  if (isProd && existsSync(webDist)) {
+    await app.register(fastifyStatic, { root: webDist });
+    // SPA fallback: any non-API GET returns index.html so client routing works.
+    app.setNotFoundHandler((req, reply) => {
+      if (req.method === "GET" && !req.url.startsWith("/api")) {
+        return reply.sendFile("index.html");
+      }
+      return reply.code(404).send({ error: "not found" });
+    });
+  }
+
+  return app;
+}
