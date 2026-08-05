@@ -1,0 +1,47 @@
+import { existsSync, mkdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import { env } from "../env";
+import * as schema from "./schema";
+
+const dbPath = resolve(env.DATABASE_PATH);
+const dir = dirname(dbPath);
+if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+
+const sqlite = new Database(dbPath);
+sqlite.pragma("journal_mode = WAL");
+sqlite.pragma("foreign_keys = ON");
+
+/**
+ * Create tables if they don't exist. For a single-user app this is simpler and
+ * more robust than shipping a migration runner; `drizzle-kit generate` is still
+ * wired up (see drizzle.config.ts) for when you want versioned migrations.
+ */
+export function ensureSchema(): void {
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS settings (
+      id INTEGER PRIMARY KEY,
+      data TEXT NOT NULL,
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+    CREATE TABLE IF NOT EXISTS attempts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      set_id TEXT NOT NULL,
+      item_id TEXT NOT NULL,
+      correct INTEGER NOT NULL,
+      answered_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+    CREATE INDEX IF NOT EXISTS idx_attempts_answered_at ON attempts(answered_at);
+    CREATE INDEX IF NOT EXISTS idx_attempts_set ON attempts(set_id);
+    CREATE TABLE IF NOT EXISTS imported_content (
+      id TEXT PRIMARY KEY,
+      kind TEXT NOT NULL,
+      data TEXT NOT NULL,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+  `);
+}
+
+export const db = drizzle(sqlite, { schema });
+export { schema };

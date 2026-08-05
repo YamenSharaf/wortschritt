@@ -1,0 +1,45 @@
+{
+  "id": "dativ-basics",
+  "title": "Dativ — Grundlagen",
+  "description": "Die Dativ-Artikel und häufige Präpositionen.",
+  "level": "A2",
+  "tags": ["grammatik", "dativ"],
+  "items": [
+    {
+      "type": "multiple_choice",
+      "id": "d1",
+      "prompt": "Ich gebe ___ Mann das Buch.",
+      "choices": ["der", "den", "dem"],
+      "answerIndex": 2,
+      "explanation": "Dativ maskulin: der → dem."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "d2",
+      "prompt": "Wir helfen ___ Kindern.",
+      "choices": ["die", "den", "der"],
+      "answerIndex": 1,
+      "explanation": "Dativ Plural bekommt -n am Nomen und 'den' als Artikel."
+    },
+    {
+      "type": "fill_in_blank",
+      "id": "d3",
+      "prompt": "Sie fährt mit ___ Bus. (der)",
+      "answer": "dem",
+      "acceptable": []
+    },
+    {
+      "type": "sentence_order",
+      "id": "d4",
+      "tokens": ["Ich", "danke", "dir", "sehr"],
+      "order": [0, 1, 2, 3],
+      "explanation": "'danken' verlangt den Dativ: dir."
+    },
+    {
+      "type": "flashcard",
+      "id": "d5",
+      "front": "mit (Präposition + ?)",
+      "back": "Dativ — z. B. mit dem Auto"
+    }
+  ]
+}
