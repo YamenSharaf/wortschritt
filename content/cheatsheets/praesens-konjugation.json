@@ -1,0 +1,27 @@
+{
+  "id": "praesens-konjugation",
+  "title": "Präsens — Konjugation",
+  "category": "grammatik",
+  "sections": [
+    {
+      "heading": "Regelmäßige Verben",
+      "body": "Stamm + Endung (Beispiel: **gehen** → geh-):\n\n| Person | Endung | Beispiel |\n| --- | --- | --- |\n| ich | -e | gehe |\n| du | -st | gehst |\n| er/sie/es | -t | geht |\n| wir | -en | gehen |\n| ihr | -t | geht |\n| sie/Sie | -en | gehen |\n\nSo auch: kommen, wohnen, spielen, lernen, kaufen, machen, trinken, hören …"
+    },
+    {
+      "heading": "Verben auf -d / -t / -n",
+      "body": "Ein zusätzliches **-e-** in der du-, er- und ihr-Form (leichter zu sprechen):\n\n| Person | Endung | Beispiel (arbeiten) |\n| --- | --- | --- |\n| ich | -e | arbeite |\n| du | -est | arbeitest |\n| er/sie/es | -et | arbeitet |\n| wir | -en | arbeiten |\n| ihr | -et | arbeitet |\n| sie/Sie | -en | arbeiten |\n\nSo auch: reden, finden, antworten, öffnen, rechnen, zeichnen …"
+    },
+    {
+      "heading": "Vokalwechsel a → ä",
+      "body": "Nur in der **du-** und **er/sie/es-Form** (Beispiel: **fahren**):\n\nich fahre · **du fährst** · **er fährt** · wir fahren · ihr fahrt · sie fahren\n\nSo auch: schlafen (du schläfst), laufen (du läufst), tragen (du trägst), waschen (du wäschst)."
+    },
+    {
+      "heading": "Vokalwechsel e → i / ie",
+      "body": "Nur in der **du-** und **er/sie/es-Form** (Beispiel: **geben**):\n\nich gebe · **du gibst** · **er gibt** · wir geben · ihr gebt · sie geben\n\nSo auch: sprechen (du sprichst), helfen (du hilfst), essen (du isst), nehmen (du nimmst), lesen (du liest), sehen (du siehst)."
+    },
+    {
+      "heading": "haben und sein (unregelmäßig)",
+      "body": "| Person | haben | sein |\n| --- | --- | --- |\n| ich | habe | bin |\n| du | hast | bist |\n| er/sie/es | hat | ist |\n| wir | haben | sind |\n| ihr | habt | seid |\n| sie/Sie | haben | sind |"
+    }
+  ]
+}

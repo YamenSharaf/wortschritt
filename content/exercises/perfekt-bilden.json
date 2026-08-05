@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "perfekt-bilden",
+  "title": "Perfekt — Sätze bilden",
+  "description": "Ins Perfekt setzen, Wörter ordnen und die Wortstellung prüfen (Übungen D, E, F, G).",
+  "level": "A2",
+  "tags": ["grammatik", "perfekt", "verben"],
+  "items": [
+    { "type": "transform", "id": "pfd-01", "instructions": "Setze den Satz ins Perfekt.", "source": "Ich esse das größte Stück Kuchen.", "answer": { "accept": ["Ich habe das größte Stück Kuchen gegessen."] } },
+    { "type": "transform", "id": "pfd-02", "instructions": "Setze den Satz ins Perfekt.", "source": "Die Schüler helfen der Mitschülerin.", "answer": { "accept": ["Die Schüler haben der Mitschülerin geholfen."] } },
+    { "type": "transform", "id": "pfd-03", "instructions": "Setze den Satz ins Perfekt.", "source": "Ihr schreibt einen Brief.", "answer": { "accept": ["Ihr habt einen Brief geschrieben."] } },
+    { "type": "transform", "id": "pfd-04", "instructions": "Setze den Satz ins Perfekt.", "source": "Du findest dein Buch nicht.", "answer": { "accept": ["Du hast dein Buch nicht gefunden."] } },
+    { "type": "transform", "id": "pfd-05", "instructions": "Setze den Satz ins Perfekt.", "source": "Er fragt den Lehrer.", "answer": { "accept": ["Er hat den Lehrer gefragt."] } },
+    { "type": "transform", "id": "pfd-06", "instructions": "Setze den Satz ins Perfekt.", "source": "Der Gast sieht unsere Wohnung.", "answer": { "accept": ["Der Gast hat unsere Wohnung gesehen."] } },
+    { "type": "sentence_build", "id": "pfe-01", "instructions": "Bilde einen richtigen Satz im Perfekt.", "tokens": ["habe", "ich", "gelernt", "Deutsch"], "answer": { "accept": ["Ich habe Deutsch gelernt."], "grading": "caseInsensitive" } },
+    { "type": "sentence_build", "id": "pfe-02", "instructions": "Bilde einen richtigen Satz im Perfekt.", "tokens": ["gegessen", "wir", "haben", "Pizza"], "answer": { "accept": ["Wir haben Pizza gegessen."], "grading": "caseInsensitive" } },
+    { "type": "sentence_build", "id": "pfe-03", "instructions": "Bilde einen richtigen Satz im Perfekt.", "tokens": ["ist", "er", "gegangen", "nach Hause"], "answer": { "accept": ["Er ist nach Hause gegangen."], "grading": "caseInsensitive" } },
+    { "type": "sentence_build", "id": "pfe-04", "instructions": "Bilde einen richtigen Satz im Perfekt.", "tokens": ["hat", "sie", "getrunken", "Tee"], "answer": { "accept": ["Sie hat Tee getrunken."], "grading": "caseInsensitive" } },
+    { "type": "sentence_build", "id": "pfe-05", "instructions": "Bilde einen richtigen Satz im Perfekt.", "tokens": ["gefahren", "sind", "sie", "nach Berlin"], "answer": { "accept": ["Sie sind nach Berlin gefahren."], "grading": "caseInsensitive" } },
+    { "type": "transform", "id": "pff-01", "instructions": "Bilde einen Satz im Perfekt – Zeit zuerst.", "source": "Heute / wir / einkaufen", "answer": { "accept": ["Heute haben wir eingekauft."] } },
+    { "type": "transform", "id": "pff-02", "instructions": "Bilde einen Satz im Perfekt – Zeit zuerst.", "source": "Am Morgen / ich / frühstücken", "answer": { "accept": ["Am Morgen habe ich gefrühstückt."] } },
+    { "type": "transform", "id": "pff-03", "instructions": "Bilde einen Satz im Perfekt – Zeit zuerst.", "source": "Letzte Woche / sie / reisen", "answer": { "accept": ["Letzte Woche ist sie gereist.", "Letzte Woche sind sie gereist."] } },
+    { "type": "transform", "id": "pff-04", "instructions": "Bilde einen Satz im Perfekt – Zeit zuerst.", "source": "Gestern / er / fernsehen", "answer": { "accept": ["Gestern hat er ferngesehen."] } },
+    { "type": "transform", "id": "pff-05", "instructions": "Bilde einen Satz im Perfekt – Zeit zuerst.", "source": "Am Abend / wir / essen", "answer": { "accept": ["Am Abend haben wir gegessen."] } },
+    { "type": "true_false", "id": "pfg-01", "statement": "Gestern ich habe Deutsch gelernt.", "correct": false, "correction": "Gestern habe ich Deutsch gelernt." },
+    { "type": "true_false", "id": "pfg-02", "statement": "Ich habe Deutsch gestern gelernt.", "correct": false, "correction": "Ich habe gestern Deutsch gelernt." },
+    { "type": "true_false", "id": "pfg-03", "statement": "Er ist nach Hause gegangen.", "correct": true },
+    { "type": "true_false", "id": "pfg-04", "statement": "Sie hat gegangen nach Hause.", "correct": false, "correction": "Sie ist nach Hause gegangen." },
+    { "type": "true_false", "id": "pfg-05", "statement": "Heute haben wir gelernt.", "correct": true }
+  ]
+}

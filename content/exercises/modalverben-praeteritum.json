@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "modalverben-praeteritum",
+  "title": "Modalverben — Präteritum",
+  "description": "Die Modalverben im Präteritum (Übung 7). Präsens/Präteritum sind hier gemischt – gern beim Review anpassen.",
+  "level": "B1",
+  "tags": ["grammatik", "modalverben", "verben", "präteritum"],
+  "items": [
+    {
+      "type": "conjugation_table",
+      "id": "mv-tabelle-praeteritum",
+      "instructions": "Konjugiere die Modalverben im Präteritum (kein Umlaut!).",
+      "rows": ["ich", "du", "er/sie/es", "wir", "ihr", "sie/Sie"],
+      "columns": [
+        { "header": "können", "answers": ["konnte", "konntest", "konnte", "konnten", "konntet", "konnten"] },
+        { "header": "müssen", "answers": ["musste", "musstest", "musste", "mussten", "musstet", "mussten"] },
+        { "header": "sollen", "answers": ["sollte", "solltest", "sollte", "sollten", "solltet", "sollten"] },
+        { "header": "dürfen", "answers": ["durfte", "durftest", "durfte", "durften", "durftet", "durften"] },
+        { "header": "wollen", "answers": ["wollte", "wolltest", "wollte", "wollten", "wolltet", "wollten"] },
+        { "header": "mögen", "answers": ["mochte", "mochtest", "mochte", "mochten", "mochtet", "mochten"] }
+      ]
+    },
+    { "type": "cloze", "id": "mv7-01", "text": "Gestern war ein langer Tag. Ich {{1}} früh aufstehen, weil ich Arbeit hatte.", "blanks": [{ "ref": "1", "cue": "müssen (Prät.)", "answer": { "accept": ["musste"] } }] },
+    { "type": "cloze", "id": "mv7-02", "text": "Mein Bruder {{1}} zur Schule gehen.", "blanks": [{ "ref": "1", "cue": "müssen (Prät.)", "answer": { "accept": ["musste"] } }] },
+    { "type": "cloze", "id": "mv7-03", "text": "Wir {{1}} unsere Hausaufgaben machen, bevor wir spielen durften.", "blanks": [{ "ref": "1", "cue": "müssen (Prät.)", "answer": { "accept": ["mussten", "sollten"] } }] },
+    { "type": "cloze", "id": "mv7-04", "text": "Meine Mutter sagt, wir {{1}} gesund essen.", "blanks": [{ "ref": "1", "cue": "sollen", "answer": { "accept": ["sollen"] } }], "explanation": "„sagt“ steht im Präsens → sollen." },
+    { "type": "cloze", "id": "mv7-05", "text": "Am Abend {{1}} wir fernsehen.", "blanks": [{ "ref": "1", "cue": "dürfen (Prät.)", "answer": { "accept": ["durften", "wollten", "konnten"] } }] },
+    { "type": "cloze", "id": "mv7-06", "text": "Ich {{1}} Musik hören, aber mein Bruder {{2}} lieber lesen.", "blanks": [{ "ref": "1", "cue": "wollen (Prät.)", "answer": { "accept": ["wollte"] } }, { "ref": "2", "cue": "wollen (Prät.)", "answer": { "accept": ["wollte"] } }] }
+  ]
+}

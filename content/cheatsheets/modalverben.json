@@ -1,0 +1,23 @@
+{
+  "id": "modalverben",
+  "title": "Modalverben",
+  "category": "grammatik",
+  "sections": [
+    {
+      "heading": "Bedeutung",
+      "body": "- **können** – Fähigkeit / Möglichkeit (can)\n- **müssen** – Notwendigkeit (must)\n- **dürfen** – Erlaubnis / Verbot (may / not allowed)\n- **sollen** – Auftrag, Rat von anderen (shall / should)\n- **wollen** – starker Wille (want)\n- **mögen** – Vorliebe (like)\n- **möchten** – höflicher Wunsch (would like)"
+    },
+    {
+      "heading": "Präsens",
+      "body": "| | können | müssen | dürfen | sollen | wollen | mögen | möchten |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n| ich | kann | muss | darf | soll | will | mag | möchte |\n| du | kannst | musst | darfst | sollst | willst | magst | möchtest |\n| er/sie/es | kann | muss | darf | soll | will | mag | möchte |\n| wir | können | müssen | dürfen | sollen | wollen | mögen | möchten |\n| ihr | könnt | müsst | dürft | sollt | wollt | mögt | möchtet |\n| sie/Sie | können | müssen | dürfen | sollen | wollen | mögen | möchten |\n\nBeachte: **ich** und **er/sie/es** sind gleich und haben keine Endung."
+    },
+    {
+      "heading": "Präteritum",
+      "body": "Im Präteritum **fällt der Umlaut weg** und es kommt ein **-te-** dazu:\n\n| | können | müssen | dürfen | sollen | wollen | mögen |\n| --- | --- | --- | --- | --- | --- | --- |\n| ich | konnte | musste | durfte | sollte | wollte | mochte |\n| du | konntest | musstest | durftest | solltest | wolltest | mochtest |\n| er/sie/es | konnte | musste | durfte | sollte | wollte | mochte |\n| wir | konnten | mussten | durften | sollten | wollten | mochten |\n| ihr | konntet | musstet | durftet | solltet | wolltet | mochtet |\n| sie/Sie | konnten | mussten | durften | sollten | wollten | mochten |"
+    },
+    {
+      "heading": "Satzstellung",
+      "body": "Das **Modalverb steht auf Position 2**, das Vollverb als **Infinitiv am Satzende**:\n\n> Du **kannst** heute mit einem Freund im Restaurant einen Kaffee **trinken**.\n\nBei einem **trennbaren Verb** bleibt der Infinitiv am Ende zusammen (nicht trennen!):\n\n> Du **kannst** im Restaurant deine Mutter **anrufen**."
+    }
+  ]
+}

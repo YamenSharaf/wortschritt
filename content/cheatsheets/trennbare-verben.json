@@ -1,0 +1,23 @@
+{
+  "id": "trennbare-verben",
+  "title": "Trennbare & untrennbare Verben",
+  "category": "grammatik",
+  "sections": [
+    {
+      "heading": "Satzstellung (trennbar)",
+      "body": "Im Hauptsatz **trennt sich die Vorsilbe** ab: das konjugierte Verb steht auf **Position 2**, die Vorsilbe **am Satzende**.\n\n> **anrufen:** Ich **rufe** meine Mutter heute **an**.\n> **einkaufen:** Heute **kaufe** ich im Supermarkt **ein**.\n> **fernsehen:** Die Kinder **sehen** gern **fern**."
+    },
+    {
+      "heading": "Trennbare Vorsilben",
+      "body": "Diese Vorsilben sind **betont** und trennbar:\n\n`ab-, an-, auf-, aus-, ein-, mit-, nach-, vor-, zu-, zurück-, weg-, los-, fern-, her-, hin-, vorbei-`\n\nBeispiele: abfahren, ankommen, aufstehen, ausgehen, einkaufen, mitkommen, zumachen, zurückkommen, spazieren gehen."
+    },
+    {
+      "heading": "Untrennbare Vorsilben",
+      "body": "Diese Vorsilben sind **unbetont** und trennen sich **nie**:\n\n`be-, emp-, ent-, er-, ge-, miss-, ver-, zer-`\n\n> **verkaufen:** Kostas **verkauft** sein Auto. *(nicht: kauft … ver)*\n> **bestellen:** Was **bestellst** du?\n> **entschuldigen:** **Entschuldigen** Sie bitte.\n\nIm Perfekt bekommen sie **kein ge-**: verstehen → verstanden, bezahlen → bezahlt."
+    },
+    {
+      "heading": "Mit Modalverb oder im Infinitiv",
+      "body": "Nach einem Modalverb bleibt das trennbare Verb **zusammen** am Ende:\n\n> Er kann heute nicht **mitkommen**.\n> Ich möchte früh **aufstehen**."
+    }
+  ]
+}

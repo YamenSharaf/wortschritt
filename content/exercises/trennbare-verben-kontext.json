@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "trennbare-verben-kontext",
+  "title": "Trennbare Verben — im Kontext",
+  "description": "Trennbare und nicht-trennbare Verben unterscheiden (Übungen 3 und 4).",
+  "level": "A2",
+  "tags": ["grammatik", "trennbare-verben", "verben"],
+  "items": [
+    { "type": "cloze", "id": "tv3-01", "text": "Morgen fahren wir nach Köln. {{1}} du {{2}}?", "blanks": [{ "ref": "1", "cue": "mitkommen", "answer": { "accept": ["Kommst"] } }, { "ref": "2", "answer": { "accept": ["mit"] } }] },
+    { "type": "cloze", "id": "tv3-02", "text": "Kostas {{1}} sein Auto.", "blanks": [{ "ref": "1", "cue": "verkaufen (nicht trennbar!)", "answer": { "accept": ["verkauft"] } }], "explanation": "ver- ist eine untrennbare Vorsilbe: Kostas verkauft sein Auto." },
+    { "type": "cloze", "id": "tv3-03", "text": "Der Bäcker {{1}} jeden Morgen um 3:00 Uhr {{2}}.", "blanks": [{ "ref": "1", "cue": "aufstehen", "answer": { "accept": ["steht"] } }, { "ref": "2", "answer": { "accept": ["auf"] } }] },
+    { "type": "cloze", "id": "tv3-04", "text": "Wann {{1}} du im Supermarkt {{2}}?", "blanks": [{ "ref": "1", "cue": "einkaufen", "answer": { "accept": ["kaufst"] } }, { "ref": "2", "answer": { "accept": ["ein"] } }] },
+    { "type": "cloze", "id": "tv3-05", "text": "Thomas {{1}} von seinem Mitschüler {{2}}.", "blanks": [{ "ref": "1", "cue": "abschreiben", "answer": { "accept": ["schreibt"] } }, { "ref": "2", "answer": { "accept": ["ab"] } }] },
+    { "type": "cloze", "id": "tv3-06", "text": "Was möchtest du {{1}}?", "blanks": [{ "ref": "1", "cue": "bestellen (nicht trennbar!)", "answer": { "accept": ["bestellen"] } }], "explanation": "be- ist untrennbar; nach „möchtest“ steht der Infinitiv: Was möchtest du bestellen?" },
+    { "type": "cloze", "id": "tv3-07", "text": "Kinder, {{1}} {{2}}! Ihr müsst in die Schule gehen.", "blanks": [{ "ref": "1", "cue": "aufwachen (Imperativ ihr)", "answer": { "accept": ["wacht"] } }, { "ref": "2", "answer": { "accept": ["auf"] } }] },
+    { "type": "cloze", "id": "tv3-08", "text": "Kostas, {{1}} dein Buch {{2}}! Wir schreiben einen Test.", "blanks": [{ "ref": "1", "cue": "zumachen (Imperativ du)", "answer": { "accept": ["mach"] } }, { "ref": "2", "answer": { "accept": ["zu"] } }] },
+    { "type": "cloze", "id": "tv3-09", "text": "{{1}} Sie bitte. Wo ist die Post?", "blanks": [{ "ref": "1", "cue": "entschuldigen (nicht trennbar!)", "answer": { "accept": ["Entschuldigen"] } }], "explanation": "ent- ist untrennbar: Entschuldigen Sie bitte." },
+    { "type": "cloze", "id": "tv3-10", "text": "Warum {{1}} du schon morgens {{2}}?", "blanks": [{ "ref": "1", "cue": "fernsehen", "answer": { "accept": ["siehst"] } }, { "ref": "2", "answer": { "accept": ["fern"] } }] },
+    { "type": "cloze", "id": "tv3-11", "text": "Sonntags {{1}} wir im Wald {{2}}.", "blanks": [{ "ref": "1", "cue": "spazieren gehen", "answer": { "accept": ["gehen"] } }, { "ref": "2", "answer": { "accept": ["spazieren"] } }] },
+    { "type": "cloze", "id": "tv3-12", "text": "Ute macht eine Diät. Sie {{1}} täglich 500 Gramm {{2}}.", "blanks": [{ "ref": "1", "cue": "abnehmen", "answer": { "accept": ["nimmt"] } }, { "ref": "2", "answer": { "accept": ["ab"] } }] },
+    { "type": "cloze", "id": "tv4-01", "instructions": "Verben: fernsehen, aufstehen, einkaufen, mitkommen, herausnehmen", "text": "Wir haben Deutschunterricht. Wir {{1}} unsere Deutschbücher {{2}}.", "blanks": [{ "ref": "1", "cue": "herausnehmen", "answer": { "accept": ["nehmen"] } }, { "ref": "2", "answer": { "accept": ["heraus"] } }] },
+    { "type": "cloze", "id": "tv4-02", "text": "Er kann heute nicht {{1}}. Er hat Fieber.", "blanks": [{ "ref": "1", "cue": "mitkommen", "answer": { "accept": ["mitkommen"] } }], "explanation": "Nach dem Modalverb „kann“ steht der Infinitiv: mitkommen." },
+    { "type": "cloze", "id": "tv4-03", "text": "Am Wochenende {{1}} Karin spät {{2}}.", "blanks": [{ "ref": "1", "cue": "aufstehen", "answer": { "accept": ["steht"] } }, { "ref": "2", "answer": { "accept": ["auf"] } }] },
+    { "type": "cloze", "id": "tv4-04", "text": "Am Samstag {{1}} viele Leute {{2}}.", "blanks": [{ "ref": "1", "cue": "einkaufen", "answer": { "accept": ["kaufen"] } }, { "ref": "2", "answer": { "accept": ["ein"] } }] },
+    { "type": "cloze", "id": "tv4-05", "text": "Wo ist Timo? Er ist im Wohnzimmer und {{1}} {{2}}.", "blanks": [{ "ref": "1", "cue": "fernsehen", "answer": { "accept": ["sieht"] } }, { "ref": "2", "answer": { "accept": ["fern"] } }] }
+  ]
+}
