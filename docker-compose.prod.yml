@@ -21,6 +21,9 @@ services:
       PORT: "3000"
       DATABASE_PATH: /app/data/app.db
       CONTENT_DIR: /app/content
+      # Branding (optional) — name + favicon emoji.
+      APP_NAME: ${APP_NAME:-mit dem baby}
+      APP_EMOJI: ${APP_EMOJI:-🍼}
       # AI tutor (optional). Set these to enable highlight-to-explain.
       # Hosted: set ASSISTANT_API_KEY (+ optionally ASSISTANT_MODEL).
       # Local model: set ASSISTANT_BASE_URL to your endpoint, key can stay empty.

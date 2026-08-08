@@ -12,6 +12,8 @@ services:
       PORT: "3000"
       DATABASE_PATH: /app/data/app.db
       CONTENT_DIR: /app/content
+      APP_NAME: ${APP_NAME:-mit dem baby}
+      APP_EMOJI: ${APP_EMOJI:-🍼}
       # AI tutor (optional) — see .env.example for details.
       ASSISTANT_BASE_URL: ${ASSISTANT_BASE_URL:-https://api.openai.com/v1}
       ASSISTANT_API_KEY: ${ASSISTANT_API_KEY:-}

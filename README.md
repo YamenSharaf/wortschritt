@@ -40,6 +40,12 @@ copy a ready-made prompt describing the exact JSON schema. Paste it into any
 LLM, paste the JSON back, and it's validated (client- and server-side) before
 being saved. Malformed content is rejected — never stored.
 
+## Docs (for humans & agents)
+
+- [AGENTS.md](AGENTS.md) — orientation for AI agents.
+- [docs/authoring-content.md](docs/authoring-content.md) — generate exercises & cheat sheets.
+- [docs/architecture.md](docs/architecture.md) — app structure, adding features, deploy.
+
 ## Project layout
 
 ```

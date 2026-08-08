@@ -229,7 +229,7 @@ function Cloze({
                 {...answerInputProps}
                 className={`mx-1 w-28 rounded border-b-2 bg-transparent px-1 text-center outline-none ${
                   !done
-                    ? "border-slate-400 focus:border-slate-900 dark:focus:border-white"
+                    ? "border-slate-400 focus:border-accent"
                     : ok
                       ? "border-green-500 text-green-700 dark:text-green-400"
                       : "border-red-500 text-red-700 dark:text-red-400"
@@ -251,7 +251,7 @@ function Cloze({
         <button
           type="button"
           onClick={check}
-          className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-white dark:bg-white dark:text-slate-900"
+          className="mt-4 rounded-lg bg-accent px-4 py-2 text-accent-foreground"
         >
           Check
         </button>
@@ -400,7 +400,7 @@ function SentenceBuild({
                   type="button"
                   disabled={result !== null}
                   onClick={() => setChosen((c) => c.filter((_, i) => i !== pos))}
-                  className="rounded bg-slate-900 px-3 py-1 text-white dark:bg-white dark:text-slate-900"
+                  className="rounded bg-accent px-3 py-1 text-accent-foreground"
                 >
                   {item.tokens![tokenIdx]}
                 </button>
@@ -438,7 +438,7 @@ function SentenceBuild({
           type="button"
           disabled={busy || (hasBank ? chosen.length === 0 : !text.trim())}
           onClick={check}
-          className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-white disabled:opacity-40 dark:bg-white dark:text-slate-900"
+          className="mt-4 rounded-lg bg-accent px-4 py-2 text-accent-foreground disabled:opacity-40"
         >
           {busy ? "Checking…" : "Check"}
         </button>
@@ -506,7 +506,7 @@ function Transform({
           type="button"
           disabled={busy || !text.trim()}
           onClick={check}
-          className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-white disabled:opacity-40 dark:bg-white dark:text-slate-900"
+          className="mt-4 rounded-lg bg-accent px-4 py-2 text-accent-foreground disabled:opacity-40"
         >
           {busy ? "Checking…" : "Check"}
         </button>
@@ -656,7 +656,7 @@ function ConjugationTable({
                         {...answerInputProps}
                         className={`w-24 rounded border bg-transparent px-2 py-1 outline-none ${
                           !done
-                            ? "border-slate-300 focus:border-slate-900 dark:border-slate-700 dark:focus:border-white"
+                            ? "border-slate-300 focus:border-accent dark:border-slate-700"
                             : ok
                               ? "border-green-500 text-green-700 dark:text-green-400"
                               : "border-red-500 text-red-700 dark:text-red-400"
@@ -679,7 +679,7 @@ function ConjugationTable({
         <button
           type="button"
           onClick={check}
-          className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-white dark:bg-white dark:text-slate-900"
+          className="mt-4 rounded-lg bg-accent px-4 py-2 text-accent-foreground"
         >
           Check
         </button>
