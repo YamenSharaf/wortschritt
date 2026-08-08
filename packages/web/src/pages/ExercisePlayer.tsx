@@ -198,7 +198,7 @@ function Runner({ set }: { set: ExerciseSet }) {
       </div>
 
       <div
-        className={`rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900 ${
+        className={`rounded-xl border border-slate-200 bg-white p-6 font-content dark:border-slate-800 dark:bg-slate-900 ${
           answered ? (lastCorrect ? "animate-correct" : "animate-wrong") : ""
         }`}
       >

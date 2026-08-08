@@ -9,59 +9,72 @@ html {
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+  @apply text-slate-900 dark:text-slate-100;
+  background-color: rgb(var(--bg));
 }
 
 /* Accent themes: --accent is the primary color, --accent-foreground the text on
-   it. `slate` (default) inverts between light/dark to match the neutral look;
-   colored themes stay colored in both modes. Set via [data-accent] on <html>. */
+   it, --bg the subtly-tinted page background. `slate` (default) is neutral;
+   colored themes tint slightly in both modes. Set via [data-accent] on <html>. */
 :root {
   --accent: 15 23 42;
   --accent-foreground: 255 255 255;
+  --bg: 248 250 252;
 }
 :root.dark {
   --accent: 248 250 252;
   --accent-foreground: 15 23 42;
+  --bg: 2 6 23;
 }
 :root[data-accent="emerald"] {
   --accent: 5 150 105;
   --accent-foreground: 255 255 255;
+  --bg: 240 250 245;
 }
 :root[data-accent="emerald"].dark {
   --accent: 16 185 129;
   --accent-foreground: 255 255 255;
+  --bg: 3 13 10;
 }
 :root[data-accent="blue"] {
   --accent: 37 99 235;
   --accent-foreground: 255 255 255;
+  --bg: 240 246 253;
 }
 :root[data-accent="blue"].dark {
   --accent: 59 130 246;
   --accent-foreground: 255 255 255;
+  --bg: 4 9 20;
 }
 :root[data-accent="violet"] {
   --accent: 124 58 237;
   --accent-foreground: 255 255 255;
+  --bg: 245 243 253;
 }
 :root[data-accent="violet"].dark {
   --accent: 139 92 246;
   --accent-foreground: 255 255 255;
+  --bg: 11 8 20;
 }
 :root[data-accent="rose"] {
   --accent: 225 29 72;
   --accent-foreground: 255 255 255;
+  --bg: 253 243 246;
 }
 :root[data-accent="rose"].dark {
   --accent: 244 63 94;
   --accent-foreground: 255 255 255;
+  --bg: 19 8 13;
 }
 :root[data-accent="amber"] {
   --accent: 217 119 6;
   --accent-foreground: 255 255 255;
+  --bg: 253 248 238;
 }
 :root[data-accent="amber"].dark {
   --accent: 245 158 11;
   --accent-foreground: 15 23 42;
+  --bg: 20 14 6;
 }
 
 /* Answer feedback animations */
