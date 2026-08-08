@@ -5,18 +5,27 @@
  * everywhere. Adding a new AI button = add a task here + wire a button.
  */
 
-export type TutorTask = "highlight" | "hint" | "why_wrong";
+export type TutorTask =
+  | "highlight"
+  | "hint"
+  | "why_wrong"
+  | "translate_exercise"
+  | "translate_sheet";
+
+export type ItemView = { type: string; label: string; expected: string[] };
 
 export type TutorContext = {
   level: string;
   /** Compact, human-readable view of the current exercise item. */
-  item?: { type: string; label: string; expected: string[] };
+  item?: ItemView;
   /** What the learner typed (for why_wrong). */
   response?: string;
   /** Highlight-to-explain inputs. */
   selection?: string;
   question?: string;
   context?: string;
+  /** Raw content to translate (translate_sheet). */
+  text?: string;
 };
 
 const preamble = (level: string) =>
@@ -43,7 +52,28 @@ export function buildMessages(
     return { system, user: parts.join("\n\n") };
   }
 
+  // Translating a reference sheet: keep the German being taught, translate the prose.
+  if (task === "translate_sheet") {
+    if (!ctx.text) return null;
+    const system =
+      `You are translating a German-learning reference sheet for a learner at CEFR level ${ctx.level}. ` +
+      "Translate the explanatory prose into clear English, but KEEP all German example words, verb forms, articles, endings, and table cells in German — do not translate the German that is being taught. " +
+      "Preserve the Markdown structure exactly (tables, lists, bold, block quotes). Output only the translated Markdown, nothing else.";
+    return { system, user: ctx.text };
+  }
+
   if (!ctx.item) return null;
+
+  // Translating an exercise: explain the task in English without solving it.
+  if (task === "translate_exercise") {
+    const system =
+      `You are a translator for a German learner at CEFR level ${ctx.level}. ` +
+      "Translate this exercise into natural English so the learner understands what to do. " +
+      "Do NOT solve it, fill in any blank, choose an option, or reveal the answer — leave blanks as blanks (____). " +
+      "You may use light Markdown. Output only the translation.";
+    return { system, user: `Exercise (${ctx.item.type}):\n${ctx.item.label}` };
+  }
+
   const itemText = `Exercise (${ctx.item.type}):\n${ctx.item.label}`;
 
   if (task === "hint") {
@@ -64,6 +94,23 @@ export function buildMessages(
     system,
     user: `${itemText}\nExpected answer(s): ${ctx.item.expected.join(" | ")}\nThe learner wrote: ${ctx.response ?? "(nothing)"}`,
   };
+}
+
+/** System prompt for the back-and-forth chat about a wrong answer. */
+export function buildChatSystem(ctx: {
+  level: string;
+  item?: ItemView;
+  response?: string;
+}): string {
+  const it = ctx.item;
+  return (
+    preamble(ctx.level) +
+    " You are helping the learner understand one specific exercise they got wrong, in a back-and-forth chat. Answer their follow-up questions clearly and briefly, staying on this exercise." +
+    (it
+      ? `\n\nExercise (${it.type}):\n${it.label}\nExpected answer(s): ${it.expected.join(" | ")}`
+      : "") +
+    (ctx.response ? `\nThe learner's answer was: ${ctx.response}` : "")
+  );
 }
 
 /** JSON shapes for every item type — shared by generation and the Import UI. */

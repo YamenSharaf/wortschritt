@@ -104,13 +104,22 @@ export const api = {
  * Stream a tutor answer. Reads the server's SSE response and calls `onToken`
  * for each text delta. Resolves when the stream ends; rejects on error.
  */
+export type ChatTurn = { role: "user" | "assistant"; content: string };
 export type AskBody = {
-  task?: "highlight" | "hint" | "why_wrong";
+  task?:
+    | "highlight"
+    | "hint"
+    | "why_wrong"
+    | "translate_exercise"
+    | "translate_sheet"
+    | "chat";
   selection?: string;
   question?: string;
   context?: string;
   item?: { type: string; label: string; expected: string[] };
   response?: string;
+  text?: string;
+  history?: ChatTurn[];
 };
 
 export async function askAssistant(

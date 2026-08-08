@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import type { ExerciseItem, ExerciseSet } from "@mdb/shared";
 import { ExerciseItemView } from "../components/ExerciseItemView";
 import { TutorMarkdown } from "../components/TutorMarkdown";
-import { api, askAssistant } from "../lib/api";
+import { api, askAssistant, type ChatTurn } from "../lib/api";
 import { describeItem } from "../lib/describeItem";
 import { useAsync } from "../lib/useAsync";
 
@@ -187,7 +187,14 @@ function Runner({ set }: { set: ExerciseSet }) {
   );
 }
 
-/** Inline AI help: a no-spoiler Hint, plus Why-was-I-wrong after a miss. */
+const msgOf = (e: unknown) => (e instanceof Error ? e.message : String(e));
+const chipCls =
+  "rounded-full border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700";
+
+type OneShot = { kind: "hint" | "translate"; text: string; busy: boolean; error?: string };
+type Chat = { msgs: ChatTurn[]; input: string; busy: boolean; error?: string };
+
+/** Inline AI help: no-spoiler Hint, Translate, and a chat when you got it wrong. */
 function TutorHelp({
   item,
   answered,
@@ -199,59 +206,150 @@ function TutorHelp({
   lastCorrect: boolean;
   lastResponse?: string;
 }) {
-  const [text, setText] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [shot, setShot] = useState<OneShot | null>(null);
+  const [chat, setChat] = useState<Chat | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const showWhyWrong = answered && !lastCorrect && lastResponse !== undefined;
+  const desc = describeItem(item);
 
-  function run(task: "hint" | "why_wrong") {
+  function fresh() {
     abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setBusy(true);
-    setError(null);
-    setText("");
+    const c = new AbortController();
+    abortRef.current = c;
+    return c;
+  }
+
+  function appendLast(msgs: ChatTurn[], t: string): ChatTurn[] {
+    const copy = msgs.slice();
+    const last = copy[copy.length - 1];
+    if (last) copy[copy.length - 1] = { ...last, content: last.content + t };
+    return copy;
+  }
+
+  function runShot(kind: "hint" | "translate") {
+    const c = fresh();
+    setChat(null);
+    setShot({ kind, text: "", busy: true });
     askAssistant(
-      { task, item: describeItem(item), response: lastResponse },
-      (t) => setText((a) => a + t),
-      controller.signal,
+      { task: kind === "hint" ? "hint" : "translate_exercise", item: desc },
+      (t) => setShot((s) => (s ? { ...s, text: s.text + t } : s)),
+      c.signal,
     )
       .catch((e) => {
-        if (!controller.signal.aborted) {
-          setError(e instanceof Error ? e.message : String(e));
-        }
+        if (!c.signal.aborted)
+          setShot((s) => (s ? { ...s, error: msgOf(e), busy: false } : s));
       })
-      .finally(() => setBusy(false));
+      .finally(() => setShot((s) => (s ? { ...s, busy: false } : s)));
+  }
+
+  function startWhyWrong() {
+    const c = fresh();
+    setShot(null);
+    setChat({ msgs: [{ role: "assistant", content: "" }], input: "", busy: true });
+    askAssistant(
+      { task: "why_wrong", item: desc, response: lastResponse },
+      (t) => setChat((s) => (s ? { ...s, msgs: appendLast(s.msgs, t) } : s)),
+      c.signal,
+    )
+      .catch((e) => {
+        if (!c.signal.aborted)
+          setChat((s) => (s ? { ...s, error: msgOf(e), busy: false } : s));
+      })
+      .finally(() => setChat((s) => (s ? { ...s, busy: false } : s)));
+  }
+
+  function sendFollowup() {
+    if (!chat || !chat.input.trim() || chat.busy) return;
+    const history: ChatTurn[] = [
+      ...chat.msgs,
+      { role: "user", content: chat.input.trim() },
+    ];
+    const c = fresh();
+    setChat({
+      msgs: [...history, { role: "assistant", content: "" }],
+      input: "",
+      busy: true,
+    });
+    askAssistant(
+      { task: "chat", item: desc, response: lastResponse, history },
+      (t) => setChat((s) => (s ? { ...s, msgs: appendLast(s.msgs, t) } : s)),
+      c.signal,
+    )
+      .catch((e) => {
+        if (!c.signal.aborted)
+          setChat((s) => (s ? { ...s, error: msgOf(e), busy: false } : s));
+      })
+      .finally(() => setChat((s) => (s ? { ...s, busy: false } : s)));
   }
 
   return (
     <div className="mt-3">
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => run("hint")}
-          className="rounded-full border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700"
-        >
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => runShot("hint")} className={chipCls}>
           💡 Hint
         </button>
+        <button type="button" onClick={() => runShot("translate")} className={chipCls}>
+          🌐 Translate
+        </button>
         {showWhyWrong && (
-          <button
-            type="button"
-            onClick={() => run("why_wrong")}
-            className="rounded-full border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700"
-          >
+          <button type="button" onClick={startWhyWrong} className={chipCls}>
             Why was I wrong?
           </button>
         )}
       </div>
-      {(busy || text || error) && (
+
+      {shot && (
         <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900">
-          {error ? (
-            <span className="text-sm text-red-600">{error}</span>
+          {shot.error ? (
+            <span className="text-sm text-red-600">{shot.error}</span>
           ) : (
-            <TutorMarkdown text={text} busy={busy} />
+            <TutorMarkdown text={shot.text} busy={shot.busy} />
           )}
+        </div>
+      )}
+
+      {chat && (
+        <div className="mt-2 flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900">
+          {chat.msgs.map((m, i) =>
+            m.role === "assistant" ? (
+              <TutorMarkdown
+                key={i}
+                text={m.content}
+                busy={chat.busy && i === chat.msgs.length - 1}
+              />
+            ) : (
+              <div
+                key={i}
+                className="max-w-[85%] self-end rounded-lg bg-slate-200 px-3 py-1.5 text-sm dark:bg-slate-700"
+              >
+                {m.content}
+              </div>
+            ),
+          )}
+          {chat.error && <p className="text-sm text-red-600">{chat.error}</p>}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendFollowup();
+            }}
+            className="flex gap-2 pt-1"
+          >
+            <input
+              value={chat.input}
+              onChange={(e) =>
+                setChat((s) => (s ? { ...s, input: e.target.value } : s))
+              }
+              placeholder="Ask a follow-up…"
+              className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-transparent px-3 py-1.5 text-sm outline-none focus:border-slate-900 dark:border-slate-700 dark:focus:border-white"
+            />
+            <button
+              type="submit"
+              disabled={chat.busy || !chat.input.trim()}
+              className="shrink-0 rounded-lg bg-slate-900 px-3 py-1.5 text-sm text-white disabled:opacity-40 dark:bg-white dark:text-slate-900"
+            >
+              Send
+            </button>
+          </form>
         </div>
       )}
     </div>
