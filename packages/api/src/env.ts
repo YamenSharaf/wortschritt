@@ -16,6 +16,10 @@ const envSchema = z.object({
   CONTENT_DIR: z.string().default("./content"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 
+  // Branding — shown in the header/title and used as the favicon.
+  APP_NAME: optionalEnv(z.string().min(1).default("mit dem baby")),
+  APP_EMOJI: optionalEnv(z.string().min(1).default("🍼")),
+
   // Optional AI tutor. OpenAI-compatible endpoint (OpenAI, Ollama, LM Studio,
   // OpenRouter, vLLM, …). Leave unset/blank to disable the feature entirely.
   ASSISTANT_BASE_URL: optionalEnv(

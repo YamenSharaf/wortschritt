@@ -96,7 +96,7 @@ export function SelectionAssistant() {
             top: Math.max(8, anchor.y - 40),
             transform: "translateX(-50%)",
           }}
-          className="z-50 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white shadow-lg dark:bg-white dark:text-slate-900"
+          className="z-50 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground shadow-lg"
         >
           ✨ Explain
         </button>
@@ -141,12 +141,12 @@ export function SelectionAssistant() {
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="Ask a follow-up…"
-              className="flex-1 rounded-lg border border-slate-300 bg-transparent px-3 py-1.5 text-sm outline-none focus:border-slate-900 dark:border-slate-700 dark:focus:border-white"
+              className="flex-1 rounded-lg border border-slate-300 bg-transparent px-3 py-1.5 text-sm outline-none focus:border-accent dark:border-slate-700"
             />
             <button
               type="submit"
               disabled={busy || !question.trim()}
-              className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40 dark:bg-white dark:text-slate-900"
+              className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground disabled:opacity-40"
             >
               Ask
             </button>

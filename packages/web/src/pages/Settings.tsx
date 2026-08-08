@@ -3,10 +3,11 @@ import type { Settings } from "@mdb/shared";
 import { api } from "../lib/api";
 import { useAsync } from "../lib/useAsync";
 import { useTheme } from "../lib/theme";
+import { ACCENTS } from "../lib/themes";
 
 export function SettingsPage() {
   const loaded = useAsync(() => api.settings(), []);
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, accent, setAccent } = useTheme();
   const [form, setForm] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -74,6 +75,25 @@ export function SettingsPage() {
             <option value="dark">Dark</option>
           </select>
         </Field>
+        <Field label="Theme color">
+          <div className="flex flex-wrap gap-2">
+            {ACCENTS.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => setAccent(a.id)}
+                aria-label={a.label}
+                title={a.label}
+                className={`h-8 w-8 rounded-full ring-2 ring-offset-2 ring-offset-white dark:ring-offset-slate-950 ${
+                  accent === a.id
+                    ? "ring-slate-900 dark:ring-white"
+                    : "ring-transparent"
+                }`}
+                style={{ backgroundColor: a.swatch }}
+              />
+            ))}
+          </div>
+        </Field>
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -92,7 +112,7 @@ export function SettingsPage() {
         <button
           type="button"
           onClick={save}
-          className="rounded-lg bg-slate-900 px-4 py-2 font-medium text-white dark:bg-white dark:text-slate-900"
+          className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground"
         >
           Save
         </button>

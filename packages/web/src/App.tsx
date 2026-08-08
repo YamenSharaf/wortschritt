@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 import { Navigate, NavLink, Outlet } from "react-router-dom";
+import { ThemePicker } from "./components/ThemePicker";
 import { api } from "./lib/api";
 import { useAuth } from "./lib/auth";
+import { useConfig } from "./lib/config";
 import { useTheme } from "./lib/theme";
 
 type IconProps = { className?: string };
@@ -71,6 +73,7 @@ function ThemeToggle() {
 export function App() {
   const { authenticated, loading, logout } = useAuth();
   const { setTheme, hasStored } = useTheme();
+  const { appName, appEmoji } = useConfig();
 
   // On a device with no saved theme yet, inherit the account default once.
   useEffect(() => {
@@ -101,7 +104,7 @@ export function App() {
             to="/"
             className="min-w-0 shrink truncate text-base font-bold"
           >
-            mit dem baby 🍼
+            {appName} {appEmoji}
           </NavLink>
           <nav className="ml-3 hidden flex-1 gap-1 text-sm md:flex">
             {navItems.map(({ to, label, end }) => (
@@ -112,7 +115,7 @@ export function App() {
                 className={({ isActive }) =>
                   `rounded-lg px-3 py-1.5 ${
                     isActive
-                      ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
+                      ? "bg-accent text-accent-foreground"
                       : "hover:bg-slate-100 dark:hover:bg-slate-800"
                   }`
                 }
@@ -122,6 +125,7 @@ export function App() {
             ))}
           </nav>
           <div className="ml-auto flex shrink-0 items-center gap-1">
+            <ThemePicker />
             <ThemeToggle />
             <button
               type="button"
@@ -148,7 +152,7 @@ export function App() {
             className={({ isActive }) =>
               `flex min-w-0 flex-col items-center gap-0.5 border-t-2 px-0.5 pb-1.5 pt-1 ${
                 isActive
-                  ? "border-slate-900 text-slate-900 dark:border-white dark:text-white"
+                  ? "border-accent text-accent"
                   : "border-transparent text-slate-400 dark:text-slate-500"
               }`
             }

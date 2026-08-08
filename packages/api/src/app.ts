@@ -14,6 +14,7 @@ import { ensureSchema } from "./db/client";
 import { env, isProd } from "./env";
 import { assistantRoutes } from "./routes/assistant";
 import { authRoutes } from "./routes/auth";
+import { configRoutes } from "./routes/config";
 import { contentRoutes } from "./routes/content";
 import { importRoutes } from "./routes/import";
 import { progressRoutes } from "./routes/progress";
@@ -41,6 +42,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   app.get("/api/health", async () => ({ status: "ok" }));
 
+  await app.register(configRoutes);
   await app.register(authRoutes);
   await app.register(contentRoutes);
   await app.register(progressRoutes);

@@ -131,7 +131,7 @@ export function ImportPage() {
         type="button"
         disabled={!localValidation.ok}
         onClick={submit}
-        className="mt-4 rounded-lg bg-slate-900 px-4 py-2 font-medium text-white disabled:opacity-40 dark:bg-white dark:text-slate-900"
+        className="mt-4 rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground disabled:opacity-40"
       >
         Import
       </button>

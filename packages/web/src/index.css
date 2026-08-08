@@ -12,6 +12,101 @@ body {
   @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
 }
 
+/* Accent themes: --accent is the primary color, --accent-foreground the text on
+   it. `slate` (default) inverts between light/dark to match the neutral look;
+   colored themes stay colored in both modes. Set via [data-accent] on <html>. */
+:root {
+  --accent: 15 23 42;
+  --accent-foreground: 255 255 255;
+}
+:root.dark {
+  --accent: 248 250 252;
+  --accent-foreground: 15 23 42;
+}
+:root[data-accent="emerald"] {
+  --accent: 5 150 105;
+  --accent-foreground: 255 255 255;
+}
+:root[data-accent="emerald"].dark {
+  --accent: 16 185 129;
+  --accent-foreground: 255 255 255;
+}
+:root[data-accent="blue"] {
+  --accent: 37 99 235;
+  --accent-foreground: 255 255 255;
+}
+:root[data-accent="blue"].dark {
+  --accent: 59 130 246;
+  --accent-foreground: 255 255 255;
+}
+:root[data-accent="violet"] {
+  --accent: 124 58 237;
+  --accent-foreground: 255 255 255;
+}
+:root[data-accent="violet"].dark {
+  --accent: 139 92 246;
+  --accent-foreground: 255 255 255;
+}
+:root[data-accent="rose"] {
+  --accent: 225 29 72;
+  --accent-foreground: 255 255 255;
+}
+:root[data-accent="rose"].dark {
+  --accent: 244 63 94;
+  --accent-foreground: 255 255 255;
+}
+:root[data-accent="amber"] {
+  --accent: 217 119 6;
+  --accent-foreground: 255 255 255;
+}
+:root[data-accent="amber"].dark {
+  --accent: 245 158 11;
+  --accent-foreground: 15 23 42;
+}
+
+/* Answer feedback animations */
+@keyframes mdb-correct {
+  0% {
+    box-shadow: 0 0 0 0 rgb(34 197 94 / 0);
+  }
+  30% {
+    box-shadow: 0 0 0 4px rgb(34 197 94 / 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(34 197 94 / 0);
+  }
+}
+@keyframes mdb-wrong {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+.animate-correct {
+  animation: mdb-correct 0.7s ease-out;
+}
+.animate-wrong {
+  animation: mdb-wrong 0.4s ease-in-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-correct,
+  .animate-wrong {
+    animation: none;
+  }
+}
+
 @layer components {
   .input {
     @apply w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 outline-none focus:border-slate-900 dark:border-slate-700 dark:focus:border-white;

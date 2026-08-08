@@ -40,6 +40,18 @@ function Runner({ set }: { set: ExerciseSet }) {
   const [llmGrading, setLlmGrading] = useState(false);
   const [genBusy, setGenBusy] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
+  const [mobile, setMobile] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 767px)").matches,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const on = () => setMobile(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
 
   useEffect(() => {
     // The tutor powers the Hint / Why-wrong buttons; llmGrading additionally
@@ -125,6 +137,16 @@ function Runner({ set }: { set: ExerciseSet }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answered, index, items.length]);
 
+  // On mobile, auto-advance after a correct answer (with a short pause so the
+  // result registers). Wrong answers wait — you may want to read the answer or
+  // ask the tutor. On desktop, Enter advances (above); nothing is automatic.
+  useEffect(() => {
+    if (!answered || !mobile || !lastCorrect) return;
+    const t = setTimeout(() => next(), 1100);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answered, mobile, lastCorrect, index]);
+
   if (done) {
     return (
       <div className="mx-auto max-w-md text-center">
@@ -147,7 +169,7 @@ function Runner({ set }: { set: ExerciseSet }) {
         )}
         <Link
           to="/exercises"
-          className="inline-block rounded-lg bg-slate-900 px-4 py-2 text-white dark:bg-white dark:text-slate-900"
+          className="inline-block rounded-lg bg-accent px-4 py-2 text-accent-foreground"
         >
           Back to exercises
         </Link>
@@ -170,12 +192,16 @@ function Runner({ set }: { set: ExerciseSet }) {
       )}
       <div className="mb-6 h-1.5 w-full overflow-hidden rounded bg-slate-200 dark:bg-slate-800">
         <div
-          className="h-full bg-slate-900 transition-all dark:bg-white"
+          className="h-full bg-accent transition-all"
           style={{ width: `${((index + (answered ? 1 : 0)) / items.length) * 100}%` }}
         />
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+      <div
+        className={`rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900 ${
+          answered ? (lastCorrect ? "animate-correct" : "animate-wrong") : ""
+        }`}
+      >
         <ExerciseItemView
           key={item.id}
           item={item}
@@ -198,7 +224,7 @@ function Runner({ set }: { set: ExerciseSet }) {
         <button
           type="button"
           onClick={next}
-          className="mt-4 w-full rounded-lg bg-slate-900 px-4 py-2 font-medium text-white dark:bg-white dark:text-slate-900"
+          className="mt-4 w-full rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground"
         >
           {index + 1 >= items.length ? "Finish" : "Next"}
         </button>
@@ -360,12 +386,12 @@ function TutorHelp({
                 setChat((s) => (s ? { ...s, input: e.target.value } : s))
               }
               placeholder="Ask a follow-up…"
-              className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-transparent px-3 py-1.5 text-sm outline-none focus:border-slate-900 dark:border-slate-700 dark:focus:border-white"
+              className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-transparent px-3 py-1.5 text-sm outline-none focus:border-accent dark:border-slate-700"
             />
             <button
               type="submit"
               disabled={chat.busy || !chat.input.trim()}
-              className="shrink-0 rounded-lg bg-slate-900 px-3 py-1.5 text-sm text-white disabled:opacity-40 dark:bg-white dark:text-slate-900"
+              className="shrink-0 rounded-lg bg-accent px-3 py-1.5 text-sm text-accent-foreground disabled:opacity-40"
             >
               Send
             </button>
