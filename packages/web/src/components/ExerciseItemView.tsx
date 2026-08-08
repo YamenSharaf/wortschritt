@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   gradeText,
+  isCanonical,
   modelAnswer,
   type ExerciseItem,
   type TextAnswer,
@@ -62,6 +63,18 @@ function Instructions({ text }: { text?: string }) {
   return <p className="mb-3 text-sm text-slate-500">{text}</p>;
 }
 
+/** Always-visible helper text on an item (e.g. the words to use). */
+function ItemHint({ text }: { text?: string }) {
+  if (!text) return null;
+  return (
+    <p className="mb-3 text-sm">
+      <span className="rounded bg-slate-100 px-2 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+        {text}
+      </span>
+    </p>
+  );
+}
+
 function Explanation({ text }: { text?: string }) {
   if (!text) return null;
   return (
@@ -111,6 +124,7 @@ function MultipleChoice({
   return (
     <div>
       <Instructions text={item.instructions} />
+      <ItemHint text={item.hint} />
       <p className="mb-4 text-lg">{item.prompt}</p>
       <div className="grid gap-2">
         {item.choices.map((choice, i) => {
@@ -196,6 +210,7 @@ function Cloze({
   return (
     <div>
       <Instructions text={item.instructions} />
+      <ItemHint text={item.hint} />
       <p className="text-lg leading-loose">
         {segments.map((seg, i) => {
           if (seg.kind === "text") return <span key={i}>{seg.value}</span>;
@@ -223,7 +238,7 @@ function Cloze({
               {blank?.cue && !done && (
                 <span className="mx-1 text-xs text-slate-400">({blank.cue})</span>
               )}
-              {done && !ok && blank && (
+              {done && blank && !isCanonical(value, blank.answer) && (
                 <span className="mx-1 text-xs text-green-600">
                   {modelAnswer(blank.answer)}
                 </span>
@@ -306,17 +321,28 @@ function Flashcard({
 function ResultBanner({
   result,
   answer,
+  input,
   feedback,
 }: {
   result: boolean;
   answer: TextAnswer;
+  input: string;
   feedback?: string;
 }) {
+  // Show the canonical spelling on a miss, or when a lenient match differs
+  // from it (e.g. missing umlaut / wrong capitalization).
+  const showAnswer = !result || !isCanonical(input, answer);
   return (
     <div className="mt-3">
       <p className={`font-medium ${result ? "text-green-600" : "text-red-600"}`}>
-        {result ? "Correct!" : `Answer: ${modelAnswer(answer)}`}
+        {result ? "Correct!" : "Not quite."}
       </p>
+      {showAnswer && (
+        <p className="mt-1 text-sm">
+          <span className="text-slate-500">Answer: </span>
+          <span className="font-medium">{modelAnswer(answer)}</span>
+        </p>
+      )}
       {feedback && <p className="mt-1 text-sm text-slate-500">{feedback}</p>}
     </div>
   );
@@ -363,6 +389,7 @@ function SentenceBuild({
       <Instructions
         text={item.instructions ?? "Put the words in the correct order."}
       />
+      <ItemHint text={item.hint} />
       {hasBank ? (
         <>
           <div className="mb-3 min-h-12 rounded-lg border border-dashed border-slate-300 p-2 dark:border-slate-700">
@@ -420,6 +447,7 @@ function SentenceBuild({
           <ResultBanner
             result={result.correct}
             answer={item.answer}
+            input={built}
             feedback={result.feedback}
           />
           <Explanation text={item.explanation} />
@@ -460,6 +488,7 @@ function Transform({
   return (
     <div>
       <Instructions text={item.instructions} />
+      <ItemHint text={item.hint} />
       <p className="mb-3 rounded-lg bg-slate-100 p-3 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
         {item.source}
       </p>
@@ -486,6 +515,7 @@ function Transform({
           <ResultBanner
             result={result.correct}
             answer={item.answer}
+            input={text}
             feedback={result.feedback}
           />
           <Explanation text={item.explanation} />
@@ -515,6 +545,7 @@ function TrueFalse({
   return (
     <div>
       <Instructions text={item.instructions ?? "Correct or incorrect?"} />
+      <ItemHint text={item.hint} />
       <p className="mb-4 text-lg">{item.statement}</p>
       <div className="grid grid-cols-2 gap-2">
         {[
@@ -594,6 +625,7 @@ function ConjugationTable({
   return (
     <div>
       <Instructions text={item.instructions ?? "Fill in the conjugations."} />
+      <ItemHint text={item.hint} />
       <div className="overflow-x-auto">
         <table className="border-collapse text-sm">
           <thead>

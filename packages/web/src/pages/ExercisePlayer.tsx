@@ -105,6 +105,26 @@ function Runner({ set }: { set: ExerciseSet }) {
     }
   }
 
+  // Once an item is resolved, Enter advances — unless you're typing in a live
+  // field (e.g. the tutor chat) or a button is focused (it handles Enter itself).
+  useEffect(() => {
+    if (!answered) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "Enter") return;
+      const el = document.activeElement as HTMLElement | null;
+      const tag = el?.tagName;
+      const typing =
+        (tag === "INPUT" || tag === "TEXTAREA") &&
+        !(el as HTMLInputElement | null)?.disabled;
+      if (typing || tag === "BUTTON") return;
+      e.preventDefault();
+      next();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answered, index, items.length]);
+
   if (done) {
     return (
       <div className="mx-auto max-w-md text-center">

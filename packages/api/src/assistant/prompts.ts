@@ -118,7 +118,7 @@ const ITEM_SCHEMA_REF = `Item type shapes (use the exact keys):
 - multiple_choice: { "type":"multiple_choice","id":"...","prompt":"...","choices":["a","b"],"answerIndex":0,"explanation":"optional" }
 - cloze: { "type":"cloze","id":"...","instructions":"optional","text":"Ich {{1}} früh {{2}}.","blanks":[{"ref":"1","cue":"optional hint","answer":{"accept":["stehe"]}},{"ref":"2","answer":{"accept":["auf"]}}] }
 - flashcard: { "type":"flashcard","id":"...","front":"...","back":"..." }
-- sentence_build: { "type":"sentence_build","id":"...","instructions":"optional","tokens":["Ich","bin","müde"],"answer":{"accept":["Ich bin müde."],"grading":"caseInsensitive"} }
+- sentence_build: { "type":"sentence_build","id":"...","instructions":"optional","tokens":["Ich","bin","müde"],"answer":{"accept":["Ich bin müde."],"grading":"caseInsensitive"} } — if you omit "tokens", you MUST put the words to use in "hint" (e.g. "Wörter: heute · wir · lernen · müssen"), since it is shown to the learner.
 - transform: { "type":"transform","id":"...","instructions":"e.g. Ins Perfekt setzen.","source":"Ich lerne Deutsch.","answer":{"accept":["Ich habe Deutsch gelernt."]} }
 - true_false: { "type":"true_false","id":"...","statement":"...","correct":true,"correction":"optional corrected German" }
 - conjugation_table: { "type":"conjugation_table","id":"...","rows":["ich","du"],"columns":[{"header":"gehen","answers":["gehe","gehst"]}] }
