@@ -64,10 +64,11 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # After a successful push, ask Komodo to redeploy the stack so it pulls the
-      # freshly published image and updates the running deployment. Skipped on
+      # After a successful push, ask Komodo to check the stack for image updates.
+      # With auto-update enabled on the stack, Komodo redeploys it immediately
+      # when a newer image is found (a no-op when nothing changed). Skipped on
       # PRs and when the Komodo variables aren't configured.
-      - name: Trigger Komodo stack update
+      - name: Trigger Komodo update check
         if: >-
           github.event_name != 'pull_request' &&
           vars.KOMODO_HOST != '' && vars.APP_STACK_ID != ''
@@ -82,10 +83,10 @@ jobs:
             http://*|https://*) ;;
             *) host="https://$host" ;;
           esac
-          echo "Requesting DeployStack for stack ${STACK_ID} at ${host}"
-          curl --fail-with-body -sS -X POST "${host}/execute" \
+          echo "CheckStackForUpdate for stack ${STACK_ID} at ${host}"
+          curl --fail-with-body -sS -X POST "${host}/write" \
             -H "Content-Type: application/json" \
             -H "X-Api-Key: ${KOMODO_KEY}" \
             -H "X-Api-Secret: ${KOMODO_SECRET}" \
-            -d "{\"type\":\"DeployStack\",\"params\":{\"stack\":\"${STACK_ID}\"}}"
+            -d "{\"type\":\"CheckStackForUpdate\",\"params\":{\"stack\":\"${STACK_ID}\",\"skip_auto_update\":false,\"wait_for_auto_update\":true}}"
           echo
