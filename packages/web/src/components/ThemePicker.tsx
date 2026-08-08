@@ -32,23 +32,36 @@ export function ThemePicker() {
         </svg>
       </button>
       {open && (
-        <div className="absolute right-0 z-40 mt-2 grid grid-cols-3 gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-          {ACCENTS.map((a) => (
-            <button
-              key={a.id}
-              type="button"
-              onClick={() => {
-                setAccent(a.id);
-                setOpen(false);
-              }}
-              aria-label={a.label}
-              title={a.label}
-              className={`h-7 w-7 rounded-full ring-2 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 ${
-                accent === a.id ? "ring-slate-900 dark:ring-white" : "ring-transparent"
-              }`}
-              style={{ backgroundColor: a.swatch }}
-            />
-          ))}
+        <div className="absolute right-0 z-40 mt-2 w-44 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+          <p className="px-2 pb-1.5 pt-1 text-xs font-medium text-slate-500 dark:text-slate-400">Theme color</p>
+          <div className="flex flex-col gap-0.5">
+            {ACCENTS.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => {
+                  setAccent(a.id);
+                  setOpen(false);
+                }}
+                className={`flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm ${
+                  accent === a.id
+                    ? "bg-slate-100 font-medium text-slate-900 dark:bg-slate-800 dark:text-white"
+                    : "text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800/60"
+                }`}
+              >
+                <span
+                  className="h-4 w-4 shrink-0 rounded-full ring-1 ring-black/10 dark:ring-white/15"
+                  style={{ backgroundColor: a.swatch }}
+                />
+                <span className="flex-1">{a.label}</span>
+                {accent === a.id && (
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden>
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

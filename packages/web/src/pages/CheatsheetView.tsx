@@ -116,7 +116,7 @@ function Section({
           </button>
         )}
       </div>
-      <div className="md text-sm">
+      <div className="md font-content text-sm">
         <Markdown options={mdOptions}>{body}</Markdown>
       </div>
       {(busy || text || error) && (
