@@ -7,6 +7,11 @@ import { api, askAssistant, type ChatTurn } from "../lib/api";
 import { describeItem } from "../lib/describeItem";
 import { useAsync } from "../lib/useAsync";
 
+// Enter presses within this window of an answer resolving are treated as the
+// tail of the submitting keystroke, not a request to advance. Comfortably above
+// the sub-millisecond leak, well below human "read result, press again" timing.
+const ADVANCE_GUARD_MS = 400;
+
 export function ExercisePlayer() {
   const { id } = useParams();
   const set = useAsync(() => api.exercise(id!), [id]);
@@ -45,6 +50,9 @@ function Runner({ set }: { set: ExerciseSet }) {
       typeof window !== "undefined" &&
       window.matchMedia("(max-width: 767px)").matches,
   );
+  // When set, records the moment the current item was resolved. Used to ignore
+  // the tail of the Enter keystroke that submitted the answer (see below).
+  const answeredAt = useRef(0);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -68,6 +76,7 @@ function Runner({ set }: { set: ExerciseSet }) {
 
   function handleAnswered(correct: boolean, response?: string) {
     if (answered) return;
+    answeredAt.current = performance.now();
     setAnswered(true);
     setLastCorrect(correct);
     setLastResponse(response);
@@ -123,6 +132,11 @@ function Runner({ set }: { set: ExerciseSet }) {
     if (!answered) return;
     function onKey(e: KeyboardEvent) {
       if (e.key !== "Enter") return;
+      // A free-text item is submitted with Enter; grading is async, so this
+      // listener mounts a beat later and would otherwise catch the tail of that
+      // very keystroke and skip the item instantly. Ignore Enters that land
+      // right after the answer resolves — a deliberate "next" press comes later.
+      if (performance.now() - answeredAt.current < ADVANCE_GUARD_MS) return;
       const el = document.activeElement as HTMLElement | null;
       const tag = el?.tagName;
       const typing =
