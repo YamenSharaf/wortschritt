@@ -1,7 +1,7 @@
 import type { TextAnswer } from "./exercises";
 
-/** trim, collapse internal whitespace, drop surrounding quotes + trailing .?! */
-function normalize(s: string): string {
+/** trim, strip surrounding quotes + trailing .?!, collapse whitespace. */
+function tidy(s: string): string {
   return s
     .trim()
     .replace(/^["'»«]+|["'«»]+$/g, "")
@@ -11,21 +11,35 @@ function normalize(s: string): string {
 }
 
 /**
- * Local, dependency-free grading for a free-text answer. This is the first
- * pass everywhere; LLM grading (when enabled) is only consulted on a local
- * miss, so a correct answer never needs a network call.
+ * Lenient fold: case-insensitive and umlaut/ß-insensitive, so a learner typing
+ * without a German keyboard ("muessen" is not folded, but "mussen"/"Müssen" are)
+ * still matches. The canonical spelling is always shown separately.
+ */
+function fold(s: string): string {
+  return tidy(s)
+    .toLowerCase()
+    .replace(/ä/g, "a")
+    .replace(/ö/g, "o")
+    .replace(/ü/g, "u")
+    .replace(/ß/g, "ss");
+}
+
+/**
+ * Local, dependency-free grading for a free-text answer. Consulted first
+ * everywhere; LLM grading (when enabled) only runs on a local miss.
  */
 export function gradeText(input: string, answer: TextAnswer): boolean {
   if (answer.grading === "exact") return answer.accept.includes(input);
-  const fold =
-    answer.grading === "caseInsensitive"
-      ? (x: string) => normalize(x).toLowerCase()
-      : (x: string) => normalize(x);
   const got = fold(input);
   return answer.accept.some((a) => fold(a) === got);
 }
 
-/** The answer to show the learner after they submit. */
+/** The canonical answer to show the learner after they submit. */
 export function modelAnswer(answer: TextAnswer): string {
   return answer.accept[0] ?? "";
+}
+
+/** True when the input already matches the canonical answer exactly (trimmed). */
+export function isCanonical(input: string, answer: TextAnswer): boolean {
+  return input.trim() === modelAnswer(answer).trim();
 }
