@@ -3,17 +3,30 @@ import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { exerciseItem, exerciseSet, type ExerciseItem } from "@mdb/shared";
 import { requireAuth } from "../auth/session";
-import { buildMessages, buildGenerateMessages } from "../assistant/prompts";
+import {
+  buildMessages,
+  buildChatSystem,
+  buildGenerateMessages,
+} from "../assistant/prompts";
 import { env, isAssistantEnabled } from "../env";
 import { getSettings } from "../services/settings";
 
 const askBody = z.object({
-  task: z.enum(["highlight", "hint", "why_wrong"]).default("highlight"),
+  task: z
+    .enum([
+      "highlight",
+      "hint",
+      "why_wrong",
+      "translate_exercise",
+      "translate_sheet",
+      "chat",
+    ])
+    .default("highlight"),
   // highlight-to-explain
   selection: z.string().max(4000).optional(),
   question: z.string().max(1000).optional(),
   context: z.string().max(4000).optional(),
-  // per-exercise help (hint / why_wrong)
+  // per-exercise help (hint / why_wrong / translate_exercise / chat)
   item: z
     .object({
       type: z.string(),
@@ -22,6 +35,18 @@ const askBody = z.object({
     })
     .optional(),
   response: z.string().max(2000).optional(),
+  // translate_sheet
+  text: z.string().max(8000).optional(),
+  // chat: prior turns of the conversation
+  history: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string().max(6000),
+      }),
+    )
+    .max(24)
+    .optional(),
 });
 
 const gradeBody = z.object({
@@ -257,19 +282,39 @@ export async function assistantRoutes(app: FastifyInstance) {
         return reply.code(503).send({ error: "assistant not configured" });
       }
 
-      const { task, selection, question, context, item, response } = req.body;
-      const messages = buildMessages(task, {
-        level: getSettings().level,
-        selection,
-        question,
-        context,
-        item,
-        response,
-      });
-      if (!messages) {
-        return reply.code(400).send({ error: "missing inputs for task" });
+      const { task, selection, question, context, item, response, text, history } =
+        req.body;
+      const level = getSettings().level;
+
+      // Build the chat-completions message list. "chat" is multi-turn; the rest
+      // are a single system+user pair from the prompt registry.
+      let messages: Array<{ role: string; content: string }>;
+      if (task === "chat") {
+        if (!item || !history || history.length === 0) {
+          return reply.code(400).send({ error: "missing inputs for task" });
+        }
+        messages = [
+          { role: "system", content: buildChatSystem({ level, item, response }) },
+          ...history,
+        ];
+      } else {
+        const built = buildMessages(task, {
+          level,
+          selection,
+          question,
+          context,
+          item,
+          response,
+          text,
+        });
+        if (!built) {
+          return reply.code(400).send({ error: "missing inputs for task" });
+        }
+        messages = [
+          { role: "system", content: built.system },
+          { role: "user", content: built.user },
+        ];
       }
-      const { system, user } = messages;
 
       // Take over the raw socket for SSE; Fastify won't send its own response.
       reply.hijack();
@@ -301,10 +346,7 @@ export async function assistantRoutes(app: FastifyInstance) {
               model: env.ASSISTANT_MODEL,
               stream: true,
               temperature: 0.3,
-              messages: [
-                { role: "system", content: system },
-                { role: "user", content: user },
-              ],
+              messages,
             }),
             signal: controller.signal,
           },
