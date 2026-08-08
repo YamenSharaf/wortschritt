@@ -63,3 +63,29 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # After a successful push, ask Komodo to redeploy the stack so it pulls the
+      # freshly published image and updates the running deployment. Skipped on
+      # PRs and when the Komodo variables aren't configured.
+      - name: Trigger Komodo stack update
+        if: >-
+          github.event_name != 'pull_request' &&
+          vars.KOMODO_HOST != '' && vars.APP_STACK_ID != ''
+        env:
+          KOMODO_HOST: ${{ vars.KOMODO_HOST }}
+          KOMODO_KEY: ${{ secrets.KOMODO_KEY }}
+          KOMODO_SECRET: ${{ secrets.KOMODO_SECRET }}
+          STACK_ID: ${{ vars.APP_STACK_ID }}
+        run: |
+          host="${KOMODO_HOST%/}"
+          case "$host" in
+            http://*|https://*) ;;
+            *) host="https://$host" ;;
+          esac
+          echo "Requesting DeployStack for stack ${STACK_ID} at ${host}"
+          curl --fail-with-body -sS -X POST "${host}/execute" \
+            -H "Content-Type: application/json" \
+            -H "X-Api-Key: ${KOMODO_KEY}" \
+            -H "X-Api-Secret: ${KOMODO_SECRET}" \
+            -d "{\"type\":\"DeployStack\",\"params\":{\"stack\":\"${STACK_ID}\"}}"
+          echo
