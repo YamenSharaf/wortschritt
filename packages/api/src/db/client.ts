@@ -58,6 +58,14 @@ export function ensureSchema(): void {
       viewed_at INTEGER NOT NULL DEFAULT (unixepoch())
     );
     CREATE INDEX IF NOT EXISTS idx_sheet_views_viewed ON sheet_views(viewed_at);
+    CREATE TABLE IF NOT EXISTS vocab (
+      word TEXT PRIMARY KEY,
+      display TEXT NOT NULL,
+      translation TEXT NOT NULL,
+      examples TEXT NOT NULL,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+    CREATE INDEX IF NOT EXISTS idx_vocab_created ON vocab(created_at);
   `);
 }
 

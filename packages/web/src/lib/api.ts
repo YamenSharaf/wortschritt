@@ -7,16 +7,21 @@ import type {
   ProgressSummary,
   RecordRunBody,
   RunSummary,
+  SaveVocabBody,
   Settings,
   SheetView,
+  VocabEntry,
+  WordLookup,
 } from "@mdb/shared";
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
-    credentials: "same-origin",
-    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
-    ...init,
-  });
+  // Only advertise a JSON body when we actually send one — Fastify rejects an
+  // empty body sent with content-type: application/json (e.g. DELETE requests).
+  const headers: Record<string, string> = {
+    ...(init?.body != null ? { "content-type": "application/json" } : {}),
+    ...((init?.headers as Record<string, string>) ?? {}),
+  };
+  const res = await fetch(path, { credentials: "same-origin", ...init, headers });
   if (res.status === 401) throw new ApiError(401, "unauthenticated");
   if (!res.ok) {
     let message = res.statusText;
@@ -91,6 +96,25 @@ export const api = {
     req<{ ok: true; id: string; kind: string }>("/api/import", {
       method: "POST",
       body: JSON.stringify(body),
+    }),
+
+  // vocab
+  vocab: () => req<VocabEntry[]>("/api/vocab"),
+  vocabGet: (word: string) =>
+    req<VocabEntry | null>(`/api/vocab/${encodeURIComponent(word)}`),
+  vocabSave: (body: SaveVocabBody) =>
+    req<VocabEntry>("/api/vocab", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  vocabRemove: (word: string) =>
+    req<{ ok: true }>(`/api/vocab/${encodeURIComponent(word)}`, {
+      method: "DELETE",
+    }),
+  translateWord: (word: string, context?: string, count?: number) =>
+    req<WordLookup>("/api/assistant/word", {
+      method: "POST",
+      body: JSON.stringify({ word, context, count }),
     }),
 
   // assistant

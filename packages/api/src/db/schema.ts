@@ -47,6 +47,21 @@ export const sheetViews = sqliteTable("sheet_views", {
     .default(sql`(unixepoch())`),
 });
 
+/** Saved vocabulary. `word` is the lowercased key; `display` keeps the form
+ *  shown to the user. Translation + examples are cached so we don't re-query
+ *  the AI on every view. */
+export const vocab = sqliteTable("vocab", {
+  word: text("word").primaryKey(),
+  display: text("display").notNull(),
+  translation: text("translation").notNull(),
+  examples: text("examples", { mode: "json" })
+    .$type<{ de: string; en: string }[]>()
+    .notNull(),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 /**
  * Content added at runtime via the import screen. Git-versioned JSON in
  * CONTENT_DIR is the other source; the API merges both.

@@ -86,6 +86,46 @@ export const sheetView = z.object({
 });
 export type SheetView = z.infer<typeof sheetView>;
 
+/** One usage example: a German sentence and its English translation. */
+export const vocabExample = z.object({
+  de: z.string(),
+  en: z.string(),
+});
+export type VocabExample = z.infer<typeof vocabExample>;
+
+/** AI word lookup result (not yet saved). */
+export const wordLookup = z.object({
+  translation: z.string(),
+  examples: z.array(vocabExample),
+});
+export type WordLookup = z.infer<typeof wordLookup>;
+
+/** Ask the tutor to translate a word (optionally with its sentence). */
+export const wordQueryBody = z.object({
+  word: z.string().min(1).max(80),
+  context: z.string().max(400).optional(),
+});
+export type WordQueryBody = z.infer<typeof wordQueryBody>;
+
+/** A saved vocabulary entry. */
+export const vocabEntry = z.object({
+  word: z.string(),
+  display: z.string(),
+  translation: z.string(),
+  examples: z.array(vocabExample),
+  createdAt: z.number().int(),
+});
+export type VocabEntry = z.infer<typeof vocabEntry>;
+
+/** Add/update a saved word. */
+export const saveVocabBody = z.object({
+  word: z.string().min(1).max(80),
+  display: z.string().min(1).max(80).optional(),
+  translation: z.string().min(1),
+  examples: z.array(vocabExample).default([]),
+});
+export type SaveVocabBody = z.infer<typeof saveVocabBody>;
+
 /** Aggregated progress returned to the dashboard. */
 export const progressSummary = z.object({
   totalAnswered: z.number().int(),
