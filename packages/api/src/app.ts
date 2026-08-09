@@ -12,6 +12,7 @@ import {
 } from "fastify-type-provider-zod";
 import { ensureSchema } from "./db/client";
 import { env, isProd } from "./env";
+import { activityRoutes } from "./routes/activity";
 import { assistantRoutes } from "./routes/assistant";
 import { authRoutes } from "./routes/auth";
 import { configRoutes } from "./routes/config";
@@ -46,6 +47,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(authRoutes);
   await app.register(contentRoutes);
   await app.register(progressRoutes);
+  await app.register(activityRoutes);
   await app.register(settingsRoutes);
   await app.register(importRoutes);
   await app.register(assistantRoutes);
