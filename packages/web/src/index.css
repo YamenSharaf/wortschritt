@@ -24,7 +24,7 @@ body {
 :root.dark {
   --accent: 248 250 252;
   --accent-foreground: 15 23 42;
-  --bg: 2 6 23;
+  --bg: 10 12 16;
 }
 :root[data-accent="emerald"] {
   --accent: 5 150 105;
@@ -34,7 +34,7 @@ body {
 :root[data-accent="emerald"].dark {
   --accent: 16 185 129;
   --accent-foreground: 255 255 255;
-  --bg: 3 13 10;
+  --bg: 6 26 19;
 }
 :root[data-accent="blue"] {
   --accent: 37 99 235;
@@ -44,7 +44,7 @@ body {
 :root[data-accent="blue"].dark {
   --accent: 59 130 246;
   --accent-foreground: 255 255 255;
-  --bg: 4 9 20;
+  --bg: 9 17 33;
 }
 :root[data-accent="violet"] {
   --accent: 124 58 237;
@@ -54,7 +54,7 @@ body {
 :root[data-accent="violet"].dark {
   --accent: 139 92 246;
   --accent-foreground: 255 255 255;
-  --bg: 11 8 20;
+  --bg: 22 14 34;
 }
 :root[data-accent="rose"] {
   --accent: 225 29 72;
@@ -64,7 +64,7 @@ body {
 :root[data-accent="rose"].dark {
   --accent: 244 63 94;
   --accent-foreground: 255 255 255;
-  --bg: 19 8 13;
+  --bg: 33 13 22;
 }
 :root[data-accent="amber"] {
   --accent: 217 119 6;
@@ -74,7 +74,7 @@ body {
 :root[data-accent="amber"].dark {
   --accent: 245 158 11;
   --accent-foreground: 15 23 42;
-  --bg: 20 14 6;
+  --bg: 33 23 7;
 }
 
 /* Answer feedback animations */

@@ -72,9 +72,14 @@ const generateBody = z.object({
  * a one-item exerciseSet. Returns the clean item or null.
  */
 function validGeneratedItem(raw: unknown, id: string): ExerciseItem | null {
-  const parsed = exerciseItem.safeParse(raw);
+  // The server owns item ids, so inject ours before validating. Otherwise a
+  // model that omits "id" (or supplies a non-string one) fails the schema and
+  // the item is silently dropped — the whole batch can vanish this way.
+  const withId =
+    raw && typeof raw === "object" ? { ...(raw as object), id } : raw;
+  const parsed = exerciseItem.safeParse(withId);
   if (!parsed.success) return null;
-  const item = { ...parsed.data, id };
+  const item = parsed.data;
   const set = exerciseSet.safeParse({
     id: "gen",
     title: "gen",
@@ -264,6 +269,12 @@ export async function assistantRoutes(app: FastifyInstance) {
           .map((raw, i) => validGeneratedItem(raw, `gen-${stamp}-${i}`))
           .filter((x): x is ExerciseItem => x !== null)
           .slice(0, count);
+        if (items.length < rawItems.length) {
+          app.log.warn(
+            { received: rawItems.length, valid: items.length },
+            "generate: some items failed validation and were dropped",
+          );
+        }
         return { items };
       } catch (err) {
         app.log.error(err, "generate request failed");
