@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { ExerciseItem, ExerciseRun, ExerciseSet } from "@mdb/shared";
+import {
+  generateCounts,
+  type ExerciseItem,
+  type ExerciseRun,
+  type ExerciseSet,
+} from "@mdb/shared";
 import { ExerciseItemView } from "../components/ExerciseItemView";
 import { TutorMarkdown } from "../components/TutorMarkdown";
 import { api, askAssistant, type ChatTurn } from "../lib/api";
@@ -53,6 +58,7 @@ function Runner({ set }: { set: ExerciseSet }) {
   const [llmGrading, setLlmGrading] = useState(false);
   const [genBusy, setGenBusy] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
+  const [genCount, setGenCount] = useState(5);
   // The numbered question navigator is collapsed by default (the score + bar
   // already summarise progress); clicking that summary expands it.
   const [navOpen, setNavOpen] = useState(false);
@@ -86,6 +92,7 @@ function Runner({ set }: { set: ExerciseSet }) {
       .then(([st, se]) => {
         setAssistantEnabled(st.enabled);
         setLlmGrading(Boolean(st.enabled && se.llmGrading));
+        setGenCount(se.generateCount);
       })
       .catch(() => {});
   }, []);
@@ -157,7 +164,7 @@ function Runner({ set }: { set: ExerciseSet }) {
     const startAt = items.length;
     try {
       const res = await api.generateMore({
-        count: 3,
+        count: genCount,
         set: {
           title: set.title,
           level: set.level,
@@ -247,14 +254,29 @@ function Runner({ set }: { set: ExerciseSet }) {
         </p>
         {assistantEnabled && (
           <div className="mb-4">
-            <button
-              type="button"
-              onClick={generateMore}
-              disabled={genBusy}
-              className="w-full rounded-lg border border-slate-300 px-4 py-2 font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
-            >
-              {genBusy ? "Generating…" : "✨ Generate 3 more like these"}
-            </button>
+            <div className="flex items-stretch gap-2">
+              <button
+                type="button"
+                onClick={generateMore}
+                disabled={genBusy}
+                className="flex-1 rounded-lg border border-slate-300 px-4 py-2 font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+              >
+                {genBusy ? "Generating…" : `✨ Generate ${genCount} more like these`}
+              </button>
+              <select
+                value={genCount}
+                onChange={(e) => setGenCount(Number(e.target.value))}
+                disabled={genBusy}
+                aria-label="How many exercises to generate"
+                className="rounded-lg border border-slate-300 bg-transparent px-2 py-2 font-medium tabular-nums outline-none focus:border-slate-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900"
+              >
+                {generateCounts.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
             {genError && (
               <p className="mt-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
                 {genError}

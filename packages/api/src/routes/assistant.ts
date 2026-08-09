@@ -1,7 +1,12 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { exerciseItem, exerciseSet, type ExerciseItem } from "@mdb/shared";
+import {
+  exerciseItem,
+  exerciseSet,
+  MAX_GENERATE_COUNT,
+  type ExerciseItem,
+} from "@mdb/shared";
 import { requireAuth } from "../auth/session";
 import {
   buildMessages,
@@ -56,7 +61,7 @@ const gradeBody = z.object({
 });
 
 const generateBody = z.object({
-  count: z.number().int().min(1).max(6).default(3),
+  count: z.number().int().min(1).max(MAX_GENERATE_COUNT).default(5),
   set: z.object({
     title: z.string().default(""),
     level: z.string().default("A2"),
@@ -283,14 +288,15 @@ export async function assistantRoutes(app: FastifyInstance) {
       });
 
       try {
-        // Room for a few full exercises. Streamed (see collectCompletion) so it
-        // uses the same upstream path as the tutor, which is known to work.
+        // Scale the token budget with how many items were asked for (each item
+        // is a few hundred tokens of JSON). Streamed (see collectCompletion) so
+        // it uses the same upstream path as the tutor, which is known to work.
         const result = await collectCompletion(
           [
             { role: "system", content: system },
             { role: "user", content: user },
           ],
-          { temperature: 0.8, maxTokens: 4096 },
+          { temperature: 0.8, maxTokens: Math.min(8192, 1024 + count * 500) },
         );
         if (!result.ok) {
           app.log.error(

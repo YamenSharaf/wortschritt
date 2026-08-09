@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Settings } from "@mdb/shared";
+import { generateCounts, type Settings } from "@mdb/shared";
 import { api } from "../lib/api";
 import { useAsync } from "../lib/useAsync";
 import { useTheme } from "../lib/theme";
@@ -94,6 +94,25 @@ export function SettingsPage() {
             ))}
           </div>
         </Field>
+        <Field label="Exercises to generate per batch">
+          <select
+            value={form.generateCount}
+            onChange={(e) =>
+              setForm({ ...form, generateCount: Number(e.target.value) })
+            }
+            className="input"
+          >
+            {generateCounts.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <p className="-mt-2 text-xs text-slate-400">
+          The default count for “Generate more” after finishing an exercise. You
+          can still change it there each time.
+        </p>
         <label className="flex items-center gap-2">
           <input
             type="checkbox"

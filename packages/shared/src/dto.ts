@@ -1,6 +1,10 @@
 import { z } from "zod";
 import { cefrLevel, cheatsheet, exerciseSet } from "./exercises";
 
+/** Choices offered for "generate N more" (in increments of 5). */
+export const generateCounts = [5, 10, 15, 20] as const;
+export const MAX_GENERATE_COUNT = 20;
+
 /** User-configurable settings. Persisted as a single JSON row. */
 export const settingsSchema = z.object({
   displayName: z.string().min(1).default("Learner"),
@@ -9,6 +13,13 @@ export const settingsSchema = z.object({
   theme: z.enum(["light", "dark", "system"]).default("system"),
   /** Let the AI tutor grade free-text answers (only used when it's configured). */
   llmGrading: z.boolean().default(true),
+  /** Default batch size for "generate N more" on the exercise-done screen. */
+  generateCount: z
+    .number()
+    .int()
+    .min(1)
+    .max(MAX_GENERATE_COUNT)
+    .default(5),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
