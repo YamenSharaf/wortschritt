@@ -32,6 +32,49 @@ export const importBody = z.discriminatedUnion("kind", [
 ]);
 export type ImportBody = z.infer<typeof importBody>;
 
+/** Per-item correctness for one run, keyed by item id. */
+export const runResults = z.record(z.string(), z.boolean());
+
+/** Record one practice run (a pass through an exercise set). */
+export const recordRunBody = z.object({
+  setId: z.string().min(1),
+  setTitle: z.string().min(1),
+  total: z.number().int().nonnegative(),
+  answered: z.number().int().nonnegative(),
+  correct: z.number().int().nonnegative(),
+  results: runResults,
+});
+export type RecordRunBody = z.infer<typeof recordRunBody>;
+
+/** Latest-run summary for a set (no per-item detail). */
+export const runSummary = z.object({
+  setId: z.string(),
+  setTitle: z.string(),
+  total: z.number().int(),
+  answered: z.number().int(),
+  correct: z.number().int(),
+  finishedAt: z.number().int(),
+});
+export type RunSummary = z.infer<typeof runSummary>;
+
+/** A full run including the per-item results (for the question navigator). */
+export const exerciseRun = runSummary.extend({ results: runResults });
+export type ExerciseRun = z.infer<typeof exerciseRun>;
+
+/** Record that a cheat sheet was viewed. */
+export const sheetViewBody = z.object({
+  sheetId: z.string().min(1),
+  title: z.string().min(1),
+});
+export type SheetViewBody = z.infer<typeof sheetViewBody>;
+
+export const sheetView = z.object({
+  sheetId: z.string(),
+  title: z.string(),
+  viewedAt: z.number().int(),
+});
+export type SheetView = z.infer<typeof sheetView>;
+
 /** Aggregated progress returned to the dashboard. */
 export const progressSummary = z.object({
   totalAnswered: z.number().int(),

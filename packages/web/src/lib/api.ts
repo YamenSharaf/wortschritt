@@ -1,10 +1,14 @@
 import type {
   Cheatsheet,
   ExerciseItem,
+  ExerciseRun,
   ExerciseSet,
   ImportBody,
   ProgressSummary,
+  RecordRunBody,
+  RunSummary,
   Settings,
+  SheetView,
 } from "@mdb/shared";
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
@@ -58,6 +62,23 @@ export const api = {
     req<{ ok: true }>("/api/attempts", {
       method: "POST",
       body: JSON.stringify({ setId, itemId, correct }),
+    }),
+
+  // activity (per-run history + sheet views)
+  runs: (limit?: number) =>
+    req<RunSummary[]>(`/api/runs${limit ? `?limit=${limit}` : ""}`),
+  run: (setId: string) => req<ExerciseRun | null>(`/api/runs/${setId}`),
+  recordRun: (body: RecordRunBody) =>
+    req<{ ok: true }>("/api/runs", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  sheetViews: (limit?: number) =>
+    req<SheetView[]>(`/api/sheet-views${limit ? `?limit=${limit}` : ""}`),
+  recordSheetView: (sheetId: string, title: string) =>
+    req<{ ok: true }>("/api/sheet-views", {
+      method: "POST",
+      body: JSON.stringify({ sheetId, title }),
     }),
 
   // settings

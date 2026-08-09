@@ -1,10 +1,19 @@
 import { Link } from "react-router-dom";
+import type { RunSummary } from "@mdb/shared";
 import { api } from "../lib/api";
+import { timeAgo } from "../lib/time";
 import { useAsync } from "../lib/useAsync";
+import { LastRunBadge } from "./Exercises";
 
 export function Dashboard() {
   const progress = useAsync(() => api.progress(), []);
   const exercises = useAsync(() => api.exercises(), []);
+  const runs = useAsync(() => api.runs(), []);
+  const sheets = useAsync(() => api.sheetViews(5), []);
+  const recentRuns = runs.status === "ready" ? runs.data.slice(0, 5) : [];
+
+  const lastRun: Record<string, RunSummary> = {};
+  if (runs.status === "ready") for (const r of runs.data) lastRun[r.setId] = r;
 
   return (
     <div className="space-y-8">
@@ -26,6 +35,47 @@ export function Dashboard() {
           </div>
         )}
       </section>
+
+      {recentRuns.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">Recent practice</h2>
+          <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+            {recentRuns.map((r) => (
+              <Link
+                key={r.setId}
+                to={`/exercises/${r.setId}`}
+                className="flex items-center justify-between gap-3 bg-white px-4 py-3 hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/60"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{r.setTitle}</p>
+                  <p className="text-xs text-slate-400">{timeAgo(r.finishedAt)}</p>
+                </div>
+                <LastRunBadge run={r} />
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {sheets.status === "ready" && sheets.data.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">Recently viewed</h2>
+          <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+            {sheets.data.map((s) => (
+              <Link
+                key={s.sheetId}
+                to={`/cheatsheets/${s.sheetId}`}
+                className="flex items-center justify-between gap-3 bg-white px-4 py-3 hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/60"
+              >
+                <p className="min-w-0 truncate font-medium">{s.title}</p>
+                <span className="shrink-0 text-xs text-slate-400">
+                  {timeAgo(s.viewedAt)}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section>
         <h2 className="mb-3 text-lg font-semibold">Exercises</h2>
@@ -52,9 +102,10 @@ export function Dashboard() {
                 {set.subtitle && (
                   <p className="text-xs text-slate-400">{set.subtitle}</p>
                 )}
-                <p className="mt-1 text-sm text-slate-500">
-                  {set.items.length} tasks
-                </p>
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <p className="text-sm text-slate-500">{set.items.length} tasks</p>
+                  <LastRunBadge run={lastRun[set.id]} />
+                </div>
               </Link>
             ))}
           </div>

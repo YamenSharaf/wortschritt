@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { ExerciseItem, ExerciseSet } from "@mdb/shared";
+import type { ExerciseItem, ExerciseRun, ExerciseSet } from "@mdb/shared";
 import { ExerciseItemView } from "../components/ExerciseItemView";
 import { TutorMarkdown } from "../components/TutorMarkdown";
 import { api, askAssistant, type ChatTurn } from "../lib/api";
@@ -36,11 +36,19 @@ function Runner({ set }: { set: ExerciseSet }) {
   const title = set.title;
   const [items, setItems] = useState<ExerciseItem[]>(set.items);
   const [index, setIndex] = useState(0);
-  const [correctCount, setCorrectCount] = useState(0);
+  // Per-item correctness / responses for THIS run, keyed by item id. Drives the
+  // live score, the question navigator, and the run recorded at the end.
+  const [results, setResults] = useState<Record<string, boolean>>({});
+  const [responses, setResponses] = useState<Record<string, string | undefined>>(
+    {},
+  );
+  // Whether the current *visit* of the current item has been answered. Resets on
+  // navigation so revisiting an item re-opens it for another attempt.
   const [answered, setAnswered] = useState(false);
   const [lastCorrect, setLastCorrect] = useState(false);
   const [lastResponse, setLastResponse] = useState<string | undefined>();
   const [done, setDone] = useState(false);
+  const [prevRun, setPrevRun] = useState<ExerciseRun | null>(null);
   const [assistantEnabled, setAssistantEnabled] = useState(false);
   const [llmGrading, setLlmGrading] = useState(false);
   const [genBusy, setGenBusy] = useState(false);
@@ -53,6 +61,12 @@ function Runner({ set }: { set: ExerciseSet }) {
   // When set, records the moment the current item was resolved. Used to ignore
   // the tail of the Enter keystroke that submitted the answer (see below).
   const answeredAt = useRef(0);
+
+  const correctCount = useMemo(
+    () => Object.values(results).filter(Boolean).length,
+    [results],
+  );
+  const answeredCount = Object.keys(results).length;
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -72,7 +86,38 @@ function Runner({ set }: { set: ExerciseSet }) {
       .catch(() => {});
   }, []);
 
+  // The previous run's per-item results — shown as faint hints in the navigator.
+  useEffect(() => {
+    api
+      .run(setId)
+      .then(setPrevRun)
+      .catch(() => {});
+  }, [setId]);
+
   const item = items[index]!;
+
+  // Persist the run once (and again if it grew, e.g. after "generate more"), so
+  // the last score survives a reload and feeds the exercise cards + dashboard.
+  const resultsRef = useRef(results);
+  resultsRef.current = results;
+  const savedCountRef = useRef(0);
+  function saveRun() {
+    const entries = Object.entries(resultsRef.current);
+    if (entries.length === 0 || entries.length <= savedCountRef.current) return;
+    savedCountRef.current = entries.length;
+    void api
+      .recordRun({
+        setId,
+        setTitle: title,
+        total: items.length,
+        answered: entries.length,
+        correct: entries.filter(([, ok]) => ok).length,
+        results: resultsRef.current,
+      })
+      .catch(() => {});
+  }
+  // Save on leave (route change unmounts this component).
+  useEffect(() => () => saveRun(), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleAnswered(correct: boolean, response?: string) {
     if (answered) return;
@@ -80,18 +125,25 @@ function Runner({ set }: { set: ExerciseSet }) {
     setAnswered(true);
     setLastCorrect(correct);
     setLastResponse(response);
-    if (correct) setCorrectCount((c) => c + 1);
+    setResults((r) => ({ ...r, [item.id]: correct }));
+    setResponses((r) => ({ ...r, [item.id]: response }));
     // Fire-and-forget; a failed save shouldn't block practice.
     void api.recordAttempt(setId, item.id, correct).catch(() => {});
   }
 
+  function goTo(i: number) {
+    if (i < 0 || i >= items.length) return;
+    setIndex(i);
+    setAnswered(false);
+    setLastResponse(undefined);
+  }
+
   function next() {
     if (index + 1 >= items.length) {
+      saveRun();
       setDone(true);
     } else {
-      setIndex((i) => i + 1);
-      setAnswered(false);
-      setLastResponse(undefined);
+      goTo(index + 1);
     }
   }
 
@@ -165,8 +217,13 @@ function Runner({ set }: { set: ExerciseSet }) {
     return (
       <div className="mx-auto max-w-md text-center">
         <h1 className="mb-2 text-2xl font-bold">Done! 🎉</h1>
-        <p className="mb-6 text-slate-500">
-          {correctCount} / {items.length} correct
+        <p className="mb-1 text-slate-500">
+          {correctCount} / {answeredCount} correct
+        </p>
+        <p className="mb-6 text-xs text-slate-400">
+          {answeredCount === items.length
+            ? "Whole set completed."
+            : `${answeredCount} of ${items.length} questions answered.`}
         </p>
         {assistantEnabled && (
           <div className="mb-4">
@@ -191,31 +248,56 @@ function Runner({ set }: { set: ExerciseSet }) {
     );
   }
 
+  const priorResult = results[item.id];
+  const answeredEarlier = !answered && priorResult !== undefined;
+
   return (
     <div className="mx-auto max-w-xl">
       <div className="mb-1 flex items-center justify-between gap-2 text-sm text-slate-500">
         <Link to="/exercises" className="hover:underline">
           ← {title}
         </Link>
-        <span className="shrink-0">
-          {index + 1} / {items.length}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <ScoreChips correct={correctCount} wrong={answeredCount - correctCount} />
+          <span className="tabular-nums">
+            {index + 1} / {items.length}
+          </span>
+        </div>
       </div>
       {set.subtitle && (
-        <p className="mb-4 text-xs text-slate-400">{set.subtitle}</p>
+        <p className="mb-3 text-xs text-slate-400">{set.subtitle}</p>
       )}
-      <div className="mb-6 h-1.5 w-full overflow-hidden rounded bg-slate-200 dark:bg-slate-800">
+      <div className="mb-3 h-1.5 w-full overflow-hidden rounded bg-slate-200 dark:bg-slate-800">
         <div
           className="h-full bg-accent transition-all"
-          style={{ width: `${((index + (answered ? 1 : 0)) / items.length) * 100}%` }}
+          style={{ width: `${(answeredCount / items.length) * 100}%` }}
         />
       </div>
+
+      <QuestionNav
+        items={items}
+        index={index}
+        results={results}
+        prevResults={prevRun?.results}
+        onJump={goTo}
+      />
 
       <div
         className={`rounded-xl border border-slate-200 bg-white p-6 font-content dark:border-slate-800 dark:bg-slate-900 ${
           answered ? (lastCorrect ? "animate-correct" : "animate-wrong") : ""
         }`}
       >
+        {answeredEarlier && (
+          <p className="mb-3 rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+            You answered this{" "}
+            <span
+              className={priorResult ? "text-green-600" : "text-red-600"}
+            >
+              {priorResult ? "correctly ✓" : "incorrectly ✗"}
+            </span>{" "}
+            this run — answer again to change it.
+          </p>
+        )}
         <ExerciseItemView
           key={item.id}
           item={item}
@@ -234,15 +316,101 @@ function Runner({ set }: { set: ExerciseSet }) {
         />
       )}
 
-      {answered && (
+      <div className="mt-4 flex items-center gap-2">
         <button
           type="button"
-          onClick={next}
-          className="mt-4 w-full rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground"
+          onClick={() => goTo(index - 1)}
+          disabled={index === 0}
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium hover:border-slate-500 disabled:opacity-40 dark:border-slate-700"
         >
-          {index + 1 >= items.length ? "Finish" : "Next"}
+          ← Prev
         </button>
-      )}
+        {answered ? (
+          <button
+            type="button"
+            onClick={next}
+            className="flex-1 rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground"
+          >
+            {index + 1 >= items.length ? "Finish" : "Next"}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => goTo(index + 1)}
+            disabled={index + 1 >= items.length}
+            className="flex-1 rounded-lg border border-slate-300 px-4 py-2 font-medium hover:border-slate-500 disabled:opacity-40 dark:border-slate-700"
+          >
+            Skip →
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Live ✓ / ✗ tally for the current run. */
+function ScoreChips({ correct, wrong }: { correct: number; wrong: number }) {
+  if (correct + wrong === 0) return null;
+  return (
+    <span className="flex items-center gap-1.5 tabular-nums">
+      <span className="text-green-600">✓ {correct}</span>
+      <span className="text-red-500">✗ {wrong}</span>
+    </span>
+  );
+}
+
+/**
+ * Jump-to-question strip. Each cell is filled with this run's result once
+ * answered, otherwise tinted by the previous run's result for that question.
+ */
+function QuestionNav({
+  items,
+  index,
+  results,
+  prevResults,
+  onJump,
+}: {
+  items: ExerciseItem[];
+  index: number;
+  results: Record<string, boolean>;
+  prevResults?: Record<string, boolean>;
+  onJump: (i: number) => void;
+}) {
+  return (
+    <div className="mb-4 flex flex-wrap gap-1.5">
+      {items.map((it, i) => {
+        const mine = results[it.id];
+        const prev = prevResults?.[it.id];
+        const current = i === index;
+        let cls: string;
+        if (mine !== undefined) {
+          cls = mine
+            ? "bg-green-500 text-white border-green-500"
+            : "bg-red-500 text-white border-red-500";
+        } else if (prev !== undefined) {
+          cls = prev
+            ? "border-green-400 text-green-600 dark:text-green-400"
+            : "border-red-400 text-red-600 dark:text-red-400";
+        } else {
+          cls = "border-slate-300 text-slate-500 dark:border-slate-700 dark:text-slate-400";
+        }
+        const prevNote =
+          prev !== undefined ? ` · last run: ${prev ? "correct" : "wrong"}` : "";
+        return (
+          <button
+            key={it.id}
+            type="button"
+            onClick={() => onJump(i)}
+            title={`Question ${i + 1}${prevNote}`}
+            aria-label={`Go to question ${i + 1}${prevNote}`}
+            className={`grid h-7 w-7 place-items-center rounded-md border text-xs tabular-nums ${cls} ${
+              current ? "ring-2 ring-accent ring-offset-1 ring-offset-white dark:ring-offset-slate-950" : ""
+            }`}
+          >
+            {i + 1}
+          </button>
+        );
+      })}
     </div>
   );
 }

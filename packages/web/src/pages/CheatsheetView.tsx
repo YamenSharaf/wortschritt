@@ -31,6 +31,12 @@ export function CheatsheetView() {
       .catch(() => {});
   }, []);
 
+  // Log the view so it shows up under "Recently viewed" on the dashboard.
+  useEffect(() => {
+    if (sheet.status !== "ready") return;
+    void api.recordSheetView(sheet.data.id, sheet.data.title).catch(() => {});
+  }, [sheet.status, sheet.status === "ready" ? sheet.data.id : null]);
+
   return (
     <div>
       <Link to="/cheatsheets" className="text-sm text-slate-500 hover:underline">

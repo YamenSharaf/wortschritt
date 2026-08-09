@@ -1,9 +1,14 @@
 import { Link } from "react-router-dom";
+import type { RunSummary } from "@mdb/shared";
 import { api } from "../lib/api";
+import { timeAgo } from "../lib/time";
 import { useAsync } from "../lib/useAsync";
 
 export function Exercises() {
   const exercises = useAsync(() => api.exercises(), []);
+  const runs = useAsync(() => api.runs(), []);
+  const lastRun: Record<string, RunSummary> = {};
+  if (runs.status === "ready") for (const r of runs.data) lastRun[r.setId] = r;
 
   return (
     <div>
@@ -38,13 +43,39 @@ export function Exercises() {
               {set.description && (
                 <p className="mt-1 text-sm text-slate-500">{set.description}</p>
               )}
-              <p className="mt-2 text-xs text-slate-400">
-                {set.items.length} tasks · {set.tags.join(", ")}
-              </p>
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <p className="text-xs text-slate-400">
+                  {set.items.length} tasks · {set.tags.join(", ")}
+                </p>
+                <LastRunBadge run={lastRun[set.id]} />
+              </div>
             </Link>
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+/** "Last: 15/21" pill, tinted by accuracy; nothing if never attempted. */
+export function LastRunBadge({ run }: { run?: RunSummary }) {
+  if (!run) return null;
+  const pct = run.answered ? run.correct / run.answered : 0;
+  const tone =
+    pct >= 0.8
+      ? "text-green-600 dark:text-green-400"
+      : pct >= 0.5
+        ? "text-amber-600 dark:text-amber-400"
+        : "text-red-600 dark:text-red-400";
+  return (
+    <span
+      className="shrink-0 whitespace-nowrap text-xs text-slate-400"
+      title={`Last run ${timeAgo(run.finishedAt)}`}
+    >
+      Last:{" "}
+      <span className={`font-medium tabular-nums ${tone}`}>
+        {run.correct}/{run.answered}
+      </span>
+    </span>
   );
 }

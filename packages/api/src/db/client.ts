@@ -40,6 +40,24 @@ export function ensureSchema(): void {
       data TEXT NOT NULL,
       created_at INTEGER NOT NULL DEFAULT (unixepoch())
     );
+    CREATE TABLE IF NOT EXISTS exercise_runs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      set_id TEXT NOT NULL,
+      set_title TEXT NOT NULL,
+      total INTEGER NOT NULL,
+      answered INTEGER NOT NULL,
+      correct INTEGER NOT NULL,
+      results TEXT NOT NULL,
+      finished_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+    CREATE INDEX IF NOT EXISTS idx_runs_set ON exercise_runs(set_id);
+    CREATE INDEX IF NOT EXISTS idx_runs_finished ON exercise_runs(finished_at);
+    CREATE TABLE IF NOT EXISTS sheet_views (
+      sheet_id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      viewed_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+    CREATE INDEX IF NOT EXISTS idx_sheet_views_viewed ON sheet_views(viewed_at);
   `);
 }
 

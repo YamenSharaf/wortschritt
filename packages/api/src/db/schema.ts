@@ -22,6 +22,31 @@ export const attempts = sqliteTable("attempts", {
     .default(sql`(unixepoch())`),
 });
 
+/** One row per completed practice run (a pass through an exercise set). */
+export const exerciseRuns = sqliteTable("exercise_runs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  setId: text("set_id").notNull(),
+  setTitle: text("set_title").notNull(),
+  total: integer("total").notNull(),
+  answered: integer("answered").notNull(),
+  correct: integer("correct").notNull(),
+  results: text("results", { mode: "json" })
+    .$type<Record<string, boolean>>()
+    .notNull(),
+  finishedAt: integer("finished_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+/** Last-viewed timestamp per cheat sheet (one row per sheet). */
+export const sheetViews = sqliteTable("sheet_views", {
+  sheetId: text("sheet_id").primaryKey(),
+  title: text("title").notNull(),
+  viewedAt: integer("viewed_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 /**
  * Content added at runtime via the import screen. Git-versioned JSON in
  * CONTENT_DIR is the other source; the API merges both.
