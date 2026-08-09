@@ -107,6 +107,74 @@ function parseVerdict(content: string): { correct: boolean; feedback: string } {
   return { correct, feedback: content.slice(0, 200).trim() };
 }
 
+type CompletionResult =
+  | { ok: true; content: string }
+  | { ok: false; status: number; detail: string };
+
+/**
+ * Call the OpenAI-compatible chat endpoint in STREAMING mode and accumulate the
+ * full text. We stream even for these one-shot calls (generate, grade) because
+ * the streaming tutor already proves that path works against the configured
+ * gateway, whereas a single buffered request for a large response is what tends
+ * to fail (proxy timeouts, stream-only gateways) — same URL, key and model.
+ */
+async function collectCompletion(
+  messages: Array<{ role: string; content: string }>,
+  opts: { temperature: number; maxTokens: number; signal?: AbortSignal },
+): Promise<CompletionResult> {
+  const upstream = await fetch(
+    `${env.ASSISTANT_BASE_URL.replace(/\/$/, "")}/chat/completions`,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(env.ASSISTANT_API_KEY
+          ? { authorization: `Bearer ${env.ASSISTANT_API_KEY}` }
+          : {}),
+      },
+      body: JSON.stringify({
+        model: env.ASSISTANT_MODEL,
+        stream: true,
+        temperature: opts.temperature,
+        max_tokens: opts.maxTokens,
+        messages,
+      }),
+      signal: opts.signal,
+    },
+  );
+  if (!upstream.ok || !upstream.body) {
+    const detail = await upstream.text().catch(() => "");
+    return { ok: false, status: upstream.status, detail };
+  }
+  const reader = upstream.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let content = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      const s = line.trim();
+      if (!s.startsWith("data:")) continue;
+      const data = s.slice(5).trim();
+      if (data === "[DONE]") return { ok: true, content };
+      try {
+        const j = JSON.parse(data) as {
+          choices?: Array<{ delta?: { content?: string } }>;
+        };
+        const delta = j?.choices?.[0]?.delta?.content;
+        if (typeof delta === "string") content += delta;
+      } catch {
+        /* ignore keep-alive / non-JSON lines */
+      }
+    }
+  }
+  return { ok: true, content };
+}
+
 export async function assistantRoutes(app: FastifyInstance) {
   const r = app.withTypeProvider<ZodTypeProvider>();
 
@@ -157,37 +225,21 @@ export async function assistantRoutes(app: FastifyInstance) {
         .join("\n");
 
       try {
-        const upstream = await fetch(
-          `${env.ASSISTANT_BASE_URL.replace(/\/$/, "")}/chat/completions`,
-          {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-              ...(env.ASSISTANT_API_KEY
-                ? { authorization: `Bearer ${env.ASSISTANT_API_KEY}` }
-                : {}),
-            },
-            body: JSON.stringify({
-              model: env.ASSISTANT_MODEL,
-              temperature: 0,
-              max_tokens: 256,
-              messages: [
-                { role: "system", content: system },
-                { role: "user", content: user },
-              ],
-            }),
-          },
+        const result = await collectCompletion(
+          [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+          { temperature: 0, maxTokens: 256 },
         );
-        if (!upstream.ok) {
-          const detail = await upstream.text().catch(() => "");
-          app.log.error({ status: upstream.status, detail }, "grade upstream error");
+        if (!result.ok) {
+          app.log.error(
+            { status: result.status, detail: result.detail },
+            "grade upstream error",
+          );
           return reply.code(502).send({ error: "grading failed" });
         }
-        const json = (await upstream.json()) as {
-          choices?: Array<{ message?: { content?: string } }>;
-        };
-        const content = json?.choices?.[0]?.message?.content ?? "";
-        return parseVerdict(content);
+        return parseVerdict(result.content);
       } catch (err) {
         app.log.error(err, "grade request failed");
         return reply.code(502).send({ error: "grading failed" });
@@ -231,40 +283,25 @@ export async function assistantRoutes(app: FastifyInstance) {
       });
 
       try {
-        const upstream = await fetch(
-          `${env.ASSISTANT_BASE_URL.replace(/\/$/, "")}/chat/completions`,
-          {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-              ...(env.ASSISTANT_API_KEY
-                ? { authorization: `Bearer ${env.ASSISTANT_API_KEY}` }
-                : {}),
-            },
-            body: JSON.stringify({
-              model: env.ASSISTANT_MODEL,
-              temperature: 0.8,
-              // Room for a few full exercises. Required by Anthropic-backed
-              // gateways, which reject a completion with no max_tokens.
-              max_tokens: 4096,
-              messages: [
-                { role: "system", content: system },
-                { role: "user", content: user },
-              ],
-            }),
-          },
+        // Room for a few full exercises. Streamed (see collectCompletion) so it
+        // uses the same upstream path as the tutor, which is known to work.
+        const result = await collectCompletion(
+          [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+          { temperature: 0.8, maxTokens: 4096 },
         );
-        if (!upstream.ok) {
-          const detail = await upstream.text().catch(() => "");
-          app.log.error({ status: upstream.status, detail }, "generate upstream error");
+        if (!result.ok) {
+          app.log.error(
+            { status: result.status, detail: result.detail },
+            "generate upstream error",
+          );
           return reply
             .code(502)
-            .send({ error: `upstream ${upstream.status}: ${detail.slice(0, 300)}` });
+            .send({ error: `upstream ${result.status}: ${result.detail.slice(0, 300)}` });
         }
-        const json = (await upstream.json()) as {
-          choices?: Array<{ message?: { content?: string } }>;
-        };
-        const content = json?.choices?.[0]?.message?.content ?? "";
+        const content = result.content;
         const match = content.match(/\{[\s\S]*\}/);
         let rawItems: unknown[] = [];
         if (match) {
