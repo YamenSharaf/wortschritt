@@ -53,6 +53,9 @@ function Runner({ set }: { set: ExerciseSet }) {
   const [llmGrading, setLlmGrading] = useState(false);
   const [genBusy, setGenBusy] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
+  // The numbered question navigator is collapsed by default (the score + bar
+  // already summarise progress); clicking that summary expands it.
+  const [navOpen, setNavOpen] = useState(false);
   const [mobile, setMobile] = useState(
     () =>
       typeof window !== "undefined" &&
@@ -268,30 +271,45 @@ function Runner({ set }: { set: ExerciseSet }) {
         <Link to="/exercises" className="hover:underline">
           ← {title}
         </Link>
-        <div className="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setNavOpen((o) => !o)}
+          aria-expanded={navOpen}
+          aria-label={navOpen ? "Hide question navigator" : "Show question navigator"}
+          className="flex shrink-0 items-center gap-2 rounded hover:text-slate-700 dark:hover:text-slate-300"
+        >
           <ScoreChips correct={correctCount} wrong={answeredCount - correctCount} />
           <span className="tabular-nums">
             {index + 1} / {items.length}
           </span>
-        </div>
+          <Chevron open={navOpen} />
+        </button>
       </div>
       {set.subtitle && (
         <p className="mb-3 text-xs text-slate-400">{set.subtitle}</p>
       )}
-      <div className="mb-3 h-1.5 w-full overflow-hidden rounded bg-slate-200 dark:bg-slate-800">
-        <div
-          className="h-full bg-accent transition-all"
+      <button
+        type="button"
+        onClick={() => setNavOpen((o) => !o)}
+        aria-hidden
+        tabIndex={-1}
+        className="mb-3 block h-1.5 w-full overflow-hidden rounded bg-slate-200 dark:bg-slate-800"
+      >
+        <span
+          className="block h-full bg-accent transition-all"
           style={{ width: `${(answeredCount / items.length) * 100}%` }}
         />
-      </div>
+      </button>
 
-      <QuestionNav
-        items={items}
-        index={index}
-        results={results}
-        prevResults={prevRun?.results}
-        onJump={goTo}
-      />
+      {navOpen && (
+        <QuestionNav
+          items={items}
+          index={index}
+          results={results}
+          prevResults={prevRun?.results}
+          onJump={goTo}
+        />
+      )}
 
       <div
         ref={cardRef}
@@ -357,6 +375,26 @@ function Runner({ set }: { set: ExerciseSet }) {
         )}
       </div>
     </div>
+  );
+}
+
+/** Small disclosure chevron that points down when closed, up when open. */
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`transition-transform ${open ? "rotate-180" : ""}`}
+      aria-hidden
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
   );
 }
 
