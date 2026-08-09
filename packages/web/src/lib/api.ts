@@ -115,7 +115,7 @@ export const api = {
       samples: ExerciseItem[];
     };
   }) =>
-    req<{ items: ExerciseItem[] }>("/api/assistant/generate", {
+    req<{ items: ExerciseItem[]; received: number }>("/api/assistant/generate", {
       method: "POST",
       body: JSON.stringify(body),
     }),

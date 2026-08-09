@@ -55,11 +55,28 @@ export async function buildApp(): Promise<FastifyInstance> {
   // In production, serve the built SPA from the same container/origin.
   const webDist = resolve(process.cwd(), "../web/dist");
   if (isProd && existsSync(webDist)) {
-    await app.register(fastifyStatic, { root: webDist });
+    await app.register(fastifyStatic, {
+      root: webDist,
+      // Take full control of Cache-Control below (the plugin otherwise forces
+      // `public, max-age=0` on everything). ETag/Last-Modified stay on.
+      cacheControl: false,
+      setHeaders(res, path) {
+        // Vite emits content-hashed files under /assets — their URL changes on
+        // every build, so they're safe to cache forever. index.html is the
+        // pointer to the current bundle, so it must always be revalidated;
+        // otherwise a stale index.html keeps loading yesterday's JS even after
+        // the container updates. `no-cache` = store but revalidate (ETag → 304).
+        if (path.includes("/assets/")) {
+          res.setHeader("cache-control", "public, max-age=31536000, immutable");
+        } else {
+          res.setHeader("cache-control", "no-cache");
+        }
+      },
+    });
     // SPA fallback: any non-API GET returns index.html so client routing works.
     app.setNotFoundHandler((req, reply) => {
       if (req.method === "GET" && !req.url.startsWith("/api")) {
-        return reply.sendFile("index.html");
+        return reply.header("cache-control", "no-cache").sendFile("index.html");
       }
       return reply.code(404).send({ error: "not found" });
     });

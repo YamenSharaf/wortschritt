@@ -167,7 +167,11 @@ function Runner({ set }: { set: ExerciseSet }) {
         },
       });
       if (res.items.length === 0) {
-        setGenError("The tutor couldn't produce valid items — try again.");
+        setGenError(
+          res.received > 0
+            ? `The tutor returned ${res.received} item${res.received === 1 ? "" : "s"} but ${res.received === 1 ? "it wasn't" : "none were"} valid — try again.`
+            : "The tutor didn't return any exercises — try again.",
+        );
         return;
       }
       setItems((cur) => [...cur, ...res.items]);
@@ -176,7 +180,9 @@ function Runner({ set }: { set: ExerciseSet }) {
       setLastResponse(undefined);
       setDone(false);
     } catch (e) {
-      setGenError(e instanceof Error ? e.message : String(e));
+      setGenError(
+        `Couldn't reach the tutor: ${e instanceof Error ? e.message : String(e)}`,
+      );
     } finally {
       setGenBusy(false);
     }
@@ -249,7 +255,11 @@ function Runner({ set }: { set: ExerciseSet }) {
             >
               {genBusy ? "Generating…" : "✨ Generate 3 more like these"}
             </button>
-            {genError && <p className="mt-2 text-sm text-red-600">{genError}</p>}
+            {genError && (
+              <p className="mt-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+                {genError}
+              </p>
+            )}
           </div>
         )}
         <Link
