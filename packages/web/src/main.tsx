@@ -18,6 +18,7 @@ import { Exercises } from "./pages/Exercises";
 import { ImportPage } from "./pages/Import";
 import { Login } from "./pages/Login";
 import { SettingsPage } from "./pages/Settings";
+import { VocabPage } from "./pages/Vocab";
 
 const router = createBrowserRouter([
   { path: "/login", element: <Login /> },
@@ -30,6 +31,7 @@ const router = createBrowserRouter([
       { path: "cheatsheets/:id", element: <CheatsheetView /> },
       { path: "exercises", element: <Exercises /> },
       { path: "exercises/:id", element: <ExercisePlayer /> },
+      { path: "vocab", element: <VocabPage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "import", element: <ImportPage /> },
     ],

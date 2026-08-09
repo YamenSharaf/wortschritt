@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Markdown from "markdown-to-jsx";
 import { Link, useParams } from "react-router-dom";
 import { api, askAssistant } from "../lib/api";
+import { TapToTranslate } from "../components/TapToTranslate";
 import { TutorMarkdown } from "../components/TutorMarkdown";
 import { useAsync } from "../lib/useAsync";
 
@@ -122,9 +123,9 @@ function Section({
           </button>
         )}
       </div>
-      <div className="md font-content text-sm">
+      <TapToTranslate className="md font-content text-sm">
         <Markdown options={mdOptions}>{body}</Markdown>
-      </div>
+      </TapToTranslate>
       {(busy || text || error) && (
         <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950">
           {error ? (

@@ -7,6 +7,7 @@ import {
   type ExerciseSet,
 } from "@mdb/shared";
 import { ExerciseItemView } from "../components/ExerciseItemView";
+import { TapToTranslate } from "../components/TapToTranslate";
 import { TutorMarkdown } from "../components/TutorMarkdown";
 import { api, askAssistant, type ChatTurn } from "../lib/api";
 import { describeItem } from "../lib/describeItem";
@@ -360,12 +361,14 @@ function Runner({ set }: { set: ExerciseSet }) {
             this run — answer again to change it.
           </p>
         )}
-        <ExerciseItemView
-          key={item.id}
-          item={item}
-          onAnswered={handleAnswered}
-          llmGrading={llmGrading}
-        />
+        <TapToTranslate>
+          <ExerciseItemView
+            key={item.id}
+            item={item}
+            onAnswered={handleAnswered}
+            llmGrading={llmGrading}
+          />
+        </TapToTranslate>
       </div>
 
       {assistantEnabled && (

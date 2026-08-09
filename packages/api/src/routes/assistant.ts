@@ -5,6 +5,8 @@ import {
   exerciseItem,
   exerciseSet,
   MAX_GENERATE_COUNT,
+  wordLookup,
+  wordQueryBody,
   type ExerciseItem,
 } from "@mdb/shared";
 import { requireAuth } from "../auth/session";
@@ -12,6 +14,7 @@ import {
   buildMessages,
   buildChatSystem,
   buildGenerateMessages,
+  buildWordMessages,
 } from "../assistant/prompts";
 import { env, isAssistantEnabled } from "../env";
 import { getSettings } from "../services/settings";
@@ -248,6 +251,63 @@ export async function assistantRoutes(app: FastifyInstance) {
       } catch (err) {
         app.log.error(err, "grade request failed");
         return reply.code(502).send({ error: "grading failed" });
+      }
+    },
+  );
+
+  // Translate a single word → { translation, examples: [{de,en}] }. Powers the
+  // tap-a-word menu and the Vocab tab. Callers cache the result themselves.
+  r.post(
+    "/api/assistant/word",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["assistant"],
+        body: wordQueryBody.extend({
+          count: z.number().int().min(1).max(4).default(2),
+        }),
+        response: {
+          200: wordLookup,
+          502: z.object({ error: z.string() }),
+          503: z.object({ error: z.string() }),
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!isAssistantEnabled) {
+        return reply.code(503).send({ error: "assistant not configured" });
+      }
+      const { word, context, count } = req.body;
+      const { system, user } = buildWordMessages({ word, context, count });
+      try {
+        const result = await collectCompletion(
+          [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+          { temperature: 0.5, maxTokens: 700 },
+        );
+        if (!result.ok) {
+          app.log.error(
+            { status: result.status, detail: result.detail },
+            "word upstream error",
+          );
+          return reply
+            .code(502)
+            .send({ error: `upstream ${result.status}: ${result.detail.slice(0, 200)}` });
+        }
+        const match = result.content.match(/\{[\s\S]*\}/);
+        const parsed = match
+          ? wordLookup.safeParse(JSON.parse(match[0]))
+          : null;
+        if (!parsed || !parsed.success) {
+          return reply.code(502).send({ error: "could not parse translation" });
+        }
+        return parsed.data;
+      } catch (err) {
+        app.log.error(err, "word request failed");
+        const reason = err instanceof Error ? err.message : String(err);
+        return reply.code(502).send({ error: `request failed: ${reason}` });
       }
     },
   );

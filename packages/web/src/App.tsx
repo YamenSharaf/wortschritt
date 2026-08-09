@@ -5,6 +5,7 @@ import { api } from "./lib/api";
 import { useAuth } from "./lib/auth";
 import { useConfig } from "./lib/config";
 import { useTheme } from "./lib/theme";
+import { VocabProvider } from "./lib/vocab";
 
 type IconProps = { className?: string };
 const Home = ({ className }: IconProps) => (
@@ -35,11 +36,18 @@ const Gear = ({ className }: IconProps) => (
     <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1" strokeLinecap="round" />
   </svg>
 );
+const Cards = ({ className }: IconProps) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
+    <rect x="3" y="7" width="14" height="12" rx="2" strokeLinejoin="round" />
+    <path d="M7 4h11a2 2 0 0 1 2 2v9" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 
 const navItems = [
   { to: "/", label: "Home", end: true, Icon: Home },
   { to: "/cheatsheets", label: "Sheets", Icon: Book },
   { to: "/exercises", label: "Practice", Icon: Dumbbell },
+  { to: "/vocab", label: "Vocab", Icon: Cards },
   { to: "/import", label: "Import", Icon: Plus },
   { to: "/settings", label: "Settings", Icon: Gear },
 ];
@@ -97,6 +105,7 @@ export function App() {
   }
 
   return (
+    <VocabProvider>
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
         <div className="mx-auto flex max-w-4xl items-center gap-2 px-4 py-2.5">
@@ -143,7 +152,7 @@ export function App() {
       </main>
 
       {/* Mobile bottom tab bar — fixed 5 columns, each capped to 1/5 width */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 overflow-hidden border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 overflow-hidden border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
         {navItems.map(({ to, label, end, Icon }) => (
           <NavLink
             key={to}
@@ -165,5 +174,6 @@ export function App() {
         ))}
       </nav>
     </div>
+    </VocabProvider>
   );
 }

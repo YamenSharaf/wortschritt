@@ -113,6 +113,26 @@ export function buildChatSystem(ctx: {
   );
 }
 
+/** Dictionary lookup for one German word → translation + example sentences. */
+export function buildWordMessages(ctx: {
+  word: string;
+  context?: string;
+  count: number;
+}): { system: string; user: string } {
+  const system =
+    "You are a concise German→English dictionary for a learner. " +
+    "Return ONLY a compact JSON object, no prose and no markdown fences, shaped exactly:\n" +
+    '{"translation":"<short English meaning>","examples":[{"de":"<simple German sentence>","en":"<English translation>"}]}\n' +
+    "For nouns, include the article and, if useful, the plural in the translation (e.g. \"das Haus, -äuser — house\"). " +
+    "For verbs, give the infinitive meaning. Keep the translation to a few words. " +
+    `Provide exactly ${ctx.count} natural example sentence(s) at A2–B1 level that use the word (or a natural inflected form). ` +
+    "The examples must be different from any sentence given as context.";
+  const user =
+    `Word: ${ctx.word}` +
+    (ctx.context ? `\nIt appeared in: "${ctx.context}"` : "");
+  return { system, user };
+}
+
 /** JSON shapes for every item type — shared by generation and the Import UI. */
 const ITEM_SCHEMA_REF = `Item type shapes (use the exact keys). Do NOT include an "id" — it is assigned automatically:
 - multiple_choice: { "type":"multiple_choice","prompt":"...","choices":["a","b"],"answerIndex":0,"explanation":"optional" }
