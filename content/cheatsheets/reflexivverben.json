@@ -1,0 +1,29 @@
+{
+  "id": "reflexivverben",
+  "title": "Reflexivverben & Reflexivpronomen",
+  "subtitle": "Reflexive verbs & pronouns (accusative)",
+  "category": "grammatik",
+  "createdAt": "2026-08-09",
+  "sections": [
+    {
+      "heading": "Reflexivpronomen im Akkusativ",
+      "body": "Ein Reflexivverb braucht ein **Reflexivpronomen**, das sich auf das Subjekt zurückbezieht. Im Akkusativ:\n\n| Person | Reflexivpronomen |\n| --- | --- |\n| ich | **mich** |\n| du | **dich** |\n| er / sie / es | **sich** |\n| wir | **uns** |\n| ihr | **euch** |\n| sie / Sie | **sich** |\n\n> Ich wasche **mich**. · Du beeilst **dich**. · Er entspannt **sich**.\n> Wir treffen **uns**. · Ihr setzt **euch**. · Sie freuen **sich**."
+    },
+    {
+      "heading": "Echte Reflexivverben (immer reflexiv)",
+      "body": "Diese Verben gibt es **nur mit** Reflexivpronomen. Viele haben eine **feste Präposition**.\n\n`sich beeilen` · `sich bedanken (für)` · `sich beschweren (über)` · `sich entschuldigen (bei/für)` · `sich schämen (für)` · `sich erkälten` · `sich irren` · `sich weigern` · `sich wundern (über)` · `sich verlieben (in)` · `sich erholen (von)` · `sich konzentrieren (auf)` · `sich bemühen (um)` · `sich bewerben (um/bei)` · `sich erkundigen (nach)` · `sich vorbereiten (auf)` · `sich anstrengen` · `sich ausruhen` · `sich fürchten (vor)` · `sich interessieren (für)` · `sich entscheiden (für/gegen)` · `sich verhalten`\n\n> **Falsch:** ~~Ich interessiere für Musik.~~ → **Richtig:** Ich interessiere **mich** für Musik."
+    },
+    {
+      "heading": "Unechte Reflexivverben (reflexiv ODER mit Objekt)",
+      "body": "Diese Verben kann man **mit sich** (am Subjekt) oder **mit einem Objekt** (an jemand/etwas anderem) benutzen — die Bedeutung ändert sich.\n\n| reflexiv (sich) | mit Objekt |\n| --- | --- |\n| sich waschen | jemanden waschen |\n| sich anziehen | jemanden anziehen |\n| sich kämmen | jemanden kämmen |\n| sich setzen | etwas setzen |\n| sich treffen | jemanden treffen |\n| sich verletzen | jemanden verletzen |\n| sich erinnern (an) | jemanden erinnern |\n| sich vorstellen | jemanden vorstellen |\n\n> Ich wasche **mich**. *(myself)* — Ich wasche **das Kind**. *(the child)*\n> Ich stelle **mich** vor. *(introduce myself)* — Ich stelle **dir meinen Freund** vor. *(introduce my friend)*"
+    },
+    {
+      "heading": "Verben mit fester Präposition",
+      "body": "Bei vielen Reflexivverben gehört eine feste Präposition dazu (meist **+ Akkusativ**):\n\n- sich freuen **auf** (+A) — auf Zukünftiges: *Ich freue mich auf den Urlaub.*\n- sich freuen **über** (+A) — über Gegenwärtiges: *Ich freue mich über das Geschenk.*\n- sich interessieren **für** (+A) · sich erinnern **an** (+A) · sich ärgern **über** (+A)\n- sich vorbereiten **auf** (+A) · sich entscheiden **für / gegen** (+A) · sich kümmern **um** (+A)\n- sich bewerben **um / bei** · sich beschweren **über / bei** · sich erkundigen **nach** (+D)"
+    },
+    {
+      "heading": "Wortstellung",
+      "body": "Das Reflexivpronomen steht **direkt nach dem konjugierten Verb** — oder nach dem Subjekt, wenn das Verb vorn steht (Fragen, Verb-Erst).\n\n> **Aussage:** Du entspannst **dich** heute im Restaurant.\n> **Vorfeld belegt:** Heute entspannst du **dich** im Restaurant.\n> **Ja/Nein-Frage:** Entspannst du **dich** heute?\n> **W-Frage:** Wann entspannst du **dich**?\n\n**Trennbares Verb** — Pronomen nach dem Verb, Vorsilbe ans Ende:\n> Du ruhst **dich** nach der Arbeit **aus**.\n\n**Mit Modalverb** — Pronomen nach dem Modalverb, Infinitiv ans Ende:\n> Du kannst **dich** im Restaurant **entspannen**.\n\n**Perfekt** — Pronomen nach *haben*, Partizip ans Ende:\n> Du hast **dich** gestern gut **entspannt**."
+    }
+  ]
+}

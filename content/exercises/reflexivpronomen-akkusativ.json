@@ -1,0 +1,400 @@
+{
+  "schemaVersion": 1,
+  "id": "reflexivpronomen-akkusativ",
+  "title": "Reflexivpronomen im Akkusativ",
+  "subtitle": "Reflexive pronouns (accusative)",
+  "description": "Setze das richtige Reflexivpronomen ein: mich, dich, sich, uns, euch, sich.",
+  "level": "A2",
+  "tags": [
+    "grammatik",
+    "reflexivverben",
+    "pronomen"
+  ],
+  "createdAt": "2026-08-09",
+  "items": [
+    {
+      "type": "cloze",
+      "id": "rpa-01",
+      "text": "Ich freue {{1}} auf den Besuch.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "mich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-02",
+      "text": "Wann wäschst du {{1}} am Morgen?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "dich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-03",
+      "text": "Er interessiert {{1}} für moderne Musik.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "sich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-04",
+      "text": "Wir treffen {{1}} heute Abend im Park.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "uns"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-05",
+      "text": "Könnt ihr {{1}} bitte beeilen?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "euch"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-06",
+      "text": "Sie kämmt {{1}} jeden Morgen vor der Arbeit.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "sich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-07",
+      "text": "Warum ärgerst du {{1}} so oft?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "dich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-08",
+      "text": "Die Kinder ziehen {{1}} allein an.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "sich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-09",
+      "text": "Wir bedanken {{1}} bei der Nachbarin.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "uns"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-10",
+      "text": "Sie bereitet {{1}} auf die Prüfung vor.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "sich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-11",
+      "text": "Ich erinnere {{1}} nicht an seinen Namen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "mich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-12",
+      "text": "Du sollst {{1}} entspannen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "dich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-13",
+      "text": "Die Frau beschwert {{1}} über den Lärm.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "sich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-14",
+      "text": "Wir entscheiden {{1}} für das rote Auto.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "uns"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-15",
+      "text": "Kannst du {{1}} bitte konzentrieren?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "dich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-16",
+      "text": "Ich erkälte {{1}} im Winter oft.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "mich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-17",
+      "text": "Ihr könnt {{1}} wirklich freuen!",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "euch"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-18",
+      "text": "Er verliebt {{1}} schnell.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "sich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-19",
+      "text": "Ich wundere {{1}} über die Preise.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "mich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-20",
+      "text": "Die Schüler melden {{1}} freiwillig.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "sich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-21",
+      "text": "Ihr müsst {{1}} nicht schämen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "euch"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-22",
+      "text": "Warum beeilst du {{1}} nie?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "dich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-23",
+      "text": "Wir verabschieden {{1}} von den Gästen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "uns"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "rpa-24",
+      "text": "Das Baby beruhigt {{1}} langsam.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "sich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    }
+  ]
+}

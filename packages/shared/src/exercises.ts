@@ -154,6 +154,9 @@ export const exerciseSet = z
     description: z.string().default(""),
     level: cefrLevel,
     tags: z.array(z.string()).default([]),
+    /** When this material was added (ISO date). Filled from the file's mtime
+     *  or the import time when absent; used to sort "recently added" first. */
+    createdAt: z.string().optional(),
     items: z.array(exerciseItem).min(1),
   })
   // Cross-field structural checks that a per-field schema can't express.
@@ -217,6 +220,8 @@ export const cheatsheet = z.object({
   /** Optional short English gloss of the (German) title. */
   subtitle: z.string().optional(),
   category: z.string().default("general"),
+  /** When this sheet was added (ISO date); see exerciseSet.createdAt. */
+  createdAt: z.string().optional(),
   sections: z.array(cheatsheetSection).min(1),
 });
 export type Cheatsheet = z.infer<typeof cheatsheet>;
