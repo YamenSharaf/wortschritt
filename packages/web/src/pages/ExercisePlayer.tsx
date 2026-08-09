@@ -61,6 +61,7 @@ function Runner({ set }: { set: ExerciseSet }) {
   // When set, records the moment the current item was resolved. Used to ignore
   // the tail of the Enter keystroke that submitted the answer (see below).
   const answeredAt = useRef(0);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const correctCount = useMemo(
     () => Object.values(results).filter(Boolean).length,
@@ -213,6 +214,16 @@ function Runner({ set }: { set: ExerciseSet }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answered, mobile, lastCorrect, index]);
 
+  // When a new item is shown, focus its first text field so keyboard users can
+  // keep typing after advancing (no-op for choice/flashcard items).
+  useEffect(() => {
+    cardRef.current
+      ?.querySelector<HTMLElement>(
+        "input:not([disabled]), textarea:not([disabled])",
+      )
+      ?.focus();
+  }, [item.id, index]);
+
   if (done) {
     return (
       <div className="mx-auto max-w-md text-center">
@@ -283,6 +294,7 @@ function Runner({ set }: { set: ExerciseSet }) {
       />
 
       <div
+        ref={cardRef}
         className={`rounded-xl border border-slate-200 bg-white p-6 font-content dark:border-slate-800 dark:bg-slate-900 ${
           answered ? (lastCorrect ? "animate-correct" : "animate-wrong") : ""
         }`}
