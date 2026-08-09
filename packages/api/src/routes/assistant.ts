@@ -170,6 +170,7 @@ export async function assistantRoutes(app: FastifyInstance) {
             body: JSON.stringify({
               model: env.ASSISTANT_MODEL,
               temperature: 0,
+              max_tokens: 256,
               messages: [
                 { role: "system", content: system },
                 { role: "user", content: user },
@@ -243,6 +244,9 @@ export async function assistantRoutes(app: FastifyInstance) {
             body: JSON.stringify({
               model: env.ASSISTANT_MODEL,
               temperature: 0.8,
+              // Room for a few full exercises. Required by Anthropic-backed
+              // gateways, which reject a completion with no max_tokens.
+              max_tokens: 4096,
               messages: [
                 { role: "system", content: system },
                 { role: "user", content: user },
@@ -253,7 +257,9 @@ export async function assistantRoutes(app: FastifyInstance) {
         if (!upstream.ok) {
           const detail = await upstream.text().catch(() => "");
           app.log.error({ status: upstream.status, detail }, "generate upstream error");
-          return reply.code(502).send({ error: "generation failed" });
+          return reply
+            .code(502)
+            .send({ error: `upstream ${upstream.status}: ${detail.slice(0, 300)}` });
         }
         const json = (await upstream.json()) as {
           choices?: Array<{ message?: { content?: string } }>;
@@ -283,7 +289,8 @@ export async function assistantRoutes(app: FastifyInstance) {
         return { items, received: rawItems.length };
       } catch (err) {
         app.log.error(err, "generate request failed");
-        return reply.code(502).send({ error: "generation failed" });
+        const reason = err instanceof Error ? err.message : String(err);
+        return reply.code(502).send({ error: `request failed: ${reason}` });
       }
     },
   );
@@ -362,6 +369,7 @@ export async function assistantRoutes(app: FastifyInstance) {
               model: env.ASSISTANT_MODEL,
               stream: true,
               temperature: 0.3,
+              max_tokens: 1024,
               messages,
             }),
             signal: controller.signal,
