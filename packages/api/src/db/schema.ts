@@ -62,6 +62,20 @@ export const vocab = sqliteTable("vocab", {
     .default(sql`(unixepoch())`),
 });
 
+/** Named collections. A word can belong to several groups (many-to-many). */
+export const vocabGroups = sqliteTable("vocab_groups", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+export const vocabGroupMembers = sqliteTable("vocab_group_members", {
+  groupId: integer("group_id").notNull(),
+  word: text("word").notNull(),
+});
+
 /**
  * Content added at runtime via the import screen. Git-versioned JSON in
  * CONTENT_DIR is the other source; the API merges both.

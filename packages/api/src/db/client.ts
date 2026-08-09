@@ -66,6 +66,17 @@ export function ensureSchema(): void {
       created_at INTEGER NOT NULL DEFAULT (unixepoch())
     );
     CREATE INDEX IF NOT EXISTS idx_vocab_created ON vocab(created_at);
+    CREATE TABLE IF NOT EXISTS vocab_groups (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+    CREATE TABLE IF NOT EXISTS vocab_group_members (
+      group_id INTEGER NOT NULL,
+      word TEXT NOT NULL,
+      PRIMARY KEY (group_id, word)
+    );
+    CREATE INDEX IF NOT EXISTS idx_vgm_word ON vocab_group_members(word);
   `);
 }
 

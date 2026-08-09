@@ -4,8 +4,33 @@ import { api } from "../lib/api";
 import { useAsync } from "../lib/useAsync";
 import { useTheme } from "../lib/theme";
 import { ACCENTS } from "../lib/themes";
+import { ImportPage } from "./Import";
 
 export function SettingsPage() {
+  const [tab, setTab] = useState<"preferences" | "import">("preferences");
+  const tabBtn = (active: boolean) =>
+    `rounded-lg px-3 py-1.5 text-sm font-medium ${
+      active
+        ? "bg-accent text-accent-foreground"
+        : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+    }`;
+  return (
+    <div>
+      <h1 className="mb-4 text-2xl font-bold">Settings</h1>
+      <div className="mb-6 inline-flex gap-1 rounded-xl border border-slate-200 p-1 dark:border-slate-800">
+        <button type="button" className={tabBtn(tab === "preferences")} onClick={() => setTab("preferences")}>
+          Preferences
+        </button>
+        <button type="button" className={tabBtn(tab === "import")} onClick={() => setTab("import")}>
+          Import content
+        </button>
+      </div>
+      {tab === "preferences" ? <Preferences /> : <ImportPage />}
+    </div>
+  );
+}
+
+function Preferences() {
   const loaded = useAsync(() => api.settings(), []);
   const { theme, setTheme, accent, setAccent } = useTheme();
   const [form, setForm] = useState<Settings | null>(null);
@@ -26,7 +51,6 @@ export function SettingsPage() {
 
   return (
     <div className="max-w-md">
-      <h1 className="mb-6 text-2xl font-bold">Settings</h1>
       <div className="space-y-4">
         <Field label="Display name">
           <input

@@ -1,22 +1,49 @@
 import { desc, eq, sql } from "drizzle-orm";
-import type { SaveVocabBody, VocabEntry } from "@mdb/shared";
+import type {
+  SaveVocabBody,
+  VocabEntry,
+  VocabGroup,
+} from "@mdb/shared";
 import { db, schema } from "../db/client";
 
 const key = (w: string) => w.trim().toLowerCase();
 
+/** group_id list for each word, so entries can carry their memberships. */
+function membershipByWord(): Map<string, number[]> {
+  const rows = db.select().from(schema.vocabGroupMembers).all();
+  const map = new Map<string, number[]>();
+  for (const r of rows) {
+    const list = map.get(r.word) ?? [];
+    list.push(r.groupId);
+    map.set(r.word, list);
+  }
+  return map;
+}
+
 export function listVocab(): VocabEntry[] {
-  return db
+  const rows = db
     .select()
     .from(schema.vocab)
     .orderBy(desc(schema.vocab.createdAt))
     .all();
+  const groups = membershipByWord();
+  return rows.map((r) => ({ ...r, groups: groups.get(r.word) ?? [] }));
 }
 
 export function getVocab(word: string): VocabEntry | null {
-  return (
-    db.select().from(schema.vocab).where(eq(schema.vocab.word, key(word))).get() ??
-    null
-  );
+  const r = db
+    .select()
+    .from(schema.vocab)
+    .where(eq(schema.vocab.word, key(word)))
+    .get();
+  if (!r) return null;
+  const groups = db
+    .select()
+    .from(schema.vocabGroupMembers)
+    .where(eq(schema.vocabGroupMembers.word, r.word))
+    .all()
+    .map((m) => m.groupId);
+  return { ...r, groups };
 }
 
 /** Insert or update by normalized word; preserves the original createdAt. */
@@ -43,14 +70,51 @@ export function upsertVocab(body: SaveVocabBody): VocabEntry {
 }
 
 export function removeVocab(word: string): void {
-  db.delete(schema.vocab).where(eq(schema.vocab.word, key(word))).run();
+  const w = key(word);
+  db.delete(schema.vocab).where(eq(schema.vocab.word, w)).run();
+  db.delete(schema.vocabGroupMembers)
+    .where(eq(schema.vocabGroupMembers.word, w))
+    .run();
 }
 
-export function vocabExists(word: string): boolean {
-  const r = db
-    .select({ n: sql<number>`count(*)` })
-    .from(schema.vocab)
-    .where(eq(schema.vocab.word, key(word)))
-    .get();
-  return (r?.n ?? 0) > 0;
+// --- groups ----------------------------------------------------------------
+
+export function listGroups(): VocabGroup[] {
+  return db.all(sql`
+    SELECT g.id AS id, g.name AS name, g.created_at AS createdAt,
+           (SELECT count(*) FROM vocab_group_members m WHERE m.group_id = g.id) AS count
+    FROM vocab_groups g
+    ORDER BY g.name COLLATE NOCASE ASC
+  `) as VocabGroup[];
+}
+
+export function createGroup(name: string): VocabGroup {
+  const res = db
+    .insert(schema.vocabGroups)
+    .values({ name: name.trim() })
+    .run();
+  const id = Number(res.lastInsertRowid);
+  return { id, name: name.trim(), count: 0, createdAt: 0 };
+}
+
+export function deleteGroup(id: number): void {
+  db.delete(schema.vocabGroups).where(eq(schema.vocabGroups.id, id)).run();
+  db.delete(schema.vocabGroupMembers)
+    .where(eq(schema.vocabGroupMembers.groupId, id))
+    .run();
+}
+
+export function addWordToGroup(id: number, word: string): void {
+  db.insert(schema.vocabGroupMembers)
+    .values({ groupId: id, word: key(word) })
+    .onConflictDoNothing()
+    .run();
+}
+
+export function removeWordFromGroup(id: number, word: string): void {
+  db.delete(schema.vocabGroupMembers)
+    .where(
+      sql`${schema.vocabGroupMembers.groupId} = ${id} AND ${schema.vocabGroupMembers.word} = ${key(word)}`,
+    )
+    .run();
 }
