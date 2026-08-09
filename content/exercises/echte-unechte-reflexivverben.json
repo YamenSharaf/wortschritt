@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "id": "echte-unechte-reflexivverben",
+  "title": "Echte oder unechte Reflexivverben?",
+  "subtitle": "True vs. false reflexive verbs",
+  "description": "Entscheide: Gibt es das Verb nur reflexiv (echt) oder auch mit Objekt (unecht)?",
+  "level": "B1",
+  "tags": [
+    "grammatik",
+    "reflexivverben"
+  ],
+  "createdAt": "2026-08-09",
+  "items": [
+    {
+      "type": "true_false",
+      "id": "eur-01",
+      "statement": "Man kann „sich beeilen“ nur reflexiv benutzen (echtes Reflexivverb).",
+      "correct": true,
+      "explanation": "Es gibt keine Form ohne Reflexivpronomen."
+    },
+    {
+      "type": "true_false",
+      "id": "eur-02",
+      "statement": "Man kann „sich waschen“ nur reflexiv benutzen (echtes Reflexivverb).",
+      "correct": false,
+      "explanation": "Auch mit Objekt möglich: „jemanden waschen“ (z. B. das Kind waschen).",
+      "correction": "Unechtes Reflexivverb – geht auch mit Objekt."
+    },
+    {
+      "type": "true_false",
+      "id": "eur-03",
+      "statement": "Man kann „sich schämen“ nur reflexiv benutzen (echtes Reflexivverb).",
+      "correct": true,
+      "explanation": "Nur reflexiv: „Ich schäme mich.“"
+    },
+    {
+      "type": "true_false",
+      "id": "eur-04",
+      "statement": "Man kann „sich treffen“ nur reflexiv benutzen (echtes Reflexivverb).",
+      "correct": false,
+      "explanation": "Auch mit Objekt: „jemanden treffen“ (z. B. einen Freund treffen).",
+      "correction": "Unechtes Reflexivverb – geht auch mit Objekt."
+    },
+    {
+      "type": "true_false",
+      "id": "eur-05",
+      "statement": "Man kann „sich erkälten“ nur reflexiv benutzen (echtes Reflexivverb).",
+      "correct": true,
+      "explanation": "Nur reflexiv: „Ich erkälte mich.“"
+    },
+    {
+      "type": "true_false",
+      "id": "eur-06",
+      "statement": "Man kann „sich anziehen“ nur reflexiv benutzen (echtes Reflexivverb).",
+      "correct": false,
+      "explanation": "Auch mit Objekt: „jemanden anziehen“ (z. B. das Baby anziehen).",
+      "correction": "Unechtes Reflexivverb – geht auch mit Objekt."
+    },
+    {
+      "type": "true_false",
+      "id": "eur-07",
+      "statement": "Man kann „sich weigern“ nur reflexiv benutzen (echtes Reflexivverb).",
+      "correct": true,
+      "explanation": "Nur reflexiv: „Er weigert sich.“"
+    },
+    {
+      "type": "true_false",
+      "id": "eur-08",
+      "statement": "Man kann „sich setzen“ nur reflexiv benutzen (echtes Reflexivverb).",
+      "correct": false,
+      "explanation": "Auch mit Objekt: „etwas setzen“ – bzw. „stellen/legen“ für Dinge.",
+      "correction": "Unechtes Reflexivverb – geht auch mit Objekt."
+    },
+    {
+      "type": "true_false",
+      "id": "eur-09",
+      "statement": "Man kann „sich verlieben“ nur reflexiv benutzen (echtes Reflexivverb).",
+      "correct": true,
+      "explanation": "Nur reflexiv: „Sie verliebt sich.“"
+    },
+    {
+      "type": "true_false",
+      "id": "eur-10",
+      "statement": "Man kann „sich verletzen“ nur reflexiv benutzen (echtes Reflexivverb).",
+      "correct": false,
+      "explanation": "Auch mit Objekt: „jemanden verletzen“.",
+      "correction": "Unechtes Reflexivverb – geht auch mit Objekt."
+    },
+    {
+      "type": "true_false",
+      "id": "eur-11",
+      "statement": "Man kann „sich bemühen“ nur reflexiv benutzen (echtes Reflexivverb).",
+      "correct": true,
+      "explanation": "Nur reflexiv: „Wir bemühen uns.“"
+    },
+    {
+      "type": "true_false",
+      "id": "eur-12",
+      "statement": "Man kann „sich erinnern“ nur reflexiv benutzen (echtes Reflexivverb).",
+      "correct": false,
+      "explanation": "Auch transitiv: „jemanden an etwas erinnern“ (z. B. Erinnere mich bitte daran).",
+      "correction": "Unechtes Reflexivverb – geht auch mit Objekt."
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
@@ -33,9 +33,20 @@ function readJsonDir<S extends z.ZodTypeAny>(
         .join("\n");
       throw new Error(`Content file ${full} failed validation:\n${detail}`);
     }
-    out.push(parsed.data);
+    // Fall back to the file's modification time when the author didn't stamp a
+    // createdAt, so "recently added" sorting works without hand-dating files.
+    const createdAt =
+      (parsed.data as { createdAt?: string }).createdAt ??
+      statSync(full).mtime.toISOString();
+    out.push({ ...parsed.data, createdAt });
   }
   return out;
+}
+
+/** Newest first, by createdAt (missing dates sort last). */
+function byNewest<T extends { createdAt?: string }>(items: T[]): T[] {
+  const ts = (v?: string) => (v ? Date.parse(v) || 0 : 0);
+  return [...items].sort((a, b) => ts(b.createdAt) - ts(a.createdAt));
 }
 
 /** Git-versioned exercise sets + those imported at runtime, merged by id. */
@@ -49,8 +60,11 @@ export function loadExerciseSets(): ExerciseSet[] {
     .from(schema.importedContent)
     .all()
     .filter((r) => r.kind === "exercise")
-    .map((r) => exerciseSet.parse(r.data));
-  return dedupeById([...fromFiles, ...fromDb]);
+    .map((r) => ({
+      ...exerciseSet.parse(r.data),
+      createdAt: r.createdAt.toISOString(),
+    }));
+  return byNewest(dedupeById([...fromFiles, ...fromDb]));
 }
 
 /** Git-versioned cheatsheets + those imported at runtime, merged by id. */
@@ -64,8 +78,11 @@ export function loadCheatsheets(): Cheatsheet[] {
     .from(schema.importedContent)
     .all()
     .filter((r) => r.kind === "cheatsheet")
-    .map((r) => cheatsheet.parse(r.data));
-  return dedupeById([...fromFiles, ...fromDb]);
+    .map((r) => ({
+      ...cheatsheet.parse(r.data),
+      createdAt: r.createdAt.toISOString(),
+    }));
+  return byNewest(dedupeById([...fromFiles, ...fromDb]));
 }
 
 /** Runtime imports (DB) win over file content when ids collide. */
