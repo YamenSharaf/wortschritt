@@ -104,6 +104,8 @@ export type WordLookup = z.infer<typeof wordLookup>;
 export const wordQueryBody = z.object({
   word: z.string().min(1).max(80),
   context: z.string().max(400).optional(),
+  /** The learner's own definition — steers examples to that meaning. */
+  meaning: z.string().max(200).optional(),
 });
 export type WordQueryBody = z.infer<typeof wordQueryBody>;
 
@@ -114,8 +116,22 @@ export const vocabEntry = z.object({
   translation: z.string(),
   examples: z.array(vocabExample),
   createdAt: z.number().int(),
+  /** Ids of the groups this word belongs to. */
+  groups: z.array(z.number().int()).default([]),
 });
 export type VocabEntry = z.infer<typeof vocabEntry>;
+
+/** A named vocab collection. */
+export const vocabGroup = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  count: z.number().int(),
+  createdAt: z.number().int(),
+});
+export type VocabGroup = z.infer<typeof vocabGroup>;
+
+export const createGroupBody = z.object({ name: z.string().min(1).max(60) });
+export const groupWordBody = z.object({ word: z.string().min(1).max(80) });
 
 /** Add/update a saved word. */
 export const saveVocabBody = z.object({

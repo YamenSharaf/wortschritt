@@ -117,6 +117,7 @@ export function buildChatSystem(ctx: {
 export function buildWordMessages(ctx: {
   word: string;
   context?: string;
+  meaning?: string;
   count: number;
 }): { system: string; user: string } {
   const system =
@@ -125,6 +126,9 @@ export function buildWordMessages(ctx: {
     '{"translation":"<short English meaning>","examples":[{"de":"<simple German sentence>","en":"<English translation>"}]}\n' +
     "For nouns, include the article and, if useful, the plural in the translation (e.g. \"das Haus, -äuser — house\"). " +
     "For verbs, give the infinitive meaning. Keep the translation to a few words. " +
+    (ctx.meaning
+      ? `The learner defines this word as: "${ctx.meaning}". Use that meaning for the translation and examples. `
+      : "") +
     `Provide exactly ${ctx.count} natural example sentence(s) at A2–B1 level that use the word (or a natural inflected form). ` +
     "The examples must be different from any sentence given as context.";
   const user =

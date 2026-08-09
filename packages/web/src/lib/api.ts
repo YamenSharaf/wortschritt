@@ -11,6 +11,7 @@ import type {
   Settings,
   SheetView,
   VocabEntry,
+  VocabGroup,
   WordLookup,
 } from "@mdb/shared";
 
@@ -111,11 +112,34 @@ export const api = {
     req<{ ok: true }>(`/api/vocab/${encodeURIComponent(word)}`, {
       method: "DELETE",
     }),
-  translateWord: (word: string, context?: string, count?: number) =>
+  translateWord: (
+    word: string,
+    opts?: { context?: string; meaning?: string; count?: number },
+  ) =>
     req<WordLookup>("/api/assistant/word", {
       method: "POST",
-      body: JSON.stringify({ word, context, count }),
+      body: JSON.stringify({ word, ...opts }),
     }),
+
+  // vocab groups
+  vocabGroups: () => req<VocabGroup[]>("/api/vocab-groups"),
+  vocabGroupCreate: (name: string) =>
+    req<VocabGroup>("/api/vocab-groups", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    }),
+  vocabGroupDelete: (id: number) =>
+    req<{ ok: true }>(`/api/vocab-groups/${id}`, { method: "DELETE" }),
+  vocabGroupAddWord: (id: number, word: string) =>
+    req<{ ok: true }>(`/api/vocab-groups/${id}/words`, {
+      method: "POST",
+      body: JSON.stringify({ word }),
+    }),
+  vocabGroupRemoveWord: (id: number, word: string) =>
+    req<{ ok: true }>(
+      `/api/vocab-groups/${id}/words/${encodeURIComponent(word)}`,
+      { method: "DELETE" },
+    ),
 
   // assistant
   assistantStatus: () =>

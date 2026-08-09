@@ -7,7 +7,12 @@ import {
   type ReactNode,
 } from "react";
 import { Link } from "react-router-dom";
-import type { SaveVocabBody, VocabEntry, WordLookup } from "@mdb/shared";
+import type {
+  SaveVocabBody,
+  VocabEntry,
+  VocabGroup,
+  WordLookup,
+} from "@mdb/shared";
 import { api } from "./api";
 
 const norm = (w: string) => w.trim().toLowerCase();
@@ -24,11 +29,15 @@ type VocabCtx = {
   /** Whether the AI tutor is configured (word lookup needs it). */
   enabled: boolean;
   entries: VocabEntry[];
+  groups: VocabGroup[];
   /** Lowercased keys currently saved. */
   words: Set<string>;
   reload: () => void;
   save: (body: SaveVocabBody) => Promise<VocabEntry>;
   remove: (word: string) => Promise<void>;
+  createGroup: (name: string) => Promise<VocabGroup>;
+  deleteGroup: (id: number) => Promise<void>;
+  setWordGroup: (word: string, id: number, member: boolean) => Promise<void>;
   openWord: (display: string, x: number, y: number, context?: string) => void;
 };
 
@@ -43,10 +52,12 @@ export function useVocab(): VocabCtx {
 export function VocabProvider({ children }: { children: ReactNode }) {
   const [enabled, setEnabled] = useState(false);
   const [entries, setEntries] = useState<VocabEntry[]>([]);
+  const [groups, setGroups] = useState<VocabGroup[]>([]);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
 
   const reload = () => {
     api.vocab().then(setEntries).catch(() => {});
+    api.vocabGroups().then(setGroups).catch(() => {});
   };
 
   useEffect(() => {
@@ -72,6 +83,44 @@ export function VocabProvider({ children }: { children: ReactNode }) {
   async function remove(word: string) {
     await api.vocabRemove(word);
     setEntries((prev) => prev.filter((e) => e.word !== norm(word)));
+    api.vocabGroups().then(setGroups).catch(() => {});
+  }
+
+  async function createGroup(name: string) {
+    const g = await api.vocabGroupCreate(name);
+    setGroups((prev) => [...prev, g].sort((a, b) => a.name.localeCompare(b.name)));
+    return g;
+  }
+
+  async function deleteGroup(id: number) {
+    await api.vocabGroupDelete(id);
+    setGroups((prev) => prev.filter((g) => g.id !== id));
+    setEntries((prev) =>
+      prev.map((e) => ({ ...e, groups: e.groups.filter((g) => g !== id) })),
+    );
+  }
+
+  async function setWordGroup(word: string, id: number, member: boolean) {
+    if (member) await api.vocabGroupAddWord(id, word);
+    else await api.vocabGroupRemoveWord(id, word);
+    const w = norm(word);
+    setEntries((prev) =>
+      prev.map((e) =>
+        e.word !== w
+          ? e
+          : {
+              ...e,
+              groups: member
+                ? [...new Set([...e.groups, id])]
+                : e.groups.filter((g) => g !== id),
+            },
+      ),
+    );
+    setGroups((prev) =>
+      prev.map((g) =>
+        g.id !== id ? g : { ...g, count: g.count + (member ? 1 : -1) },
+      ),
+    );
   }
 
   function openWord(display: string, x: number, y: number, context?: string) {
@@ -81,10 +130,14 @@ export function VocabProvider({ children }: { children: ReactNode }) {
   const value: VocabCtx = {
     enabled,
     entries,
+    groups,
     words,
     reload,
     save,
     remove,
+    createGroup,
+    deleteGroup,
+    setWordGroup,
     openWord,
   };
 
@@ -236,7 +289,7 @@ function WordPanel({
     setLoading(true);
     setError(null);
     api
-      .translateWord(display, context, 2)
+      .translateWord(display, { context, count: 2 })
       .then((d) => alive && setData(d))
       .catch((e) => alive && setError(e instanceof Error ? e.message : String(e)))
       .finally(() => alive && setLoading(false));

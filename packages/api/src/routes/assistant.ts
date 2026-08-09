@@ -277,8 +277,8 @@ export async function assistantRoutes(app: FastifyInstance) {
       if (!isAssistantEnabled) {
         return reply.code(503).send({ error: "assistant not configured" });
       }
-      const { word, context, count } = req.body;
-      const { system, user } = buildWordMessages({ word, context, count });
+      const { word, context, meaning, count } = req.body;
+      const { system, user } = buildWordMessages({ word, context, meaning, count });
       try {
         const result = await collectCompletion(
           [

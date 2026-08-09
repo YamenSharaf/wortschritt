@@ -25,11 +25,6 @@ const Dumbbell = ({ className }: IconProps) => (
     <path d="M6.5 6.5 17.5 17.5M4 8v8M8 5v14M16 5v14M20 8v8" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
-const Plus = ({ className }: IconProps) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
-    <path d="M12 5v14M5 12h14" strokeLinecap="round" />
-  </svg>
-);
 const Gear = ({ className }: IconProps) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
     <circle cx="12" cy="12" r="3" />
@@ -48,7 +43,6 @@ const navItems = [
   { to: "/cheatsheets", label: "Sheets", Icon: Book },
   { to: "/exercises", label: "Practice", Icon: Dumbbell },
   { to: "/vocab", label: "Vocab", Icon: Cards },
-  { to: "/import", label: "Import", Icon: Plus },
   { to: "/settings", label: "Settings", Icon: Gear },
 ];
 
@@ -152,7 +146,7 @@ export function App() {
       </main>
 
       {/* Mobile bottom tab bar — fixed 5 columns, each capped to 1/5 width */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 overflow-hidden border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 overflow-hidden border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
         {navItems.map(({ to, label, end, Icon }) => (
           <NavLink
             key={to}
