@@ -204,7 +204,12 @@ export async function assistantRoutes(app: FastifyInstance) {
         tags: ["assistant"],
         body: generateBody,
         response: {
-          200: z.object({ items: z.array(exerciseItem) }),
+          200: z.object({
+            items: z.array(exerciseItem),
+            // How many raw items the model returned, so the client can tell
+            // "model returned nothing" from "returned items that were invalid".
+            received: z.number().int(),
+          }),
           502: z.object({ error: z.string() }),
           503: z.object({ error: z.string() }),
         },
@@ -275,7 +280,7 @@ export async function assistantRoutes(app: FastifyInstance) {
             "generate: some items failed validation and were dropped",
           );
         }
-        return { items };
+        return { items, received: rawItems.length };
       } catch (err) {
         app.log.error(err, "generate request failed");
         return reply.code(502).send({ error: "generation failed" });
