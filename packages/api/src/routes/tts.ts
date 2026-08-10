@@ -1,11 +1,5 @@
 import { createHash } from "node:crypto";
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
@@ -15,16 +9,25 @@ import { requireAuth } from "../auth/session";
 import { env, isTtsEnabled } from "../env";
 
 const base = env.TTS_URL ? env.TTS_URL.replace(/\/$/, "") : null;
-const dataDir = dirname(resolve(env.DATABASE_PATH));
-const voicesDir = join(dataDir, "voices");
-const cacheDir = join(dataDir, "tts-cache");
+// Cache synthesized clips on the app's own data volume (no sharing needed).
+const cacheDir = join(dirname(resolve(env.DATABASE_PATH)), "tts-cache");
 
-/** Voice ids present in the shared voices volume (piper's --data-dir). */
-function installedVoices(): string[] {
+/** Ask Piper which voices it has (GET /voices → { "<id>": {config}, … }). */
+async function installedVoices(): Promise<string[]> {
+  if (!base) return [];
   try {
-    return readdirSync(voicesDir)
-      .filter((f) => f.endsWith(".onnx"))
-      .map((f) => f.replace(/\.onnx$/, ""));
+    const res = await fetch(`${base}/voices`);
+    if (!res.ok) return [];
+    const json = (await res.json()) as unknown;
+    if (Array.isArray(json)) {
+      return json
+        .map((v) =>
+          typeof v === "string" ? v : ((v as { key?: string })?.key ?? ""),
+        )
+        .filter(Boolean);
+    }
+    if (json && typeof json === "object") return Object.keys(json);
+    return [];
   } catch {
     return [];
   }
@@ -41,7 +44,7 @@ export async function ttsRoutes(app: FastifyInstance) {
     },
     async () => ({
       available: isTtsEnabled,
-      installed: installedVoices(),
+      installed: await installedVoices(),
       catalog: TTS_VOICE_CATALOG.map((v) => ({ id: v.id, label: v.label })),
     }),
   );
@@ -135,7 +138,7 @@ export async function ttsRoutes(app: FastifyInstance) {
           app.log.error({ status: upstream.status, detail }, "tts download error");
           return reply.code(502).send({ error: "download failed" });
         }
-        return { ok: true as const, installed: installedVoices() };
+        return { ok: true as const, installed: await installedVoices() };
       } catch (err) {
         app.log.error(err, "tts download request failed");
         return reply.code(502).send({ error: "download failed" });

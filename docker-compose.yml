@@ -22,8 +22,6 @@ services:
     volumes:
       # Persist the SQLite database across restarts/upgrades.
       - ./data:/app/data
-      # Downloaded Piper voices (shared with the sidecar, read-only here).
-      - piper-voices:/app/data/voices:ro
       # Optional: edit git-versioned content without rebuilding the image.
       - ./content:/app/content:ro
     depends_on:
