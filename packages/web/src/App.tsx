@@ -38,12 +38,19 @@ const Cards = ({ className }: IconProps) => (
     <path d="M7 4h11a2 2 0 0 1 2 2v9" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
+const Pencil = ({ className }: IconProps) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
+    <path d="M4 20h4L18.5 9.5a2 2 0 0 0-2.8-2.8L5 17.2V20Z" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M14 7.5 16.5 10" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 
 const navItems = [
   { to: "/", label: "Home", end: true, Icon: Home },
   { to: "/cheatsheets", label: "Sheets", Icon: Book },
   { to: "/exercises", label: "Practice", Icon: Dumbbell },
   { to: "/vocab", label: "Vocab", Icon: Cards },
+  { to: "/notes", label: "Notes", Icon: Pencil },
   { to: "/settings", label: "Settings", Icon: Gear },
 ];
 
@@ -159,8 +166,8 @@ export function App() {
         <Outlet />
       </main>
 
-      {/* Mobile bottom tab bar — fixed 5 columns, each capped to 1/5 width */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 overflow-hidden border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
+      {/* Mobile bottom tab bar — fixed 6 columns, each capped to 1/6 width */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 overflow-hidden border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
         {navItems.map(({ to, label, end, Icon }) => (
           <NavLink
             key={to}

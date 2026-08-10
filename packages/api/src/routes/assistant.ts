@@ -14,6 +14,7 @@ import {
   buildMessages,
   buildChatSystem,
   buildGenerateMessages,
+  buildNotesCleanup,
   buildWordMessages,
 } from "../assistant/prompts";
 import { env, isAssistantEnabled } from "../env";
@@ -61,6 +62,10 @@ const gradeBody = z.object({
   prompt: z.string().max(2000).optional(),
   expected: z.array(z.string().min(1)).min(1),
   response: z.string().min(1).max(2000),
+});
+
+const cleanupNotesBody = z.object({
+  text: z.string().min(1).max(12000),
 });
 
 const generateBody = z.object({
@@ -329,6 +334,63 @@ export async function assistantRoutes(app: FastifyInstance) {
         return parsed.data;
       } catch (err) {
         app.log.error(err, "word request failed");
+        const reason = err instanceof Error ? err.message : String(err);
+        return reply.code(502).send({ error: `request failed: ${reason}` });
+      }
+    },
+  );
+
+  // Tidy rough learning notes into clean Markdown. Returns the whole cleaned
+  // note as one string (the client swaps it into the editor).
+  r.post(
+    "/api/assistant/cleanup-notes",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["assistant"],
+        body: cleanupNotesBody,
+        response: {
+          200: z.object({ text: z.string() }),
+          502: z.object({ error: z.string() }),
+          503: z.object({ error: z.string() }),
+        },
+      },
+    },
+    async (req, reply) => {
+      if (!isAssistantEnabled) {
+        return reply.code(503).send({ error: "assistant not configured" });
+      }
+      const { system, user } = buildNotesCleanup({
+        level: getSettings().level,
+        text: req.body.text,
+      });
+      try {
+        const result = await collectCompletion(
+          [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+          { temperature: 0.2, maxTokens: 4096 },
+        );
+        if (!result.ok) {
+          app.log.error(
+            { status: result.status, detail: result.detail },
+            "cleanup-notes upstream error",
+          );
+          return reply
+            .code(502)
+            .send({ error: `upstream ${result.status}: ${result.detail.slice(0, 200)}` });
+        }
+        // Strip an accidental ```markdown fence if the model added one anyway.
+        let text = result.content.trim();
+        const fence = text.match(/^```(?:markdown|md)?\s*([\s\S]*?)```$/i);
+        if (fence?.[1]) text = fence[1].trim();
+        if (!text) {
+          return reply.code(502).send({ error: "empty reply — try again" });
+        }
+        return { text };
+      } catch (err) {
+        app.log.error(err, "cleanup-notes request failed");
         const reason = err instanceof Error ? err.message : String(err);
         return reply.code(502).send({ error: `request failed: ${reason}` });
       }

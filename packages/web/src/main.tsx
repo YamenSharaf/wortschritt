@@ -17,6 +17,8 @@ import { ExercisePlayer } from "./pages/ExercisePlayer";
 import { Exercises } from "./pages/Exercises";
 import { ImportPage } from "./pages/Import";
 import { Login } from "./pages/Login";
+import { NoteEditor } from "./pages/NoteEditor";
+import { NotesPage } from "./pages/Notes";
 import { SettingsPage } from "./pages/Settings";
 import { VocabPage } from "./pages/Vocab";
 
@@ -32,6 +34,8 @@ const router = createBrowserRouter([
       { path: "exercises", element: <Exercises /> },
       { path: "exercises/:id", element: <ExercisePlayer /> },
       { path: "vocab", element: <VocabPage /> },
+      { path: "notes", element: <NotesPage /> },
+      { path: "notes/:id", element: <NoteEditor /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "import", element: <ImportPage /> },
     ],

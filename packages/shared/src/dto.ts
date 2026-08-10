@@ -189,6 +189,33 @@ export const saveVocabBody = z.object({
 });
 export type SaveVocabBody = z.infer<typeof saveVocabBody>;
 
+/** A free-form learning note (Markdown body), auto-saved. */
+export const note = z.object({
+  id: z.string(),
+  title: z.string(),
+  category: z.string(),
+  body: z.string(),
+  createdAt: z.number().int(),
+  updatedAt: z.number().int(),
+});
+export type Note = z.infer<typeof note>;
+
+/** Create a note (everything optional — starts blank, filled as you type). */
+export const createNoteBody = z.object({
+  title: z.string().max(200).default("Untitled"),
+  category: z.string().max(80).default(""),
+  body: z.string().default(""),
+});
+export type CreateNoteBody = z.infer<typeof createNoteBody>;
+
+/** Update a note (partial — auto-save sends whichever fields changed). */
+export const saveNoteBody = z.object({
+  title: z.string().max(200).optional(),
+  category: z.string().max(80).optional(),
+  body: z.string().optional(),
+});
+export type SaveNoteBody = z.infer<typeof saveNoteBody>;
+
 /** Aggregated progress returned to the dashboard. */
 export const progressSummary = z.object({
   totalAnswered: z.number().int(),
