@@ -147,10 +147,7 @@ export function VocabProvider({ children }: { children: ReactNode }) {
       {anchor && (
         <WordOverlay
           anchor={anchor}
-          saved={words.has(norm(anchor.display))}
-          savedEntry={entries.find((e) => e.word === norm(anchor.display))}
           onTranslate={() => setAnchor({ ...anchor, view: "panel" })}
-          onSave={save}
           onClose={() => setAnchor(null)}
         />
       )}
@@ -173,17 +170,11 @@ function anchorStyle(x: number, y: number): React.CSSProperties {
 
 function WordOverlay({
   anchor,
-  saved,
-  savedEntry,
   onTranslate,
-  onSave,
   onClose,
 }: {
   anchor: Anchor;
-  saved: boolean;
-  savedEntry?: VocabEntry;
   onTranslate: () => void;
-  onSave: (b: SaveVocabBody) => Promise<VocabEntry>;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -200,21 +191,9 @@ function WordOverlay({
         onClick={(e) => e.stopPropagation()}
       >
         {anchor.view === "menu" ? (
-          <WordMenu
-            display={anchor.display}
-            saved={saved}
-            onTranslate={onTranslate}
-            onClose={onClose}
-          />
+          <WordMenu display={anchor.display} onTranslate={onTranslate} onClose={onClose} />
         ) : (
-          <WordPanel
-            display={anchor.display}
-            context={anchor.context}
-            saved={saved}
-            savedEntry={savedEntry}
-            onSave={onSave}
-            onClose={onClose}
-          />
+          <WordPanel display={anchor.display} context={anchor.context} onClose={onClose} />
         )}
       </div>
     </div>
@@ -223,15 +202,14 @@ function WordOverlay({
 
 function WordMenu({
   display,
-  saved,
   onTranslate,
   onClose,
 }: {
   display: string;
-  saved: boolean;
   onTranslate: () => void;
   onClose: () => void;
 }) {
+  const { words } = useVocab();
   const item =
     "flex flex-1 items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800";
   return (
@@ -249,7 +227,7 @@ function WordMenu({
       >
         📋 Copy
       </button>
-      {saved && (
+      {words.has(norm(display)) && (
         <Link to="/vocab" onClick={onClose} className={item}>
           ✓ In vocab
         </Link>
@@ -261,64 +239,81 @@ function WordMenu({
 function WordPanel({
   display,
   context,
-  saved,
-  savedEntry,
-  onSave,
   onClose,
 }: {
   display: string;
   context?: string;
-  saved: boolean;
-  savedEntry?: VocabEntry;
-  onSave: (b: SaveVocabBody) => Promise<VocabEntry>;
   onClose: () => void;
 }) {
-  const [data, setData] = useState<WordLookup | null>(
-    savedEntry
-      ? { translation: savedEntry.translation, examples: savedEntry.examples }
-      : null,
-  );
-  const [loading, setLoading] = useState(!savedEntry);
+  const { entries, groups, save, setWordGroup, createGroup } = useVocab();
+  const [fetched, setFetched] = useState<WordLookup | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [justSaved, setJustSaved] = useState(saved);
   const [saving, setSaving] = useState(false);
+  const [newGroup, setNewGroup] = useState("");
 
-  useEffect(() => {
-    if (savedEntry) return; // already have cached data — no AI call
-    let alive = true;
+  // If the tapped surface form itself is already saved, use it (no AI call).
+  const preSaved = entries.find((e) => e.word === norm(display));
+
+  function load() {
     setLoading(true);
     setError(null);
     api
       .translateWord(display, { context, count: 2 })
-      .then((d) => alive && setData(d))
-      .catch((e) => alive && setError(e instanceof Error ? e.message : String(e)))
-      .finally(() => alive && setLoading(false));
-    return () => {
-      alive = false;
-    };
-  }, [display, context, savedEntry]);
+      .then(setFetched)
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setLoading(false));
+  }
 
-  async function add() {
-    if (!data) return;
+  useEffect(() => {
+    if (preSaved) return; // cached — no lookup
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [display, context]);
+
+  const data: WordLookup | null = preSaved
+    ? { lemma: preSaved.display, translation: preSaved.translation, examples: preSaved.examples }
+    : fetched;
+  // Save under the base form (e.g. "trifft" → "treffen").
+  const headword = data?.lemma?.trim() || display;
+  const savedEntry = entries.find((e) => e.word === norm(headword));
+  const isSaved = !!savedEntry;
+  const inflected = headword.toLowerCase() !== display.toLowerCase();
+
+  async function ensureSaved() {
+    if (isSaved || !data) return;
+    await save({
+      word: headword,
+      display: headword,
+      translation: data.translation,
+      examples: data.examples,
+    });
+  }
+  async function addPlain() {
     setSaving(true);
     try {
-      await onSave({
-        word: display,
-        display,
-        translation: data.translation,
-        examples: data.examples,
-      });
-      setJustSaved(true);
+      await ensureSaved();
     } finally {
       setSaving(false);
     }
   }
+  async function toggleGroup(id: number, member: boolean) {
+    await ensureSaved();
+    await setWordGroup(headword, id, member);
+  }
 
   const ex = data?.examples?.[0];
   return (
-    <div className="p-3 font-content">
+    <div className="max-h-[70vh] overflow-y-auto p-3 font-content">
       <div className="mb-1 flex items-baseline justify-between gap-2">
-        <span className="text-base font-semibold">{display}</span>
+        <span className="text-base font-semibold">
+          {headword}
+          {inflected && (
+            <span className="ml-1.5 text-xs font-normal text-slate-400">
+              from “{display}”
+            </span>
+          )}
+        </span>
         <button
           type="button"
           onClick={onClose}
@@ -330,36 +325,93 @@ function WordPanel({
       </div>
       {loading && <p className="py-2 text-sm text-slate-500">Translating…</p>}
       {error && (
-        <p className="rounded-lg border border-red-300 bg-red-50 px-2 py-1.5 text-xs text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-          {error}
-        </p>
+        <div className="rounded-lg border border-red-300 bg-red-50 px-2 py-1.5 text-xs text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={load}
+            className="mt-1 font-medium underline"
+          >
+            Try again
+          </button>
+        </div>
       )}
       {data && (
         <>
-          <p className="text-sm text-slate-700 dark:text-slate-200">
-            {data.translation}
-          </p>
+          <p className="text-sm text-slate-700 dark:text-slate-200">{data.translation}</p>
           {ex && (
             <div className="mt-2 rounded-lg bg-slate-50 p-2 text-sm dark:bg-slate-800">
               <p className="text-slate-800 dark:text-slate-100">{ex.de}</p>
               <p className="text-slate-500">{ex.en}</p>
             </div>
           )}
-          <div className="mt-3 flex items-center gap-2">
-            {justSaved ? (
+
+          {groups.length > 0 && (
+            <div className="mt-3">
+              <p className="mb-1 text-xs font-medium text-slate-400">
+                {isSaved ? "Groups" : "Save to group"}
+              </p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {groups.map((g) => {
+                  const member = savedEntry?.groups.includes(g.id) ?? false;
+                  return (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => void toggleGroup(g.id, !member)}
+                      className={`rounded-full border px-2.5 py-1 text-xs ${
+                        member
+                          ? "border-accent bg-accent text-accent-foreground"
+                          : "border-slate-300 text-slate-500 hover:border-slate-400 dark:border-slate-700"
+                      }`}
+                    >
+                      {member ? "✓ " : ""}
+                      {g.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const name = newGroup.trim();
+              if (!name) return;
+              const g = await createGroup(name);
+              await toggleGroup(g.id, true);
+              setNewGroup("");
+            }}
+            className="mt-2 flex items-center gap-1"
+          >
+            <input
+              value={newGroup}
+              onChange={(e) => setNewGroup(e.target.value)}
+              placeholder="＋ New group"
+              className="w-28 rounded-full border border-dashed border-slate-300 bg-transparent px-2.5 py-1 text-xs outline-none focus:border-accent dark:border-slate-700"
+            />
+            {newGroup.trim() && (
+              <button type="submit" className="text-xs font-medium text-accent">
+                Add
+              </button>
+            )}
+          </form>
+
+          <div className="mt-3">
+            {isSaved ? (
               <Link
                 to="/vocab"
                 onClick={onClose}
-                className="flex-1 rounded-lg bg-accent px-3 py-1.5 text-center text-sm font-medium text-accent-foreground"
+                className="block flex-1 rounded-lg bg-accent px-3 py-1.5 text-center text-sm font-medium text-accent-foreground"
               >
                 ✓ Saved — open Vocab
               </Link>
             ) : (
               <button
                 type="button"
-                onClick={add}
+                onClick={addPlain}
                 disabled={saving}
-                className="flex-1 rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
+                className="w-full rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
               >
                 {saving ? "Adding…" : "＋ Add to vocab"}
               </button>

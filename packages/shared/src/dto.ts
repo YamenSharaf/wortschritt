@@ -95,6 +95,9 @@ export type VocabExample = z.infer<typeof vocabExample>;
 
 /** AI word lookup result (not yet saved). */
 export const wordLookup = z.object({
+  /** Dictionary base form (infinitive for verbs, nominative singular for
+   *  nouns), so an inflected word like "trifft" is saved as "treffen". */
+  lemma: z.string().optional(),
   translation: z.string(),
   examples: z.array(vocabExample),
 });

@@ -115,6 +115,25 @@ function parseVerdict(content: string): { correct: boolean; feedback: string } {
   return { correct, feedback: content.slice(0, 200).trim() };
 }
 
+/** Best-effort extraction of one JSON object from a model reply that may be
+ *  wrapped in ```json fences or padded with stray prose. */
+function extractJsonObject(content: string): unknown | null {
+  let s = content.trim();
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence?.[1]) s = fence[1].trim();
+  const candidates = [s];
+  const braced = s.match(/\{[\s\S]*\}/);
+  if (braced) candidates.push(braced[0]);
+  for (const c of candidates) {
+    try {
+      return JSON.parse(c);
+    } catch {
+      /* try next candidate */
+    }
+  }
+  return null;
+}
+
 type CompletionResult =
   | { ok: true; content: string }
   | { ok: false; status: number; detail: string };
@@ -285,7 +304,7 @@ export async function assistantRoutes(app: FastifyInstance) {
             { role: "system", content: system },
             { role: "user", content: user },
           ],
-          { temperature: 0.5, maxTokens: 700 },
+          { temperature: 0.4, maxTokens: 900 },
         );
         if (!result.ok) {
           app.log.error(
@@ -296,12 +315,16 @@ export async function assistantRoutes(app: FastifyInstance) {
             .code(502)
             .send({ error: `upstream ${result.status}: ${result.detail.slice(0, 200)}` });
         }
-        const match = result.content.match(/\{[\s\S]*\}/);
-        const parsed = match
-          ? wordLookup.safeParse(JSON.parse(match[0]))
-          : null;
+        const obj = extractJsonObject(result.content);
+        const parsed = obj ? wordLookup.safeParse(obj) : null;
         if (!parsed || !parsed.success) {
-          return reply.code(502).send({ error: "could not parse translation" });
+          app.log.warn(
+            { content: result.content.slice(0, 300) },
+            "word: could not parse tutor reply",
+          );
+          return reply
+            .code(502)
+            .send({ error: "could not read the tutor's reply — try again" });
         }
         return parsed.data;
       } catch (err) {
