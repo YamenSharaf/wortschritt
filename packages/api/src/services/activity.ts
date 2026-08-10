@@ -1,8 +1,10 @@
 import { desc, eq, sql } from "drizzle-orm";
 import type {
+  ExerciseProgress,
   ExerciseRun,
   RecordRunBody,
   RunSummary,
+  SaveExerciseProgressBody,
   SheetView,
   SheetViewBody,
 } from "@mdb/shared";
@@ -58,6 +60,54 @@ export function latestRunForSet(setId: string): ExerciseRun | null {
     finishedAt: row.finishedAt,
     results: row.results,
   };
+}
+
+// --- resumable exercise position ------------------------------------------
+
+export function getExerciseProgress(setId: string): ExerciseProgress | null {
+  const row = db
+    .select()
+    .from(schema.exerciseProgress)
+    .where(eq(schema.exerciseProgress.setId, setId))
+    .get();
+  if (!row) return null;
+  return {
+    setId: row.setId,
+    index: row.position,
+    results: row.results,
+    responses: row.responses,
+    updatedAt: row.updatedAt,
+  };
+}
+
+export function saveExerciseProgress(
+  setId: string,
+  body: SaveExerciseProgressBody,
+): void {
+  const row = {
+    setId,
+    position: body.index,
+    results: body.results,
+    responses: body.responses,
+  };
+  db.insert(schema.exerciseProgress)
+    .values(row)
+    .onConflictDoUpdate({
+      target: schema.exerciseProgress.setId,
+      set: {
+        position: row.position,
+        results: row.results,
+        responses: row.responses,
+        updatedAt: sql`(unixepoch())`,
+      },
+    })
+    .run();
+}
+
+export function clearExerciseProgress(setId: string): void {
+  db.delete(schema.exerciseProgress)
+    .where(eq(schema.exerciseProgress.setId, setId))
+    .run();
 }
 
 export function recordSheetView(v: SheetViewBody): void {

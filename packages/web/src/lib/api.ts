@@ -1,12 +1,14 @@
 import type {
   Cheatsheet,
   ExerciseItem,
+  ExerciseProgress,
   ExerciseRun,
   ExerciseSet,
   ImportBody,
   ProgressSummary,
   RecordRunBody,
   RunSummary,
+  SaveExerciseProgressBody,
   SaveVocabBody,
   Settings,
   SheetView,
@@ -79,6 +81,19 @@ export const api = {
     req<{ ok: true }>("/api/runs", {
       method: "POST",
       body: JSON.stringify(body),
+    }),
+  exerciseProgress: (setId: string) =>
+    req<ExerciseProgress | null>(
+      `/api/exercise-progress/${encodeURIComponent(setId)}`,
+    ),
+  saveExerciseProgress: (setId: string, body: SaveExerciseProgressBody) =>
+    req<{ ok: true }>(`/api/exercise-progress/${encodeURIComponent(setId)}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  clearExerciseProgress: (setId: string) =>
+    req<{ ok: true }>(`/api/exercise-progress/${encodeURIComponent(setId)}`, {
+      method: "DELETE",
     }),
   sheetViews: (limit?: number) =>
     req<SheetView[]>(`/api/sheet-views${limit ? `?limit=${limit}` : ""}`),

@@ -2,19 +2,24 @@ import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import {
+  exerciseProgress,
   exerciseRun,
   recordRunBody,
   runSummary,
+  saveExerciseProgressBody,
   sheetView,
   sheetViewBody,
 } from "@mdb/shared";
 import { requireAuth } from "../auth/session";
 import {
+  clearExerciseProgress,
+  getExerciseProgress,
   latestRunForSet,
   latestRunsPerSet,
   recentSheetViews,
   recordRun,
   recordSheetView,
+  saveExerciseProgress,
 } from "../services/activity";
 
 export async function activityRoutes(app: FastifyInstance) {
@@ -89,5 +94,52 @@ export async function activityRoutes(app: FastifyInstance) {
       },
     },
     async (req) => recentSheetViews(req.query.limit),
+  );
+
+  // Resumable in-progress position within an exercise set.
+  r.get(
+    "/api/exercise-progress/:setId",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["activity"],
+        params: z.object({ setId: z.string().min(1) }),
+        response: { 200: exerciseProgress.nullable() },
+      },
+    },
+    async (req) => getExerciseProgress(req.params.setId),
+  );
+
+  r.put(
+    "/api/exercise-progress/:setId",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["activity"],
+        params: z.object({ setId: z.string().min(1) }),
+        body: saveExerciseProgressBody,
+        response: { 200: z.object({ ok: z.literal(true) }) },
+      },
+    },
+    async (req) => {
+      saveExerciseProgress(req.params.setId, req.body);
+      return { ok: true as const };
+    },
+  );
+
+  r.delete(
+    "/api/exercise-progress/:setId",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["activity"],
+        params: z.object({ setId: z.string().min(1) }),
+        response: { 200: z.object({ ok: z.literal(true) }) },
+      },
+    },
+    async (req) => {
+      clearExerciseProgress(req.params.setId);
+      return { ok: true as const };
+    },
   );
 }

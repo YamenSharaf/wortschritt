@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import {
   generateCounts,
   type ExerciseItem,
+  type ExerciseProgress,
   type ExerciseRun,
   type ExerciseSet,
 } from "@mdb/shared";
@@ -21,8 +22,10 @@ const ADVANCE_GUARD_MS = 400;
 export function ExercisePlayer() {
   const { id } = useParams();
   const set = useAsync(() => api.exercise(id!), [id]);
+  // Resume where the learner left off (null if none / on error).
+  const progress = useAsync(() => api.exerciseProgress(id!).catch(() => null), [id]);
 
-  if (set.status === "loading")
+  if (set.status === "loading" || progress.status === "loading")
     return <p className="text-slate-500">Loading…</p>;
   if (set.status === "error")
     return (
@@ -34,19 +37,38 @@ export function ExercisePlayer() {
       </div>
     );
 
-  return <Runner set={set.data} />;
+  return (
+    <Runner
+      set={set.data}
+      initial={progress.status === "ready" ? progress.data : null}
+    />
+  );
 }
 
-function Runner({ set }: { set: ExerciseSet }) {
+function Runner({
+  set,
+  initial,
+}: {
+  set: ExerciseSet;
+  initial: ExerciseProgress | null;
+}) {
   const setId = set.id;
   const title = set.title;
   const [items, setItems] = useState<ExerciseItem[]>(set.items);
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(() =>
+    initial ? Math.min(Math.max(0, initial.index), set.items.length - 1) : 0,
+  );
   // Per-item correctness / responses for THIS run, keyed by item id. Drives the
   // live score, the question navigator, and the run recorded at the end.
-  const [results, setResults] = useState<Record<string, boolean>>({});
+  const [results, setResults] = useState<Record<string, boolean>>(() => {
+    if (!initial) return {};
+    const ids = new Set(set.items.map((i) => i.id));
+    return Object.fromEntries(
+      Object.entries(initial.results).filter(([k]) => ids.has(k)),
+    );
+  });
   const [responses, setResponses] = useState<Record<string, string | undefined>>(
-    {},
+    () => (initial ? { ...initial.responses } : {}),
   );
   // Whether the current *visit* of the current item has been answered. Resets on
   // navigation so revisiting an item re-opens it for another attempt.
@@ -131,16 +153,40 @@ function Runner({ set }: { set: ExerciseSet }) {
   // Save on leave (route change unmounts this component).
   useEffect(() => () => saveRun(), []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Persist the resume point (position + answers so far), restricted to the
+  // base set so ephemeral "generate more" items never end up saved.
+  function saveProgress(
+    i: number,
+    res: Record<string, boolean>,
+    resp: Record<string, string | undefined>,
+  ) {
+    const ids = new Set(set.items.map((x) => x.id));
+    const results = Object.fromEntries(
+      Object.entries(res).filter(([k]) => ids.has(k)),
+    );
+    const responses: Record<string, string> = {};
+    for (const [k, v] of Object.entries(resp)) {
+      if (typeof v === "string" && ids.has(k)) responses[k] = v;
+    }
+    const position = Math.min(Math.max(0, i), set.items.length - 1);
+    void api
+      .saveExerciseProgress(setId, { index: position, results, responses })
+      .catch(() => {});
+  }
+
   function handleAnswered(correct: boolean, response?: string) {
     if (answered) return;
     answeredAt.current = performance.now();
     setAnswered(true);
     setLastCorrect(correct);
     setLastResponse(response);
-    setResults((r) => ({ ...r, [item.id]: correct }));
-    setResponses((r) => ({ ...r, [item.id]: response }));
+    const nextResults = { ...results, [item.id]: correct };
+    const nextResponses = { ...responses, [item.id]: response };
+    setResults(nextResults);
+    setResponses(nextResponses);
     // Fire-and-forget; a failed save shouldn't block practice.
     void api.recordAttempt(setId, item.id, correct).catch(() => {});
+    saveProgress(index, nextResults, nextResponses);
   }
 
   function goTo(i: number) {
@@ -148,11 +194,13 @@ function Runner({ set }: { set: ExerciseSet }) {
     setIndex(i);
     setAnswered(false);
     setLastResponse(undefined);
+    saveProgress(i, results, responses);
   }
 
   function next() {
     if (index + 1 >= items.length) {
       saveRun();
+      void api.clearExerciseProgress(setId).catch(() => {});
       setDone(true);
     } else {
       goTo(index + 1);
