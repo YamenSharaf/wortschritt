@@ -25,12 +25,44 @@ export function ttsSupported(): boolean {
 }
 
 let voices: SpeechSynthesisVoice[] = [];
+const voiceListeners = new Set<() => void>();
 function refreshVoices() {
   if (webSpeechSupported()) voices = window.speechSynthesis.getVoices();
+  voiceListeners.forEach((l) => l());
 }
 if (typeof window !== "undefined" && "speechSynthesis" in window) {
   refreshVoices();
   window.speechSynthesis.onvoiceschanged = refreshVoices;
+}
+
+/** Subscribe to the (async) device voice list becoming available/changing. */
+export function onVoicesChanged(cb: () => void): () => void {
+  voiceListeners.add(cb);
+  return () => voiceListeners.delete(cb);
+}
+
+/** The device's available voices. */
+export function deviceVoices(): SpeechSynthesisVoice[] {
+  if (voices.length) return voices;
+  return webSpeechSupported() ? window.speechSynthesis.getVoices() : [];
+}
+
+// A specific device voice, remembered per browser/device (not synced).
+const DEVICE_VOICE_KEY = "mdb-device-voice";
+export function getDeviceVoicePref(): string {
+  try {
+    return localStorage.getItem(DEVICE_VOICE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+export function setDeviceVoicePref(uri: string): void {
+  try {
+    if (uri) localStorage.setItem(DEVICE_VOICE_KEY, uri);
+    else localStorage.removeItem(DEVICE_VOICE_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 /**
@@ -59,7 +91,10 @@ function speakDevice(text: string, lang: string) {
   synth.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = lang;
-  const voice = pickVoice(voices.length ? voices : synth.getVoices(), lang);
+  const list = voices.length ? voices : synth.getVoices();
+  const pref = getDeviceVoicePref();
+  const voice =
+    (pref && list.find((v) => v.voiceURI === pref)) || pickVoice(list, lang);
   if (voice) u.voice = voice;
   u.rate = 0.95;
   synth.speak(u);

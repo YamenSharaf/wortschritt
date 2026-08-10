@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import {
   generateCounts,
   TTS_VOICE_CATALOG,
@@ -8,7 +8,14 @@ import { api } from "../lib/api";
 import { useAsync } from "../lib/useAsync";
 import { useTheme } from "../lib/theme";
 import { ACCENTS } from "../lib/themes";
-import { setServerTts, speak } from "../lib/tts";
+import {
+  deviceVoices,
+  getDeviceVoicePref,
+  onVoicesChanged,
+  setDeviceVoicePref,
+  setServerTts,
+  speak,
+} from "../lib/tts";
 import { ImportPage } from "./Import";
 
 export function SettingsPage() {
@@ -222,7 +229,7 @@ function PronunciationSetting({
         onChange={(e) => select(e.target.value)}
         className="input"
       >
-        <option value="">Device voice (system)</option>
+        <option value="">Device voice (this browser)</option>
         {available &&
           TTS_VOICE_CATALOG.filter((v) => installed.includes(v.id)).map((v) => (
             <option key={v.id} value={v.id}>
@@ -230,24 +237,24 @@ function PronunciationSetting({
             </option>
           ))}
       </select>
-      {!available && (
-        <p className="mt-1 text-xs text-slate-400">
-          Uses your device’s built-in voice. Higher-quality German voices need
-          the optional Piper TTS sidecar (set <code>TTS_URL</code>).
-        </p>
-      )}
-      {available && (
-        <div className="mt-2 space-y-2">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => speak("Guten Tag! Ich lerne Deutsch mit dem Baby.")}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:border-slate-500 dark:border-slate-700"
-            >
-              🔊 Test
-            </button>
-          </div>
-          {notInstalled.length > 0 && (
+
+      {value === "" && <DeviceVoicePicker />}
+
+      <div className="mt-2 space-y-2">
+        <button
+          type="button"
+          onClick={() => speak("Guten Tag! Ich lerne Deutsch mit dem Baby.")}
+          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:border-slate-500 dark:border-slate-700"
+        >
+          🔊 Test
+        </button>
+        {!available && (
+          <p className="text-xs text-slate-400">
+            Higher-quality German voices need the optional Piper TTS sidecar
+            (set <code>TTS_URL</code>).
+          </p>
+        )}
+        {available && notInstalled.length > 0 && (
             <div>
               <p className="mb-1 text-xs font-medium text-slate-400">
                 Download more voices
@@ -268,8 +275,46 @@ function PronunciationSetting({
             </div>
           )}
         </div>
-      )}
     </Field>
+  );
+}
+
+/** Per-device (localStorage) choice of a specific browser voice. */
+function DeviceVoicePicker() {
+  const [, force] = useReducer((x: number) => x + 1, 0);
+  const [pref, setPref] = useState(getDeviceVoicePref());
+  useEffect(() => onVoicesChanged(() => force()), []);
+
+  const list = deviceVoices();
+  if (list.length === 0) return null;
+  const de = list.filter((v) => v.lang?.toLowerCase().startsWith("de"));
+  const other = list.filter((v) => !v.lang?.toLowerCase().startsWith("de"));
+
+  return (
+    <div className="mt-2">
+      <span className="mb-1 block text-xs font-medium text-slate-400">
+        Voice on this device
+      </span>
+      <select
+        value={pref}
+        onChange={(e) => {
+          setDeviceVoicePref(e.target.value);
+          setPref(e.target.value);
+        }}
+        className="input"
+      >
+        <option value="">Auto (best German)</option>
+        {[...de, ...other].map((v) => (
+          <option key={v.voiceURI} value={v.voiceURI}>
+            {v.name}
+            {v.lang ? ` — ${v.lang}` : ""}
+          </option>
+        ))}
+      </select>
+      <p className="mt-1 text-xs text-slate-400">
+        Remembered on this device only.
+      </p>
+    </div>
   );
 }
 
