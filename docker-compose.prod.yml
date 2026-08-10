@@ -36,8 +36,6 @@ services:
     volumes:
       # SQLite database (progress, settings, imported content) — back this up.
       - ./data:/app/data
-      # Downloaded Piper voices (shared with the sidecar, read-only here).
-      - piper-voices:/app/data/voices:ro
       # Optional: override the baked-in git content without rebuilding.
       # - ./content:/app/content:ro
     depends_on:
