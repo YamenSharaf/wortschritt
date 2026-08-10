@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { VocabEntry, VocabGroup } from "@mdb/shared";
 import { SearchBox } from "../components/SearchBox";
+import { SpeakButton } from "../components/SpeakButton";
 import { api } from "../lib/api";
 import { timeAgo } from "../lib/time";
 import { useVocab } from "../lib/vocab";
@@ -319,41 +320,44 @@ function VocabRow({
 
   return (
     <div className="bg-white dark:bg-slate-900">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60"
-      >
-        <span className="w-1/3 shrink-0 font-medium">{entry.display}</span>
-        <span className="min-w-0 flex-1 truncate text-sm text-slate-500">
-          {entry.translation}
-        </span>
-        {memberChips.length > 0 && (
-          <span className="hidden shrink-0 gap-1 sm:flex">
-            {memberChips.slice(0, 2).map((g) => (
-              <span
-                key={g.id}
-                className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800"
-              >
-                {g.name}
-              </span>
-            ))}
-          </span>
-        )}
-        <span className="shrink-0 text-xs text-slate-400">{timeAgo(entry.createdAt)}</span>
-        <svg
-          viewBox="0 0 24 24"
-          width="14"
-          height="14"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
-          aria-hidden
+      <div className="flex items-center pr-2">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60"
         >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
-      </button>
+          <span className="w-1/3 shrink-0 font-medium">{entry.display}</span>
+          <span className="min-w-0 flex-1 truncate text-sm text-slate-500">
+            {entry.translation}
+          </span>
+          {memberChips.length > 0 && (
+            <span className="hidden shrink-0 gap-1 sm:flex">
+              {memberChips.slice(0, 2).map((g) => (
+                <span
+                  key={g.id}
+                  className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800"
+                >
+                  {g.name}
+                </span>
+              ))}
+            </span>
+          )}
+          <span className="shrink-0 text-xs text-slate-400">{timeAgo(entry.createdAt)}</span>
+          <svg
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+            aria-hidden
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+        <SpeakButton text={entry.display} className="ml-1" />
+      </div>
 
       {open && (
         <div className="border-t border-slate-100 px-4 py-3 font-content dark:border-slate-800">
@@ -361,7 +365,10 @@ function VocabRow({
           <div className="mt-2 space-y-2">
             {entry.examples.map((ex, i) => (
               <div key={i} className="rounded-lg bg-slate-50 p-2 text-sm dark:bg-slate-800">
-                <p className="text-slate-800 dark:text-slate-100">{ex.de}</p>
+                <div className="flex items-start justify-between gap-1">
+                  <p className="text-slate-800 dark:text-slate-100">{ex.de}</p>
+                  <SpeakButton text={ex.de} className="-mr-1 -mt-1" />
+                </div>
                 <p className="text-slate-500">{ex.en}</p>
               </div>
             ))}

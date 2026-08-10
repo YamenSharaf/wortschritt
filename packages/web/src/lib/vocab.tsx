@@ -13,7 +13,9 @@ import type {
   VocabGroup,
   WordLookup,
 } from "@mdb/shared";
+import { SpeakButton } from "../components/SpeakButton";
 import { api } from "./api";
+import { speak, ttsSupported } from "./tts";
 
 const norm = (w: string) => w.trim().toLowerCase();
 
@@ -209,11 +211,15 @@ function WordMenu({
   onTranslate: () => void;
   onClose: () => void;
 }) {
-  const { words } = useVocab();
   const item =
-    "flex flex-1 items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800";
+    "flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap px-2.5 py-2.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800";
   return (
     <div className="flex items-stretch divide-x divide-slate-200 dark:divide-slate-700">
+      {ttsSupported() && (
+        <button type="button" onClick={() => speak(display)} className={item}>
+          🔊 Speak
+        </button>
+      )}
       <button type="button" onClick={onTranslate} className={item}>
         🌐 Translate
       </button>
@@ -227,11 +233,6 @@ function WordMenu({
       >
         📋 Copy
       </button>
-      {words.has(norm(display)) && (
-        <Link to="/vocab" onClick={onClose} className={item}>
-          ✓ In vocab
-        </Link>
-      )}
     </div>
   );
 }
@@ -305,20 +306,23 @@ function WordPanel({
   const ex = data?.examples?.[0];
   return (
     <div className="max-h-[70vh] overflow-y-auto p-3 font-content">
-      <div className="mb-1 flex items-baseline justify-between gap-2">
-        <span className="text-base font-semibold">
-          {headword}
-          {inflected && (
-            <span className="ml-1.5 text-xs font-normal text-slate-400">
-              from “{display}”
-            </span>
-          )}
-        </span>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-1">
+          <span className="truncate text-base font-semibold">
+            {headword}
+            {inflected && (
+              <span className="ml-1.5 text-xs font-normal text-slate-400">
+                from “{display}”
+              </span>
+            )}
+          </span>
+          <SpeakButton text={headword} />
+        </div>
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+          className="shrink-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
         >
           ✕
         </button>
@@ -341,7 +345,10 @@ function WordPanel({
           <p className="text-sm text-slate-700 dark:text-slate-200">{data.translation}</p>
           {ex && (
             <div className="mt-2 rounded-lg bg-slate-50 p-2 text-sm dark:bg-slate-800">
-              <p className="text-slate-800 dark:text-slate-100">{ex.de}</p>
+              <div className="flex items-start justify-between gap-1">
+                <p className="text-slate-800 dark:text-slate-100">{ex.de}</p>
+                <SpeakButton text={ex.de} className="-mr-1 -mt-1" />
+              </div>
               <p className="text-slate-500">{ex.en}</p>
             </div>
           )}
