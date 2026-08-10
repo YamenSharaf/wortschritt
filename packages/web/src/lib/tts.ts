@@ -33,15 +33,33 @@ if (typeof window !== "undefined" && "speechSynthesis" in window) {
   window.speechSynthesis.onvoiceschanged = refreshVoices;
 }
 
+/**
+ * Pick the best available voice for `lang`. Prefers a high-quality voice
+ * (Microsoft "Natural"/"Online" on Edge, Apple "Enhanced/Premium", or any
+ * cloud voice) over the basic default, then falls back to any matching voice.
+ */
+function pickVoice(
+  list: SpeechSynthesisVoice[],
+  lang: string,
+): SpeechSynthesisVoice | undefined {
+  const prefix = lang.slice(0, 2).toLowerCase();
+  const matching = list.filter((v) => v.lang?.toLowerCase().startsWith(prefix));
+  if (matching.length === 0) return undefined;
+  const nice = /natural|neural|online|enhanced|premium|wavenet/i;
+  return (
+    matching.find((v) => nice.test(v.name)) ??
+    matching.find((v) => v.localService === false) ??
+    matching[0]
+  );
+}
+
 function speakDevice(text: string, lang: string) {
   if (!webSpeechSupported()) return;
   const synth = window.speechSynthesis;
   synth.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = lang;
-  const list = voices.length ? voices : synth.getVoices();
-  const prefix = lang.slice(0, 2).toLowerCase();
-  const voice = list.find((v) => v.lang?.toLowerCase().startsWith(prefix));
+  const voice = pickVoice(voices.length ? voices : synth.getVoices(), lang);
   if (voice) u.voice = voice;
   u.rate = 0.95;
   synth.speak(u);
