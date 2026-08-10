@@ -130,6 +130,15 @@ published image, content is baked in (uncomment the mount to override it).
 
 Backups are trivial — copy `data/app.db`.
 
+### Pronunciation (optional)
+
+Both compose files include a **Piper** TTS sidecar for neural German
+pronunciation (the 🔊 buttons on words and examples). It's internal-only (no
+published port); the app proxies to it and caches clips. A few German voices
+ship in the image; download more from **Settings → Pronunciation**. To turn it
+off, drop the `piper` service and set `TTS_URL=` (empty) — the app then falls
+back to the browser's built-in voice.
+
 ## Data model
 
 - `settings` — single JSON row (display name, CEFR level, daily goal, theme).

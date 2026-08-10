@@ -5,6 +5,7 @@ import { api } from "./lib/api";
 import { useAuth } from "./lib/auth";
 import { useConfig } from "./lib/config";
 import { useTheme } from "./lib/theme";
+import { setServerTts } from "./lib/tts";
 import { VocabProvider } from "./lib/vocab";
 
 type IconProps = { className?: string };
@@ -86,6 +87,19 @@ export function App() {
         .catch(() => {});
     }
   }, [authenticated, hasStored, setTheme]);
+
+  // Wire up the Piper voice (if the sidecar is up and a voice is chosen).
+  useEffect(() => {
+    if (!authenticated) return;
+    Promise.all([api.ttsStatus(), api.settings()])
+      .then(([st, se]) =>
+        setServerTts({
+          enabled: st.available && st.installed.includes(se.ttsVoice),
+          voice: se.ttsVoice,
+        }),
+      )
+      .catch(() => {});
+  }, [authenticated]);
 
   if (loading) {
     return (

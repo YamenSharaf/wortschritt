@@ -1,9 +1,14 @@
-import { useEffect, useState } from "react";
-import { generateCounts, type Settings } from "@mdb/shared";
+import { useEffect, useMemo, useState } from "react";
+import {
+  generateCounts,
+  TTS_VOICE_CATALOG,
+  type Settings,
+} from "@mdb/shared";
 import { api } from "../lib/api";
 import { useAsync } from "../lib/useAsync";
 import { useTheme } from "../lib/theme";
 import { ACCENTS } from "../lib/themes";
+import { setServerTts, speak } from "../lib/tts";
 import { ImportPage } from "./Import";
 
 export function SettingsPage() {
@@ -137,6 +142,12 @@ function Preferences() {
           The default count for “Generate more” after finishing an exercise. You
           can still change it there each time.
         </p>
+        <PronunciationSetting
+          value={form.ttsVoice}
+          onChange={(v) => {
+            setForm({ ...form, ttsVoice: v });
+          }}
+        />
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -162,6 +173,103 @@ function Preferences() {
         {saved && <span className="ml-3 text-sm text-green-600">Saved ✓</span>}
       </div>
     </div>
+  );
+}
+
+/** Choose the pronunciation voice (device TTS or a downloaded Piper voice). */
+function PronunciationSetting({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const status = useAsync(() => api.ttsStatus(), []);
+  const [installed, setInstalled] = useState<string[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (status.status === "ready") setInstalled(status.data.installed);
+  }, [status.status]);
+
+  const available = status.status === "ready" && status.data.available;
+  const notInstalled = useMemo(
+    () => TTS_VOICE_CATALOG.filter((v) => !installed.includes(v.id)),
+    [installed],
+  );
+
+  function select(v: string) {
+    onChange(v);
+    setServerTts({ enabled: available && installed.includes(v), voice: v });
+  }
+
+  async function download(id: string) {
+    setBusy(id);
+    try {
+      const res = await api.ttsDownload(id);
+      setInstalled(res.installed);
+    } catch {
+      /* ignore; button re-enables */
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return (
+    <Field label="Pronunciation voice">
+      <select
+        value={value}
+        onChange={(e) => select(e.target.value)}
+        className="input"
+      >
+        <option value="">Device voice (system)</option>
+        {available &&
+          TTS_VOICE_CATALOG.filter((v) => installed.includes(v.id)).map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.label}
+            </option>
+          ))}
+      </select>
+      {!available && (
+        <p className="mt-1 text-xs text-slate-400">
+          Uses your device’s built-in voice. Higher-quality German voices need
+          the optional Piper TTS sidecar (set <code>TTS_URL</code>).
+        </p>
+      )}
+      {available && (
+        <div className="mt-2 space-y-2">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => speak("Guten Tag! Ich lerne Deutsch mit dem Baby.")}
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:border-slate-500 dark:border-slate-700"
+            >
+              🔊 Test
+            </button>
+          </div>
+          {notInstalled.length > 0 && (
+            <div>
+              <p className="mb-1 text-xs font-medium text-slate-400">
+                Download more voices
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {notInstalled.map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    disabled={busy === v.id}
+                    onClick={() => download(v.id)}
+                    className="rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs text-slate-600 hover:border-slate-400 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300"
+                  >
+                    {busy === v.id ? "Downloading…" : `↓ ${v.label}`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </Field>
   );
 }
 
