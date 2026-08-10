@@ -138,6 +138,19 @@ export function buildWordMessages(ctx: {
   return { system, user };
 }
 
+/** Tidy up rough, hand-typed learning notes into clean Markdown. */
+export function buildNotesCleanup(ctx: {
+  level: string;
+  text: string;
+}): { system: string; user: string } {
+  const system =
+    `You are helping a German learner at CEFR level ${ctx.level} tidy up rough notes they typed during a study session. ` +
+    "Rewrite them into clean, well-structured Markdown: fix obvious typos and formatting, group related points under short headings, and use bullet lists and tables where they make the notes clearer. " +
+    "KEEP all German words, examples, endings, articles, and conjugations exactly as written — never translate the German away or change what is being taught. Do not invent new facts or add content the notes don't contain; only clarify and organise what's there. " +
+    "Output ONLY the cleaned-up Markdown, with no preamble, commentary, or code fences.";
+  return { system, user: ctx.text };
+}
+
 /** JSON shapes for every item type — shared by generation and the Import UI. */
 const ITEM_SCHEMA_REF = `Item type shapes (use the exact keys). Do NOT include an "id" — it is assigned automatically:
 - multiple_choice: { "type":"multiple_choice","prompt":"...","choices":["a","b"],"answerIndex":0,"explanation":"optional" }

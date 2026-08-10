@@ -5,8 +5,10 @@ import type {
   ExerciseRun,
   ExerciseSet,
   ImportBody,
+  Note,
   ProgressSummary,
   RecordRunBody,
+  SaveNoteBody,
   RunSummary,
   SaveExerciseProgressBody,
   SaveVocabBody,
@@ -113,6 +115,29 @@ export const api = {
     req<{ ok: true; id: string; kind: string }>("/api/import", {
       method: "POST",
       body: JSON.stringify(body),
+    }),
+
+  // notes
+  notes: () => req<Note[]>("/api/notes"),
+  note: (id: string) => req<Note | null>(`/api/notes/${encodeURIComponent(id)}`),
+  createNote: (body?: Partial<SaveNoteBody>) =>
+    req<Note>("/api/notes", {
+      method: "POST",
+      body: JSON.stringify(body ?? {}),
+    }),
+  saveNote: (id: string, body: SaveNoteBody) =>
+    req<Note>(`/api/notes/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  removeNote: (id: string) =>
+    req<{ ok: true }>(`/api/notes/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }),
+  cleanupNotes: (text: string) =>
+    req<{ text: string }>("/api/assistant/cleanup-notes", {
+      method: "POST",
+      body: JSON.stringify({ text }),
     }),
 
   // vocab

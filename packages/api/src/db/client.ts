@@ -84,6 +84,15 @@ export function ensureSchema(): void {
       PRIMARY KEY (group_id, word)
     );
     CREATE INDEX IF NOT EXISTS idx_vgm_word ON vocab_group_members(word);
+    CREATE TABLE IF NOT EXISTS notes (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL DEFAULT 'Untitled',
+      category TEXT NOT NULL DEFAULT '',
+      body TEXT NOT NULL DEFAULT '',
+      created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+    CREATE INDEX IF NOT EXISTS idx_notes_updated ON notes(updated_at);
   `);
 }
 

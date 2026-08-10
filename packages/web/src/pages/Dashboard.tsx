@@ -10,7 +10,9 @@ export function Dashboard() {
   const exercises = useAsync(() => api.exercises(), []);
   const runs = useAsync(() => api.runs(), []);
   const sheets = useAsync(() => api.sheetViews(5), []);
+  const notes = useAsync(() => api.notes(), []);
   const recentRuns = runs.status === "ready" ? runs.data.slice(0, 5) : [];
+  const recentNotes = notes.status === "ready" ? notes.data.slice(0, 4) : [];
 
   const lastRun: Record<string, RunSummary> = {};
   if (runs.status === "ready") for (const r of runs.data) lastRun[r.setId] = r;
@@ -70,6 +72,35 @@ export function Dashboard() {
                 <p className="min-w-0 truncate font-medium">{s.title}</p>
                 <span className="shrink-0 text-xs text-slate-400">
                   {timeAgo(s.viewedAt)}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {recentNotes.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-lg font-semibold">Recent notes</h2>
+          <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+            {recentNotes.map((n) => (
+              <Link
+                key={n.id}
+                to={`/notes/${n.id}`}
+                className="flex items-center justify-between gap-3 bg-white px-4 py-3 hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/60"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-medium">
+                    {n.title.trim() || "Untitled"}
+                  </p>
+                  {n.category.trim() && (
+                    <p className="truncate text-xs uppercase tracking-wide text-slate-500">
+                      {n.category.trim()}
+                    </p>
+                  )}
+                </div>
+                <span className="shrink-0 text-xs text-slate-400">
+                  {timeAgo(n.updatedAt)}
                 </span>
               </Link>
             ))}

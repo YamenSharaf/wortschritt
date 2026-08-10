@@ -18,6 +18,7 @@ import { authRoutes } from "./routes/auth";
 import { configRoutes } from "./routes/config";
 import { contentRoutes } from "./routes/content";
 import { importRoutes } from "./routes/import";
+import { notesRoutes } from "./routes/notes";
 import { progressRoutes } from "./routes/progress";
 import { settingsRoutes } from "./routes/settings";
 import { ttsRoutes } from "./routes/tts";
@@ -54,6 +55,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(ttsRoutes);
   await app.register(settingsRoutes);
   await app.register(importRoutes);
+  await app.register(notesRoutes);
   await app.register(assistantRoutes);
 
   // In production, serve the built SPA from the same container/origin.

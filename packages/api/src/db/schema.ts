@@ -92,6 +92,20 @@ export const vocabGroupMembers = sqliteTable("vocab_group_members", {
   word: text("word").notNull(),
 });
 
+/** Free-form, categorized learning notes (Markdown), auto-saved. */
+export const notes = sqliteTable("notes", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull().default("Untitled"),
+  category: text("category").notNull().default(""),
+  body: text("body").notNull().default(""),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 /**
  * Content added at runtime via the import screen. Git-versioned JSON in
  * CONTENT_DIR is the other source; the API merges both.
