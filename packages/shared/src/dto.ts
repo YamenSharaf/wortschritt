@@ -20,8 +20,35 @@ export const settingsSchema = z.object({
     .min(1)
     .max(MAX_GENERATE_COUNT)
     .default(5),
+  /** Preferred pronunciation voice. "" = the device's built-in TTS; otherwise
+   *  a Piper voice id (needs the TTS sidecar). */
+  ttsVoice: z.string().default(""),
 });
 export type Settings = z.infer<typeof settingsSchema>;
+
+/** Curated German Piper voices offered for download (also the download
+ *  allowlist, so the /download proxy can't fetch arbitrary files). */
+export const TTS_VOICE_CATALOG = [
+  { id: "de_DE-thorsten-high", label: "Thorsten — high (male)" },
+  { id: "de_DE-thorsten-medium", label: "Thorsten — medium (male)" },
+  { id: "de_DE-eva_k-x_low", label: "Eva K (female)" },
+  { id: "de_DE-kerstin-low", label: "Kerstin (female)" },
+  { id: "de_DE-karlsson-low", label: "Karlsson (male)" },
+  { id: "de_DE-ramona-low", label: "Ramona (female)" },
+  { id: "de_DE-pavoque-low", label: "Pavoque (male)" },
+] as const;
+export const TTS_VOICE_IDS = TTS_VOICE_CATALOG.map((v) => v.id) as string[];
+
+/** Pronunciation (Piper sidecar) status for the client. */
+export const ttsStatus = z.object({
+  /** Whether a TTS sidecar is configured. */
+  available: z.boolean(),
+  /** Voice ids currently downloaded/usable. */
+  installed: z.array(z.string()),
+  /** Downloadable voices (id + label). */
+  catalog: z.array(z.object({ id: z.string(), label: z.string() })),
+});
+export type TtsStatus = z.infer<typeof ttsStatus>;
 
 /** Login: single shared password. */
 export const loginBody = z.object({

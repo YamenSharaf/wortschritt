@@ -10,6 +10,7 @@ import type {
   SaveVocabBody,
   Settings,
   SheetView,
+  TtsStatus,
   VocabEntry,
   VocabGroup,
   WordLookup,
@@ -140,6 +141,14 @@ export const api = {
       `/api/vocab-groups/${id}/words/${encodeURIComponent(word)}`,
       { method: "DELETE" },
     ),
+
+  // tts (pronunciation)
+  ttsStatus: () => req<TtsStatus>("/api/tts/status"),
+  ttsDownload: (voice: string) =>
+    req<{ ok: true; installed: string[] }>("/api/tts/download", {
+      method: "POST",
+      body: JSON.stringify({ voice }),
+    }),
 
   // assistant
   assistantStatus: () =>

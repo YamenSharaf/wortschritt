@@ -20,6 +20,7 @@ import { contentRoutes } from "./routes/content";
 import { importRoutes } from "./routes/import";
 import { progressRoutes } from "./routes/progress";
 import { settingsRoutes } from "./routes/settings";
+import { ttsRoutes } from "./routes/tts";
 import { vocabRoutes } from "./routes/vocab";
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -50,6 +51,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(progressRoutes);
   await app.register(activityRoutes);
   await app.register(vocabRoutes);
+  await app.register(ttsRoutes);
   await app.register(settingsRoutes);
   await app.register(importRoutes);
   await app.register(assistantRoutes);

@@ -27,6 +27,10 @@ const envSchema = z.object({
   ),
   ASSISTANT_API_KEY: optionalEnv(z.string().default("")),
   ASSISTANT_MODEL: optionalEnv(z.string().min(1).default("gpt-4o-mini")),
+
+  // Optional Piper TTS sidecar (base URL, e.g. http://piper:5000). Unset =
+  // pronunciation falls back to the browser's built-in speech synthesis.
+  TTS_URL: optionalEnv(z.string().url().optional()),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -46,3 +50,5 @@ export const isProd = env.NODE_ENV === "production";
 export const isAssistantEnabled =
   env.ASSISTANT_API_KEY.length > 0 ||
   env.ASSISTANT_BASE_URL !== "https://api.openai.com/v1";
+
+export const isTtsEnabled = Boolean(env.TTS_URL);
