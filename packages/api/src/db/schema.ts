@@ -38,6 +38,22 @@ export const exerciseRuns = sqliteTable("exercise_runs", {
     .default(sql`(unixepoch())`),
 });
 
+/** Resumable in-progress position for an exercise set (one row per set;
+ *  cleared when the set is finished). */
+export const exerciseProgress = sqliteTable("exercise_progress", {
+  setId: text("set_id").primaryKey(),
+  position: integer("position").notNull(),
+  results: text("results", { mode: "json" })
+    .$type<Record<string, boolean>>()
+    .notNull(),
+  responses: text("responses", { mode: "json" })
+    .$type<Record<string, string>>()
+    .notNull(),
+  updatedAt: integer("updated_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 /** Last-viewed timestamp per cheat sheet (one row per sheet). */
 export const sheetViews = sqliteTable("sheet_views", {
   sheetId: text("sheet_id").primaryKey(),

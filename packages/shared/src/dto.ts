@@ -99,6 +99,23 @@ export type RunSummary = z.infer<typeof runSummary>;
 export const exerciseRun = runSummary.extend({ results: runResults });
 export type ExerciseRun = z.infer<typeof exerciseRun>;
 
+/** Resumable in-progress position within an exercise set. */
+export const exerciseProgress = z.object({
+  setId: z.string(),
+  index: z.number().int().nonnegative(),
+  results: runResults,
+  responses: z.record(z.string(), z.string()).default({}),
+  updatedAt: z.number().int(),
+});
+export type ExerciseProgress = z.infer<typeof exerciseProgress>;
+
+export const saveExerciseProgressBody = z.object({
+  index: z.number().int().nonnegative(),
+  results: runResults,
+  responses: z.record(z.string(), z.string()).default({}),
+});
+export type SaveExerciseProgressBody = z.infer<typeof saveExerciseProgressBody>;
+
 /** Record that a cheat sheet was viewed. */
 export const sheetViewBody = z.object({
   sheetId: z.string().min(1),
