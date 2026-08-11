@@ -1,0 +1,476 @@
+{
+  "schemaVersion": 1,
+  "id": "reflexivpronomen-dativ",
+  "title": "Reflexivpronomen im Dativ",
+  "subtitle": "Reflexive pronouns (dative)",
+  "description": "Akkusativ oder Dativ? Setze das richtige Reflexivpronomen ein, entscheide, bilde Sätze, korrigiere Fehler und übersetze.",
+  "level": "B1",
+  "tags": [
+    "grammatik",
+    "reflexivverben",
+    "pronomen",
+    "dativ"
+  ],
+  "createdAt": "2026-08-11",
+  "items": [
+    {
+      "type": "cloze",
+      "id": "rpd-01",
+      "text": "Ich wasche {{1}} die Hände.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "mir"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "explanation": "Akkusativobjekt „die Hände\" → Dativ."
+    },
+    {
+      "type": "cloze",
+      "id": "rpd-02",
+      "text": "Ich wasche {{1}} jeden Morgen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "mich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "explanation": "Kein Objekt → Akkusativ."
+    },
+    {
+      "type": "cloze",
+      "id": "rpd-03",
+      "text": "Du kaufst {{1}} ein neues Handy.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "dir"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "explanation": "Akkusativobjekt „ein neues Handy\" → Dativ."
+    },
+    {
+      "type": "cloze",
+      "id": "rpd-04",
+      "text": "Du erinnerst {{1}} an den Termin.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "dich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "explanation": "„sich erinnern an\" (+ Akk) → Reflexivpronomen im Akkusativ."
+    },
+    {
+      "type": "cloze",
+      "id": "rpd-05",
+      "text": "Er zieht {{1}} die Jacke an.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "sich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "explanation": "Akkusativobjekt „die Jacke\" → Dativ (Form „sich\")."
+    },
+    {
+      "type": "cloze",
+      "id": "rpd-06",
+      "text": "Sie freut {{1}} auf den Urlaub.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "sich"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "explanation": "„sich freuen auf\" → Akkusativ (Form „sich\")."
+    },
+    {
+      "type": "cloze",
+      "id": "rpd-07",
+      "text": "Wir treffen {{1}} im Park.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "uns"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "explanation": "Kein Akkusativobjekt → Akkusativ (Form „uns\")."
+    },
+    {
+      "type": "cloze",
+      "id": "rpd-08",
+      "text": "Wir kaufen {{1}} ein Eis.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "uns"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "explanation": "Akkusativobjekt „ein Eis\" → Dativ (Form „uns\")."
+    },
+    {
+      "type": "cloze",
+      "id": "rpd-09",
+      "text": "Ihr putzt {{1}} die Zähne.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "euch"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "explanation": "Akkusativobjekt „die Zähne\" → Dativ (Form „euch\")."
+    },
+    {
+      "type": "cloze",
+      "id": "rpd-10",
+      "text": "Ihr beeilt {{1}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "euch"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "explanation": "Kein Objekt → Akkusativ (Form „euch\")."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "rpd-11",
+      "prompt": "Ich rasiere mich.",
+      "choices": [
+        "Akkusativ",
+        "Dativ"
+      ],
+      "answerIndex": 0,
+      "explanation": "Kein Akkusativobjekt → Akkusativ."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "rpd-12",
+      "prompt": "Ich rasiere mir den Bart.",
+      "choices": [
+        "Akkusativ",
+        "Dativ"
+      ],
+      "answerIndex": 1,
+      "explanation": "Akkusativobjekt „den Bart\" → Dativ."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "rpd-13",
+      "prompt": "Wir setzen uns auf die Bank.",
+      "choices": [
+        "Akkusativ",
+        "Dativ"
+      ],
+      "answerIndex": 0,
+      "explanation": "Kein Akkusativobjekt („auf die Bank\" ist eine Präposition) → Akkusativ."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "rpd-14",
+      "prompt": "Er kauft sich ein Buch.",
+      "choices": [
+        "Akkusativ",
+        "Dativ"
+      ],
+      "answerIndex": 1,
+      "explanation": "Akkusativobjekt „ein Buch\" → Dativ."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "rpd-15",
+      "prompt": "Du wäschst dir die Haare.",
+      "choices": [
+        "Akkusativ",
+        "Dativ"
+      ],
+      "answerIndex": 1,
+      "explanation": "Akkusativobjekt „die Haare\" → Dativ."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "rpd-16",
+      "prompt": "Sie versteckt sich.",
+      "choices": [
+        "Akkusativ",
+        "Dativ"
+      ],
+      "answerIndex": 0,
+      "explanation": "Kein Objekt → Akkusativ."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "rpd-17",
+      "prompt": "Ihr merkt euch die Regel.",
+      "choices": [
+        "Akkusativ",
+        "Dativ"
+      ],
+      "answerIndex": 1,
+      "explanation": "„sich etwas merken\" mit Objekt „die Regel\" → Dativ."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "rpd-18",
+      "prompt": "Ich ziehe mir eine Jacke an.",
+      "choices": [
+        "Akkusativ",
+        "Dativ"
+      ],
+      "answerIndex": 1,
+      "explanation": "Akkusativobjekt „eine Jacke\" → Dativ."
+    },
+    {
+      "type": "sentence_build",
+      "id": "rpd-19",
+      "instructions": "Bilde einen korrekten Satz.",
+      "hint": "Wörter: ich · sich · die Hände · waschen",
+      "answer": {
+        "accept": [
+          "Ich wasche mir die Hände."
+        ],
+        "grading": "caseInsensitive"
+      }
+    },
+    {
+      "type": "sentence_build",
+      "id": "rpd-20",
+      "instructions": "Bilde einen korrekten Satz.",
+      "hint": "Wörter: du · sich · beeilen",
+      "answer": {
+        "accept": [
+          "Du beeilst dich."
+        ],
+        "grading": "caseInsensitive"
+      }
+    },
+    {
+      "type": "sentence_build",
+      "id": "rpd-21",
+      "instructions": "Bilde einen korrekten Satz.",
+      "hint": "Wörter: er · sich · das Gesicht · waschen",
+      "answer": {
+        "accept": [
+          "Er wäscht sich das Gesicht."
+        ],
+        "grading": "caseInsensitive"
+      }
+    },
+    {
+      "type": "sentence_build",
+      "id": "rpd-22",
+      "instructions": "Bilde einen korrekten Satz.",
+      "hint": "Wörter: wir · sich · treffen · heute Abend",
+      "answer": {
+        "accept": [
+          "Wir treffen uns heute Abend.",
+          "Heute Abend treffen wir uns."
+        ],
+        "grading": "caseInsensitive"
+      }
+    },
+    {
+      "type": "sentence_build",
+      "id": "rpd-23",
+      "instructions": "Bilde einen korrekten Satz.",
+      "hint": "Wörter: ihr · sich · die Schuhe · ausziehen",
+      "answer": {
+        "accept": [
+          "Ihr zieht euch die Schuhe aus."
+        ],
+        "grading": "caseInsensitive"
+      }
+    },
+    {
+      "type": "sentence_build",
+      "id": "rpd-24",
+      "instructions": "Bilde einen korrekten Satz.",
+      "hint": "Wörter: sie · sich · erinnern · an mich",
+      "answer": {
+        "accept": [
+          "Sie erinnert sich an mich.",
+          "Sie erinnern sich an mich."
+        ],
+        "grading": "caseInsensitive"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "rpd-25",
+      "instructions": "Finde den Fehler und korrigiere den Satz. (Manche Sätze sind schon richtig — dann schreibe ihn unverändert.)",
+      "source": "Ich wasche mich die Hände.",
+      "answer": {
+        "accept": [
+          "Ich wasche mir die Hände."
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "Mit Akkusativobjekt „die Hände\" → Dativ: mich → mir."
+    },
+    {
+      "type": "transform",
+      "id": "rpd-26",
+      "instructions": "Finde den Fehler und korrigiere den Satz. (Manche Sätze sind schon richtig — dann schreibe ihn unverändert.)",
+      "source": "Du erinnerst dich den Termin.",
+      "answer": {
+        "accept": [
+          "Du erinnerst dich an den Termin."
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "„sich erinnern\" braucht die Präposition „an\": an den Termin."
+    },
+    {
+      "type": "transform",
+      "id": "rpd-27",
+      "instructions": "Finde den Fehler und korrigiere den Satz. (Manche Sätze sind schon richtig — dann schreibe ihn unverändert.)",
+      "source": "Er zieht sich die Jacke an sich.",
+      "answer": {
+        "accept": [
+          "Er zieht sich die Jacke an."
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "Das zweite „sich\" ist zu viel – „anziehen\" ist trennbar: … an."
+    },
+    {
+      "type": "transform",
+      "id": "rpd-28",
+      "instructions": "Finde den Fehler und korrigiere den Satz. (Manche Sätze sind schon richtig — dann schreibe ihn unverändert.)",
+      "source": "Wir treffen uns uns im Park.",
+      "answer": {
+        "accept": [
+          "Wir treffen uns im Park."
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "„uns\" steht doppelt – einmal reicht."
+    },
+    {
+      "type": "transform",
+      "id": "rpd-29",
+      "instructions": "Finde den Fehler und korrigiere den Satz. (Manche Sätze sind schon richtig — dann schreibe ihn unverändert.)",
+      "source": "Ihr kauft euch ein neues Auto.",
+      "answer": {
+        "accept": [
+          "Ihr kauft euch ein neues Auto."
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "Dieser Satz ist bereits korrekt: Dativ „euch\" + Akkusativobjekt „ein neues Auto\"."
+    },
+    {
+      "type": "transform",
+      "id": "rpd-30",
+      "instructions": "Übersetze ins Deutsche. Achte auf Akkusativ oder Dativ.",
+      "source": "I wash my hands.",
+      "answer": {
+        "accept": [
+          "Ich wasche mir die Hände."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "rpd-31",
+      "instructions": "Übersetze ins Deutsche. Achte auf Akkusativ oder Dativ.",
+      "source": "She brushes her teeth.",
+      "answer": {
+        "accept": [
+          "Sie putzt sich die Zähne."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "rpd-32",
+      "instructions": "Übersetze ins Deutsche. Achte auf Akkusativ oder Dativ.",
+      "source": "We buy ourselves a coffee.",
+      "answer": {
+        "accept": [
+          "Wir kaufen uns einen Kaffee."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "rpd-33",
+      "instructions": "Übersetze ins Deutsche. Achte auf Akkusativ oder Dativ.",
+      "source": "He puts on a jacket.",
+      "answer": {
+        "accept": [
+          "Er zieht sich eine Jacke an.",
+          "Er zieht sich die Jacke an."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "rpd-34",
+      "instructions": "Übersetze ins Deutsche. Achte auf Akkusativ oder Dativ.",
+      "source": "You (plural) remember the rule.",
+      "answer": {
+        "accept": [
+          "Ihr merkt euch die Regel.",
+          "Ihr erinnert euch an die Regel."
+        ],
+        "grading": "normalized"
+      }
+    }
+  ]
+}

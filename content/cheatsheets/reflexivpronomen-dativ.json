@@ -1,0 +1,25 @@
+{
+  "id": "reflexivpronomen-dativ",
+  "title": "Reflexivpronomen im Dativ",
+  "subtitle": "Reflexive pronouns (dative)",
+  "category": "grammatik",
+  "createdAt": "2026-08-11",
+  "sections": [
+    {
+      "heading": "Dativ-Reflexivpronomen",
+      "body": "Wenn ein Reflexivverb **noch ein Akkusativobjekt** hat, steht das Reflexivpronomen im **Dativ**.\n\n**Struktur:** Subjekt + Dativ-Reflexivpronomen + Akkusativobjekt\n\n| Person | Dativ | Akkusativ |\n| --- | --- | --- |\n| ich | **mir** | mich |\n| du | **dir** | dich |\n| er / sie / es | **sich** | sich |\n| wir | **uns** | uns |\n| ihr | **euch** | euch |\n| sie / Sie | **sich** | sich |\n\n> Nur **ich** (mir) und **du** (dir) sehen im Dativ anders aus als im Akkusativ. Bei allen anderen ist die Form gleich.\n\n> Ich wasche **mir** die Hände. · Du kaufst **dir** ein Handy. · Er zieht **sich** die Schuhe aus."
+    },
+    {
+      "heading": "Häufige Dativ-Reflexivverben",
+      "body": "Diese Verben nehmen oft ein Akkusativobjekt — dann steht das Pronomen im Dativ.\n\n| Verb | Beispiel |\n| --- | --- |\n| sich die Hände waschen | Ich wasche **mir** die Hände. |\n| sich die Haare kämmen | Sie kämmt **sich** die Haare. |\n| sich die Zähne putzen | Wir putzen **uns** die Zähne. |\n| sich etwas anziehen | Ich ziehe **mir** eine Jacke an. |\n| sich etwas ausziehen | Er zieht **sich** die Schuhe aus. |\n| sich etwas ansehen | Ich sehe **mir** den Film an. |\n| sich etwas vorstellen | Ich stelle **mir** das anders vor. |\n| sich etwas kaufen | Sie kauft **sich** ein Buch. |"
+    },
+    {
+      "heading": "Wichtiger Unterschied: Akkusativ vs. Dativ",
+      "body": "Ob das Pronomen im Akkusativ oder Dativ steht, hängt davon ab, ob es **noch ein Akkusativobjekt** gibt.\n\n**Akkusativ** (kein weiteres Objekt):\n> Ich wasche **mich**. → *I wash myself.*\n\n**Dativ** (mit zusätzlichem Akkusativobjekt):\n> Ich wasche **mir** die Hände. → *I wash my hands.*\n\nDas Akkusativobjekt „drängt\" das Reflexivpronomen in den Dativ."
+    },
+    {
+      "heading": "Mini-Merkregel",
+      "body": "- **Kein Objekt** → Akkusativ *(Ich wasche mich.)*\n- **Mit Körperteil / Sache** (Akkusativobjekt) → oft **Dativ** + Akkusativobjekt *(Ich wasche mir die Hände.)*"
+    }
+  ]
+}
