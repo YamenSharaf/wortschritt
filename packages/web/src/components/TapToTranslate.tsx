@@ -14,10 +14,10 @@ export function TapToTranslate({
   children: ReactNode;
   className?: string;
 }) {
-  const { enabled, openWord } = useVocab();
+  const { canTap, openWord } = useVocab();
 
   function onClick(e: React.MouseEvent) {
-    if (!enabled) return;
+    if (!canTap) return;
     const target = e.target as HTMLElement;
     if (target.closest("a,button,input,textarea,select,label,[data-no-tap]"))
       return;

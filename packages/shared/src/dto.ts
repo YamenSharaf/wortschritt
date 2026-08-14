@@ -189,6 +189,23 @@ export const saveVocabBody = z.object({
 });
 export type SaveVocabBody = z.infer<typeof saveVocabBody>;
 
+/** Offline dictionary lookup result for one tapped word. */
+export const dictEntry = z.object({
+  /** The cleaned surface form that was looked up. */
+  surface: z.string(),
+  /** Dictionary base form (infinitive / nominative singular). */
+  lemma: z.string(),
+  /** Part of speech (verb, noun, adj, adv, prep, …). */
+  pos: z.string(),
+  /** der/die/das for nouns, else null. */
+  article: z.string().nullable().optional(),
+  /** Nominative plural for nouns, else null. */
+  plural: z.string().nullable().optional(),
+  /** Short English gloss when the lemma is in the curated core, else null. */
+  gloss: z.string().nullable().optional(),
+});
+export type DictEntry = z.infer<typeof dictEntry>;
+
 /** A free-form learning note (Markdown body), auto-saved. */
 export const note = z.object({
   id: z.string(),

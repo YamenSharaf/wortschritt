@@ -93,8 +93,31 @@ export function ensureSchema(): void {
       updated_at INTEGER NOT NULL DEFAULT (unixepoch())
     );
     CREATE INDEX IF NOT EXISTS idx_notes_updated ON notes(updated_at);
+    -- Bundled offline dictionary. dict_forms maps every inflected surface form
+    -- to its lemma (+ noun gender/plural); dict_gloss holds curated English
+    -- meanings keyed by (lowercased lemma, part of speech). Seeded from the
+    -- committed assets in db/dictSeed.ts, gated by a version marker in dict_meta.
+    CREATE TABLE IF NOT EXISTS dict_forms (
+      form TEXT PRIMARY KEY,
+      lemma TEXT NOT NULL,
+      pos TEXT NOT NULL,
+      gender TEXT NOT NULL DEFAULT '',
+      plural TEXT NOT NULL DEFAULT ''
+    );
+    CREATE TABLE IF NOT EXISTS dict_gloss (
+      lemma TEXT NOT NULL,
+      pos TEXT NOT NULL,
+      gloss TEXT NOT NULL,
+      PRIMARY KEY (lemma, pos)
+    );
+    CREATE TABLE IF NOT EXISTS dict_meta (
+      k TEXT PRIMARY KEY,
+      v TEXT NOT NULL
+    );
   `);
 }
 
 export const db = drizzle(sqlite, { schema });
 export { schema };
+/** Raw better-sqlite3 handle for hot-path prepared statements (dictionary). */
+export const rawDb: Database.Database = sqlite;
