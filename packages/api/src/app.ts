@@ -11,12 +11,14 @@ import {
   validatorCompiler,
 } from "fastify-type-provider-zod";
 import { ensureSchema } from "./db/client";
+import { seedDictionary } from "./db/dictSeed";
 import { env, isProd } from "./env";
 import { activityRoutes } from "./routes/activity";
 import { assistantRoutes } from "./routes/assistant";
 import { authRoutes } from "./routes/auth";
 import { configRoutes } from "./routes/config";
 import { contentRoutes } from "./routes/content";
+import { dictRoutes } from "./routes/dict";
 import { importRoutes } from "./routes/import";
 import { notesRoutes } from "./routes/notes";
 import { progressRoutes } from "./routes/progress";
@@ -30,6 +32,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
     logger: { level: isProd ? "info" : "debug" },
   });
+
+  // Load the bundled offline dictionary into SQLite once (idempotent).
+  seedDictionary(app.log);
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
@@ -56,6 +61,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(settingsRoutes);
   await app.register(importRoutes);
   await app.register(notesRoutes);
+  await app.register(dictRoutes);
   await app.register(assistantRoutes);
 
   // In production, serve the built SPA from the same container/origin.

@@ -8,6 +8,7 @@ import {
 } from "react";
 import { Link } from "react-router-dom";
 import type {
+  DictEntry,
   SaveVocabBody,
   VocabEntry,
   VocabGroup,
@@ -28,8 +29,12 @@ type Anchor = {
 };
 
 type VocabCtx = {
-  /** Whether the AI tutor is configured (word lookup needs it). */
+  /** Whether the AI tutor is configured (the fuller word lookup needs it). */
   enabled: boolean;
+  /** Whether the bundled offline dictionary is loaded (instant gloss on tap). */
+  dictAvailable: boolean;
+  /** Either source lets a tap open the word menu. */
+  canTap: boolean;
   entries: VocabEntry[];
   groups: VocabGroup[];
   /** Lowercased keys currently saved. */
@@ -53,6 +58,7 @@ export function useVocab(): VocabCtx {
 
 export function VocabProvider({ children }: { children: ReactNode }) {
   const [enabled, setEnabled] = useState(false);
+  const [dictAvailable, setDictAvailable] = useState(false);
   const [entries, setEntries] = useState<VocabEntry[]>([]);
   const [groups, setGroups] = useState<VocabGroup[]>([]);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
@@ -66,6 +72,10 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     api
       .assistantStatus()
       .then((s) => setEnabled(s.enabled))
+      .catch(() => {});
+    api
+      .dictStatus()
+      .then((s) => setDictAvailable(s.available))
       .catch(() => {});
     reload();
   }, []);
@@ -131,6 +141,8 @@ export function VocabProvider({ children }: { children: ReactNode }) {
 
   const value: VocabCtx = {
     enabled,
+    dictAvailable,
+    canTap: enabled || dictAvailable,
     entries,
     groups,
     words,
@@ -170,6 +182,19 @@ function anchorStyle(x: number, y: number): React.CSSProperties {
     : { left, top: y + 16, width };
 }
 
+const POS_LABEL: Record<string, string> = {
+  verb: "verb",
+  noun: "noun",
+  adj: "adjective",
+  adv: "adverb",
+  prep: "preposition",
+  conj: "conjunction",
+  pron: "pronoun",
+  det: "determiner",
+  num: "number",
+  interj: "interjection",
+};
+
 function WordOverlay({
   anchor,
   onTranslate,
@@ -179,60 +204,144 @@ function WordOverlay({
   onTranslate: () => void;
   onClose: () => void;
 }) {
+  const { enabled } = useVocab();
+  // undefined = still looking up; null = no offline entry.
+  const [dict, setDict] = useState<DictEntry | null | undefined>(undefined);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  useEffect(() => {
+    let alive = true;
+    setDict(undefined);
+    api
+      .dict(anchor.display)
+      .then((d) => alive && setDict(d))
+      .catch(() => alive && setDict(null));
+    return () => {
+      alive = false;
+    };
+  }, [anchor.display]);
+
   return (
     <div className="fixed inset-0 z-50" onClick={onClose}>
       <div
-        className="absolute rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900"
+        className="absolute overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900"
         style={anchorStyle(anchor.x, anchor.y)}
         onClick={(e) => e.stopPropagation()}
       >
         {anchor.view === "menu" ? (
-          <WordMenu display={anchor.display} onTranslate={onTranslate} onClose={onClose} />
+          <WordMenu
+            display={anchor.display}
+            dict={dict}
+            aiEnabled={enabled}
+            onTranslate={onTranslate}
+            onClose={onClose}
+          />
         ) : (
-          <WordPanel display={anchor.display} context={anchor.context} onClose={onClose} />
+          <WordPanel
+            display={anchor.display}
+            context={anchor.context}
+            dict={dict ?? null}
+            onClose={onClose}
+          />
         )}
       </div>
     </div>
   );
 }
 
+/** The instant offline gloss shown at the top of the tap menu. */
+function DictGloss({
+  display,
+  dict,
+  aiEnabled,
+}: {
+  display: string;
+  dict: DictEntry | null | undefined;
+  aiEnabled: boolean;
+}) {
+  if (dict === undefined) {
+    return (
+      <div className="px-3 py-2 text-xs text-slate-400">Looking up…</div>
+    );
+  }
+  if (dict === null) return null;
+  const inflected = dict.lemma.toLowerCase() !== display.toLowerCase();
+  const head = dict.article ? `${dict.article} ${dict.lemma}` : dict.lemma;
+  return (
+    <div className="border-b border-slate-200 px-3 py-2 font-content dark:border-slate-700">
+      <div className="flex items-center gap-1.5">
+        <span className="font-semibold">{head}</span>
+        {dict.pos && (
+          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-slate-500 dark:bg-slate-800">
+            {POS_LABEL[dict.pos] ?? dict.pos}
+          </span>
+        )}
+        <SpeakButton text={dict.lemma} className="-my-1" />
+      </div>
+      {inflected && (
+        <div className="text-xs text-slate-400">from “{display}”</div>
+      )}
+      {dict.gloss ? (
+        <p className="mt-0.5 text-sm text-slate-700 dark:text-slate-200">
+          {dict.gloss}
+        </p>
+      ) : (
+        <p className="mt-0.5 text-xs text-slate-400">
+          {aiEnabled ? "Tap Translate for the meaning." : "No offline definition."}
+        </p>
+      )}
+      {dict.pos === "noun" && dict.plural && (
+        <p className="text-xs text-slate-400">pl. {dict.plural}</p>
+      )}
+    </div>
+  );
+}
+
 function WordMenu({
   display,
+  dict,
+  aiEnabled,
   onTranslate,
   onClose,
 }: {
   display: string;
+  dict: DictEntry | null | undefined;
+  aiEnabled: boolean;
   onTranslate: () => void;
   onClose: () => void;
 }) {
   const item =
     "flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap px-2.5 py-2.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800";
   return (
-    <div className="flex items-stretch divide-x divide-slate-200 dark:divide-slate-700">
-      {ttsSupported() && (
-        <button type="button" onClick={() => speak(display)} className={item}>
-          🔊 Speak
+    <div>
+      <DictGloss display={display} dict={dict} aiEnabled={aiEnabled} />
+      <div className="flex items-stretch divide-x divide-slate-200 dark:divide-slate-700">
+        {ttsSupported() && (
+          <button type="button" onClick={() => speak(display)} className={item}>
+            🔊 Speak
+          </button>
+        )}
+        {aiEnabled && (
+          <button type="button" onClick={onTranslate} className={item}>
+            🌐 Translate
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            navigator.clipboard?.writeText(display).catch(() => {});
+            onClose();
+          }}
+          className={item}
+        >
+          📋 Copy
         </button>
-      )}
-      <button type="button" onClick={onTranslate} className={item}>
-        🌐 Translate
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          navigator.clipboard?.writeText(display).catch(() => {});
-          onClose();
-        }}
-        className={item}
-      >
-        📋 Copy
-      </button>
+      </div>
     </div>
   );
 }
@@ -240,10 +349,12 @@ function WordMenu({
 function WordPanel({
   display,
   context,
+  dict,
   onClose,
 }: {
   display: string;
   context?: string;
+  dict: DictEntry | null;
   onClose: () => void;
 }) {
   const { entries, groups, save, setWordGroup, createGroup } = useVocab();
@@ -275,8 +386,9 @@ function WordPanel({
   const data: WordLookup | null = preSaved
     ? { lemma: preSaved.display, translation: preSaved.translation, examples: preSaved.examples }
     : fetched;
-  // Save under the base form (e.g. "trifft" → "treffen").
-  const headword = data?.lemma?.trim() || display;
+  // Save under the base form (e.g. "trifft" → "treffen"). The offline dictionary
+  // gives us the lemma instantly, before the AI reply lands.
+  const headword = data?.lemma?.trim() || dict?.lemma || display;
   const savedEntry = entries.find((e) => e.word === norm(headword));
   const isSaved = !!savedEntry;
   const inflected = headword.toLowerCase() !== display.toLowerCase();
@@ -327,7 +439,16 @@ function WordPanel({
           ✕
         </button>
       </div>
-      {loading && <p className="py-2 text-sm text-slate-500">Translating…</p>}
+      {loading && (
+        <div className="py-2">
+          {dict?.gloss && (
+            <p className="text-sm text-slate-700 dark:text-slate-200">
+              {dict.gloss}
+            </p>
+          )}
+          <p className="text-xs text-slate-400">Translating…</p>
+        </div>
+      )}
       {error && (
         <div className="rounded-lg border border-red-300 bg-red-50 px-2 py-1.5 text-xs text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
           <p>{error}</p>

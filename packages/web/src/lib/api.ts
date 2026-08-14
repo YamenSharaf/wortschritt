@@ -1,5 +1,6 @@
 import type {
   Cheatsheet,
+  DictEntry,
   ExerciseItem,
   ExerciseProgress,
   ExerciseRun,
@@ -116,6 +117,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  // offline dictionary (instant gloss on tap)
+  dictStatus: () => req<{ available: boolean }>("/api/dict/status"),
+  dict: (word: string) =>
+    req<DictEntry | null>(`/api/dict/${encodeURIComponent(word)}`),
 
   // notes
   notes: () => req<Note[]>("/api/notes"),

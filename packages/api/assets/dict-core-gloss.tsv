@@ -1,0 +1,734 @@
+# Curated core German->English glossary (lemma \t pos \t gloss).
+# Lines starting with # and blank lines are ignored. Hand-editable.
+ich	pron	I
+du	pron	you (informal)
+er	pron	he
+sie	pron	she; they
+es	pron	it
+wir	pron	we
+ihr	pron	you (pl. informal)
+man	pron	one; you (impersonal)
+mich	pron	me
+mir	pron	(to) me
+dich	pron	you
+dir	pron	(to) you
+uns	pron	us
+euch	pron	you (pl.)
+ihm	pron	(to) him/it
+ihn	pron	him
+ihnen	pron	(to) them
+wer	pron	who
+was	pron	what
+etwas	pron	something
+nichts	pron	nothing
+jemand	pron	someone
+niemand	pron	no one
+alle	pron	all; everyone
+alles	pron	everything
+jeder	pron	each; everyone
+manche	pron	some
+einige	pron	a few; some
+viele	pron	many
+wenige	pron	few
+beide	pron	both
+dieser	pron	this
+diese	pron	this; these
+dieses	pron	this
+welcher	pron	which
+selbst	pron	oneself; even
+der	det	the (m.)
+die	det	the (f./pl.)
+das	det	the (n.)
+ein	det	a; one
+eine	det	a; one
+kein	det	no; not a
+keine	det	no; not any
+mein	det	my
+dein	det	your
+sein	det	his; its
+unser	det	our
+euer	det	your (pl.)
+jede	det	each; every
+jedes	det	each; every
+in	prep	in; into
+auf	prep	on; onto
+an	prep	at; on
+mit	prep	with
+nach	prep	after; to
+aus	prep	out of; from
+zu	prep	to
+von	prep	from; of
+bei	prep	at; near; with
+über	prep	over; about
+unter	prep	under; among
+vor	prep	in front of; before
+hinter	prep	behind
+neben	prep	next to
+zwischen	prep	between
+für	prep	for
+gegen	prep	against
+ohne	prep	without
+um	prep	around; at (time)
+durch	prep	through
+bis	prep	until; up to
+seit	prep	since; for
+während	prep	during
+wegen	prep	because of
+trotz	prep	despite
+gegenüber	prep	opposite; across from
+ab	prep	from; starting
+außer	prep	except; besides
+innerhalb	prep	within
+außerhalb	prep	outside of
+entlang	prep	along
+statt	prep	instead of
+und	conj	and
+oder	conj	or
+aber	conj	but
+denn	conj	because; for
+sondern	conj	but rather
+weil	conj	because
+dass	conj	that
+wenn	conj	if; when
+als	conj	when; than; as
+ob	conj	whether
+damit	conj	so that
+obwohl	conj	although
+bevor	conj	before
+nachdem	conj	after
+sobald	conj	as soon as
+solange	conj	as long as
+bis	conj	until
+sowie	conj	as well as
+sowohl	conj	both ... and
+entweder	conj	either
+weder	conj	neither
+falls	conj	in case; if
+indem	conj	by (doing)
+dennoch	conj	nevertheless
+wo	adv	where
+wann	adv	when
+warum	adv	why
+wieso	adv	why
+weshalb	adv	why
+wie	adv	how; as
+wohin	adv	where to
+woher	adv	where from
+wieviel	adv	how much
+wieviele	adv	how many
+wozu	adv	what for
+nicht	adv	not
+auch	adv	also; too
+nur	adv	only
+schon	adv	already
+noch	adv	still; yet
+immer	adv	always
+oft	adv	often
+manchmal	adv	sometimes
+selten	adv	rarely
+nie	adv	never
+hier	adv	here
+da	adv	there; then
+dort	adv	there
+heute	adv	today
+morgen	adv	tomorrow
+gestern	adv	yesterday
+jetzt	adv	now
+dann	adv	then
+danach	adv	afterwards
+zuerst	adv	first
+endlich	adv	finally
+sofort	adv	immediately
+gerade	adv	just; right now
+bald	adv	soon
+früher	adv	earlier
+später	adv	later
+sehr	adv	very
+gern	adv	gladly; (to like to)
+vielleicht	adv	maybe
+wirklich	adv	really
+natürlich	adv	of course
+wieder	adv	again
+zusammen	adv	together
+allein	adv	alone
+genug	adv	enough
+fast	adv	almost
+ziemlich	adv	quite; fairly
+besonders	adv	especially
+ungefähr	adv	approximately
+etwa	adv	about; roughly
+mehr	adv	more
+weniger	adv	less
+genau	adv	exactly
+leider	adv	unfortunately
+hoffentlich	adv	hopefully
+übrigens	adv	by the way
+deshalb	adv	therefore
+deswegen	adv	for that reason
+trotzdem	adv	nevertheless
+also	adv	so; thus
+eigentlich	adv	actually
+sogar	adv	even
+ebenfalls	adv	likewise
+außerdem	adv	besides; moreover
+nämlich	adv	namely; you see
+zwar	adv	admittedly
+links	adv	left
+rechts	adv	right
+oben	adv	above; up
+unten	adv	below; down
+draußen	adv	outside
+drinnen	adv	inside
+überall	adv	everywhere
+irgendwo	adv	somewhere
+nirgends	adv	nowhere
+ganz	adv	completely; quite
+ja	adv	yes
+nein	adv	no
+doch	adv	yes (contradicting); after all
+bitte	adv	please
+danke	adv	thank you
+null	num	zero
+eins	num	one
+zwei	num	two
+drei	num	three
+vier	num	four
+fünf	num	five
+sechs	num	six
+sieben	num	seven
+acht	num	eight
+neun	num	nine
+zehn	num	ten
+elf	num	eleven
+zwölf	num	twelve
+dreizehn	num	thirteen
+zwanzig	num	twenty
+dreißig	num	thirty
+vierzig	num	forty
+fünfzig	num	fifty
+hundert	num	hundred
+tausend	num	thousand
+Million	num	million
+erste	num	first
+zweite	num	second
+dritte	num	third
+letzte	num	last
+halb	num	half
+Montag	noun	Monday
+Dienstag	noun	Tuesday
+Mittwoch	noun	Wednesday
+Donnerstag	noun	Thursday
+Freitag	noun	Friday
+Samstag	noun	Saturday
+Sonntag	noun	Sunday
+Wochenende	noun	weekend
+Januar	noun	January
+Februar	noun	February
+März	noun	March
+April	noun	April
+Mai	noun	May
+Juni	noun	June
+Juli	noun	July
+August	noun	August
+September	noun	September
+Oktober	noun	October
+November	noun	November
+Dezember	noun	December
+Frühling	noun	spring
+Sommer	noun	summer
+Herbst	noun	autumn; fall
+Winter	noun	winter
+rot	adj	red
+blau	adj	blue
+grün	adj	green
+gelb	adj	yellow
+schwarz	adj	black
+weiß	adj	white
+braun	adj	brown
+grau	adj	grey
+rosa	adj	pink
+orange	adj	orange
+lila	adj	purple
+bunt	adj	colorful
+sein	verb	to be
+haben	verb	to have
+werden	verb	to become; will
+können	verb	can; to be able to
+müssen	verb	must; to have to
+wollen	verb	to want
+sollen	verb	should; to be supposed to
+dürfen	verb	may; to be allowed to
+mögen	verb	to like
+machen	verb	to do; to make
+tun	verb	to do
+gehen	verb	to go; to walk
+kommen	verb	to come
+sehen	verb	to see
+geben	verb	to give
+nehmen	verb	to take
+finden	verb	to find
+denken	verb	to think
+glauben	verb	to believe
+wissen	verb	to know (a fact)
+kennen	verb	to know (be familiar with)
+sagen	verb	to say
+sprechen	verb	to speak
+reden	verb	to talk
+fragen	verb	to ask
+antworten	verb	to answer
+erzählen	verb	to tell; to recount
+erklären	verb	to explain
+lernen	verb	to learn
+studieren	verb	to study
+arbeiten	verb	to work
+wohnen	verb	to live; to reside
+leben	verb	to live
+lieben	verb	to love
+hassen	verb	to hate
+essen	verb	to eat
+trinken	verb	to drink
+schlafen	verb	to sleep
+aufstehen	verb	to get up
+kaufen	verb	to buy
+verkaufen	verb	to sell
+bezahlen	verb	to pay
+kosten	verb	to cost
+fahren	verb	to drive; to go (by vehicle)
+laufen	verb	to run; to walk
+fliegen	verb	to fly
+reisen	verb	to travel
+spielen	verb	to play
+lesen	verb	to read
+schreiben	verb	to write
+hören	verb	to hear; to listen
+verstehen	verb	to understand
+brauchen	verb	to need
+bleiben	verb	to stay
+bringen	verb	to bring
+holen	verb	to fetch; to get
+tragen	verb	to carry; to wear
+setzen	verb	to set; to put
+stellen	verb	to place; to put (upright)
+legen	verb	to lay; to put (down)
+stehen	verb	to stand
+liegen	verb	to lie; to be located
+sitzen	verb	to sit
+öffnen	verb	to open
+schließen	verb	to close
+beginnen	verb	to begin
+anfangen	verb	to start
+aufhören	verb	to stop; to cease
+enden	verb	to end
+helfen	verb	to help
+danken	verb	to thank
+warten	verb	to wait
+suchen	verb	to search; to look for
+treffen	verb	to meet
+besuchen	verb	to visit
+putzen	verb	to clean
+waschen	verb	to wash
+kochen	verb	to cook
+backen	verb	to bake
+kämmen	verb	to comb
+anziehen	verb	to put on; to dress
+ausziehen	verb	to take off; to move out
+ansehen	verb	to look at; to watch
+vorstellen	verb	to introduce; to imagine
+erinnern	verb	to remind; (sich) to remember
+freuen	verb	(sich) to be glad; to look forward
+beeilen	verb	(sich) to hurry
+fühlen	verb	to feel
+meinen	verb	to mean; to think
+zeigen	verb	to show
+benutzen	verb	to use
+gebrauchen	verb	to use
+versuchen	verb	to try
+schaffen	verb	to manage; to create
+gewinnen	verb	to win
+verlieren	verb	to lose
+vergessen	verb	to forget
+ändern	verb	to change
+wechseln	verb	to change; to switch
+entscheiden	verb	to decide
+wählen	verb	to choose; to vote
+gefallen	verb	to please; to be liked
+passen	verb	to fit; to suit
+gehören	verb	to belong
+bedeuten	verb	to mean
+heißen	verb	to be called
+nennen	verb	to name; to call
+lachen	verb	to laugh
+weinen	verb	to cry
+lächeln	verb	to smile
+rufen	verb	to call; to shout
+telefonieren	verb	to phone
+schicken	verb	to send
+senden	verb	to send
+bekommen	verb	to get; to receive
+erhalten	verb	to receive
+mitkommen	verb	to come along
+mitbringen	verb	to bring along
+einkaufen	verb	to shop
+fernsehen	verb	to watch TV
+ankommen	verb	to arrive
+abfahren	verb	to depart
+umsteigen	verb	to change (trains)
+einsteigen	verb	to get in/on
+aussteigen	verb	to get off/out
+aufmachen	verb	to open
+zumachen	verb	to close
+anrufen	verb	to call (phone)
+aufpassen	verb	to pay attention; to watch out
+vorbereiten	verb	to prepare
+wiederholen	verb	to repeat
+üben	verb	to practice
+erlauben	verb	to allow
+verbieten	verb	to forbid
+versprechen	verb	to promise
+schwimmen	verb	to swim
+tanzen	verb	to dance
+singen	verb	to sing
+malen	verb	to paint
+zeichnen	verb	to draw
+rauchen	verb	to smoke
+regnen	verb	to rain
+schneien	verb	to snow
+scheinen	verb	to shine; to seem
+Mann	noun	man
+Frau	noun	woman; wife
+Kind	noun	child
+Mensch	noun	human; person
+Leute	noun	people
+Person	noun	person
+Familie	noun	family
+Freund	noun	friend (m.)
+Freundin	noun	friend (f.); girlfriend
+Eltern	noun	parents
+Vater	noun	father
+Mutter	noun	mother
+Sohn	noun	son
+Tochter	noun	daughter
+Bruder	noun	brother
+Schwester	noun	sister
+Großvater	noun	grandfather
+Großmutter	noun	grandmother
+Baby	noun	baby
+Junge	noun	boy
+Mädchen	noun	girl
+Name	noun	name
+Haus	noun	house
+Wohnung	noun	apartment
+Zimmer	noun	room
+Küche	noun	kitchen
+Bad	noun	bathroom
+Tür	noun	door
+Fenster	noun	window
+Wand	noun	wall
+Boden	noun	floor; ground
+Tisch	noun	table
+Stuhl	noun	chair
+Bett	noun	bed
+Schrank	noun	cupboard; wardrobe
+Lampe	noun	lamp
+Auto	noun	car
+Zug	noun	train
+Bus	noun	bus
+Bahn	noun	train; tram
+Fahrrad	noun	bicycle
+Flugzeug	noun	airplane
+Straße	noun	street
+Weg	noun	way; path
+Platz	noun	place; square
+Stadt	noun	city
+Dorf	noun	village
+Land	noun	country; countryside
+Welt	noun	world
+Ort	noun	place
+Gegend	noun	area; region
+Zeit	noun	time
+Tag	noun	day
+Woche	noun	week
+Monat	noun	month
+Jahr	noun	year
+Stunde	noun	hour
+Minute	noun	minute
+Sekunde	noun	second
+Morgen	noun	morning
+Mittag	noun	noon
+Abend	noun	evening
+Nacht	noun	night
+Uhr	noun	clock; o'clock
+Wasser	noun	water
+Brot	noun	bread
+Milch	noun	milk
+Kaffee	noun	coffee
+Tee	noun	tea
+Bier	noun	beer
+Wein	noun	wine
+Saft	noun	juice
+Ei	noun	egg
+Fleisch	noun	meat
+Fisch	noun	fish
+Obst	noun	fruit
+Gemüse	noun	vegetables
+Apfel	noun	apple
+Käse	noun	cheese
+Zucker	noun	sugar
+Salz	noun	salt
+Essen	noun	food; meal
+Frühstück	noun	breakfast
+Mittagessen	noun	lunch
+Abendessen	noun	dinner
+Geld	noun	money
+Preis	noun	price
+Euro	noun	euro
+Arbeit	noun	work; job
+Beruf	noun	profession
+Büro	noun	office
+Firma	noun	company
+Chef	noun	boss
+Schule	noun	school
+Universität	noun	university
+Lehrer	noun	teacher
+Schüler	noun	pupil
+Student	noun	student
+Klasse	noun	class
+Buch	noun	book
+Heft	noun	notebook
+Zeitung	noun	newspaper
+Brief	noun	letter
+Sprache	noun	language
+Wort	noun	word
+Satz	noun	sentence
+Frage	noun	question
+Antwort	noun	answer
+Problem	noun	problem
+Beispiel	noun	example
+Idee	noun	idea
+Grund	noun	reason
+Sache	noun	thing; matter
+Ding	noun	thing
+Teil	noun	part
+Art	noun	kind; way
+Hand	noun	hand
+Kopf	noun	head
+Auge	noun	eye
+Ohr	noun	ear
+Nase	noun	nose
+Mund	noun	mouth
+Zahn	noun	tooth
+Haar	noun	hair
+Herz	noun	heart
+Körper	noun	body
+Gesicht	noun	face
+Fuß	noun	foot
+Bein	noun	leg
+Arm	noun	arm
+Finger	noun	finger
+Rücken	noun	back
+Bauch	noun	stomach; belly
+Hund	noun	dog
+Katze	noun	cat
+Vogel	noun	bird
+Pferd	noun	horse
+Tier	noun	animal
+Baum	noun	tree
+Blume	noun	flower
+Wald	noun	forest
+Berg	noun	mountain
+See	noun	lake; (der) sea
+Meer	noun	sea
+Fluss	noun	river
+Himmel	noun	sky
+Sonne	noun	sun
+Mond	noun	moon
+Stern	noun	star
+Regen	noun	rain
+Schnee	noun	snow
+Wind	noun	wind
+Wetter	noun	weather
+Farbe	noun	color
+Musik	noun	music
+Film	noun	film; movie
+Spiel	noun	game
+Sport	noun	sport
+Ball	noun	ball
+Party	noun	party
+Fest	noun	celebration
+Geschenk	noun	gift
+Bild	noun	picture
+Foto	noun	photo
+Telefon	noun	telephone
+Handy	noun	mobile phone
+Computer	noun	computer
+Internet	noun	internet
+Kleidung	noun	clothing
+Hemd	noun	shirt
+Hose	noun	trousers
+Jacke	noun	jacket
+Mantel	noun	coat
+Schuh	noun	shoe
+Kleid	noun	dress
+Hut	noun	hat
+Tasche	noun	bag; pocket
+Geschichte	noun	story; history
+Leben	noun	life
+Liebe	noun	love
+Glück	noun	luck; happiness
+Angst	noun	fear
+Gefühl	noun	feeling
+Gesundheit	noun	health
+Krankheit	noun	illness
+Arzt	noun	doctor
+Krankenhaus	noun	hospital
+Apotheke	noun	pharmacy
+Geschäft	noun	shop; business
+Laden	noun	shop
+Markt	noun	market
+Restaurant	noun	restaurant
+Hotel	noun	hotel
+Bank	noun	bank; bench
+Post	noun	post office; mail
+Kirche	noun	church
+Museum	noun	museum
+Kino	noun	cinema
+Theater	noun	theatre
+Garten	noun	garden
+Park	noun	park
+Urlaub	noun	holiday; vacation
+Reise	noun	trip; journey
+Ferien	noun	school holidays
+Termin	noun	appointment
+Uhrzeit	noun	time (of day)
+Nummer	noun	number
+Adresse	noun	address
+Grad	noun	degree
+Seite	noun	side; page
+Ende	noun	end
+Anfang	noun	beginning
+gut	adj	good
+schlecht	adj	bad
+groß	adj	big; tall
+klein	adj	small
+neu	adj	new
+alt	adj	old
+jung	adj	young
+lang	adj	long
+kurz	adj	short
+hoch	adj	high; tall
+tief	adj	deep; low
+breit	adj	wide
+schmal	adj	narrow
+dick	adj	thick; fat
+dünn	adj	thin
+schnell	adj	fast
+langsam	adj	slow
+schön	adj	beautiful; nice
+hässlich	adj	ugly
+teuer	adj	expensive
+billig	adj	cheap
+günstig	adj	cheap; favorable
+reich	adj	rich
+arm	adj	poor
+warm	adj	warm
+kalt	adj	cold
+heiß	adj	hot
+kühl	adj	cool
+hell	adj	bright; light
+dunkel	adj	dark
+leicht	adj	easy; light
+schwer	adj	heavy; difficult
+einfach	adj	simple; easy
+schwierig	adj	difficult
+kompliziert	adj	complicated
+richtig	adj	correct; right
+falsch	adj	wrong; false
+wichtig	adj	important
+interessant	adj	interesting
+langweilig	adj	boring
+spannend	adj	exciting
+lustig	adj	funny
+ernst	adj	serious
+glücklich	adj	happy
+traurig	adj	sad
+müde	adj	tired
+wach	adj	awake
+hungrig	adj	hungry
+durstig	adj	thirsty
+satt	adj	full (not hungry)
+krank	adj	sick
+gesund	adj	healthy
+froh	adj	glad
+böse	adj	angry; evil
+nett	adj	nice
+freundlich	adj	friendly
+höflich	adj	polite
+stark	adj	strong
+schwach	adj	weak
+voll	adj	full
+leer	adj	empty
+sauber	adj	clean
+schmutzig	adj	dirty
+nass	adj	wet
+trocken	adj	dry
+früh	adj	early
+spät	adj	late
+nah	adj	near; close
+weit	adj	far; wide
+gleich	adj	same; equal
+verschieden	adj	different
+ähnlich	adj	similar
+andere	adj	other
+nächste	adj	next
+letzte	adj	last
+ganze	adj	whole
+frei	adj	free
+besetzt	adj	occupied; taken
+offen	adj	open
+geschlossen	adj	closed
+fertig	adj	ready; finished
+bereit	adj	ready
+möglich	adj	possible
+unmöglich	adj	impossible
+nötig	adj	necessary
+klar	adj	clear
+sicher	adj	safe; sure
+gefährlich	adj	dangerous
+ruhig	adj	quiet; calm
+laut	adj	loud
+leise	adj	quiet; soft
+bekannt	adj	known; famous
+berühmt	adj	famous
+modern	adj	modern
+normal	adj	normal
+typisch	adj	typical
+echt	adj	real; genuine
+wahr	adj	true
+fein	adj	fine
+genau	adj	exact; precise
+wunderbar	adj	wonderful
+toll	adj	great
+super	adj	great
+prima	adj	great
+schrecklich	adj	terrible
+furchtbar	adj	awful
+angenehm	adj	pleasant
+bequem	adj	comfortable
+praktisch	adj	practical
+nützlich	adj	useful
+beliebt	adj	popular
+zufrieden	adj	satisfied
+stolz	adj	proud
+neugierig	adj	curious
+vorsichtig	adj	careful
+fleißig	adj	hard-working; diligent
+faul	adj	lazy
+klug	adj	clever; smart
+dumm	adj	stupid
+reif	adj	ripe; mature
+lecker	adj	tasty; delicious
+süß	adj	sweet; cute
+sauer	adj	sour
+scharf	adj	spicy; sharp
+bitter	adj	bitter
+salzig	adj	salty
