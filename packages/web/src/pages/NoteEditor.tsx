@@ -58,6 +58,27 @@ function noteToCheatsheet(note: {
   };
 }
 
+// Reading size for the note body, remembered per device.
+const FONT_KEY = "mdb-note-fontsize";
+const MIN_FONT = 12;
+const MAX_FONT = 26;
+const DEFAULT_FONT = 16;
+function getNoteFontSize(): number {
+  try {
+    const n = Number(localStorage.getItem(FONT_KEY));
+    return n >= MIN_FONT && n <= MAX_FONT ? n : DEFAULT_FONT;
+  } catch {
+    return DEFAULT_FONT;
+  }
+}
+function storeNoteFontSize(px: number): void {
+  try {
+    localStorage.setItem(FONT_KEY, String(px));
+  } catch {
+    /* ignore */
+  }
+}
+
 type SaveState = "idle" | "saving" | "saved" | "error";
 
 export function NoteEditor() {
@@ -75,6 +96,15 @@ export function NoteEditor() {
   const [aiError, setAiError] = useState<string | null>(null);
   const [undoBody, setUndoBody] = useState<string | null>(null);
   const [savingSheet, setSavingSheet] = useState(false);
+  const [fontSize, setFontSize] = useState(getNoteFontSize);
+
+  function changeFont(delta: number) {
+    setFontSize((s) => {
+      const next = Math.min(MAX_FONT, Math.max(MIN_FONT, s + delta));
+      storeNoteFontSize(next);
+      return next;
+    });
+  }
 
   const ready = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -211,6 +241,24 @@ export function NoteEditor() {
             Preview
           </TabBtn>
         </div>
+        <div className="inline-flex items-center gap-0.5 rounded-xl border border-slate-200 p-1 dark:border-slate-800">
+          <FontBtn
+            label="Smaller text"
+            disabled={fontSize <= MIN_FONT}
+            onClick={() => changeFont(-1)}
+          >
+            <span className="text-xs">A</span>
+            <span aria-hidden>−</span>
+          </FontBtn>
+          <FontBtn
+            label="Larger text"
+            disabled={fontSize >= MAX_FONT}
+            onClick={() => changeFont(1)}
+          >
+            <span className="text-base leading-none">A</span>
+            <span aria-hidden>+</span>
+          </FontBtn>
+        </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           {undoBody !== null && (
             <button
@@ -255,19 +303,23 @@ export function NoteEditor() {
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
+            style={{ fontSize }}
             placeholder={
               "Write your notes here. Markdown works:\n\n# Heading\n- point one\n- **bold** and `code`\n\n| der | die | das |\n| --- | --- | --- |"
             }
-            className="min-h-[60vh] w-full resize-y rounded-xl border border-slate-200 bg-white p-4 font-content text-sm leading-relaxed outline-none focus:border-accent dark:border-slate-800 dark:bg-slate-900"
+            className="min-h-[60vh] w-full resize-y rounded-xl border border-slate-200 bg-white p-4 font-note leading-relaxed outline-none focus:border-accent dark:border-slate-800 dark:bg-slate-900"
           />
         ) : (
-          <div className="min-h-[60vh] rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+          <div
+            style={{ fontSize }}
+            className="min-h-[60vh] rounded-xl border border-slate-200 p-4 dark:border-slate-800"
+          >
             {body.trim() ? (
-              <TapToTranslate className="md font-content text-sm leading-relaxed">
+              <TapToTranslate className="md font-note leading-relaxed">
                 <Markdown options={mdOptions}>{body}</Markdown>
               </TapToTranslate>
             ) : (
-              <p className="text-sm italic text-slate-400">Nothing to preview yet.</p>
+              <p className="italic text-slate-400">Nothing to preview yet.</p>
             )}
           </div>
         )}
@@ -304,6 +356,31 @@ function TabBtn({
           ? "bg-accent text-accent-foreground"
           : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
       }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function FontBtn({
+  label,
+  disabled,
+  onClick,
+  children,
+}: {
+  label: string;
+  disabled?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="flex h-7 items-center gap-0.5 rounded-lg px-2 text-slate-500 hover:bg-slate-100 disabled:opacity-40 dark:hover:bg-slate-800"
     >
       {children}
     </button>

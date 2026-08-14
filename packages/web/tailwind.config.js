@@ -21,6 +21,14 @@ export default {
           "Arial",
           "sans-serif",
         ],
+        // Notes use Lato so they read distinctly from the rest of the app.
+        note: [
+          '"Lato"',
+          "ui-sans-serif",
+          "system-ui",
+          "-apple-system",
+          "sans-serif",
+        ],
       },
     },
   },
