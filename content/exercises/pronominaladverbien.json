@@ -1,0 +1,464 @@
+{
+  "schemaVersion": 1,
+  "id": "pronominaladverbien",
+  "title": "Fragepronomen & Pronominaladverbien",
+  "subtitle": "wo(r)- / da(r)- (question words & pronominal adverbs)",
+  "description": "Bilde Fragen mit wo(r)+Präposition, antworte mit da(r)+Präposition — und unterscheide Sachen (da-/wo-) von Personen (Präposition + wen/wem/Pronomen).",
+  "level": "B1",
+  "tags": [
+    "grammatik",
+    "pronominaladverbien",
+    "fragewörter"
+  ],
+  "createdAt": "2026-08-22",
+  "items": [
+    {
+      "type": "cloze",
+      "id": "pa-a1",
+      "text": "{{1}} wartet ihr?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "Worauf"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Bilde die Frage: Ergänze das Fragewort (wo(r)+Präposition bei Sachen, Präposition + wen/wem bei Personen).  (Wir warten auf den Bus.)"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-a2",
+      "text": "{{1}} bittet sie?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "Worum"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Bilde die Frage: Ergänze das Fragewort (wo(r)+Präposition bei Sachen, Präposition + wen/wem bei Personen).  (Sie bittet um einen Kaffee.)"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-a3",
+      "text": "{{1}} denkt er?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "An wen"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Bilde die Frage: Ergänze das Fragewort (wo(r)+Präposition bei Sachen, Präposition + wen/wem bei Personen).  (Er denkt an seinen Vater. (Person!))"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-a4",
+      "text": "{{1}} hast du Angst?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "Wovor"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Bilde die Frage: Ergänze das Fragewort (wo(r)+Präposition bei Sachen, Präposition + wen/wem bei Personen).  (Ich habe Angst vor dem Feuer.)"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-a5",
+      "text": "{{1}} spricht er?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "Worüber"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Bilde die Frage: Ergänze das Fragewort (wo(r)+Präposition bei Sachen, Präposition + wen/wem bei Personen).  (Er spricht über seine Reise.)"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-a6",
+      "text": "{{1}} fängst du an?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "Womit"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Bilde die Frage: Ergänze das Fragewort (wo(r)+Präposition bei Sachen, Präposition + wen/wem bei Personen).  (Ich fange mit meiner Arbeit an.)"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-a7",
+      "text": "{{1}} verliebt er sich?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "In wen"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Bilde die Frage: Ergänze das Fragewort (wo(r)+Präposition bei Sachen, Präposition + wen/wem bei Personen).  (Er verliebt sich in meine Kusine. (Person!))"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-a8",
+      "text": "{{1}} hängt es ab?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "Wovon"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Bilde die Frage: Ergänze das Fragewort (wo(r)+Präposition bei Sachen, Präposition + wen/wem bei Personen).  (Es hängt von dem Wetter ab.)"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-a9",
+      "text": "{{1}} hat er gesprochen?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "Mit wem"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Bilde die Frage: Ergänze das Fragewort (wo(r)+Präposition bei Sachen, Präposition + wen/wem bei Personen).  (Er hat mit dem Lehrer gesprochen. (Person!))"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-a10",
+      "text": "{{1}} interessierst du dich?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "Wofür"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Bilde die Frage: Ergänze das Fragewort (wo(r)+Präposition bei Sachen, Präposition + wen/wem bei Personen).  (Ich interessiere mich für Architektur.)"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-b1",
+      "text": "Ja, ich erinnere mich {{1}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "daran"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Antworte: Ersetze das Objekt durch ein Pronominaladverb (Sache) oder Präposition + Pronomen (Person).  (Erinnerst du dich an meinen Geburtstag?)"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-b2",
+      "text": "Nein, sie versteht nicht viel {{1}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "davon"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Antworte: Ersetze das Objekt durch ein Pronominaladverb (Sache) oder Präposition + Pronomen (Person).  (Versteht sie viel von Medizin?)"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-b3",
+      "text": "Ja, ich hoffe {{1}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "darauf"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Antworte: Ersetze das Objekt durch ein Pronominaladverb (Sache) oder Präposition + Pronomen (Person).  (Hoffst du auf eine gute Note?)"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-b4",
+      "text": "Ja, ich habe mich {{1}} geärgert.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "über ihn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Antworte: Ersetze das Objekt durch ein Pronominaladverb (Sache) oder Präposition + Pronomen (Person).  (Hast du dich über deinen Bruder geärgert? (Person!))"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-b5",
+      "text": "Nein, ich habe keine Angst {{1}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "davor"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Antworte: Ersetze das Objekt durch ein Pronominaladverb (Sache) oder Präposition + Pronomen (Person).  (Hast du Angst vor Feuer?)"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-b6",
+      "text": "Nein, er hat sich nicht {{1}} verliebt.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "in sie"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Antworte: Ersetze das Objekt durch ein Pronominaladverb (Sache) oder Präposition + Pronomen (Person).  (Hat er sich in die Frau verliebt? (Person!))"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-b7",
+      "text": "Ja, wir lachen {{1}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "über ihn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Antworte: Ersetze das Objekt durch ein Pronominaladverb (Sache) oder Präposition + Pronomen (Person).  (Lacht ihr über den Lehrer? (Person!))"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-b8",
+      "text": "Ja, ich fahre {{1}} in die Schule.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "damit"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Antworte: Ersetze das Objekt durch ein Pronominaladverb (Sache) oder Präposition + Pronomen (Person).  (Fährst du mit dem Bus in die Schule?)"
+    },
+    {
+      "type": "cloze",
+      "id": "pa-b9",
+      "text": "Ja, ich freue mich {{1}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "darauf"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Antworte: Ersetze das Objekt durch ein Pronominaladverb (Sache) oder Präposition + Pronomen (Person).  (Freust du dich auf die Reise?)"
+    },
+    {
+      "type": "transform",
+      "id": "pa-c1",
+      "instructions": "Sag es mit Pronominaladverb (Sache) oder Präposition + Pronomen (Person).",
+      "source": "Wir fangen mit unserer Arbeit an.",
+      "answer": {
+        "accept": [
+          "Wir fangen damit an."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "pa-c2",
+      "instructions": "Sag es mit Pronominaladverb (Sache) oder Präposition + Pronomen (Person).",
+      "source": "Sabine und Hans ärgern sich über das Wetter.",
+      "answer": {
+        "accept": [
+          "Sabine und Hans ärgern sich darüber."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "pa-c3",
+      "instructions": "Sag es mit Pronominaladverb (Sache) oder Präposition + Pronomen (Person).",
+      "source": "Du bereitest dich auf die Prüfung vor.",
+      "answer": {
+        "accept": [
+          "Du bereitest dich darauf vor."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "pa-c4",
+      "instructions": "Sag es mit Pronominaladverb (Sache) oder Präposition + Pronomen (Person).",
+      "source": "Diana wartet auf die Gäste.",
+      "answer": {
+        "accept": [
+          "Diana wartet auf sie."
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "„die Gäste\" sind Personen → auf + Pronomen (sie), kein „darauf\"."
+    },
+    {
+      "type": "transform",
+      "id": "pa-c5",
+      "instructions": "Sag es mit Pronominaladverb (Sache) oder Präposition + Pronomen (Person).",
+      "source": "Wir sind böse auf Karl.",
+      "answer": {
+        "accept": [
+          "Wir sind böse auf ihn."
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "Karl ist eine Person → auf ihn."
+    },
+    {
+      "type": "transform",
+      "id": "pa-c6",
+      "instructions": "Sag es mit Pronominaladverb (Sache) oder Präposition + Pronomen (Person).",
+      "source": "Ich denke an Karl.",
+      "answer": {
+        "accept": [
+          "Ich denke an ihn."
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "Person → an ihn (nicht „daran\")."
+    },
+    {
+      "type": "transform",
+      "id": "pa-c7",
+      "instructions": "Sag es mit Pronominaladverb (Sache) oder Präposition + Pronomen (Person).",
+      "source": "Wir fragen nach dem Preis.",
+      "answer": {
+        "accept": [
+          "Wir fragen danach."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "pa-c8",
+      "instructions": "Sag es mit Pronominaladverb (Sache) oder Präposition + Pronomen (Person).",
+      "source": "Wir sprechen über unsere Tante.",
+      "answer": {
+        "accept": [
+          "Wir sprechen über sie."
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "Person → über sie."
+    },
+    {
+      "type": "transform",
+      "id": "pa-c9",
+      "instructions": "Sag es mit Pronominaladverb (Sache) oder Präposition + Pronomen (Person).",
+      "source": "Silke hat sich in Heinz verliebt.",
+      "answer": {
+        "accept": [
+          "Silke hat sich in ihn verliebt."
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "Person → in ihn."
+    },
+    {
+      "type": "transform",
+      "id": "pa-c10",
+      "instructions": "Sag es mit Pronominaladverb (Sache) oder Präposition + Pronomen (Person).",
+      "source": "Ich danke ihm für das Geschenk.",
+      "answer": {
+        "accept": [
+          "Ich danke ihm dafür."
+        ],
+        "grading": "normalized"
+      }
+    }
+  ]
+}

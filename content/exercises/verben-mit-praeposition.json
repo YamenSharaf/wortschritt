@@ -1,0 +1,598 @@
+{
+  "schemaVersion": 1,
+  "id": "verben-mit-praeposition",
+  "title": "Verben mit Präposition",
+  "subtitle": "Verbs with fixed prepositions",
+  "description": "Welche Präposition gehört zum Verb? warten auf, denken an, sich interessieren für, Angst haben vor …",
+  "level": "B1",
+  "tags": [
+    "grammatik",
+    "präpositionen",
+    "verben"
+  ],
+  "createdAt": "2026-08-22",
+  "items": [
+    {
+      "type": "cloze",
+      "id": "vp-01",
+      "text": "Interessierst du dich {{1}} Kunst und Kultur?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "für"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-02",
+      "text": "Denkst du oft {{1}} deinen letzten Urlaub?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "an"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-03",
+      "text": "Hast du heute schon {{1}} einem Freund telefoniert?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "mit"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-04",
+      "text": "Wartest du momentan {{1}} eine wichtige Nachricht?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "auf"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-05",
+      "text": "Wartest du manchmal lange {{1}} den Bus?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "auf"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-06",
+      "text": "Freust du dich {{1}} die Ferien?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "auf",
+              "über"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-07",
+      "text": "Glaubst du {{1}} das Schicksal?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "an"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-08",
+      "text": "Redest du gerne {{1}} deinem Chef über Probleme?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "mit"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-09",
+      "text": "Hoffst du {{1}} besseres Wetter am Wochenende?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "auf"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-10",
+      "text": "Träumst du manchmal {{1}} deinem Traumberuf?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "von"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-11",
+      "text": "Träumst du {{1}} einem Haus am Meer?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "von"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-12",
+      "text": "Ärgerst du dich {{1}} hohe Preise im Supermarkt?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "über"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-13",
+      "text": "Arbeitest du oft {{1}} Projekten mit anderen zusammen?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "an"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-14",
+      "text": "Achtest du beim Einkaufen {{1}} die Preise?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "auf"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-15",
+      "text": "Interessierst du dich {{1}} aktuelle Nachrichten?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "für"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-16",
+      "text": "Diskutierst du manchmal {{1}} deiner Familie über Politik?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "mit"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-17",
+      "text": "Freust du dich {{1}} das nächste Wochenende?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "auf",
+              "über"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-18",
+      "text": "Hast du dich schon {{1}} deinem Nachbarn über den Lärm beschwert?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "bei"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-19",
+      "text": "Bist du zufrieden {{1}} deinem Leben?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "mit"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-20",
+      "text": "Vergleichst du dich manchmal {{1}} deinen Freunden?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "mit"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-21",
+      "text": "Beschäftigst du dich gerne {{1}} komplexen Themen?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "mit"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-22",
+      "text": "Sprichst du oft {{1}} deinen Eltern über deine Pläne?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "mit"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-23",
+      "text": "Denkst du viel {{1}} die Zukunft?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "an"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-24",
+      "text": "Diskutierst du gerne {{1}} deinen Kollegen über Filme?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "mit"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-25",
+      "text": "Hast du Angst {{1}} neuen Herausforderungen?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "vor"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-26",
+      "text": "Ärgerst du dich oft {{1}} technischen Problemen?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "über"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-27",
+      "text": "Freust du dich {{1}} das Treffen mit alten Freunden?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "auf",
+              "über"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-28",
+      "text": "Kannst du dich noch {{1}} deinen ersten Arbeitstag erinnern?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "an"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-29",
+      "text": "Interessierst du dich {{1}} fremde Kulturen?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "für"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-30",
+      "text": "Schämst du dich manchmal {{1}} Fehler, die du gemacht hast?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "für",
+              "wegen"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-31",
+      "text": "Hoffst du {{1}} eine baldige Lösung für globale Probleme?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "auf"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-32",
+      "text": "Versuchst du, dich {{1}} den aktuellen Trends zu orientieren?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "an"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-33",
+      "text": "Streitest du oft {{1}} deinen Geschwistern?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "mit"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    },
+    {
+      "type": "cloze",
+      "id": "vp-34",
+      "text": "Denkst du {{1}} deinen nächsten Urlaub?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "an"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "Welche Präposition passt? Ergänze die richtige Präposition."
+    }
+  ]
+}

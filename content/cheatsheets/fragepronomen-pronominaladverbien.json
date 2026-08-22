@@ -1,0 +1,25 @@
+{
+  "id": "fragepronomen-pronominaladverbien",
+  "title": "Fragepronomen & Pronominaladverbien",
+  "subtitle": "wo(r)- / da(r)- and verbs with prepositions",
+  "category": "grammatik",
+  "createdAt": "2026-08-22",
+  "sections": [
+    {
+      "heading": "Die Grundidee",
+      "body": "Viele Verben haben eine **feste Präposition** (z. B. *warten **auf***, *denken **an***). Um nach dem Objekt zu fragen oder es zu ersetzen, benutzt man je nach Fall:\n\n- **Frage nach einer Sache:** **wo(r)** + Präposition → *Worauf wartest du?*\n- **Antwort/Ersatz für eine Sache:** **da(r)** + Präposition → *Ich warte **darauf**.*\n- **Bei Personen** benutzt man **KEIN** wo-/da-Wort, sondern **Präposition + wen/wem** (Frage) bzw. **Präposition + Pronomen** (Antwort):\n  > *An **wen** denkst du?* — *Ich denke **an ihn**.*"
+    },
+    {
+      "heading": "Das eingeschobene -r-",
+      "body": "Beginnt die Präposition mit einem **Vokal** (an, auf, über, um, in, unter …), kommt ein **-r-** dazu:\n\n| | Konsonant (mit, von, für, nach, vor) | Vokal (an, auf, über, um) |\n| --- | --- | --- |\n| **da-** | damit, davon, dafür, danach, davor | da**r**an, da**r**auf, da**r**über, da**r**um |\n| **wo-** | womit, wovon, wofür, wonach, wovor | wo**r**an, wo**r**auf, wo**r**über, wo**r**um |\n\n> Merke: *da + auf* → **darauf**, *wo + an* → **woran**. Aber *da + mit* → **damit** (kein -r-)."
+    },
+    {
+      "heading": "Sache oder Person?",
+      "body": "Das ist der häufigste Fehler. Entscheide zuerst: Geht es um eine **Sache** oder eine **Person**?\n\n| | Sache | Person |\n| --- | --- | --- |\n| **Frage** | **Wo**rauf wartest du? | **Auf wen** wartest du? |\n| **Antwort** | Ich warte **darauf**. | Ich warte **auf ihn**. |\n\n> *Ich denke an die Reise → **daran**.* · *Ich denke an Peter → **an ihn**.*"
+    },
+    {
+      "heading": "Häufige Verben mit Präposition",
+      "body": "| Verb + Präposition | Frage (Sache) | Antwort (Sache) |\n| --- | --- | --- |\n| warten **auf** (+A) | worauf | darauf |\n| denken **an** (+A) | woran | daran |\n| sich freuen **auf** (+A) | worauf | darauf |\n| sich interessieren **für** (+A) | wofür | dafür |\n| sprechen / sich ärgern **über** (+A) | worüber | darüber |\n| Angst haben **vor** (+D) | wovor | davor |\n| anfangen / fahren **mit** (+D) | womit | damit |\n| abhängen / träumen **von** (+D) | wovon | davon |\n| bitten **um** (+A) | worum | darum |\n| fragen **nach** (+D) | wonach | danach |\n\n> Weitere: *hoffen **auf***, *glauben **an***, *achten **auf***, *sich beschweren **bei** … **über***, *sich verlieben **in***, *zufrieden sein **mit***."
+    }
+  ]
+}
