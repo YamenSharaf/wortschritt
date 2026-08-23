@@ -45,6 +45,10 @@ type VocabCtx = {
   createGroup: (name: string) => Promise<VocabGroup>;
   deleteGroup: (id: number) => Promise<void>;
   setWordGroup: (word: string, id: number, member: boolean) => Promise<void>;
+  /** Record a flashcard grade; updates the word's kept score. */
+  recordStudy: (word: string, known: boolean) => Promise<void>;
+  /** Clear a word's flashcard score. */
+  resetStudy: (word: string) => Promise<void>;
   openWord: (display: string, x: number, y: number, context?: string) => void;
 };
 
@@ -135,6 +139,22 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     );
   }
 
+  async function recordStudy(word: string, known: boolean) {
+    const w = norm(word);
+    const stats = await api.studyVocab(w, known);
+    setEntries((prev) =>
+      prev.map((e) => (e.word === w ? { ...e, stats } : e)),
+    );
+  }
+
+  async function resetStudy(word: string) {
+    const w = norm(word);
+    await api.resetVocabStudy(w);
+    setEntries((prev) =>
+      prev.map((e) => (e.word === w ? { ...e, stats: null } : e)),
+    );
+  }
+
   function openWord(display: string, x: number, y: number, context?: string) {
     setAnchor({ display, x, y, context, view: "menu" });
   }
@@ -152,6 +172,8 @@ export function VocabProvider({ children }: { children: ReactNode }) {
     createGroup,
     deleteGroup,
     setWordGroup,
+    recordStudy,
+    resetStudy,
     openWord,
   };
 

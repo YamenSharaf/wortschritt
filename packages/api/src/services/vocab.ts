@@ -3,10 +3,21 @@ import type {
   SaveVocabBody,
   VocabEntry,
   VocabGroup,
+  VocabStat,
 } from "@mdb/shared";
 import { db, schema } from "../db/client";
 
 const key = (w: string) => w.trim().toLowerCase();
+
+type StatRow = typeof schema.vocabStats.$inferSelect;
+function toStat(r: StatRow): VocabStat {
+  return {
+    known: r.known,
+    missed: r.missed,
+    lastResult: r.lastResult == null ? null : r.lastResult === 1,
+    lastStudiedAt: r.lastStudiedAt ?? null,
+  };
+}
 
 /** group_id list for each word, so entries can carry their memberships. */
 function membershipByWord(): Map<string, number[]> {
@@ -20,6 +31,13 @@ function membershipByWord(): Map<string, number[]> {
   return map;
 }
 
+function statsByWord(): Map<string, VocabStat> {
+  const rows = db.select().from(schema.vocabStats).all();
+  const map = new Map<string, VocabStat>();
+  for (const r of rows) map.set(r.word, toStat(r));
+  return map;
+}
+
 export function listVocab(): VocabEntry[] {
   const rows = db
     .select()
@@ -27,7 +45,12 @@ export function listVocab(): VocabEntry[] {
     .orderBy(desc(schema.vocab.createdAt))
     .all();
   const groups = membershipByWord();
-  return rows.map((r) => ({ ...r, groups: groups.get(r.word) ?? [] }));
+  const stats = statsByWord();
+  return rows.map((r) => ({
+    ...r,
+    groups: groups.get(r.word) ?? [],
+    stats: stats.get(r.word) ?? null,
+  }));
 }
 
 export function getVocab(word: string): VocabEntry | null {
@@ -43,7 +66,48 @@ export function getVocab(word: string): VocabEntry | null {
     .where(eq(schema.vocabGroupMembers.word, r.word))
     .all()
     .map((m) => m.groupId);
-  return { ...r, groups };
+  const stat = db
+    .select()
+    .from(schema.vocabStats)
+    .where(eq(schema.vocabStats.word, r.word))
+    .get();
+  return { ...r, groups, stats: stat ? toStat(stat) : null };
+}
+
+/** Record one flashcard grade for a word; increments the running tally. */
+export function recordStudy(word: string, known: boolean): VocabStat {
+  const w = key(word);
+  db.insert(schema.vocabStats)
+    .values({
+      word: w,
+      known: known ? 1 : 0,
+      missed: known ? 0 : 1,
+      lastResult: known ? 1 : 0,
+      lastStudiedAt: sql`(unixepoch())`,
+    })
+    .onConflictDoUpdate({
+      target: schema.vocabStats.word,
+      set: {
+        known: sql`${schema.vocabStats.known} + ${known ? 1 : 0}`,
+        missed: sql`${schema.vocabStats.missed} + ${known ? 0 : 1}`,
+        lastResult: known ? 1 : 0,
+        lastStudiedAt: sql`(unixepoch())`,
+      },
+    })
+    .run();
+  const row = db
+    .select()
+    .from(schema.vocabStats)
+    .where(eq(schema.vocabStats.word, w))
+    .get();
+  return toStat(row!);
+}
+
+/** Clear a word's flashcard tally. */
+export function resetStudy(word: string): void {
+  db.delete(schema.vocabStats)
+    .where(eq(schema.vocabStats.word, key(word)))
+    .run();
 }
 
 /** Insert or update by normalized word; preserves the original createdAt. */
@@ -75,6 +139,7 @@ export function removeVocab(word: string): void {
   db.delete(schema.vocabGroupMembers)
     .where(eq(schema.vocabGroupMembers.word, w))
     .run();
+  db.delete(schema.vocabStats).where(eq(schema.vocabStats.word, w)).run();
 }
 
 // --- groups ----------------------------------------------------------------

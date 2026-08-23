@@ -92,6 +92,16 @@ export const vocabGroupMembers = sqliteTable("vocab_group_members", {
   word: text("word").notNull(),
 });
 
+/** Flashcard self-assessment tally per word (know / don't-know), kept across
+ *  study sessions. `lastResult` is 1 = known, 0 = missed, null = never studied. */
+export const vocabStats = sqliteTable("vocab_stats", {
+  word: text("word").primaryKey(),
+  known: integer("known").notNull().default(0),
+  missed: integer("missed").notNull().default(0),
+  lastResult: integer("last_result"),
+  lastStudiedAt: integer("last_studied_at"),
+});
+
 /** Free-form, categorized learning notes (Markdown), auto-saved. */
 export const notes = sqliteTable("notes", {
   id: text("id").primaryKey(),

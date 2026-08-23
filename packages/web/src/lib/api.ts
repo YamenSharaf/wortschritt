@@ -18,6 +18,7 @@ import type {
   TtsStatus,
   VocabEntry,
   VocabGroup,
+  VocabStat,
   WordLookup,
 } from "@mdb/shared";
 
@@ -157,6 +158,15 @@ export const api = {
     }),
   vocabRemove: (word: string) =>
     req<{ ok: true }>(`/api/vocab/${encodeURIComponent(word)}`, {
+      method: "DELETE",
+    }),
+  studyVocab: (word: string, known: boolean) =>
+    req<VocabStat>(`/api/vocab/${encodeURIComponent(word)}/study`, {
+      method: "POST",
+      body: JSON.stringify({ known }),
+    }),
+  resetVocabStudy: (word: string) =>
+    req<{ ok: true }>(`/api/vocab/${encodeURIComponent(word)}/study`, {
       method: "DELETE",
     }),
   translateWord: (

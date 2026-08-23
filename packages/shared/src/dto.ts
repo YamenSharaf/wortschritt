@@ -156,6 +156,20 @@ export const wordQueryBody = z.object({
 });
 export type WordQueryBody = z.infer<typeof wordQueryBody>;
 
+/** Flashcard self-assessment tally for one word (kept across sessions). */
+export const vocabStat = z.object({
+  known: z.number().int(),
+  missed: z.number().int(),
+  /** Most recent result: true = knew it, false = missed, null = never studied. */
+  lastResult: z.boolean().nullable(),
+  lastStudiedAt: z.number().int().nullable(),
+});
+export type VocabStat = z.infer<typeof vocabStat>;
+
+/** Body for recording one flashcard grade. */
+export const studyResultBody = z.object({ known: z.boolean() });
+export type StudyResultBody = z.infer<typeof studyResultBody>;
+
 /** A saved vocabulary entry. */
 export const vocabEntry = z.object({
   word: z.string(),
@@ -165,6 +179,8 @@ export const vocabEntry = z.object({
   createdAt: z.number().int(),
   /** Ids of the groups this word belongs to. */
   groups: z.array(z.number().int()).default([]),
+  /** Flashcard tally, or null if never studied. */
+  stats: vocabStat.nullable().default(null),
 });
 export type VocabEntry = z.infer<typeof vocabEntry>;
 

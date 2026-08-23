@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import type { VocabEntry, VocabGroup } from "@mdb/shared";
 import { SearchBox } from "../components/SearchBox";
 import { SpeakButton } from "../components/SpeakButton";
@@ -16,6 +17,7 @@ export function VocabPage() {
     createGroup,
     deleteGroup,
     setWordGroup,
+    resetStudy,
     enabled,
   } = useVocab();
   const [open, setOpen] = useState<string | null>(null);
@@ -27,6 +29,12 @@ export function VocabPage() {
     reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Flashcards study the selected group (or all) — independent of the search box.
+  const poolCount = useMemo(
+    () => entries.filter((e) => group == null || e.groups.includes(group)).length,
+    [entries, group],
+  );
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -95,6 +103,19 @@ export function VocabPage() {
         }}
       />
 
+      {poolCount > 0 && (
+        <Link
+          to={`/vocab/study?group=${group ?? "all"}`}
+          className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground"
+        >
+          ▶ Flashcards
+          <span className="opacity-80">
+            {group == null ? `all ${poolCount}` : `${poolCount}`} card
+            {poolCount === 1 ? "" : "s"}
+          </span>
+        </Link>
+      )}
+
       {filtered.length === 0 ? (
         <p className="mt-4 rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700">
           {entries.length === 0
@@ -114,6 +135,7 @@ export function VocabPage() {
               onRemove={remove}
               onCreateGroup={createGroup}
               onToggleGroup={setWordGroup}
+              onResetStudy={resetStudy}
               canRefresh={enabled}
             />
           ))}
@@ -277,6 +299,7 @@ function VocabRow({
   onRemove,
   onCreateGroup,
   onToggleGroup,
+  onResetStudy,
   canRefresh,
 }: {
   entry: VocabEntry;
@@ -292,6 +315,7 @@ function VocabRow({
   onRemove: (word: string) => Promise<void>;
   onCreateGroup: (name: string) => Promise<VocabGroup>;
   onToggleGroup: (word: string, id: number, member: boolean) => Promise<void>;
+  onResetStudy: (word: string) => Promise<void>;
   canRefresh: boolean;
 }) {
   const [busy, setBusy] = useState(false);
@@ -342,6 +366,7 @@ function VocabRow({
               ))}
             </span>
           )}
+          <MasteryDot entry={entry} />
           <span className="shrink-0 text-xs text-slate-400">{timeAgo(entry.createdAt)}</span>
           <svg
             viewBox="0 0 24 24"
@@ -424,6 +449,27 @@ function VocabRow({
             </div>
           </div>
 
+          {entry.stats && (
+            <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+              <span className="font-medium text-slate-400">Flashcards:</span>
+              <span className="text-green-600">{entry.stats.known} known</span>
+              <span>·</span>
+              <span className="text-red-500">{entry.stats.missed} missed</span>
+              {entry.stats.lastStudiedAt && (
+                <span className="text-slate-400">
+                  · last {timeAgo(entry.stats.lastStudiedAt)}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => void onResetStudy(entry.word)}
+                className="text-slate-400 underline decoration-dotted hover:text-slate-600 dark:hover:text-slate-300"
+              >
+                reset
+              </button>
+            </div>
+          )}
+
           {error && (
             <p className="mt-2 rounded-lg border border-red-300 bg-red-50 px-2 py-1.5 text-xs text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
               {error}
@@ -450,5 +496,22 @@ function VocabRow({
         </div>
       )}
     </div>
+  );
+}
+
+/** Small dot summarising a word's flashcard history: green if the last grade
+ *  was "known", amber if "missed". Nothing when never studied. */
+function MasteryDot({ entry }: { entry: VocabEntry }) {
+  const s = entry.stats;
+  if (!s || s.lastResult == null) return null;
+  const known = s.lastResult;
+  return (
+    <span
+      title={`Flashcards: ${s.known} known · ${s.missed} missed`}
+      className={`h-2 w-2 shrink-0 rounded-full ${
+        known ? "bg-green-500" : "bg-amber-500"
+      }`}
+      aria-hidden
+    />
   );
 }

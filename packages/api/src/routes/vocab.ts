@@ -5,8 +5,10 @@ import {
   createGroupBody,
   groupWordBody,
   saveVocabBody,
+  studyResultBody,
   vocabEntry,
   vocabGroup,
+  vocabStat,
 } from "@mdb/shared";
 import { requireAuth } from "../auth/session";
 import {
@@ -16,8 +18,10 @@ import {
   getVocab,
   listGroups,
   listVocab,
+  recordStudy,
   removeVocab,
   removeWordFromGroup,
+  resetStudy,
   upsertVocab,
 } from "../services/vocab";
 
@@ -149,6 +153,37 @@ export async function vocabRoutes(app: FastifyInstance) {
     },
     async (req) => {
       removeVocab(req.params.word);
+      return { ok: true as const };
+    },
+  );
+
+  // --- flashcard scoring ----------------------------------------------------
+  r.post(
+    "/api/vocab/:word/study",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["vocab"],
+        params: z.object({ word: z.string().min(1) }),
+        body: studyResultBody,
+        response: { 200: vocabStat },
+      },
+    },
+    async (req) => recordStudy(req.params.word, req.body.known),
+  );
+
+  r.delete(
+    "/api/vocab/:word/study",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["vocab"],
+        params: z.object({ word: z.string().min(1) }),
+        response: { 200: ok },
+      },
+    },
+    async (req) => {
+      resetStudy(req.params.word);
       return { ok: true as const };
     },
   );
