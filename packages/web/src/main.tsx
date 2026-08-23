@@ -16,6 +16,7 @@ import { Cheatsheets } from "./pages/Cheatsheets";
 import { CheatsheetView } from "./pages/CheatsheetView";
 import { Dashboard } from "./pages/Dashboard";
 import { ExercisePlayer } from "./pages/ExercisePlayer";
+import { Flashcards } from "./pages/Flashcards";
 import { Exercises } from "./pages/Exercises";
 import { ImportPage } from "./pages/Import";
 import { Login } from "./pages/Login";
@@ -36,6 +37,7 @@ const router = createBrowserRouter([
       { path: "exercises", element: <Exercises /> },
       { path: "exercises/:id", element: <ExercisePlayer /> },
       { path: "vocab", element: <VocabPage /> },
+      { path: "vocab/study", element: <Flashcards /> },
       { path: "notes", element: <NotesPage /> },
       { path: "notes/:id", element: <NoteEditor /> },
       { path: "settings", element: <SettingsPage /> },
