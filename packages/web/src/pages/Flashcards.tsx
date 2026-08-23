@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import type { VocabEntry } from "@mdb/shared";
 import { SpeakButton } from "../components/SpeakButton";
+import { formChips } from "../lib/forms";
 import { useVocab } from "../lib/vocab";
 
 type Dir = "de" | "en";
@@ -225,6 +226,19 @@ export function Flashcards() {
               <span className="text-xl text-slate-700 dark:text-slate-200">{answerText}</span>
               {dir === "en" && <SpeakButton text={card.display} />}
             </div>
+            {formChips(card.forms).length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {formChips(card.forms).map(([label, val]) => (
+                  <span
+                    key={label}
+                    className="rounded-md bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800"
+                  >
+                    <span className="text-slate-400">{label}:</span>{" "}
+                    <span className="font-medium">{val}</span>
+                  </span>
+                ))}
+              </div>
+            )}
             {card.examples.length > 0 && (
               <div className="mt-3 space-y-2">
                 {card.examples.slice(0, 2).map((ex, k) => (
