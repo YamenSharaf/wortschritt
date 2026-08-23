@@ -1,4 +1,4 @@
-import type { DictEntry } from "@mdb/shared";
+import type { DictEntry, VocabForms } from "@mdb/shared";
 import { rawDb } from "../db/client";
 
 /**
@@ -17,6 +17,7 @@ let stmts: {
   form: import("better-sqlite3").Statement;
   glossPos: import("better-sqlite3").Statement;
   glossAny: import("better-sqlite3").Statement;
+  verb: import("better-sqlite3").Statement;
   count: import("better-sqlite3").Statement;
 } | null = null;
 function s() {
@@ -31,12 +32,22 @@ function s() {
       glossAny: rawDb.prepare(
         "SELECT gloss, pos FROM dict_gloss WHERE lemma = ? LIMIT 1",
       ),
+      verb: rawDb.prepare("SELECT partizip2 FROM dict_verbs WHERE lemma = ?"),
       count: rawDb.prepare(
         "SELECT (SELECT count(*) FROM dict_forms) + (SELECT count(*) FROM dict_gloss) AS c",
       ),
     };
   }
   return stmts;
+}
+
+/** Partizip II for a verb lemma (e.g. treffen → getroffen), else null. */
+function participle(lemma: string, pos: string): string | null {
+  if (pos !== "verb") return null;
+  const r = s().verb.get(lemma.toLowerCase()) as
+    | { partizip2: string }
+    | undefined;
+  return r?.partizip2 ?? null;
 }
 
 /** Whether any dictionary data is loaded (drives the client's tap gating). */
@@ -111,12 +122,21 @@ function fromForm(surface: string, fr: FormRow): DictEntry {
     pos: fr.pos,
     article: ARTICLE[fr.gender] ?? null,
     plural: fr.plural || null,
+    partizip2: participle(fr.lemma, fr.pos),
     gloss: glossFor(fr.lemma, fr.pos),
   };
 }
 
 function glossEntry(surface: string, lemma: string, row: GlossRow): DictEntry {
-  return { surface, lemma, pos: row.pos, article: null, plural: null, gloss: row.gloss };
+  return {
+    surface,
+    lemma,
+    pos: row.pos,
+    article: null,
+    plural: null,
+    partizip2: participle(lemma, row.pos),
+    gloss: row.gloss,
+  };
 }
 
 /**
@@ -174,4 +194,20 @@ export function lookupWord(word: string): DictEntry | null {
 
   // 4. Morphological fallbacks (adjective endings, umlaut), each DB-validated.
   return heuristic(c, low, false);
+}
+
+/**
+ * Grammatical forms for a saved vocab word, derived from the offline data:
+ * part of speech, Partizip II (verbs), article + plural (nouns). Returns null
+ * when the word isn't recognised.
+ */
+export function formsFor(word: string): VocabForms | null {
+  const e = lookupWord(word);
+  if (!e || !e.pos) return null;
+  return {
+    pos: e.pos,
+    article: e.article ?? null,
+    plural: e.plural ?? null,
+    partizip2: e.partizip2 ?? null,
+  };
 }

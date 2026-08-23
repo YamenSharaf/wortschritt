@@ -12,6 +12,12 @@ morphology dictionaries:
 Only the mapping *inflected form → lemma (+ gender/plural)* is extracted; no
 prose or definitions from those sources are redistributed.
 
+## `dict-verb-forms.tsv.gz` — verb lemma → Partizip II
+
+Generated (see `../scripts/build-verb-forms.mjs`) from **german-verbs-dict**
+(same Apache-2.0 source as above). Only each verb's infinitive → past
+participle (e.g. treffen → getroffen) is extracted.
+
 ## `dict-core-gloss.tsv` — curated core German→English glossary
 
 Hand-authored for this project (see `../scripts/build-core-gloss.mjs`). Short,
