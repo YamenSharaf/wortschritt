@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import type { VocabEntry, VocabGroup } from "@mdb/shared";
+import type { SaveVocabBody, VocabEntry, VocabGroup } from "@mdb/shared";
 import { SearchBox } from "../components/SearchBox";
 import { SpeakButton } from "../components/SpeakButton";
 import { api } from "../lib/api";
@@ -19,6 +19,7 @@ export function VocabPage() {
     setWordGroup,
     resetStudy,
     enabled,
+    dictAvailable,
   } = useVocab();
   const [open, setOpen] = useState<string | null>(null);
   const [q, setQ] = useState("");
@@ -69,20 +70,9 @@ export function VocabPage() {
       {adding && (
         <AddWordForm
           enabled={enabled}
-          onAdd={async (word, definition) => {
-            let examples: { de: string; en: string }[] = [];
-            if (enabled) {
-              try {
-                const d = await api.translateWord(word, {
-                  meaning: definition,
-                  count: 2,
-                });
-                examples = d.examples;
-              } catch {
-                /* save without examples; user can refresh later */
-              }
-            }
-            await save({ word, display: word, translation: definition, examples });
+          dictAvailable={dictAvailable}
+          onAdd={async (body) => {
+            await save(body);
             setAdding(false);
           }}
         />
@@ -147,23 +137,105 @@ export function VocabPage() {
 
 function AddWordForm({
   enabled,
+  dictAvailable,
   onAdd,
 }: {
   enabled: boolean;
-  onAdd: (word: string, definition: string) => Promise<void>;
+  dictAvailable: boolean;
+  onAdd: (body: SaveVocabBody) => Promise<void>;
 }) {
   const [word, setWord] = useState("");
   const [definition, setDefinition] = useState("");
   const [busy, setBusy] = useState(false);
+  const [genBusy, setGenBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // Cached from a Generate action so Add doesn't re-query.
+  const [gen, setGen] = useState<{
+    examples: { de: string; en: string }[];
+    lemma?: string;
+  } | null>(null);
+
+  const canGenerate = enabled || dictAvailable;
+
+  /** Fill the translation from the AI (preferred) or the offline dictionary. */
+  async function generate() {
+    const w = word.trim();
+    if (!w || genBusy) return;
+    setGenBusy(true);
+    setError(null);
+    try {
+      if (enabled) {
+        const d = await api.translateWord(w, { count: 2 });
+        setDefinition(d.translation);
+        setGen({ examples: d.examples, lemma: d.lemma?.trim() });
+      } else {
+        const d = await api.dict(w);
+        if (d?.gloss) {
+          setDefinition(d.gloss);
+          setGen({ examples: [], lemma: d.lemma });
+        } else {
+          setError("No offline definition found — type one.");
+        }
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setGenBusy(false);
+    }
+  }
+
+  /** Resolve the final entry, generating a translation if left blank. */
+  async function resolve(w: string): Promise<SaveVocabBody | null> {
+    let translation = definition.trim();
+    let examples = gen?.examples ?? [];
+    let headword = gen?.lemma || w;
+
+    if (!translation) {
+      if (enabled) {
+        const d = await api.translateWord(w, { count: 2 });
+        translation = d.translation;
+        examples = d.examples;
+        headword = d.lemma?.trim() || w;
+      } else if (dictAvailable) {
+        const d = await api.dict(w);
+        if (d?.gloss) {
+          translation = d.gloss;
+          headword = d.lemma || w;
+        }
+      }
+    } else if (enabled && !gen) {
+      // User typed their own translation — enrich with examples + base form.
+      try {
+        const d = await api.translateWord(w, { meaning: translation, count: 2 });
+        examples = d.examples;
+        headword = d.lemma?.trim() || w;
+      } catch {
+        /* keep the typed translation without examples */
+      }
+    }
+
+    if (!translation) return null;
+    return { word: headword, display: headword, translation, examples };
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!word.trim() || !definition.trim() || busy) return;
+    const w = word.trim();
+    if (!w || busy || genBusy) return;
     setBusy(true);
+    setError(null);
     try {
-      await onAdd(word.trim(), definition.trim());
+      const body = await resolve(w);
+      if (!body) {
+        setError("Add a translation, or generate one.");
+        return;
+      }
+      await onAdd(body);
       setWord("");
       setDefinition("");
+      setGen(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
@@ -177,30 +249,54 @@ function AddWordForm({
       <div className="flex flex-col gap-2 sm:flex-row">
         <input
           value={word}
-          onChange={(e) => setWord(e.target.value)}
+          onChange={(e) => {
+            setWord(e.target.value);
+            setGen(null); // a new word invalidates a prior generation
+          }}
           placeholder="Word (German)"
           autoCapitalize="none"
           autoCorrect="off"
+          autoFocus
           className="input sm:w-1/3"
         />
-        <input
-          value={definition}
-          onChange={(e) => setDefinition(e.target.value)}
-          placeholder="Definition / translation"
-          className="input flex-1"
-        />
+        <div className="flex flex-1 items-stretch gap-2">
+          <input
+            value={definition}
+            onChange={(e) => setDefinition(e.target.value)}
+            placeholder="Translation (optional)"
+            className="input flex-1"
+          />
+          {canGenerate && (
+            <button
+              type="button"
+              onClick={generate}
+              disabled={!word.trim() || genBusy || busy}
+              title={
+                enabled
+                  ? "Generate the translation with AI"
+                  : "Fill from the built-in dictionary"
+              }
+              className="shrink-0 whitespace-nowrap rounded-lg border border-slate-300 px-3 text-sm font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+            >
+              {genBusy ? "…" : "✨ Generate"}
+            </button>
+          )}
+        </div>
         <button
           type="submit"
-          disabled={busy || !word.trim() || !definition.trim()}
+          disabled={busy || genBusy || !word.trim()}
           className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
         >
           {busy ? "Adding…" : "Add"}
         </button>
       </div>
+      {error && <p className="text-xs text-red-600">{error}</p>}
       <p className="text-xs text-slate-400">
         {enabled
-          ? "Example sentences are generated automatically from your definition."
-          : "Saved without examples (AI tutor not configured)."}
+          ? "Leave the translation blank and Add fills it (with examples) using AI — or tap Generate first."
+          : dictAvailable
+            ? "Leave the translation blank to fill it from the built-in dictionary."
+            : "Enter a translation (AI tutor not configured)."}
       </p>
     </form>
   );
