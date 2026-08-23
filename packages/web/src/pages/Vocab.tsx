@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import type { SaveVocabBody, VocabEntry, VocabGroup } from "@mdb/shared";
 import { SearchBox } from "../components/SearchBox";
 import { SpeakButton } from "../components/SpeakButton";
-import { api } from "../lib/api";
+import { api, formsFromLookup } from "../lib/api";
+import { formChips } from "../lib/forms";
 import { timeAgo } from "../lib/time";
 import { useVocab } from "../lib/vocab";
 
@@ -153,6 +154,7 @@ function AddWordForm({
   const [gen, setGen] = useState<{
     examples: { de: string; en: string }[];
     lemma?: string;
+    forms?: ReturnType<typeof formsFromLookup>;
   } | null>(null);
 
   const canGenerate = enabled || dictAvailable;
@@ -167,7 +169,11 @@ function AddWordForm({
       if (enabled) {
         const d = await api.translateWord(w, { count: 2 });
         setDefinition(d.translation);
-        setGen({ examples: d.examples, lemma: d.lemma?.trim() });
+        setGen({
+          examples: d.examples,
+          lemma: d.lemma?.trim(),
+          forms: formsFromLookup(d),
+        });
       } else {
         const d = await api.dict(w);
         if (d?.gloss) {
@@ -189,6 +195,7 @@ function AddWordForm({
     let translation = definition.trim();
     let examples = gen?.examples ?? [];
     let headword = gen?.lemma || w;
+    let forms = gen?.forms;
 
     if (!translation) {
       if (enabled) {
@@ -196,6 +203,7 @@ function AddWordForm({
         translation = d.translation;
         examples = d.examples;
         headword = d.lemma?.trim() || w;
+        forms = formsFromLookup(d);
       } else if (dictAvailable) {
         const d = await api.dict(w);
         if (d?.gloss) {
@@ -209,13 +217,14 @@ function AddWordForm({
         const d = await api.translateWord(w, { meaning: translation, count: 2 });
         examples = d.examples;
         headword = d.lemma?.trim() || w;
+        forms = formsFromLookup(d);
       } catch {
         /* keep the typed translation without examples */
       }
     }
 
     if (!translation) return null;
-    return { word: headword, display: headword, translation, examples };
+    return { word: headword, display: headword, translation, examples, forms };
   }
 
   async function submit(e: React.FormEvent) {
@@ -402,12 +411,7 @@ function VocabRow({
   groups: VocabGroup[];
   open: boolean;
   onToggle: () => void;
-  onRefresh: (b: {
-    word: string;
-    display: string;
-    translation: string;
-    examples: { de: string; en: string }[];
-  }) => Promise<VocabEntry>;
+  onRefresh: (b: SaveVocabBody) => Promise<VocabEntry>;
   onRemove: (word: string) => Promise<void>;
   onCreateGroup: (name: string) => Promise<VocabGroup>;
   onToggleGroup: (word: string, id: number, member: boolean) => Promise<void>;
@@ -428,6 +432,7 @@ function VocabRow({
         display: entry.display,
         translation: d.translation,
         examples: d.examples,
+        forms: formsFromLookup(d),
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -596,16 +601,10 @@ function VocabRow({
   );
 }
 
-/** Grammatical forms for a word: Partizip II (verbs), article + plural (nouns). */
+/** Grammatical forms for a word: Perfekt/Partizip II (verbs), article + plural
+ *  (nouns). */
 function FormsLine({ forms }: { forms: VocabEntry["forms"] }) {
-  if (!forms) return null;
-  const chips: [string, string][] = [];
-  if (forms.pos === "verb" && forms.partizip2)
-    chips.push(["Partizip II", forms.partizip2]);
-  if (forms.pos === "noun") {
-    if (forms.article) chips.push(["Artikel", forms.article]);
-    if (forms.plural) chips.push(["Plural", forms.plural]);
-  }
+  const chips = formChips(forms);
   if (chips.length === 0) return null;
   return (
     <div className="mt-1.5 flex flex-wrap gap-1.5">

@@ -2,6 +2,7 @@ import { desc, eq, sql } from "drizzle-orm";
 import type {
   SaveVocabBody,
   VocabEntry,
+  VocabForms,
   VocabGroup,
   VocabStat,
 } from "@mdb/shared";
@@ -9,6 +10,25 @@ import { db, schema } from "../db/client";
 import { formsFor } from "./dict";
 
 const key = (w: string) => w.trim().toLowerCase();
+
+/** Merge the offline-derived forms (pos, Partizip II, article, plural) with the
+ *  AI-supplied stored forms (which add the perfect auxiliary). Offline wins for
+ *  the fields it knows; stored fills the rest. */
+function displayForms(
+  display: string,
+  stored: Record<string, string> | null,
+): VocabForms | null {
+  const offline = formsFor(display);
+  if (!offline && !stored) return null;
+  const s = stored ?? {};
+  return {
+    pos: offline?.pos ?? s.pos ?? null,
+    article: offline?.article ?? s.article ?? null,
+    plural: offline?.plural ?? s.plural ?? null,
+    partizip2: offline?.partizip2 ?? s.partizip2 ?? null,
+    auxiliary: s.auxiliary ?? null,
+  };
+}
 
 type StatRow = typeof schema.vocabStats.$inferSelect;
 function toStat(r: StatRow): VocabStat {
@@ -51,7 +71,7 @@ export function listVocab(): VocabEntry[] {
     ...r,
     groups: groups.get(r.word) ?? [],
     stats: stats.get(r.word) ?? null,
-    forms: formsFor(r.display),
+    forms: displayForms(r.display, r.forms),
   }));
 }
 
@@ -77,7 +97,7 @@ export function getVocab(word: string): VocabEntry | null {
     ...r,
     groups,
     stats: stat ? toStat(stat) : null,
-    forms: formsFor(r.display),
+    forms: displayForms(r.display, r.forms),
   };
 }
 
@@ -117,14 +137,28 @@ export function resetStudy(word: string): void {
     .run();
 }
 
+/** Drop empty AI form fields; null when nothing usable remains. */
+function cleanForms(
+  f: SaveVocabBody["forms"],
+): Record<string, string> | null {
+  if (!f) return null;
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(f)) {
+    if (typeof v === "string" && v.trim()) out[k] = v.trim();
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 /** Insert or update by normalized word; preserves the original createdAt. */
 export function upsertVocab(body: SaveVocabBody): VocabEntry {
   const word = key(body.word);
+  const forms = cleanForms(body.forms);
   const row = {
     word,
     display: (body.display ?? body.word).trim(),
     translation: body.translation,
     examples: body.examples,
+    forms,
   };
   db.insert(schema.vocab)
     .values(row)
@@ -134,6 +168,8 @@ export function upsertVocab(body: SaveVocabBody): VocabEntry {
         display: row.display,
         translation: row.translation,
         examples: row.examples,
+        // Keep existing forms when this save didn't provide any.
+        forms: sql`COALESCE(excluded.forms, ${schema.vocab.forms})`,
       },
     })
     .run();

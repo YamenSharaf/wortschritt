@@ -70,6 +70,7 @@ export function ensureSchema(): void {
       display TEXT NOT NULL,
       translation TEXT NOT NULL,
       examples TEXT NOT NULL,
+      forms TEXT,
       created_at INTEGER NOT NULL DEFAULT (unixepoch())
     );
     CREATE INDEX IF NOT EXISTS idx_vocab_created ON vocab(created_at);
@@ -126,6 +127,20 @@ export function ensureSchema(): void {
       v TEXT NOT NULL
     );
   `);
+
+  // Additive column migrations (CREATE TABLE IF NOT EXISTS can't add columns to
+  // an existing table). Safe to run every boot.
+  addColumn("vocab", "forms", "TEXT");
+}
+
+/** Add a column if the table doesn't already have it. */
+function addColumn(table: string, column: string, type: string): void {
+  const cols = sqlite
+    .prepare(`PRAGMA table_info(${table})`)
+    .all() as Array<{ name: string }>;
+  if (!cols.some((c) => c.name === column)) {
+    sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+  }
 }
 
 export const db = drizzle(sqlite, { schema });

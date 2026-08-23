@@ -209,5 +209,6 @@ export function formsFor(word: string): VocabForms | null {
     article: e.article ?? null,
     plural: e.plural ?? null,
     partizip2: e.partizip2 ?? null,
+    auxiliary: null, // the offline data has no perfect auxiliary
   };
 }

@@ -15,7 +15,8 @@ import type {
   WordLookup,
 } from "@mdb/shared";
 import { SpeakButton } from "../components/SpeakButton";
-import { api } from "./api";
+import { api, formsFromLookup } from "./api";
+import { perfektAux } from "./forms";
 import { speak, ttsSupported } from "./tts";
 
 const norm = (w: string) => w.trim().toLowerCase();
@@ -430,6 +431,7 @@ function WordPanel({
       display: headword,
       translation: data.translation,
       examples: data.examples,
+      forms: fetched ? formsFromLookup(fetched) : undefined,
     });
   }
   async function addPlain() {
@@ -494,6 +496,13 @@ function WordPanel({
       {data && (
         <>
           <p className="text-sm text-slate-700 dark:text-slate-200">{data.translation}</p>
+          {fetched?.pos === "verb" && fetched.partizip2 && (
+            <p className="mt-0.5 text-xs text-slate-400">
+              {fetched.auxiliary
+                ? `Perfekt: ${perfektAux(fetched.auxiliary)} ${fetched.partizip2}`
+                : `Partizip II: ${fetched.partizip2}`}
+            </p>
+          )}
           {ex && (
             <div className="mt-2 rounded-lg bg-slate-50 p-2 text-sm dark:bg-slate-800">
               <div className="flex items-start justify-between gap-1">
