@@ -144,6 +144,14 @@ export const wordLookup = z.object({
   lemma: z.string().optional(),
   translation: z.string(),
   examples: z.array(vocabExample),
+  /** Part of speech (verb, noun, adjective, …), when the model reports it. */
+  pos: z.string().optional(),
+  /** Verbs: Partizip II (e.g. getroffen) and its perfect auxiliary. */
+  partizip2: z.string().optional(),
+  auxiliary: z.string().optional(),
+  /** Nouns: article (der/die/das) and plural. */
+  article: z.string().optional(),
+  plural: z.string().optional(),
 });
 export type WordLookup = z.infer<typeof wordLookup>;
 
@@ -170,14 +178,27 @@ export type VocabStat = z.infer<typeof vocabStat>;
 export const studyResultBody = z.object({ known: z.boolean() });
 export type StudyResultBody = z.infer<typeof studyResultBody>;
 
-/** Grammatical forms shown on a saved vocab word (derived from the dictionary). */
+/** Grammatical forms shown on a saved vocab word. Offline data supplies pos,
+ *  article, plural and Partizip II; the AI adds the perfect auxiliary. */
 export const vocabForms = z.object({
   pos: z.string().nullable(),
   article: z.string().nullable(),
   plural: z.string().nullable(),
   partizip2: z.string().nullable(),
+  /** Perfect-tense auxiliary for verbs: "haben" or "sein" (AI-supplied). */
+  auxiliary: z.string().nullable(),
 });
 export type VocabForms = z.infer<typeof vocabForms>;
+
+/** AI-supplied grammatical forms persisted with a saved word (all optional). */
+export const vocabFormsInput = z.object({
+  pos: z.string().optional(),
+  article: z.string().optional(),
+  plural: z.string().optional(),
+  partizip2: z.string().optional(),
+  auxiliary: z.string().optional(),
+});
+export type VocabFormsInput = z.infer<typeof vocabFormsInput>;
 
 /** A saved vocabulary entry. */
 export const vocabEntry = z.object({
@@ -213,6 +234,8 @@ export const saveVocabBody = z.object({
   display: z.string().min(1).max(80).optional(),
   translation: z.string().min(1),
   examples: z.array(vocabExample).default([]),
+  /** AI-supplied grammatical forms to persist (e.g. the perfect auxiliary). */
+  forms: vocabFormsInput.optional(),
 });
 export type SaveVocabBody = z.infer<typeof saveVocabBody>;
 

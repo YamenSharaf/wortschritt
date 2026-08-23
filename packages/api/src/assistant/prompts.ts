@@ -123,8 +123,10 @@ export function buildWordMessages(ctx: {
   const system =
     "You are a concise German→English dictionary for a learner. " +
     "Return ONLY a compact JSON object, no prose and no markdown fences, shaped exactly:\n" +
-    '{"lemma":"<dictionary base form>","translation":"<short English meaning>","examples":[{"de":"<simple German sentence>","en":"<English translation>"}]}\n' +
+    '{"lemma":"<dictionary base form>","pos":"<verb|noun|adjective|adverb|other>","translation":"<short English meaning>","partizip2":"<Partizip II, verbs only>","auxiliary":"<haben|sein, verbs only>","article":"<der|die|das, nouns only>","plural":"<plural, nouns only>","examples":[{"de":"<simple German sentence>","en":"<English translation>"}]}\n' +
     "Set \"lemma\" to the dictionary base form of the given word: the infinitive for a conjugated verb (e.g. \"trifft\" → \"treffen\", \"ging\" → \"gehen\"), and the nominative singular for a noun. Base the translation and examples on that base form. " +
+    "For a verb, set \"pos\":\"verb\" and give \"partizip2\" (the Partizip II, e.g. \"getroffen\", \"gegangen\", \"aufgestanden\") and \"auxiliary\" as exactly \"haben\" or \"sein\" (the perfect-tense auxiliary). " +
+    "For a noun, set \"pos\":\"noun\" and give \"article\" (der/die/das) and \"plural\". Omit the fields that don't apply to the word's part of speech. " +
     "For nouns, include the article and, if useful, the plural in the translation (e.g. \"das Haus, -äuser — house\"). " +
     "For verbs, give the infinitive meaning. Keep the translation to a few words. " +
     (ctx.meaning

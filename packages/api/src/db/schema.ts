@@ -73,6 +73,9 @@ export const vocab = sqliteTable("vocab", {
   examples: text("examples", { mode: "json" })
     .$type<{ de: string; en: string }[]>()
     .notNull(),
+  /** AI-supplied grammatical forms (e.g. the perfect auxiliary). Offline data
+   *  fills the rest at read time. Added by migration; null on older rows. */
+  forms: text("forms", { mode: "json" }).$type<Record<string, string>>(),
   createdAt: integer("created_at")
     .notNull()
     .default(sql`(unixepoch())`),

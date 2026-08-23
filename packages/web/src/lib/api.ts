@@ -17,10 +17,22 @@ import type {
   SheetView,
   TtsStatus,
   VocabEntry,
+  VocabFormsInput,
   VocabGroup,
   VocabStat,
   WordLookup,
 } from "@mdb/shared";
+
+/** Pull the grammatical forms out of an AI word lookup for persisting. */
+export function formsFromLookup(d: WordLookup): VocabFormsInput | undefined {
+  const f: VocabFormsInput = {};
+  if (d.pos) f.pos = d.pos;
+  if (d.partizip2) f.partizip2 = d.partizip2;
+  if (d.auxiliary) f.auxiliary = d.auxiliary;
+  if (d.article) f.article = d.article;
+  if (d.plural) f.plural = d.plural;
+  return Object.keys(f).length ? f : undefined;
+}
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   // Only advertise a JSON body when we actually send one — Fastify rejects an
