@@ -5,9 +5,9 @@ import { gunzipSync } from "node:zlib";
 import { rawDb } from "./client";
 
 /**
- * Bump when either asset changes so existing databases re-seed on next boot.
+ * Bump when any asset changes so existing databases re-seed on next boot.
  */
-const DICT_VERSION = "1";
+const DICT_VERSION = "2";
 
 const assetsDir = resolve(
   dirname(fileURLToPath(import.meta.url)),
@@ -32,15 +32,20 @@ export function seedDictionary(log?: Logger): void {
       .get() as { c: number };
     if (meta?.v === DICT_VERSION && count.c > 0) return;
 
-    rawDb.exec("DELETE FROM dict_forms; DELETE FROM dict_gloss;");
+    rawDb.exec(
+      "DELETE FROM dict_forms; DELETE FROM dict_gloss; DELETE FROM dict_verbs;",
+    );
 
     const forms = seedForms();
     const gloss = seedGloss();
+    const verbs = seedVerbs();
 
     rawDb
       .prepare("INSERT OR REPLACE INTO dict_meta(k, v) VALUES('version', ?)")
       .run(DICT_VERSION);
-    log?.info(`dictionary seeded: ${forms} forms, ${gloss} glosses`);
+    log?.info(
+      `dictionary seeded: ${forms} forms, ${gloss} glosses, ${verbs} verb participles`,
+    );
   } catch (err) {
     log?.warn(`dictionary seed skipped: ${String(err)}`);
   }
@@ -60,6 +65,27 @@ function seedForms(): number {
       const [form, lemma, pos, gender, plural] = line.split("\t");
       if (!form || !lemma) continue;
       ins.run(form, lemma, pos ?? "", gender ?? "", plural ?? "");
+      n++;
+    }
+  });
+  tx(tsv.split("\n"));
+  return n;
+}
+
+function seedVerbs(): number {
+  const path = resolve(assetsDir, "dict-verb-forms.tsv.gz");
+  if (!existsSync(path)) return 0;
+  const tsv = gunzipSync(readFileSync(path)).toString("utf8");
+  const ins = rawDb.prepare(
+    "INSERT OR IGNORE INTO dict_verbs(lemma, partizip2) VALUES(?,?)",
+  );
+  let n = 0;
+  const tx = rawDb.transaction((lines: string[]) => {
+    for (const line of lines) {
+      if (!line) continue;
+      const [lemma, pa2] = line.split("\t");
+      if (!lemma || !pa2) continue;
+      ins.run(lemma, pa2);
       n++;
     }
   });

@@ -483,6 +483,7 @@ function VocabRow({
       {open && (
         <div className="border-t border-slate-100 px-4 py-3 font-content dark:border-slate-800">
           <p className="text-sm text-slate-700 dark:text-slate-200">{entry.translation}</p>
+          <FormsLine forms={entry.forms} />
           <div className="mt-2 space-y-2">
             {entry.examples.map((ex, i) => (
               <div key={i} className="rounded-lg bg-slate-50 p-2 text-sm dark:bg-slate-800">
@@ -579,7 +580,7 @@ function VocabRow({
               title={canRefresh ? "" : "AI tutor not configured"}
               className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
             >
-              {busy ? "Refreshing…" : "↻ New examples"}
+              {busy ? "Regenerating…" : "↻ Regenerate"}
             </button>
             <button
               type="button"
@@ -591,6 +592,32 @@ function VocabRow({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Grammatical forms for a word: Partizip II (verbs), article + plural (nouns). */
+function FormsLine({ forms }: { forms: VocabEntry["forms"] }) {
+  if (!forms) return null;
+  const chips: [string, string][] = [];
+  if (forms.pos === "verb" && forms.partizip2)
+    chips.push(["Partizip II", forms.partizip2]);
+  if (forms.pos === "noun") {
+    if (forms.article) chips.push(["Artikel", forms.article]);
+    if (forms.plural) chips.push(["Plural", forms.plural]);
+  }
+  if (chips.length === 0) return null;
+  return (
+    <div className="mt-1.5 flex flex-wrap gap-1.5">
+      {chips.map(([label, val]) => (
+        <span
+          key={label}
+          className="rounded-md bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800"
+        >
+          <span className="text-slate-400">{label}:</span>{" "}
+          <span className="font-medium">{val}</span>
+        </span>
+      ))}
     </div>
   );
 }

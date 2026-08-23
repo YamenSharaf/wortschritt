@@ -320,6 +320,14 @@ function DictGloss({
       {dict.pos === "noun" && dict.plural && (
         <p className="text-xs text-slate-400">pl. {dict.plural}</p>
       )}
+      {dict.pos === "verb" && dict.partizip2 && (
+        <p className="text-xs text-slate-400">
+          Partizip II:{" "}
+          <span className="font-medium text-slate-500 dark:text-slate-300">
+            {dict.partizip2}
+          </span>
+        </p>
+      )}
     </div>
   );
 }

@@ -6,6 +6,7 @@ import type {
   VocabStat,
 } from "@mdb/shared";
 import { db, schema } from "../db/client";
+import { formsFor } from "./dict";
 
 const key = (w: string) => w.trim().toLowerCase();
 
@@ -50,6 +51,7 @@ export function listVocab(): VocabEntry[] {
     ...r,
     groups: groups.get(r.word) ?? [],
     stats: stats.get(r.word) ?? null,
+    forms: formsFor(r.display),
   }));
 }
 
@@ -71,7 +73,12 @@ export function getVocab(word: string): VocabEntry | null {
     .from(schema.vocabStats)
     .where(eq(schema.vocabStats.word, r.word))
     .get();
-  return { ...r, groups, stats: stat ? toStat(stat) : null };
+  return {
+    ...r,
+    groups,
+    stats: stat ? toStat(stat) : null,
+    forms: formsFor(r.display),
+  };
 }
 
 /** Record one flashcard grade for a word; increments the running tally. */

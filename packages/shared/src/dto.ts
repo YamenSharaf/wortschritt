@@ -170,6 +170,15 @@ export type VocabStat = z.infer<typeof vocabStat>;
 export const studyResultBody = z.object({ known: z.boolean() });
 export type StudyResultBody = z.infer<typeof studyResultBody>;
 
+/** Grammatical forms shown on a saved vocab word (derived from the dictionary). */
+export const vocabForms = z.object({
+  pos: z.string().nullable(),
+  article: z.string().nullable(),
+  plural: z.string().nullable(),
+  partizip2: z.string().nullable(),
+});
+export type VocabForms = z.infer<typeof vocabForms>;
+
 /** A saved vocabulary entry. */
 export const vocabEntry = z.object({
   word: z.string(),
@@ -181,6 +190,8 @@ export const vocabEntry = z.object({
   groups: z.array(z.number().int()).default([]),
   /** Flashcard tally, or null if never studied. */
   stats: vocabStat.nullable().default(null),
+  /** Grammatical forms (Partizip II, article, plural), derived offline. */
+  forms: vocabForms.nullable().default(null),
 });
 export type VocabEntry = z.infer<typeof vocabEntry>;
 
@@ -217,6 +228,8 @@ export const dictEntry = z.object({
   article: z.string().nullable().optional(),
   /** Nominative plural for nouns, else null. */
   plural: z.string().nullable().optional(),
+  /** Partizip II for verbs (e.g. treffen → getroffen), else null. */
+  partizip2: z.string().nullable().optional(),
   /** Short English gloss when the lemma is in the curated core, else null. */
   gloss: z.string().nullable().optional(),
 });

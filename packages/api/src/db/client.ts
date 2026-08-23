@@ -117,6 +117,10 @@ export function ensureSchema(): void {
       gloss TEXT NOT NULL,
       PRIMARY KEY (lemma, pos)
     );
+    CREATE TABLE IF NOT EXISTS dict_verbs (
+      lemma TEXT PRIMARY KEY,
+      partizip2 TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS dict_meta (
       k TEXT PRIMARY KEY,
       v TEXT NOT NULL
