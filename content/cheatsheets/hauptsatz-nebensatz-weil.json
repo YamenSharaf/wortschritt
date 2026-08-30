@@ -1,0 +1,21 @@
+{
+  "id": "hauptsatz-nebensatz-weil",
+  "title": "Hauptsatz & Nebensatz (weil)",
+  "subtitle": "Main vs. subordinate clause word order",
+  "category": "grammatik",
+  "createdAt": "2026-08-30",
+  "sections": [
+    {
+      "heading": "Hauptsatz: Verb auf Position 2",
+      "body": "Im **Hauptsatz** steht das konjugierte Verb immer an **Position 2**. Position 1 kann verschieden belegt sein:\n\n| Position 1 | Verb (2) | Mitte | Ende |\n| --- | --- | --- | --- |\n| Du | **trinkst** | heute mit einem Freund im Restaurant | einen Kaffee. |\n| Heute | **trinkst** | du mit einem Freund im Restaurant | einen Kaffee. |\n| Im Restaurant | **trinkst** | du heute mit einem Freund | einen Kaffee. |\n\n> **Trennbare Verben:** Vorsilbe ans Ende — *Du **rufst** heute deine Mutter **an**.*\n> **Perfekt / Modalverb:** Partizip bzw. Infinitiv ans Ende — *Du **hast** … einen Kaffee **getrunken**.* · *Du **kannst** … einen Kaffee **trinken**.*"
+    },
+    {
+      "heading": "Nebensatz mit weil: Verb ans Ende",
+      "body": "Nach **weil** ist der Satz ein **Nebensatz** — das konjugierte Verb rutscht ganz ans **Ende**.\n\n> Ich lerne Deutsch, **weil** ich in Deutschland **lebe**.\n> Ich habe Deutsch gelernt, **weil** ich in Deutschland gelebt **habe**. *(Perfekt: Hilfsverb steht ganz hinten)*\n> Ich kann Deutsch lernen, **weil** ich in Deutschland leben **kann**. *(Modalverb steht ganz hinten)*"
+    },
+    {
+      "heading": "Zwei Reihenfolgen",
+      "body": "**Hauptsatz → Nebensatz:**\n> Ich lerne Deutsch, **weil** ich in Deutschland **lebe**.\n\n**Nebensatz → Hauptsatz** (dann *Verb, Komma, Verb*):\n> **Weil** ich in Deutschland **lebe**, **lerne** ich Deutsch.\n\nSteht der Nebensatz vorn, belegt er Position 1 — danach kommt sofort das Verb des Hauptsatzes."
+    }
+  ]
+}
