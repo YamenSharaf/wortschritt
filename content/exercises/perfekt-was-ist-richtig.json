@@ -1,30 +1,226 @@
 {
   "schemaVersion": 1,
   "id": "perfekt-was-ist-richtig",
+  "createdAt": "2026-08-05",
   "title": "Perfekt — Was ist richtig?",
   "subtitle": "Perfect tense — which is correct?",
   "description": "Das richtige Partizip II und Hilfsverb wählen (Übung C).",
   "level": "B1",
-  "tags": ["grammatik", "perfekt", "verben", "partizip"],
+  "tags": [
+    "grammatik",
+    "perfekt",
+    "verben",
+    "partizip"
+  ],
   "items": [
-    { "type": "multiple_choice", "id": "pfc-01", "prompt": "Uwe hat seine Uhr ___.", "choices": ["verliert", "vergisst", "vergessen"], "answerIndex": 2 },
-    { "type": "multiple_choice", "id": "pfc-02", "prompt": "Sie ___ am Freitag im Park ___.", "choices": ["haben / gegangen", "sind / gegangen", "sind / gewesen"], "answerIndex": 1 },
-    { "type": "multiple_choice", "id": "pfc-03", "prompt": "Herr Kasulke hat Silvester zu viel Sekt ___.", "choices": ["gegessen", "getrinken", "getrunken"], "answerIndex": 2 },
-    { "type": "multiple_choice", "id": "pfc-04", "prompt": "Wie lange ___ du in Madrid ___?", "choices": ["bist / geblieben", "hast / geblieben", "bist / gebleiben"], "answerIndex": 0 },
-    { "type": "multiple_choice", "id": "pfc-05", "prompt": "Frau Klein ___ zwei Jahre bei Siemens ___.", "choices": ["ist / gearbeitet", "hat / gearbeitet", "hat / gewesen"], "answerIndex": 1 },
-    { "type": "multiple_choice", "id": "pfc-06", "prompt": "Hast du dem Kollegen denn schon ___?", "choices": ["gratulieren", "gratuliert", "gegratulieren"], "answerIndex": 1 },
-    { "type": "multiple_choice", "id": "pfc-07", "prompt": "Wir ___ ein Taxi ___.", "choices": ["haben / genommen", "sind / genommen", "haben / gegangen"], "answerIndex": 0 },
-    { "type": "multiple_choice", "id": "pfc-08", "prompt": "Ihr habt den Kindern ___.", "choices": ["halfen", "helfen", "geholfen"], "answerIndex": 2 },
-    { "type": "multiple_choice", "id": "pfc-09", "prompt": "Ich habe eine Stunde ___, aber du bist nicht gekommen.", "choices": ["wartete", "geblieben", "gewartet"], "answerIndex": 2 },
-    { "type": "multiple_choice", "id": "pfc-10", "prompt": "Was ___ du deiner Mutter zum Geburtstag geschenkt?", "choices": ["hast", "bist", "habst"], "answerIndex": 0 },
-    { "type": "multiple_choice", "id": "pfc-11", "prompt": "Um acht ___ er in die Stadt ___.", "choices": ["ist / gefahren", "hat / gefahren", "ist / gewesen"], "answerIndex": 0 },
-    { "type": "multiple_choice", "id": "pfc-12", "prompt": "Goethe ___ am 28. August 1749 in Frankfurt am Main geboren.", "choices": ["bist", "ist", "hat"], "answerIndex": 1 },
-    { "type": "multiple_choice", "id": "pfc-13", "prompt": "Wir sind den ganzen Abend zu Hause ___.", "choices": ["gestanden", "blieben", "geblieben"], "answerIndex": 2 },
-    { "type": "multiple_choice", "id": "pfc-14", "prompt": "Meine Tante Ilsa ___ nach Argentinien ___.", "choices": ["ist / geflogen", "ist / gehen", "hat / gefahren"], "answerIndex": 0 },
-    { "type": "multiple_choice", "id": "pfc-15", "prompt": "___ Heinrich heute wieder Fußball ___?", "choices": ["ist / gespielt", "hat / gespielt", "hat / spielen"], "answerIndex": 1 },
-    { "type": "multiple_choice", "id": "pfc-16", "prompt": "Markus ___ mit dem Fahrrad zur Post ___.", "choices": ["hat / gefahren", "ist / gefahren", "ist fahren"], "answerIndex": 1 },
-    { "type": "multiple_choice", "id": "pfc-17", "prompt": "Am Morgen ___ sie lange ___.", "choices": ["ist / geschlafen", "hat / geschlafen", "ist / geschläft"], "answerIndex": 1 },
-    { "type": "multiple_choice", "id": "pfc-18", "prompt": "Vielleicht habe ich es falsch ___.", "choices": ["verstehen", "gestehen", "verstanden"], "answerIndex": 2 },
-    { "type": "multiple_choice", "id": "pfc-19", "prompt": "Die Verkäuferin hat mir das Buch billiger ___.", "choices": ["geben", "kauft", "verkauft"], "answerIndex": 2 }
+    {
+      "type": "multiple_choice",
+      "id": "pfc-01",
+      "prompt": "Uwe hat seine Uhr ___.",
+      "choices": [
+        "verliert",
+        "vergisst",
+        "vergessen"
+      ],
+      "answerIndex": 2
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-02",
+      "prompt": "Sie ___ am Freitag im Park ___.",
+      "choices": [
+        "haben / gegangen",
+        "sind / gegangen",
+        "sind / gewesen"
+      ],
+      "answerIndex": 1
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-03",
+      "prompt": "Herr Kasulke hat Silvester zu viel Sekt ___.",
+      "choices": [
+        "gegessen",
+        "getrinken",
+        "getrunken"
+      ],
+      "answerIndex": 2
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-04",
+      "prompt": "Wie lange ___ du in Madrid ___?",
+      "choices": [
+        "bist / geblieben",
+        "hast / geblieben",
+        "bist / gebleiben"
+      ],
+      "answerIndex": 0
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-05",
+      "prompt": "Frau Klein ___ zwei Jahre bei Siemens ___.",
+      "choices": [
+        "ist / gearbeitet",
+        "hat / gearbeitet",
+        "hat / gewesen"
+      ],
+      "answerIndex": 1
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-06",
+      "prompt": "Hast du dem Kollegen denn schon ___?",
+      "choices": [
+        "gratulieren",
+        "gratuliert",
+        "gegratulieren"
+      ],
+      "answerIndex": 1
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-07",
+      "prompt": "Wir ___ ein Taxi ___.",
+      "choices": [
+        "haben / genommen",
+        "sind / genommen",
+        "haben / gegangen"
+      ],
+      "answerIndex": 0
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-08",
+      "prompt": "Ihr habt den Kindern ___.",
+      "choices": [
+        "halfen",
+        "helfen",
+        "geholfen"
+      ],
+      "answerIndex": 2
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-09",
+      "prompt": "Ich habe eine Stunde ___, aber du bist nicht gekommen.",
+      "choices": [
+        "wartete",
+        "geblieben",
+        "gewartet"
+      ],
+      "answerIndex": 2
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-10",
+      "prompt": "Was ___ du deiner Mutter zum Geburtstag geschenkt?",
+      "choices": [
+        "hast",
+        "bist",
+        "habst"
+      ],
+      "answerIndex": 0
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-11",
+      "prompt": "Um acht ___ er in die Stadt ___.",
+      "choices": [
+        "ist / gefahren",
+        "hat / gefahren",
+        "ist / gewesen"
+      ],
+      "answerIndex": 0
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-12",
+      "prompt": "Goethe ___ am 28. August 1749 in Frankfurt am Main geboren.",
+      "choices": [
+        "bist",
+        "ist",
+        "hat"
+      ],
+      "answerIndex": 1
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-13",
+      "prompt": "Wir sind den ganzen Abend zu Hause ___.",
+      "choices": [
+        "gestanden",
+        "blieben",
+        "geblieben"
+      ],
+      "answerIndex": 2
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-14",
+      "prompt": "Meine Tante Ilsa ___ nach Argentinien ___.",
+      "choices": [
+        "ist / geflogen",
+        "ist / gehen",
+        "hat / gefahren"
+      ],
+      "answerIndex": 0
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-15",
+      "prompt": "___ Heinrich heute wieder Fußball ___?",
+      "choices": [
+        "ist / gespielt",
+        "hat / gespielt",
+        "hat / spielen"
+      ],
+      "answerIndex": 1
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-16",
+      "prompt": "Markus ___ mit dem Fahrrad zur Post ___.",
+      "choices": [
+        "hat / gefahren",
+        "ist / gefahren",
+        "ist fahren"
+      ],
+      "answerIndex": 1
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-17",
+      "prompt": "Am Morgen ___ sie lange ___.",
+      "choices": [
+        "ist / geschlafen",
+        "hat / geschlafen",
+        "ist / geschläft"
+      ],
+      "answerIndex": 1
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-18",
+      "prompt": "Vielleicht habe ich es falsch ___.",
+      "choices": [
+        "verstehen",
+        "gestehen",
+        "verstanden"
+      ],
+      "answerIndex": 2
+    },
+    {
+      "type": "multiple_choice",
+      "id": "pfc-19",
+      "prompt": "Die Verkäuferin hat mir das Buch billiger ___.",
+      "choices": [
+        "geben",
+        "kauft",
+        "verkauft"
+      ],
+      "answerIndex": 2
+    }
   ]
 }

@@ -1,62 +1,686 @@
 {
   "schemaVersion": 1,
   "id": "modalverben-konjugation",
+  "createdAt": "2026-08-05",
   "title": "Modalverben — Konjugation (Präsens)",
   "subtitle": "Modal verbs — conjugation (present)",
   "description": "Die Modalverben im Präsens konjugieren (Übung 1).",
   "level": "A2",
-  "tags": ["grammatik", "modalverben", "verben", "konjugation"],
+  "tags": [
+    "grammatik",
+    "modalverben",
+    "verben",
+    "konjugation"
+  ],
   "items": [
     {
       "type": "conjugation_table",
       "id": "mv-tabelle-praesens",
       "instructions": "Konjugiere die Modalverben im Präsens.",
-      "rows": ["ich", "du", "er/sie/es", "wir", "ihr", "sie/Sie"],
+      "rows": [
+        "ich",
+        "du",
+        "er/sie/es",
+        "wir",
+        "ihr",
+        "sie/Sie"
+      ],
       "columns": [
-        { "header": "können", "answers": ["kann", "kannst", "kann", "können", "könnt", "können"] },
-        { "header": "müssen", "answers": ["muss", "musst", "muss", "müssen", "müsst", "müssen"] },
-        { "header": "sollen", "answers": ["soll", "sollst", "soll", "sollen", "sollt", "sollen"] },
-        { "header": "dürfen", "answers": ["darf", "darfst", "darf", "dürfen", "dürft", "dürfen"] },
-        { "header": "wollen", "answers": ["will", "willst", "will", "wollen", "wollt", "wollen"] },
-        { "header": "mögen", "answers": ["mag", "magst", "mag", "mögen", "mögt", "mögen"] },
-        { "header": "möchten", "answers": ["möchte", "möchtest", "möchte", "möchten", "möchtet", "möchten"] }
+        {
+          "header": "können",
+          "answers": [
+            "kann",
+            "kannst",
+            "kann",
+            "können",
+            "könnt",
+            "können"
+          ]
+        },
+        {
+          "header": "müssen",
+          "answers": [
+            "muss",
+            "musst",
+            "muss",
+            "müssen",
+            "müsst",
+            "müssen"
+          ]
+        },
+        {
+          "header": "sollen",
+          "answers": [
+            "soll",
+            "sollst",
+            "soll",
+            "sollen",
+            "sollt",
+            "sollen"
+          ]
+        },
+        {
+          "header": "dürfen",
+          "answers": [
+            "darf",
+            "darfst",
+            "darf",
+            "dürfen",
+            "dürft",
+            "dürfen"
+          ]
+        },
+        {
+          "header": "wollen",
+          "answers": [
+            "will",
+            "willst",
+            "will",
+            "wollen",
+            "wollt",
+            "wollen"
+          ]
+        },
+        {
+          "header": "mögen",
+          "answers": [
+            "mag",
+            "magst",
+            "mag",
+            "mögen",
+            "mögt",
+            "mögen"
+          ]
+        },
+        {
+          "header": "möchten",
+          "answers": [
+            "möchte",
+            "möchtest",
+            "möchte",
+            "möchten",
+            "möchtet",
+            "möchten"
+          ]
+        }
       ]
     },
-    { "type": "cloze", "id": "mv1-01", "text": "Ich {{1}} keinen Kaffee trinken.", "blanks": [{ "ref": "1", "cue": "möchten", "answer": { "accept": ["möchte"] } }] },
-    { "type": "cloze", "id": "mv1-02", "text": "Du {{1}} Pizza essen.", "blanks": [{ "ref": "1", "cue": "möchten", "answer": { "accept": ["möchtest"] } }] },
-    { "type": "cloze", "id": "mv1-03", "text": "Er {{1}} lieber Rotwein trinken.", "blanks": [{ "ref": "1", "cue": "möchten", "answer": { "accept": ["möchte"] } }] },
-    { "type": "cloze", "id": "mv1-04", "text": "Wir {{1}} ins Theater gehen.", "blanks": [{ "ref": "1", "cue": "möchten", "answer": { "accept": ["möchten"] } }] },
-    { "type": "cloze", "id": "mv1-05", "text": "Ihr {{1}} ein Buch lesen.", "blanks": [{ "ref": "1", "cue": "möchten", "answer": { "accept": ["möchtet"] } }] },
-    { "type": "cloze", "id": "mv1-06", "text": "Sie {{1}} für den Test lernen.", "blanks": [{ "ref": "1", "cue": "möchten", "answer": { "accept": ["möchten"] } }] },
-    { "type": "cloze", "id": "mv1-07", "text": "Ich {{1}} nicht so früh aufstehen.", "blanks": [{ "ref": "1", "cue": "können", "answer": { "accept": ["kann"] } }] },
-    { "type": "cloze", "id": "mv1-08", "text": "Du {{1}} Klavier spielen und singen.", "blanks": [{ "ref": "1", "cue": "können", "answer": { "accept": ["kannst"] } }] },
-    { "type": "cloze", "id": "mv1-09", "text": "Er {{1}} Deutsch verstehen.", "blanks": [{ "ref": "1", "cue": "können", "answer": { "accept": ["kann"] } }] },
-    { "type": "cloze", "id": "mv1-10", "text": "Wir {{1}} heute Musik hören.", "blanks": [{ "ref": "1", "cue": "können", "answer": { "accept": ["können"] } }] },
-    { "type": "cloze", "id": "mv1-11", "text": "Ihr {{1}} kein Fleisch essen.", "blanks": [{ "ref": "1", "cue": "können", "answer": { "accept": ["könnt"] } }] },
-    { "type": "cloze", "id": "mv1-12", "text": "Sie {{1}} den Chef anrufen.", "blanks": [{ "ref": "1", "cue": "können", "answer": { "accept": ["können"] } }] },
-    { "type": "cloze", "id": "mv1-13", "text": "Ich {{1}} am Wochenende arbeiten.", "blanks": [{ "ref": "1", "cue": "müssen", "answer": { "accept": ["muss"] } }] },
-    { "type": "cloze", "id": "mv1-14", "text": "Du {{1}} nie Hausaufgaben machen.", "blanks": [{ "ref": "1", "cue": "müssen", "answer": { "accept": ["musst"] } }] },
-    { "type": "cloze", "id": "mv1-15", "text": "Er {{1}} sein Zimmer aufräumen.", "blanks": [{ "ref": "1", "cue": "müssen", "answer": { "accept": ["muss"] } }] },
-    { "type": "cloze", "id": "mv1-16", "text": "Wir {{1}} einen neuen Computer kaufen.", "blanks": [{ "ref": "1", "cue": "müssen", "answer": { "accept": ["müssen"] } }] },
-    { "type": "cloze", "id": "mv1-17", "text": "Ihr {{1}} einen Termin beim Arzt machen.", "blanks": [{ "ref": "1", "cue": "müssen", "answer": { "accept": ["müsst"] } }] },
-    { "type": "cloze", "id": "mv1-18", "text": "Sie {{1}} alles essen.", "blanks": [{ "ref": "1", "cue": "müssen", "answer": { "accept": ["müssen"] } }] },
-    { "type": "cloze", "id": "mv1-19", "text": "Ich {{1}} heute Abend in den Club gehen.", "blanks": [{ "ref": "1", "cue": "dürfen", "answer": { "accept": ["darf"] } }] },
-    { "type": "cloze", "id": "mv1-20", "text": "Du {{1}} hier parken.", "blanks": [{ "ref": "1", "cue": "dürfen", "answer": { "accept": ["darfst"] } }] },
-    { "type": "cloze", "id": "mv1-21", "text": "Er {{1}} das Wörterbuch benutzen.", "blanks": [{ "ref": "1", "cue": "dürfen", "answer": { "accept": ["darf"] } }] },
-    { "type": "cloze", "id": "mv1-22", "text": "Wir {{1}} hier nicht laut sprechen. Das ist eine Bibliothek.", "blanks": [{ "ref": "1", "cue": "dürfen", "answer": { "accept": ["dürfen"] } }] },
-    { "type": "cloze", "id": "mv1-23", "text": "Ihr {{1}} am Wochenende ausschlafen.", "blanks": [{ "ref": "1", "cue": "dürfen", "answer": { "accept": ["dürft"] } }] },
-    { "type": "cloze", "id": "mv1-24", "text": "Sie {{1}} nicht Auto fahren. Denn er hat Bier getrunken.", "blanks": [{ "ref": "1", "cue": "dürfen", "answer": { "accept": ["darf", "dürfen"] } }] },
-    { "type": "cloze", "id": "mv1-25", "text": "Ich {{1}} Französisch lernen.", "blanks": [{ "ref": "1", "cue": "wollen", "answer": { "accept": ["will"] } }] },
-    { "type": "cloze", "id": "mv1-26", "text": "Du {{1}} im Sommer nach Italien fahren.", "blanks": [{ "ref": "1", "cue": "wollen", "answer": { "accept": ["willst"] } }] },
-    { "type": "cloze", "id": "mv1-27", "text": "Er {{1}} das Buch von Nietzsche kaufen.", "blanks": [{ "ref": "1", "cue": "wollen", "answer": { "accept": ["will"] } }] },
-    { "type": "cloze", "id": "mv1-28", "text": "Wir {{1}} endlich schlafen!", "blanks": [{ "ref": "1", "cue": "wollen", "answer": { "accept": ["wollen"] } }] },
-    { "type": "cloze", "id": "mv1-29", "text": "Ihr {{1}} immer Eis essen.", "blanks": [{ "ref": "1", "cue": "wollen", "answer": { "accept": ["wollt"] } }] },
-    { "type": "cloze", "id": "mv1-30", "text": "Sie {{1}} am Freitag ins Konzert gehen.", "blanks": [{ "ref": "1", "cue": "wollen", "answer": { "accept": ["wollen"] } }] },
-    { "type": "cloze", "id": "mv1-31", "text": "Ich {{1}} klassische Musik.", "blanks": [{ "ref": "1", "cue": "mögen", "answer": { "accept": ["mag"] } }] },
-    { "type": "cloze", "id": "mv1-32", "text": "Du {{1}} dieses Essen nicht.", "blanks": [{ "ref": "1", "cue": "mögen", "answer": { "accept": ["magst"] } }] },
-    { "type": "cloze", "id": "mv1-33", "text": "Er {{1}} seine Oma.", "blanks": [{ "ref": "1", "cue": "mögen", "answer": { "accept": ["mag"] } }] },
-    { "type": "cloze", "id": "mv1-34", "text": "Wir {{1}} Käsekuchen.", "blanks": [{ "ref": "1", "cue": "mögen", "answer": { "accept": ["mögen"] } }] },
-    { "type": "cloze", "id": "mv1-35", "text": "Ihr {{1}} Spiele im Unterricht.", "blanks": [{ "ref": "1", "cue": "mögen", "answer": { "accept": ["mögt"] } }] },
-    { "type": "cloze", "id": "mv1-36", "text": "Sie {{1}} die Nachbarn nicht.", "blanks": [{ "ref": "1", "cue": "mögen", "answer": { "accept": ["mögen"] } }] }
+    {
+      "type": "cloze",
+      "id": "mv1-01",
+      "text": "Ich {{1}} keinen Kaffee trinken.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "möchten",
+          "answer": {
+            "accept": [
+              "möchte"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-02",
+      "text": "Du {{1}} Pizza essen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "möchten",
+          "answer": {
+            "accept": [
+              "möchtest"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-03",
+      "text": "Er {{1}} lieber Rotwein trinken.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "möchten",
+          "answer": {
+            "accept": [
+              "möchte"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-04",
+      "text": "Wir {{1}} ins Theater gehen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "möchten",
+          "answer": {
+            "accept": [
+              "möchten"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-05",
+      "text": "Ihr {{1}} ein Buch lesen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "möchten",
+          "answer": {
+            "accept": [
+              "möchtet"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-06",
+      "text": "Sie {{1}} für den Test lernen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "möchten",
+          "answer": {
+            "accept": [
+              "möchten"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-07",
+      "text": "Ich {{1}} nicht so früh aufstehen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "können",
+          "answer": {
+            "accept": [
+              "kann"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-08",
+      "text": "Du {{1}} Klavier spielen und singen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "können",
+          "answer": {
+            "accept": [
+              "kannst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-09",
+      "text": "Er {{1}} Deutsch verstehen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "können",
+          "answer": {
+            "accept": [
+              "kann"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-10",
+      "text": "Wir {{1}} heute Musik hören.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "können",
+          "answer": {
+            "accept": [
+              "können"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-11",
+      "text": "Ihr {{1}} kein Fleisch essen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "können",
+          "answer": {
+            "accept": [
+              "könnt"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-12",
+      "text": "Sie {{1}} den Chef anrufen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "können",
+          "answer": {
+            "accept": [
+              "können"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-13",
+      "text": "Ich {{1}} am Wochenende arbeiten.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "müssen",
+          "answer": {
+            "accept": [
+              "muss"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-14",
+      "text": "Du {{1}} nie Hausaufgaben machen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "müssen",
+          "answer": {
+            "accept": [
+              "musst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-15",
+      "text": "Er {{1}} sein Zimmer aufräumen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "müssen",
+          "answer": {
+            "accept": [
+              "muss"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-16",
+      "text": "Wir {{1}} einen neuen Computer kaufen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "müssen",
+          "answer": {
+            "accept": [
+              "müssen"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-17",
+      "text": "Ihr {{1}} einen Termin beim Arzt machen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "müssen",
+          "answer": {
+            "accept": [
+              "müsst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-18",
+      "text": "Sie {{1}} alles essen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "müssen",
+          "answer": {
+            "accept": [
+              "müssen"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-19",
+      "text": "Ich {{1}} heute Abend in den Club gehen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "dürfen",
+          "answer": {
+            "accept": [
+              "darf"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-20",
+      "text": "Du {{1}} hier parken.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "dürfen",
+          "answer": {
+            "accept": [
+              "darfst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-21",
+      "text": "Er {{1}} das Wörterbuch benutzen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "dürfen",
+          "answer": {
+            "accept": [
+              "darf"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-22",
+      "text": "Wir {{1}} hier nicht laut sprechen. Das ist eine Bibliothek.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "dürfen",
+          "answer": {
+            "accept": [
+              "dürfen"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-23",
+      "text": "Ihr {{1}} am Wochenende ausschlafen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "dürfen",
+          "answer": {
+            "accept": [
+              "dürft"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-24",
+      "text": "Sie {{1}} nicht Auto fahren. Denn er hat Bier getrunken.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "dürfen",
+          "answer": {
+            "accept": [
+              "darf",
+              "dürfen"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-25",
+      "text": "Ich {{1}} Französisch lernen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "wollen",
+          "answer": {
+            "accept": [
+              "will"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-26",
+      "text": "Du {{1}} im Sommer nach Italien fahren.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "wollen",
+          "answer": {
+            "accept": [
+              "willst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-27",
+      "text": "Er {{1}} das Buch von Nietzsche kaufen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "wollen",
+          "answer": {
+            "accept": [
+              "will"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-28",
+      "text": "Wir {{1}} endlich schlafen!",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "wollen",
+          "answer": {
+            "accept": [
+              "wollen"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-29",
+      "text": "Ihr {{1}} immer Eis essen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "wollen",
+          "answer": {
+            "accept": [
+              "wollt"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-30",
+      "text": "Sie {{1}} am Freitag ins Konzert gehen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "wollen",
+          "answer": {
+            "accept": [
+              "wollen"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-31",
+      "text": "Ich {{1}} klassische Musik.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "mögen",
+          "answer": {
+            "accept": [
+              "mag"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-32",
+      "text": "Du {{1}} dieses Essen nicht.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "mögen",
+          "answer": {
+            "accept": [
+              "magst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-33",
+      "text": "Er {{1}} seine Oma.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "mögen",
+          "answer": {
+            "accept": [
+              "mag"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-34",
+      "text": "Wir {{1}} Käsekuchen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "mögen",
+          "answer": {
+            "accept": [
+              "mögen"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-35",
+      "text": "Ihr {{1}} Spiele im Unterricht.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "mögen",
+          "answer": {
+            "accept": [
+              "mögt"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv1-36",
+      "text": "Sie {{1}} die Nachbarn nicht.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "mögen",
+          "answer": {
+            "accept": [
+              "mögen"
+            ]
+          }
+        }
+      ]
+    }
   ]
 }

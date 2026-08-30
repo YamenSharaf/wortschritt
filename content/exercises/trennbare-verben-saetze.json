@@ -1,35 +1,281 @@
 {
   "schemaVersion": 1,
   "id": "trennbare-verben-saetze",
+  "createdAt": "2026-08-05",
   "title": "Trennbare Verben — Sätze bilden",
   "subtitle": "Separable verbs — build sentences",
   "description": "Konjugiere das Verb in Klammern und bilde einen richtigen Satz (Übung 2).",
   "level": "A2",
-  "tags": ["grammatik", "trennbare-verben", "verben"],
+  "tags": [
+    "grammatik",
+    "trennbare-verben",
+    "verben"
+  ],
   "items": [
-    { "type": "transform", "id": "tv2-01", "instructions": "Bilde den Satz.", "source": "Ich (aufstehen) um Viertel vor sieben.", "answer": { "accept": ["Ich stehe um Viertel vor sieben auf."] } },
-    { "type": "transform", "id": "tv2-02", "instructions": "Bilde den Satz.", "source": "Ich (aufmachen) das Fenster.", "answer": { "accept": ["Ich mache das Fenster auf."] } },
-    { "type": "transform", "id": "tv2-03", "instructions": "Bilde den Satz.", "source": "Ich (aufräumen) mein Schlafzimmer.", "answer": { "accept": ["Ich räume mein Schlafzimmer auf."] } },
-    { "type": "transform", "id": "tv2-04", "instructions": "Bilde den Satz.", "source": "Du (ausgehen) um 8 Uhr.", "answer": { "accept": ["Du gehst um 8 Uhr aus."] } },
-    { "type": "transform", "id": "tv2-05", "instructions": "Bilde den Satz.", "source": "Du (ankommen) früh bei der Schule.", "answer": { "accept": ["Du kommst früh bei der Schule an."] } },
-    { "type": "transform", "id": "tv2-06", "instructions": "Bilde den Satz.", "source": "Du (einkaufen) in der Stadt.", "answer": { "accept": ["Du kaufst in der Stadt ein."] } },
-    { "type": "transform", "id": "tv2-07", "instructions": "Bilde den Satz.", "source": "Peter (mitkommen) ins Kino.", "answer": { "accept": ["Peter kommt ins Kino mit."] } },
-    { "type": "transform", "id": "tv2-08", "instructions": "Bilde den Satz.", "source": "Er (mitspielen) in der Pause.", "answer": { "accept": ["Er spielt in der Pause mit."] } },
-    { "type": "transform", "id": "tv2-09", "instructions": "Bilde den Satz.", "source": "Sarah (abholen) das Geschenk.", "answer": { "accept": ["Sarah holt das Geschenk ab."] } },
-    { "type": "transform", "id": "tv2-10", "instructions": "Bilde den Satz.", "source": "Wir (kennenlernen) neue Freunde.", "answer": { "accept": ["Wir lernen neue Freunde kennen."] } },
-    { "type": "transform", "id": "tv2-11", "instructions": "Bilde den Satz.", "source": "Wir (Schi fahren) im Winter.", "answer": { "accept": ["Wir fahren im Winter Schi."] } },
-    { "type": "transform", "id": "tv2-12", "instructions": "Bilde den Satz.", "source": "Wir (anrufen) unsere Oma.", "answer": { "accept": ["Wir rufen unsere Oma an."] } },
-    { "type": "transform", "id": "tv2-13", "instructions": "Bilde den Satz.", "source": "Ihr (weggehen) am Sonntag.", "answer": { "accept": ["Ihr geht am Sonntag weg."] } },
-    { "type": "transform", "id": "tv2-14", "instructions": "Bilde den Satz.", "source": "Ihr (zurückkommen) am Freitag.", "answer": { "accept": ["Ihr kommt am Freitag zurück."] } },
-    { "type": "transform", "id": "tv2-15", "instructions": "Bilde den Satz.", "source": "Ihr (spazieren gehen) auf der Farm.", "answer": { "accept": ["Ihr geht auf der Farm spazieren."] } },
-    { "type": "transform", "id": "tv2-16", "instructions": "Bilde den Satz.", "source": "Maria und Claudia (einkleben) die Seiten.", "answer": { "accept": ["Maria und Claudia kleben die Seiten ein."] } },
-    { "type": "transform", "id": "tv2-17", "instructions": "Bilde den Satz.", "source": "Die Schülerinnen (aufschreiben) die Notizen.", "answer": { "accept": ["Die Schülerinnen schreiben die Notizen auf."] } },
-    { "type": "transform", "id": "tv2-18", "instructions": "Bilde den Satz.", "source": "Die Babys (einschlafen) früh.", "answer": { "accept": ["Die Babys schlafen früh ein."] } },
-    { "type": "transform", "id": "tv2-19", "instructions": "Bilde den Satz.", "source": "Der Vater (abholen) das Kind.", "answer": { "accept": ["Der Vater holt das Kind ab."] } },
-    { "type": "transform", "id": "tv2-20", "instructions": "Bilde den Satz.", "source": "Du (anrufen) deine Freundin.", "answer": { "accept": ["Du rufst deine Freundin an."] } },
-    { "type": "transform", "id": "tv2-21", "instructions": "Bilde den Satz.", "source": "Meine Mutter (einkaufen) bei Pick und Pay.", "answer": { "accept": ["Meine Mutter kauft bei Pick und Pay ein."] } },
-    { "type": "transform", "id": "tv2-22", "instructions": "Bilde den Satz.", "source": "Die Autos (vorbeikommen) sehr schnell.", "answer": { "accept": ["Die Autos kommen sehr schnell vorbei."] } },
-    { "type": "transform", "id": "tv2-23", "instructions": "Bilde den Satz.", "source": "Ihr (ausgehen) nicht heute Abend.", "answer": { "accept": ["Ihr geht heute Abend nicht aus.", "Ihr geht nicht heute Abend aus."] } },
-    { "type": "transform", "id": "tv2-24", "instructions": "Bilde den Satz.", "source": "Der Lehrer (zumachen) das Buch.", "answer": { "accept": ["Der Lehrer macht das Buch zu."] } }
+    {
+      "type": "transform",
+      "id": "tv2-01",
+      "instructions": "Bilde den Satz.",
+      "source": "Ich (aufstehen) um Viertel vor sieben.",
+      "answer": {
+        "accept": [
+          "Ich stehe um Viertel vor sieben auf."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-02",
+      "instructions": "Bilde den Satz.",
+      "source": "Ich (aufmachen) das Fenster.",
+      "answer": {
+        "accept": [
+          "Ich mache das Fenster auf."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-03",
+      "instructions": "Bilde den Satz.",
+      "source": "Ich (aufräumen) mein Schlafzimmer.",
+      "answer": {
+        "accept": [
+          "Ich räume mein Schlafzimmer auf."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-04",
+      "instructions": "Bilde den Satz.",
+      "source": "Du (ausgehen) um 8 Uhr.",
+      "answer": {
+        "accept": [
+          "Du gehst um 8 Uhr aus."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-05",
+      "instructions": "Bilde den Satz.",
+      "source": "Du (ankommen) früh bei der Schule.",
+      "answer": {
+        "accept": [
+          "Du kommst früh bei der Schule an."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-06",
+      "instructions": "Bilde den Satz.",
+      "source": "Du (einkaufen) in der Stadt.",
+      "answer": {
+        "accept": [
+          "Du kaufst in der Stadt ein."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-07",
+      "instructions": "Bilde den Satz.",
+      "source": "Peter (mitkommen) ins Kino.",
+      "answer": {
+        "accept": [
+          "Peter kommt ins Kino mit."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-08",
+      "instructions": "Bilde den Satz.",
+      "source": "Er (mitspielen) in der Pause.",
+      "answer": {
+        "accept": [
+          "Er spielt in der Pause mit."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-09",
+      "instructions": "Bilde den Satz.",
+      "source": "Sarah (abholen) das Geschenk.",
+      "answer": {
+        "accept": [
+          "Sarah holt das Geschenk ab."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-10",
+      "instructions": "Bilde den Satz.",
+      "source": "Wir (kennenlernen) neue Freunde.",
+      "answer": {
+        "accept": [
+          "Wir lernen neue Freunde kennen."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-11",
+      "instructions": "Bilde den Satz.",
+      "source": "Wir (Schi fahren) im Winter.",
+      "answer": {
+        "accept": [
+          "Wir fahren im Winter Schi."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-12",
+      "instructions": "Bilde den Satz.",
+      "source": "Wir (anrufen) unsere Oma.",
+      "answer": {
+        "accept": [
+          "Wir rufen unsere Oma an."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-13",
+      "instructions": "Bilde den Satz.",
+      "source": "Ihr (weggehen) am Sonntag.",
+      "answer": {
+        "accept": [
+          "Ihr geht am Sonntag weg."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-14",
+      "instructions": "Bilde den Satz.",
+      "source": "Ihr (zurückkommen) am Freitag.",
+      "answer": {
+        "accept": [
+          "Ihr kommt am Freitag zurück."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-15",
+      "instructions": "Bilde den Satz.",
+      "source": "Ihr (spazieren gehen) auf der Farm.",
+      "answer": {
+        "accept": [
+          "Ihr geht auf der Farm spazieren."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-16",
+      "instructions": "Bilde den Satz.",
+      "source": "Maria und Claudia (einkleben) die Seiten.",
+      "answer": {
+        "accept": [
+          "Maria und Claudia kleben die Seiten ein."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-17",
+      "instructions": "Bilde den Satz.",
+      "source": "Die Schülerinnen (aufschreiben) die Notizen.",
+      "answer": {
+        "accept": [
+          "Die Schülerinnen schreiben die Notizen auf."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-18",
+      "instructions": "Bilde den Satz.",
+      "source": "Die Babys (einschlafen) früh.",
+      "answer": {
+        "accept": [
+          "Die Babys schlafen früh ein."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-19",
+      "instructions": "Bilde den Satz.",
+      "source": "Der Vater (abholen) das Kind.",
+      "answer": {
+        "accept": [
+          "Der Vater holt das Kind ab."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-20",
+      "instructions": "Bilde den Satz.",
+      "source": "Du (anrufen) deine Freundin.",
+      "answer": {
+        "accept": [
+          "Du rufst deine Freundin an."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-21",
+      "instructions": "Bilde den Satz.",
+      "source": "Meine Mutter (einkaufen) bei Pick und Pay.",
+      "answer": {
+        "accept": [
+          "Meine Mutter kauft bei Pick und Pay ein."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-22",
+      "instructions": "Bilde den Satz.",
+      "source": "Die Autos (vorbeikommen) sehr schnell.",
+      "answer": {
+        "accept": [
+          "Die Autos kommen sehr schnell vorbei."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-23",
+      "instructions": "Bilde den Satz.",
+      "source": "Ihr (ausgehen) nicht heute Abend.",
+      "answer": {
+        "accept": [
+          "Ihr geht heute Abend nicht aus.",
+          "Ihr geht nicht heute Abend aus."
+        ]
+      }
+    },
+    {
+      "type": "transform",
+      "id": "tv2-24",
+      "instructions": "Bilde den Satz.",
+      "source": "Der Lehrer (zumachen) das Buch.",
+      "answer": {
+        "accept": [
+          "Der Lehrer macht das Buch zu."
+        ]
+      }
+    }
   ]
 }

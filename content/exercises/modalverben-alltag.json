@@ -1,29 +1,345 @@
 {
   "schemaVersion": 1,
   "id": "modalverben-alltag",
+  "createdAt": "2026-08-05",
   "title": "Modalverben — Alltag (offen)",
   "subtitle": "Modal verbs — everyday (open-ended)",
   "description": "Freie Übungen (4–6): oft passt mehr als ein Modalverb. Die akzeptierten Antworten sind großzügig – gern beim Review anpassen.",
   "level": "A2",
-  "tags": ["grammatik", "modalverben", "verben", "offen"],
+  "tags": [
+    "grammatik",
+    "modalverben",
+    "verben",
+    "offen"
+  ],
   "items": [
-    { "type": "cloze", "id": "mv4-01", "text": "Ich {{1}} Deutsch lernen.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["möchte", "will", "muss", "kann"] } }] },
-    { "type": "cloze", "id": "mv4-02", "text": "Wir {{1}} heute arbeiten.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["müssen", "wollen", "können"] } }] },
-    { "type": "cloze", "id": "mv4-03", "text": "Du {{1}} hier sitzen.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["darfst", "kannst", "musst", "möchtest", "willst"] } }] },
-    { "type": "cloze", "id": "mv4-04", "text": "Er {{1}} Kaffee, nicht Tee.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["mag", "möchte", "will"] } }] },
-    { "type": "cloze", "id": "mv4-05", "text": "Ihr {{1}} leise sein.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["müsst", "sollt", "könnt"] } }] },
-    { "type": "cloze", "id": "mv4-06", "text": "Sie {{1}} gut lesen und schreiben.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["können", "möchten", "wollen"] } }] },
-    { "type": "cloze", "id": "mv5-01", "text": "Ich {{1}} morgen zur Schule gehen.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["muss", "will", "möchte", "kann"] } }] },
-    { "type": "cloze", "id": "mv5-02", "text": "Wir {{1}} Hausaufgaben machen.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["müssen", "sollen", "wollen"] } }] },
-    { "type": "cloze", "id": "mv5-03", "text": "Du {{1}} im Unterricht sprechen.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["darfst", "sollst", "musst", "kannst"] } }] },
-    { "type": "cloze", "id": "mv5-04", "text": "Er {{1}} Arzt werden.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["will", "möchte", "muss"] } }] },
-    { "type": "cloze", "id": "mv5-05", "text": "Ihr {{1}} im Büro essen.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["dürft", "könnt", "wollt", "müsst"] } }] },
-    { "type": "cloze", "id": "mv5-06", "text": "Sie {{1}} sehr gut Deutsch.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["können"] } }] },
-    { "type": "cloze", "id": "mv6-01", "text": "Ich {{1}} meine Mutter besuchen.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["will", "möchte", "muss"] } }] },
-    { "type": "cloze", "id": "mv6-02", "text": "Wir {{1}} heute zu Hause bleiben.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["wollen", "müssen", "möchten"] } }] },
-    { "type": "cloze", "id": "mv6-03", "text": "Du {{1}} dein Zimmer aufräumen.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["musst", "sollst", "kannst", "darfst"] } }] },
-    { "type": "cloze", "id": "mv6-04", "text": "Er {{1}} Klavier spielen.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["kann", "will", "möchte"] } }] },
-    { "type": "cloze", "id": "mv6-05", "text": "Ihr {{1}} heute länger schlafen.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["dürft", "könnt", "wollt"] } }] },
-    { "type": "cloze", "id": "mv6-06", "text": "Sie {{1}} Schokolade sehr gern.", "blanks": [{ "ref": "1", "cue": "Modalverb", "answer": { "accept": ["mögen", "möchten"] } }] }
+    {
+      "type": "cloze",
+      "id": "mv4-01",
+      "text": "Ich {{1}} Deutsch lernen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "möchte",
+              "will",
+              "muss",
+              "kann"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv4-02",
+      "text": "Wir {{1}} heute arbeiten.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "müssen",
+              "wollen",
+              "können"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv4-03",
+      "text": "Du {{1}} hier sitzen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "darfst",
+              "kannst",
+              "musst",
+              "möchtest",
+              "willst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv4-04",
+      "text": "Er {{1}} Kaffee, nicht Tee.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "mag",
+              "möchte",
+              "will"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv4-05",
+      "text": "Ihr {{1}} leise sein.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "müsst",
+              "sollt",
+              "könnt"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv4-06",
+      "text": "Sie {{1}} gut lesen und schreiben.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "können",
+              "möchten",
+              "wollen"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv5-01",
+      "text": "Ich {{1}} morgen zur Schule gehen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "muss",
+              "will",
+              "möchte",
+              "kann"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv5-02",
+      "text": "Wir {{1}} Hausaufgaben machen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "müssen",
+              "sollen",
+              "wollen"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv5-03",
+      "text": "Du {{1}} im Unterricht sprechen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "darfst",
+              "sollst",
+              "musst",
+              "kannst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv5-04",
+      "text": "Er {{1}} Arzt werden.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "will",
+              "möchte",
+              "muss"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv5-05",
+      "text": "Ihr {{1}} im Büro essen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "dürft",
+              "könnt",
+              "wollt",
+              "müsst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv5-06",
+      "text": "Sie {{1}} sehr gut Deutsch.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "können"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv6-01",
+      "text": "Ich {{1}} meine Mutter besuchen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "will",
+              "möchte",
+              "muss"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv6-02",
+      "text": "Wir {{1}} heute zu Hause bleiben.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "wollen",
+              "müssen",
+              "möchten"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv6-03",
+      "text": "Du {{1}} dein Zimmer aufräumen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "musst",
+              "sollst",
+              "kannst",
+              "darfst"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv6-04",
+      "text": "Er {{1}} Klavier spielen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "kann",
+              "will",
+              "möchte"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv6-05",
+      "text": "Ihr {{1}} heute länger schlafen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "dürft",
+              "könnt",
+              "wollt"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "mv6-06",
+      "text": "Sie {{1}} Schokolade sehr gern.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "Modalverb",
+          "answer": {
+            "accept": [
+              "mögen",
+              "möchten"
+            ]
+          }
+        }
+      ]
+    }
   ]
 }
