@@ -1,17 +1,25 @@
 {
   "schemaVersion": 1,
   "id": "dativ-basics",
+  "createdAt": "2026-08-05",
   "title": "Dativ — Grundlagen",
   "subtitle": "Dative — the basics",
   "description": "Die Dativ-Artikel und häufige Präpositionen.",
   "level": "A2",
-  "tags": ["grammatik", "dativ"],
+  "tags": [
+    "grammatik",
+    "dativ"
+  ],
   "items": [
     {
       "type": "multiple_choice",
       "id": "d1",
       "prompt": "Ich gebe ___ Mann das Buch.",
-      "choices": ["der", "den", "dem"],
+      "choices": [
+        "der",
+        "den",
+        "dem"
+      ],
       "answerIndex": 2,
       "explanation": "Dativ maskulin: der → dem."
     },
@@ -19,7 +27,11 @@
       "type": "multiple_choice",
       "id": "d2",
       "prompt": "Wir helfen ___ Kindern.",
-      "choices": ["die", "den", "der"],
+      "choices": [
+        "die",
+        "den",
+        "der"
+      ],
       "answerIndex": 1,
       "explanation": "Dativ Plural bekommt -n am Nomen und 'den' als Artikel."
     },
@@ -27,14 +39,34 @@
       "type": "cloze",
       "id": "d3",
       "text": "Sie fährt mit {{1}} Bus.",
-      "blanks": [{ "ref": "1", "cue": "der", "answer": { "accept": ["dem"] } }],
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "der",
+          "answer": {
+            "accept": [
+              "dem"
+            ]
+          }
+        }
+      ],
       "explanation": "'mit' + Dativ: der → dem."
     },
     {
       "type": "sentence_build",
       "id": "d4",
-      "tokens": ["Ich", "danke", "dir", "sehr"],
-      "answer": { "accept": ["Ich danke dir sehr."], "grading": "caseInsensitive" },
+      "tokens": [
+        "Ich",
+        "danke",
+        "dir",
+        "sehr"
+      ],
+      "answer": {
+        "accept": [
+          "Ich danke dir sehr."
+        ],
+        "grading": "caseInsensitive"
+      },
       "explanation": "'danken' verlangt den Dativ: dir."
     },
     {

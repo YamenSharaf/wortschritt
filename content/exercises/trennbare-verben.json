@@ -1,27 +1,400 @@
 {
   "schemaVersion": 1,
   "id": "trennbare-verben",
+  "createdAt": "2026-08-05",
   "title": "Trennbare Verben — Satzstellung",
   "subtitle": "Separable verbs — word order",
   "description": "Das konjugierte Verb steht auf Position 2, die Vorsilbe am Satzende (Übung 1).",
   "level": "A2",
-  "tags": ["grammatik", "trennbare-verben", "verben"],
+  "tags": [
+    "grammatik",
+    "trennbare-verben",
+    "verben"
+  ],
   "items": [
-    { "type": "cloze", "id": "tv1-01", "text": "Ich {{1}} sehr früh {{2}}.", "blanks": [{ "ref": "1", "cue": "aufwachen", "answer": { "accept": ["wache"] } }, { "ref": "2", "answer": { "accept": ["auf"] } }] },
-    { "type": "cloze", "id": "tv1-02", "text": "Heute {{1}} ich im Supermarkt {{2}}.", "blanks": [{ "ref": "1", "cue": "einkaufen", "answer": { "accept": ["kaufe"] } }, { "ref": "2", "answer": { "accept": ["ein"] } }] },
-    { "type": "cloze", "id": "tv1-03", "text": "Ich {{1}} mein Zimmer {{2}}.", "blanks": [{ "ref": "1", "cue": "aufräumen", "answer": { "accept": ["räume"] } }, { "ref": "2", "answer": { "accept": ["auf"] } }] },
-    { "type": "cloze", "id": "tv1-04", "text": "Die Kinder {{1}} gern {{2}}.", "blanks": [{ "ref": "1", "cue": "fernsehen", "answer": { "accept": ["sehen"] } }, { "ref": "2", "answer": { "accept": ["fern"] } }] },
-    { "type": "cloze", "id": "tv1-05", "text": "Meine Mutter {{1}} mich heute {{2}}.", "blanks": [{ "ref": "1", "cue": "anrufen", "answer": { "accept": ["ruft"] } }, { "ref": "2", "answer": { "accept": ["an"] } }] },
-    { "type": "cloze", "id": "tv1-06", "text": "Immer {{1}} mein Vater um 8 Uhr {{2}}.", "blanks": [{ "ref": "1", "cue": "aufstehen", "answer": { "accept": ["steht"] } }, { "ref": "2", "answer": { "accept": ["auf"] } }] },
-    { "type": "cloze", "id": "tv1-07", "text": "Mein Freund {{1}} {{2}}.", "blanks": [{ "ref": "1", "cue": "mitkommen", "answer": { "accept": ["kommt"] } }, { "ref": "2", "answer": { "accept": ["mit"] } }] },
-    { "type": "cloze", "id": "tv1-08", "text": "Klaus {{1}} ein weißes T-Shirt {{2}}.", "blanks": [{ "ref": "1", "cue": "anhaben", "answer": { "accept": ["hat"] } }, { "ref": "2", "answer": { "accept": ["an"] } }] },
-    { "type": "cloze", "id": "tv1-09", "text": "Wann {{1}} der Zug nach Lindau {{2}}?", "blanks": [{ "ref": "1", "cue": "abfahren", "answer": { "accept": ["fährt"] } }, { "ref": "2", "answer": { "accept": ["ab"] } }] },
-    { "type": "cloze", "id": "tv1-10", "text": "Endlich {{1}} der Unterricht {{2}}.", "blanks": [{ "ref": "1", "cue": "aufhören", "answer": { "accept": ["hört"] } }, { "ref": "2", "answer": { "accept": ["auf"] } }] },
-    { "type": "cloze", "id": "tv1-11", "text": "Der Lehrer {{1}} die Tür {{2}}.", "blanks": [{ "ref": "1", "cue": "zumachen", "answer": { "accept": ["macht"] } }, { "ref": "2", "answer": { "accept": ["zu"] } }] },
-    { "type": "cloze", "id": "tv1-12", "text": "Mein Kurs {{1}} heute Nachmittag {{2}}.", "blanks": [{ "ref": "1", "cue": "anfangen", "answer": { "accept": ["fängt"] } }, { "ref": "2", "answer": { "accept": ["an"] } }] },
-    { "type": "cloze", "id": "tv1-13", "text": "Ich {{1}} meine Tante {{2}}.", "blanks": [{ "ref": "1", "cue": "liebhaben", "answer": { "accept": ["habe"] } }, { "ref": "2", "answer": { "accept": ["lieb"] } }] },
-    { "type": "cloze", "id": "tv1-14", "text": "Das Restaurant {{1}} sehr gemütlich {{2}}.", "blanks": [{ "ref": "1", "cue": "aussehen", "answer": { "accept": ["sieht"] } }, { "ref": "2", "answer": { "accept": ["aus"] } }] },
-    { "type": "cloze", "id": "tv1-15", "text": "Meine Eltern {{1}} am Abend {{2}}.", "blanks": [{ "ref": "1", "cue": "ankommen", "answer": { "accept": ["kommen"] } }, { "ref": "2", "answer": { "accept": ["an"] } }] },
-    { "type": "cloze", "id": "tv1-16", "text": "Ich {{1}} Käse und Brötchen {{2}}.", "blanks": [{ "ref": "1", "cue": "mitbringen", "answer": { "accept": ["bringe"] } }, { "ref": "2", "answer": { "accept": ["mit"] } }] }
+    {
+      "type": "cloze",
+      "id": "tv1-01",
+      "text": "Ich {{1}} sehr früh {{2}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "aufwachen",
+          "answer": {
+            "accept": [
+              "wache"
+            ]
+          }
+        },
+        {
+          "ref": "2",
+          "answer": {
+            "accept": [
+              "auf"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv1-02",
+      "text": "Heute {{1}} ich im Supermarkt {{2}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "einkaufen",
+          "answer": {
+            "accept": [
+              "kaufe"
+            ]
+          }
+        },
+        {
+          "ref": "2",
+          "answer": {
+            "accept": [
+              "ein"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv1-03",
+      "text": "Ich {{1}} mein Zimmer {{2}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "aufräumen",
+          "answer": {
+            "accept": [
+              "räume"
+            ]
+          }
+        },
+        {
+          "ref": "2",
+          "answer": {
+            "accept": [
+              "auf"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv1-04",
+      "text": "Die Kinder {{1}} gern {{2}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "fernsehen",
+          "answer": {
+            "accept": [
+              "sehen"
+            ]
+          }
+        },
+        {
+          "ref": "2",
+          "answer": {
+            "accept": [
+              "fern"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv1-05",
+      "text": "Meine Mutter {{1}} mich heute {{2}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "anrufen",
+          "answer": {
+            "accept": [
+              "ruft"
+            ]
+          }
+        },
+        {
+          "ref": "2",
+          "answer": {
+            "accept": [
+              "an"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv1-06",
+      "text": "Immer {{1}} mein Vater um 8 Uhr {{2}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "aufstehen",
+          "answer": {
+            "accept": [
+              "steht"
+            ]
+          }
+        },
+        {
+          "ref": "2",
+          "answer": {
+            "accept": [
+              "auf"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv1-07",
+      "text": "Mein Freund {{1}} {{2}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "mitkommen",
+          "answer": {
+            "accept": [
+              "kommt"
+            ]
+          }
+        },
+        {
+          "ref": "2",
+          "answer": {
+            "accept": [
+              "mit"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv1-08",
+      "text": "Klaus {{1}} ein weißes T-Shirt {{2}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "anhaben",
+          "answer": {
+            "accept": [
+              "hat"
+            ]
+          }
+        },
+        {
+          "ref": "2",
+          "answer": {
+            "accept": [
+              "an"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv1-09",
+      "text": "Wann {{1}} der Zug nach Lindau {{2}}?",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "abfahren",
+          "answer": {
+            "accept": [
+              "fährt"
+            ]
+          }
+        },
+        {
+          "ref": "2",
+          "answer": {
+            "accept": [
+              "ab"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv1-10",
+      "text": "Endlich {{1}} der Unterricht {{2}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "aufhören",
+          "answer": {
+            "accept": [
+              "hört"
+            ]
+          }
+        },
+        {
+          "ref": "2",
+          "answer": {
+            "accept": [
+              "auf"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv1-11",
+      "text": "Der Lehrer {{1}} die Tür {{2}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "zumachen",
+          "answer": {
+            "accept": [
+              "macht"
+            ]
+          }
+        },
+        {
+          "ref": "2",
+          "answer": {
+            "accept": [
+              "zu"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv1-12",
+      "text": "Mein Kurs {{1}} heute Nachmittag {{2}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "anfangen",
+          "answer": {
+            "accept": [
+              "fängt"
+            ]
+          }
+        },
+        {
+          "ref": "2",
+          "answer": {
+            "accept": [
+              "an"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv1-13",
+      "text": "Ich {{1}} meine Tante {{2}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "liebhaben",
+          "answer": {
+            "accept": [
+              "habe"
+            ]
+          }
+        },
+        {
+          "ref": "2",
+          "answer": {
+            "accept": [
+              "lieb"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv1-14",
+      "text": "Das Restaurant {{1}} sehr gemütlich {{2}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "aussehen",
+          "answer": {
+            "accept": [
+              "sieht"
+            ]
+          }
+        },
+        {
+          "ref": "2",
+          "answer": {
+            "accept": [
+              "aus"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv1-15",
+      "text": "Meine Eltern {{1}} am Abend {{2}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "ankommen",
+          "answer": {
+            "accept": [
+              "kommen"
+            ]
+          }
+        },
+        {
+          "ref": "2",
+          "answer": {
+            "accept": [
+              "an"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "tv1-16",
+      "text": "Ich {{1}} Käse und Brötchen {{2}}.",
+      "blanks": [
+        {
+          "ref": "1",
+          "cue": "mitbringen",
+          "answer": {
+            "accept": [
+              "bringe"
+            ]
+          }
+        },
+        {
+          "ref": "2",
+          "answer": {
+            "accept": [
+              "mit"
+            ]
+          }
+        }
+      ]
+    }
   ]
 }

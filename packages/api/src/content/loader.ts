@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
@@ -33,12 +33,12 @@ function readJsonDir<S extends z.ZodTypeAny>(
         .join("\n");
       throw new Error(`Content file ${full} failed validation:\n${detail}`);
     }
-    // Fall back to the file's modification time when the author didn't stamp a
-    // createdAt, so "recently added" sorting works without hand-dating files.
-    const createdAt =
-      (parsed.data as { createdAt?: string }).createdAt ??
-      statSync(full).mtime.toISOString();
-    out.push({ ...parsed.data, createdAt });
+    // Keep the author's createdAt as-is. We deliberately DON'T fall back to the
+    // file's mtime: a fresh git clone / Docker build resets every file's mtime
+    // to the deploy time, which would make old, un-dated files look newest and
+    // bury genuinely new material. Un-dated content sorts last instead (see
+    // byNewest). All shipped content is stamped with a createdAt.
+    out.push(parsed.data);
   }
   return out;
 }
