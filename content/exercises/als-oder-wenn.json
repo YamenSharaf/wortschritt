@@ -1,0 +1,391 @@
+{
+  "schemaVersion": 1,
+  "id": "als-oder-wenn",
+  "title": "als oder wenn?",
+  "subtitle": "Temporal conjunctions: als vs. wenn",
+  "description": "Setze „als“ oder „wenn“ ein: als für ein einmaliges Ereignis in der Vergangenheit, wenn für Wiederholung oder Gegenwart/Zukunft.",
+  "level": "B1",
+  "tags": [
+    "grammatik",
+    "konjunktionen",
+    "nebensatz"
+  ],
+  "createdAt": "2026-08-30",
+  "items": [
+    {
+      "type": "cloze",
+      "id": "aw-01",
+      "text": "{{1}} meine Großmutter noch gelebt hat, waren die Weihnachtsfeste wirklich schön.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "als"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-02",
+      "text": "{{1}} ich Schülerin war, bin ich gern auf Faschingspartys gegangen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "als"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-03",
+      "text": "{{1}} ich nach Österreich gekommen bin, habe ich kein Wort Deutsch verstanden.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "als"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-04",
+      "text": "Ich werde oft nervös, {{1}} ich vor einer Gruppe Menschen sprechen soll.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wenn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-05",
+      "text": "Rufst du mich an, {{1}} du wieder zurück bist?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wenn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-06",
+      "text": "Ich war unter der Dusche, {{1}} du angerufen hast.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "als"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-07",
+      "text": "{{1}} es regnet, bleibe ich gern zu Hause und lese ein Buch.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wenn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-08",
+      "text": "{{1}} es gestern geregnet hat, hatte ich wieder einmal keinen Schirm.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "als"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-09",
+      "text": "Wir haben uns nur getroffen, {{1}} wir etwas besprechen mussten.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wenn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-10",
+      "text": "{{1}} es morgen schön ist, können wir in den Zoo gehen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wenn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-11",
+      "text": "{{1}} ich ihn letzte Woche gesehen habe, war er noch gesund.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "als"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-12",
+      "text": "Immer {{1}} ich vor dem Computer sitze, will meine Katze mit mir spielen.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wenn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-13",
+      "text": "{{1}} ich mit ihr spielen will, bin ich für sie uninteressant.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wenn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-14",
+      "text": "Können wir darüber reden, {{1}} du nicht mehr böse auf mich bist?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wenn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-15",
+      "text": "{{1}} meine Tochter gestern um 20.00 Uhr noch nicht zu Hause war, habe ich mir wirklich Sorgen gemacht.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "als"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-16",
+      "text": "Warum antwortest du nie, {{1}} ich dich das frage?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wenn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-17",
+      "text": "{{1}} meine Mutter noch ein kleines Mädchen war, hat ihr Vater oft zu ihr gesagt: „{{2}} du die Suppe brav aufisst, dann wird das Wetter morgen schön. {{3}} nicht, dann regnet es.“",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "als"
+            ],
+            "grading": "caseInsensitive"
+          }
+        },
+        {
+          "ref": "2",
+          "answer": {
+            "accept": [
+              "wenn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        },
+        {
+          "ref": "3",
+          "answer": {
+            "accept": [
+              "wenn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-18",
+      "text": "{{1}} ich heute Morgen weggegangen bin, war der Himmel noch blau.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "als"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-19",
+      "text": "{{1}} ich traurig war, habe ich mich meistens mit viel Schokolade getröstet.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wenn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-20",
+      "text": "Was habt ihr vorgestern gemacht, {{1}} euch eure Tante besucht hat?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "als"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    },
+    {
+      "type": "cloze",
+      "id": "aw-21",
+      "text": "{{1}} wir uns wiedersehen, werden wir eine große Party machen!",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wenn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„als“ = einmaliges Ereignis/Zustand in der Vergangenheit; „wenn“ = Wiederholung (immer wenn) oder Gegenwart/Zukunft (Bedingung)."
+    }
+  ]
+}

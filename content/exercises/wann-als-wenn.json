@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "id": "wann-als-wenn",
+  "title": "wann, als oder wenn?",
+  "subtitle": "wann vs. als vs. wenn",
+  "description": "Fragewort (wann), einmalige Vergangenheit (als) oder Wiederholung/Bedingung (wenn)?",
+  "level": "B1",
+  "tags": [
+    "grammatik",
+    "konjunktionen",
+    "fragewörter",
+    "nebensatz"
+  ],
+  "createdAt": "2026-08-30",
+  "items": [
+    {
+      "type": "cloze",
+      "id": "waw-01",
+      "text": "{{1}} ist endlich wieder Sommer?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wann"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„wann“ = Fragewort (auch in indirekten Fragen); „als“ = einmalige Vergangenheit; „wenn“ = Wiederholung/Bedingung."
+    },
+    {
+      "type": "cloze",
+      "id": "waw-02",
+      "text": "Kai war sehr traurig, {{1}} sein Hamster starb.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "als"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„wann“ = Fragewort (auch in indirekten Fragen); „als“ = einmalige Vergangenheit; „wenn“ = Wiederholung/Bedingung."
+    },
+    {
+      "type": "cloze",
+      "id": "waw-03",
+      "text": "Wir können uns am Dienstag oder am Mittwoch treffen. Könntest du mir schreiben, {{1}} es dir besser passt?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wann"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„wann“ = Fragewort (auch in indirekten Fragen); „als“ = einmalige Vergangenheit; „wenn“ = Wiederholung/Bedingung."
+    },
+    {
+      "type": "cloze",
+      "id": "waw-04",
+      "text": "Melde dich bitte, {{1}} du Zeit hast!",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wenn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„wann“ = Fragewort (auch in indirekten Fragen); „als“ = einmalige Vergangenheit; „wenn“ = Wiederholung/Bedingung."
+    },
+    {
+      "type": "cloze",
+      "id": "waw-05",
+      "text": "{{1}} ich gestern im Bett lag, kam mir eine tolle Idee.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "als"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„wann“ = Fragewort (auch in indirekten Fragen); „als“ = einmalige Vergangenheit; „wenn“ = Wiederholung/Bedingung."
+    },
+    {
+      "type": "cloze",
+      "id": "waw-06",
+      "text": "{{1}} meine Oma Lebkuchen backt, duftet es in der ganzen Küche nach Weihnachten.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wenn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„wann“ = Fragewort (auch in indirekten Fragen); „als“ = einmalige Vergangenheit; „wenn“ = Wiederholung/Bedingung."
+    },
+    {
+      "type": "cloze",
+      "id": "waw-07",
+      "text": "Weißt du, {{1}} Tanja Geburtstag hat?",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wann"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„wann“ = Fragewort (auch in indirekten Fragen); „als“ = einmalige Vergangenheit; „wenn“ = Wiederholung/Bedingung."
+    },
+    {
+      "type": "cloze",
+      "id": "waw-08",
+      "text": "Jedes Mal, {{1}} die Schwiegereltern zu Besuch waren, gab es Streit.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wenn"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„wann“ = Fragewort (auch in indirekten Fragen); „als“ = einmalige Vergangenheit; „wenn“ = Wiederholung/Bedingung."
+    },
+    {
+      "type": "cloze",
+      "id": "waw-09",
+      "text": "{{1}} ich in der 5. Klasse war, kauften meine Eltern ein Haus.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "als"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„wann“ = Fragewort (auch in indirekten Fragen); „als“ = einmalige Vergangenheit; „wenn“ = Wiederholung/Bedingung."
+    },
+    {
+      "type": "cloze",
+      "id": "waw-10",
+      "text": "{{1}} wir uns wiedersehen, liegt ganz bei dir.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wann"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ],
+      "instructions": "„wann“ = Fragewort (auch in indirekten Fragen); „als“ = einmalige Vergangenheit; „wenn“ = Wiederholung/Bedingung."
+    }
+  ]
+}

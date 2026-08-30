@@ -1,0 +1,353 @@
+{
+  "schemaVersion": 1,
+  "id": "saetze-mit-weil",
+  "title": "Sätze mit weil",
+  "subtitle": "Subordinate clauses with weil (verb-final)",
+  "description": "Verbinde Sätze mit „weil“ — im Nebensatz steht das konjugierte Verb am Ende.",
+  "level": "A2",
+  "tags": [
+    "grammatik",
+    "nebensatz",
+    "konjunktionen",
+    "weil"
+  ],
+  "createdAt": "2026-08-30",
+  "items": [
+    {
+      "type": "transform",
+      "id": "wa-a01",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Ich bin traurig. Ich bin krank.",
+      "answer": {
+        "accept": [
+          "Ich bin traurig, weil ich krank bin."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-a02",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Die Musik stört mich. Sie ist sehr laut.",
+      "answer": {
+        "accept": [
+          "Die Musik stört mich, weil sie sehr laut ist."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-a03",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Das Essen schmeckt mir nicht. Es ist zu salzig.",
+      "answer": {
+        "accept": [
+          "Das Essen schmeckt mir nicht, weil es zu salzig ist."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-a04",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Morgen kann ich nicht zur Schule gehen. Ich habe einen Termin beim Arzt.",
+      "answer": {
+        "accept": [
+          "Morgen kann ich nicht zur Schule gehen, weil ich einen Termin beim Arzt habe."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-a05",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Thomas ist sauer auf mich. Ich habe ihn gestern nicht angerufen.",
+      "answer": {
+        "accept": [
+          "Thomas ist sauer auf mich, weil ich ihn gestern nicht angerufen habe."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-a06",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Sie muss ein Geschenk kaufen. Ihr Mann hat morgen Geburtstag.",
+      "answer": {
+        "accept": [
+          "Sie muss ein Geschenk kaufen, weil ihr Mann morgen Geburtstag hat."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-a07",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Meine Eltern haben einen neuen Fernseher gekauft. Der alte Fernseher ist kaputt.",
+      "answer": {
+        "accept": [
+          "Meine Eltern haben einen neuen Fernseher gekauft, weil der alte Fernseher kaputt ist."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-a08",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Ich gehe ins Büro. Ich brauche eine Bescheinigung.",
+      "answer": {
+        "accept": [
+          "Ich gehe ins Büro, weil ich eine Bescheinigung brauche."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-a09",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Er kommt später. Er hat seine U-Bahn verpasst.",
+      "answer": {
+        "accept": [
+          "Er kommt später, weil er seine U-Bahn verpasst hat."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-a10",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Sie lernt zurzeit sehr viel. Sie schreibt morgen einen Test.",
+      "answer": {
+        "accept": [
+          "Sie lernt zurzeit sehr viel, weil sie morgen einen Test schreibt."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-b01",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Ich kann dich nicht anrufen. Mein Handy ist kaputt.",
+      "answer": {
+        "accept": [
+          "Ich kann dich nicht anrufen, weil mein Handy kaputt ist."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-b02",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Luwam geht heute einkaufen. Sie braucht eine neue Hose.",
+      "answer": {
+        "accept": [
+          "Luwam geht heute einkaufen, weil sie eine neue Hose braucht."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-b03",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Tesfu kommt nicht mit ins Kino. Er hat einen wichtigen Termin.",
+      "answer": {
+        "accept": [
+          "Tesfu kommt nicht mit ins Kino, weil er einen wichtigen Termin hat."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-b04",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Amane bleibt in seinem Zimmer. Er möchte Musik hören.",
+      "answer": {
+        "accept": [
+          "Amane bleibt in seinem Zimmer, weil er Musik hören möchte."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-b05",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Tewen ist gestern spät nach Hause gekommen. Sie hat eine Freundin besucht.",
+      "answer": {
+        "accept": [
+          "Tewen ist gestern spät nach Hause gekommen, weil sie eine Freundin besucht hat."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-b06",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Samuel muss zum Training. Er möchte Fußballstar werden.",
+      "answer": {
+        "accept": [
+          "Samuel muss zum Training, weil er Fußballstar werden möchte."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-b07",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Kibrom freut sich schon auf das Essen. Er ist immer hungrig.",
+      "answer": {
+        "accept": [
+          "Kibrom freut sich schon auf das Essen, weil er immer hungrig ist."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-b08",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Die Studenten lernen Deutsch. Sie müssen bald eine Prüfung machen.",
+      "answer": {
+        "accept": [
+          "Die Studenten lernen Deutsch, weil sie bald eine Prüfung machen müssen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-b09",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Tewen ist sehr glücklich. Sie ist verliebt.",
+      "answer": {
+        "accept": [
+          "Tewen ist sehr glücklich, weil sie verliebt ist."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-b10",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Kibrom hat eine neue Frisur. Seine alte Frisur hat ihm nicht mehr gefallen.",
+      "answer": {
+        "accept": [
+          "Kibrom hat eine neue Frisur, weil seine alte Frisur ihm nicht mehr gefallen hat."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-b11",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Samuel schreibt immer schnell. Er möchte als Erster fertig sein.",
+      "answer": {
+        "accept": [
+          "Samuel schreibt immer schnell, weil er als Erster fertig sein möchte."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-b12",
+      "instructions": "Verbinde die beiden Sätze mit „weil“. Das konjugierte Verb steht im Nebensatz am Ende.",
+      "source": "Amane besucht Tesfu oft. Er wohnt neben ihm.",
+      "answer": {
+        "accept": [
+          "Amane besucht Tesfu oft, weil er neben ihm wohnt."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-c01",
+      "instructions": "Satzpuzzle: Bilde den „weil“-Satz aus den Wörtern und hänge ihn an den Hauptsatz an.",
+      "source": "Ich kann nicht zum Konzert gehen, … | Wörter: weil · ich · mit meiner Familie · nach London · fahre",
+      "answer": {
+        "accept": [
+          "Ich kann nicht zum Konzert gehen, weil ich mit meiner Familie nach London fahre."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-c02",
+      "instructions": "Satzpuzzle: Bilde den „weil“-Satz aus den Wörtern und hänge ihn an den Hauptsatz an.",
+      "source": "Vater kommt noch nicht nach Hause, … | Wörter: weil · er · viel · Arbeit · hat",
+      "answer": {
+        "accept": [
+          "Vater kommt noch nicht nach Hause, weil er viel Arbeit hat."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-c03",
+      "instructions": "Satzpuzzle: Bilde den „weil“-Satz aus den Wörtern und hänge ihn an den Hauptsatz an.",
+      "source": "Wir spielen heute nicht Fußball, … | Wörter: weil · das Wetter · schlecht · ist",
+      "answer": {
+        "accept": [
+          "Wir spielen heute nicht Fußball, weil das Wetter schlecht ist."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-c04",
+      "instructions": "Satzpuzzle: Bilde den „weil“-Satz aus den Wörtern und hänge ihn an den Hauptsatz an.",
+      "source": "Peter geht nicht in die Disco, … | Wörter: weil · er · kein Geld · hat",
+      "answer": {
+        "accept": [
+          "Peter geht nicht in die Disco, weil er kein Geld hat."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-c05",
+      "instructions": "Satzpuzzle: Bilde den „weil“-Satz aus den Wörtern und hänge ihn an den Hauptsatz an.",
+      "source": "Die Freundinnen fahren in die Stadt, … | Wörter: weil · sie · Kleider · kaufen · möchten",
+      "answer": {
+        "accept": [
+          "Die Freundinnen fahren in die Stadt, weil sie Kleider kaufen möchten."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "wa-c06",
+      "instructions": "Satzpuzzle: Bilde den „weil“-Satz aus den Wörtern und hänge ihn an den Hauptsatz an.",
+      "source": "Mein Vater kauft nicht das Auto, … | Wörter: weil · es · ihm · nicht · gefällt",
+      "answer": {
+        "accept": [
+          "Mein Vater kauft nicht das Auto, weil es ihm nicht gefällt."
+        ],
+        "grading": "normalized"
+      }
+    }
+  ]
+}

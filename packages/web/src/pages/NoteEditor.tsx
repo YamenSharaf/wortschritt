@@ -115,6 +115,9 @@ export function NoteEditor() {
       setTitle(loaded.data.title);
       setCategory(loaded.data.category);
       setBody(loaded.data.body);
+      // An existing note (already has content) opens in Preview; a blank new
+      // note opens in Write so you can start typing.
+      setMode(loaded.data.body.trim() ? "preview" : "write");
       ready.current = true;
     }
   }, [loaded.status]);

@@ -1,0 +1,25 @@
+{
+  "id": "als-wenn-wann",
+  "title": "als, wenn oder wann?",
+  "subtitle": "Temporal conjunctions & question word",
+  "category": "grammatik",
+  "createdAt": "2026-08-30",
+  "sections": [
+    {
+      "heading": "Der Unterschied auf einen Blick",
+      "body": "| Wort | Gebrauch | Beispiel |\n| --- | --- | --- |\n| **als** | **einmaliges** Ereignis oder Zustand in der **Vergangenheit** | *Als ich nach Wien kam, war es kalt.* |\n| **wenn** | **Wiederholung** in der Vergangenheit (*immer wenn*) | *Wenn ich sie besuchte, freute sie sich.* |\n| **wenn** | Bedingung / Zeit in **Gegenwart & Zukunft** | *Wenn es regnet, bleibe ich zu Hause.* |\n| **wann** | **Fragewort** (direkte & indirekte Frage) | *Wann kommst du?* · *Weißt du, wann er kommt?* |"
+    },
+    {
+      "heading": "als – der einmalige Moment (Vergangenheit)",
+      "body": "Ein **einziges** Ereignis oder ein durchgehender Zustand in der Vergangenheit:\n\n> **Als** ich klein war, … · **Als** du angerufen hast, war ich unter der Dusche.\n\nOft mit Zeitangaben wie *letzte Woche, gestern, heute Morgen, in der 5. Klasse*."
+    },
+    {
+      "heading": "wenn – Wiederholung oder Bedingung",
+      "body": "**Wiederholte** Vergangenheit (Tipp: *immer wenn / jedes Mal wenn*):\n> **Wenn** ich traurig war, aß ich **meistens** Schokolade.\n\n**Gegenwart / Zukunft** (Bedingung „falls\" oder Zeit):\n> **Wenn** es morgen schön ist, gehen wir in den Zoo."
+    },
+    {
+      "heading": "wann – nur als Frage",
+      "body": "**wann** ist ein **Fragewort** und steht nur in Fragen — direkt oder indirekt eingebettet:\n\n> **Wann** ist wieder Sommer? · Könntest du schreiben, **wann** es dir passt? · **Wann** wir uns wiedersehen, liegt bei dir.\n\nNie als „normale\" Konjunktion für einen Zeitpunkt — dann steht *als* oder *wenn*."
+    }
+  ]
+}
