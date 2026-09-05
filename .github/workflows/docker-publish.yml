@@ -94,6 +94,13 @@ jobs:
       # With auto-update enabled on the stack, Komodo redeploys it immediately
       # when a newer image is found (a no-op when nothing changed). Skipped on
       # PRs and when the Komodo variables aren't configured.
+      #
+      # We fire the check WITHOUT waiting for the redeploy to finish
+      # (wait_for_auto_update:false). Waiting held the connection open for the
+      # whole pull+redeploy, which regularly exceeded the ~100s Cloudflare
+      # origin-timeout in front of the Komodo host and failed the job with a 524
+      # even though the images were pushed and the deploy proceeded. Komodo still
+      # performs the update asynchronously; we just don't block CI on it.
       - name: Trigger Komodo update check
         if: >-
           github.event_name != 'pull_request' &&
@@ -110,9 +117,11 @@ jobs:
             *) host="https://$host" ;;
           esac
           echo "CheckStackForUpdate for stack ${STACK_ID} at ${host}"
-          curl --fail-with-body -sS -X POST "${host}/write" \
+          curl --fail-with-body -sS --max-time 60 --retry 2 --retry-all-errors \
+            -X POST "${host}/write" \
             -H "Content-Type: application/json" \
             -H "X-Api-Key: ${KOMODO_KEY}" \
             -H "X-Api-Secret: ${KOMODO_SECRET}" \
-            -d "{\"type\":\"CheckStackForUpdate\",\"params\":{\"stack\":\"${STACK_ID}\",\"skip_auto_update\":false,\"wait_for_auto_update\":true}}"
+            -d "{\"type\":\"CheckStackForUpdate\",\"params\":{\"stack\":\"${STACK_ID}\",\"skip_auto_update\":false,\"wait_for_auto_update\":false}}"
           echo
+
