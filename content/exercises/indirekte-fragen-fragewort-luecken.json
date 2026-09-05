@@ -1,0 +1,289 @@
+{
+  "schemaVersion": 1,
+  "id": "indirekte-fragen-fragewort-luecken",
+  "title": "Indirekte Fragen: welches Fragewort?",
+  "subtitle": "Choose the question word",
+  "description": "Ergänze das richtige Fragewort (oder „ob“) im indirekten Fragesatz.",
+  "level": "B1",
+  "tags": [
+    "grammatik",
+    "nebensatz",
+    "indirekte-fragen",
+    "fragewörter"
+  ],
+  "createdAt": "2026-09-05",
+  "items": [
+    {
+      "type": "cloze",
+      "id": "if-c01",
+      "text": "Die Presse möchte wissen, {{1}} Kates Vater von Beruf ist.",
+      "instructions": "Die Presse möchte alles über die Hochzeit wissen. Ergänze das passende Fragewort.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "was"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "if-c02",
+      "text": "Die Presse möchte wissen, {{1}} Universität Kate studiert hat.",
+      "instructions": "Die Presse möchte alles über die Hochzeit wissen. Ergänze das passende Fragewort.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "an welcher"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "if-c03",
+      "text": "Die Presse möchte wissen, {{1}} Kate vor William einen anderen Freund hatte.",
+      "instructions": "Die Presse möchte alles über die Hochzeit wissen. Ergänze das passende Fragewort.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "ob"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "if-c04",
+      "text": "Die Presse möchte wissen, {{1}} zu der Hochzeit alles eingeladen ist.",
+      "instructions": "Die Presse möchte alles über die Hochzeit wissen. Ergänze das passende Fragewort.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wer"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "if-c05",
+      "text": "Die Presse möchte wissen, {{1}} das Kleid von Kate aussieht.",
+      "instructions": "Die Presse möchte alles über die Hochzeit wissen. Ergänze das passende Fragewort.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wie"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "if-c06",
+      "text": "Die Presse möchte wissen, {{1}} Hochzeitsroute die Kutsche von William und Kate fährt.",
+      "instructions": "Die Presse möchte alles über die Hochzeit wissen. Ergänze das passende Fragewort.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "welche"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "if-c07",
+      "text": "Die Presse möchte wissen, {{1}} Charakter Kate hat.",
+      "instructions": "Die Presse möchte alles über die Hochzeit wissen. Ergänze das passende Fragewort.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "welchen"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "if-c08",
+      "text": "Die Presse möchte wissen, {{1}} die Vorfahren von Kate stammen.",
+      "instructions": "Die Presse möchte alles über die Hochzeit wissen. Ergänze das passende Fragewort.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "woher"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "if-c09",
+      "text": "Die Presse möchte wissen, {{1}} die Hochzeitszeremonie dauert.",
+      "instructions": "Die Presse möchte alles über die Hochzeit wissen. Ergänze das passende Fragewort.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wie lange"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "if-c10",
+      "text": "Die Presse möchte wissen, {{1}} das Hochzeitskleid gekostet hat.",
+      "instructions": "Die Presse möchte alles über die Hochzeit wissen. Ergänze das passende Fragewort.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wie viel"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "if-c11",
+      "text": "Die Presse möchte wissen, {{1}} Kopfschmuck Kate tragen wird.",
+      "instructions": "Die Presse möchte alles über die Hochzeit wissen. Ergänze das passende Fragewort.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "welchen"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "if-c12",
+      "text": "Die Presse möchte wissen, {{1}} Diadem Kate tragen wird.",
+      "instructions": "Die Presse möchte alles über die Hochzeit wissen. Ergänze das passende Fragewort.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "welches"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "if-c13",
+      "text": "Die Presse möchte wissen, {{1}} Musik das Brautpaar ausgewählt hat.",
+      "instructions": "Die Presse möchte alles über die Hochzeit wissen. Ergänze das passende Fragewort.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "welche"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "if-c14",
+      "text": "Die Presse möchte wissen, {{1}} Kate und William nach der Hochzeitsfeier fahren.",
+      "instructions": "Die Presse möchte alles über die Hochzeit wissen. Ergänze das passende Fragewort.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "wohin"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "if-c15",
+      "text": "Die Presse möchte wissen, {{1}} Kate und William bald ein Kind möchten.",
+      "instructions": "Die Presse möchte alles über die Hochzeit wissen. Ergänze das passende Fragewort.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "ob"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    },
+    {
+      "type": "cloze",
+      "id": "if-c16",
+      "text": "Die Presse möchte wissen, {{1}} Kate und William ein Kind adoptieren wollen.",
+      "instructions": "Die Presse möchte alles über die Hochzeit wissen. Ergänze das passende Fragewort.",
+      "blanks": [
+        {
+          "ref": "1",
+          "answer": {
+            "accept": [
+              "ob"
+            ],
+            "grading": "caseInsensitive"
+          }
+        }
+      ]
+    }
+  ]
+}

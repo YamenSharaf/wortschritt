@@ -1,0 +1,25 @@
+{
+  "id": "indirekte-fragesaetze",
+  "title": "Indirekte Fragesätze",
+  "subtitle": "Indirect questions",
+  "category": "grammatik",
+  "createdAt": "2026-09-05",
+  "sections": [
+    {
+      "heading": "Wie funktioniert es?",
+      "body": "Ein indirekter Fragesatz ist ein **Nebensatz**. Er hängt an einem Einleitungssatz (*Ich weiß nicht, … · Können Sie mir sagen, … · Weißt du, …*) und das **konjugierte Verb rutscht ans Ende**.\n\n> **direkt:** Wie heißt er?\n> **indirekt:** Ich weiß nicht, **wie er heißt**.\n\nNach dem Einleitungssatz steht immer ein **Komma**. Indirekte Fragen sind höflicher als direkte."
+    },
+    {
+      "heading": "Mit Fragewort",
+      "body": "Gibt es in der direkten Frage ein **Fragewort** (wer, was, wo, wann, warum, wie, welch-, womit …), bleibt es erhalten — nur das Verb wandert ans Ende:\n\n> Wo **wohnt** sie? → Kannst du mir sagen, wo sie **wohnt**?\n> Warum **hat** er das **gemacht**? → Ich weiß nicht, warum er das **gemacht hat**. *(Perfekt: Hilfsverb ganz hinten)*\n> Welchen Weg **muss** ich **nehmen**? → Sagen Sie mir, welchen Weg ich **nehmen muss**. *(Modalverb ganz hinten)*"
+    },
+    {
+      "heading": "Ohne Fragewort → ob",
+      "body": "Ist die direkte Frage eine **Ja/Nein-Frage** (keine Fragewort, Verb steht vorn), benutzt man **ob** (= *whether/if*):\n\n> **Kommst** du mit? → Sag uns, **ob** du **mitkommst**.\n> **Hat** sie uns **gesehen**? → Ich weiß nicht, **ob** sie uns **gesehen hat**.\n\n> ⚠️ **ob ≠ wenn.** *ob* leitet eine indirekte Ja/Nein-Frage ein. Das Bedingungs-*wenn* (*wenn …, dann …*) ist etwas anderes."
+    },
+    {
+      "heading": "Fragewörter im Überblick",
+      "body": "| Fragewort | Beispiel | wonach wird gefragt |\n| --- | --- | --- |\n| wer | Wer sind Sie? | Person |\n| was | Was ist das? | Sache |\n| wo | Wo wohnen Sie? | Ort |\n| woher | Woher kommen Sie? | Herkunft |\n| wohin | Wohin fliegen Sie? | Ziel |\n| wie | Wie geht es Ihnen? | Art/Weise |\n| wie alt | Wie alt sind Sie? | Alter |\n| wie viel(e) | Wie viel kostet das? · Wie viele sind da? | Menge/Anzahl |\n| wie oft | Wie oft fliegen Sie? | Häufigkeit |\n| wie lange | Wie lange dauert das? | Dauer |\n| wie spät | Wie spät ist es? | Uhrzeit |\n| wann | Wann beginnt es? | Zeitpunkt |\n| warum / wieso | Warum lernen Sie Deutsch? | Grund |"
+    }
+  ]
+}

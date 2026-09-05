@@ -1,0 +1,402 @@
+{
+  "schemaVersion": 1,
+  "id": "indirekte-fragen-fragewort",
+  "title": "Indirekte Fragen mit Fragewort",
+  "subtitle": "Indirect questions with a question word",
+  "description": "Mach aus der direkten Frage einen indirekten Fragesatz mit Fragewort — das Verb steht am Ende.",
+  "level": "B1",
+  "tags": [
+    "grammatik",
+    "nebensatz",
+    "indirekte-fragen"
+  ],
+  "createdAt": "2026-09-05",
+  "items": [
+    {
+      "type": "transform",
+      "id": "if-w01",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wie heißt er?\nIch habe keine Ahnung, …",
+      "answer": {
+        "accept": [
+          "Ich habe keine Ahnung, wie er heißt."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w02",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wo hast du das Kleid gekauft?\nIch weiß nicht mehr, …",
+      "answer": {
+        "accept": [
+          "Ich weiß nicht mehr, wo du das Kleid gekauft hast."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w03",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wann kommt er uns besuchen?\nEr hat nicht gesagt, …",
+      "answer": {
+        "accept": [
+          "Er hat nicht gesagt, wann er uns besuchen kommt."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w04",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Warum hat sie so schlechte Laune?\nIch kann dir nicht sagen, …",
+      "answer": {
+        "accept": [
+          "Ich kann dir nicht sagen, warum sie so schlechte Laune hat."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w05",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wer kommt zur Party?\nIch verrate dir nicht, …",
+      "answer": {
+        "accept": [
+          "Ich verrate dir nicht, wer zur Party kommt."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w06",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Warum will er plötzlich Judo lernen?\nFrag mich nicht, …",
+      "answer": {
+        "accept": [
+          "Frag mich nicht, warum er plötzlich Judo lernen will."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w07",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wie soll das funktionieren?\nIch weiß auch nicht, …",
+      "answer": {
+        "accept": [
+          "Ich weiß auch nicht, wie das funktionieren soll."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w08",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wessen Kinder sind das?\nIch habe keine Ahnung, …",
+      "answer": {
+        "accept": [
+          "Ich habe keine Ahnung, wessen Kinder das sind."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w09",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wie spät ist es?\nWissen Sie, …",
+      "answer": {
+        "accept": [
+          "Wissen Sie, wie spät es ist."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w10",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Welchen Weg muss ich nehmen?\nKönnen Sie mir sagen, …",
+      "answer": {
+        "accept": [
+          "Können Sie mir sagen, welchen Weg ich nehmen muss."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w11",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Womit kann ich Ihnen helfen?\nSagen Sie mir, …",
+      "answer": {
+        "accept": [
+          "Sagen Sie mir, womit ich Ihnen helfen kann."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w12",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Warum hast du solche Angst vor Spinnen?\nKannst du erklären, …",
+      "answer": {
+        "accept": [
+          "Kannst du erklären, warum du solche Angst vor Spinnen hast."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w13",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wie erklärst du dir sein Verhalten?\nIch wollte wissen, …",
+      "answer": {
+        "accept": [
+          "Ich wollte wissen, wie du dir sein Verhalten erklärst."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w14",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wann steht das Verb am Satzende?\nKann mir jemand sagen, …",
+      "answer": {
+        "accept": [
+          "Kann mir jemand sagen, wann das Verb am Satzende steht."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w15",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Warum kaufst du dir kein Auto?\nIch weiß wirklich nicht, …",
+      "answer": {
+        "accept": [
+          "Ich weiß wirklich nicht, warum du dir kein Auto kaufst."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w16",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wie heißt der Mann da drüben?\nWissen Sie vielleicht, …",
+      "answer": {
+        "accept": [
+          "Wissen Sie vielleicht, wie der Mann da drüben heißt."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w17",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wo wohnt deine Schwester jetzt?\nKannst du mir sagen, …",
+      "answer": {
+        "accept": [
+          "Kannst du mir sagen, wo deine Schwester jetzt wohnt."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w18",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wie komme ich zum Schlobigplatz?\nKönnten Sie mir bitte sagen, …",
+      "answer": {
+        "accept": [
+          "Könnten Sie mir bitte sagen, wie ich zum Schlobigplatz komme."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w19",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Auf welche Art werden die Servietten gefaltet?\nEs interessiert mich nicht, …",
+      "answer": {
+        "accept": [
+          "Es interessiert mich nicht, auf welche Art die Servietten gefaltet werden."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w20",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wie viel kostet der Wagen in Finnland?\nIch habe keine Ahnung, …",
+      "answer": {
+        "accept": [
+          "Ich habe keine Ahnung, wie viel der Wagen in Finnland kostet.",
+          "Ich habe keine Ahnung, wieviel der Wagen in Finnland kostet."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w21",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wie spät ist es jetzt?\nWenn ich doch nur wüsste, …",
+      "answer": {
+        "accept": [
+          "Wenn ich doch nur wüsste, wie spät es jetzt ist."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w22",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Unter welchen Umständen haben die beiden sich kennengelernt?\nMich interessiert brennend, …",
+      "answer": {
+        "accept": [
+          "Mich interessiert brennend, unter welchen Umständen die beiden sich kennengelernt haben.",
+          "Mich interessiert brennend, unter welchen Umständen die beiden sich kennen gelernt haben."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w23",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Worum geht es?\nWürde mir bitte jemand erklären, …",
+      "answer": {
+        "accept": [
+          "Würde mir bitte jemand erklären, worum es geht."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w24",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Mit welchem Messer schneidet man das?\nIch sollte den Koch fragen, …",
+      "answer": {
+        "accept": [
+          "Ich sollte den Koch fragen, mit welchem Messer man das schneidet."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w25",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wie macht man ein Soufflee?\nEs ist mir schleierhaft, …",
+      "answer": {
+        "accept": [
+          "Es ist mir schleierhaft, wie man ein Soufflee macht."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w26",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Auf welchem Wege kommt man am schnellsten nach Feldberg?\nSagen Sie mir bitte sofort, …",
+      "answer": {
+        "accept": [
+          "Sagen Sie mir bitte sofort, auf welchem Wege man am schnellsten nach Feldberg kommt."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w27",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wie heißt die Hauptstadt von Griechenland?\nWeißt du, …",
+      "answer": {
+        "accept": [
+          "Weißt du, wie die Hauptstadt von Griechenland heißt."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w28",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Welche Unterlagen muss ich einreichen?\nKönnen Sie mir sagen, …",
+      "answer": {
+        "accept": [
+          "Können Sie mir sagen, welche Unterlagen ich einreichen muss."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w29",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Was wünscht sich David zum Geburtstag?\nWeißt du, …",
+      "answer": {
+        "accept": [
+          "Weißt du, was sich David zum Geburtstag wünscht."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w30",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wie viel kostet ein Zugticket von Köln nach Berlin?\nWeißt du, …",
+      "answer": {
+        "accept": [
+          "Weißt du, wie viel ein Zugticket von Köln nach Berlin kostet."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w31",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wo finde ich den nächsten Geldautomaten?\nKönnen Sie mir sagen, …",
+      "answer": {
+        "accept": [
+          "Können Sie mir sagen, wo ich den nächsten Geldautomaten finde."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-w32",
+      "instructions": "Bilde einen indirekten Fragesatz mit dem Fragewort. Das konjugierte Verb steht am Ende.",
+      "source": "Wann muss ich mich für das nächste Semester zurückmelden?\nWeißt du, …",
+      "answer": {
+        "accept": [
+          "Weißt du, wann ich mich für das nächste Semester zurückmelden muss."
+        ],
+        "grading": "normalized"
+      }
+    }
+  ]
+}

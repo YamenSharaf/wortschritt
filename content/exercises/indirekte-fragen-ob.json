@@ -1,0 +1,304 @@
+{
+  "schemaVersion": 1,
+  "id": "indirekte-fragen-ob",
+  "title": "Indirekte Fragen mit ob",
+  "subtitle": "Indirect yes/no questions with ob",
+  "description": "Ja/Nein-Fragen werden zu indirekten Fragen mit „ob“ — das Verb steht am Ende.",
+  "level": "B1",
+  "tags": [
+    "grammatik",
+    "nebensatz",
+    "indirekte-fragen"
+  ],
+  "createdAt": "2026-09-05",
+  "items": [
+    {
+      "type": "transform",
+      "id": "if-o01",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Haben die Geschäfte sonntags geöffnet?\nIch bin mir nicht sicher, …",
+      "answer": {
+        "accept": [
+          "Ich bin mir nicht sicher, ob die Geschäfte sonntags geöffnet haben."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o02",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Ist Familie Meyer im Urlaub?\nIch weiß nicht, …",
+      "answer": {
+        "accept": [
+          "Ich weiß nicht, ob Familie Meyer im Urlaub ist."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o03",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Hat er geraucht?\nIch verrate dir nicht, …",
+      "answer": {
+        "accept": [
+          "Ich verrate dir nicht, ob er geraucht hat."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o04",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Sprechen sie über uns?\nIch verstehe nicht, …",
+      "answer": {
+        "accept": [
+          "Ich verstehe nicht, ob sie über uns sprechen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o05",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Ist das gut oder schlecht?\nIch möchte nicht darüber urteilen, …",
+      "answer": {
+        "accept": [
+          "Ich möchte nicht darüber urteilen, ob das gut oder schlecht ist."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o06",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Hat sie uns gesehen?\nIch weiß nicht, …",
+      "answer": {
+        "accept": [
+          "Ich weiß nicht, ob sie uns gesehen hat."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o07",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Sind sie schon zurückgekommen?\nIch habe noch nicht nachgesehen, …",
+      "answer": {
+        "accept": [
+          "Ich habe noch nicht nachgesehen, ob sie schon zurückgekommen sind."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o08",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Hast du Lust auf ein Eis?\nSag mir, …",
+      "answer": {
+        "accept": [
+          "Sag mir, ob du Lust auf ein Eis hast."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o09",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Kommt deine Großmutter auch zu der Feier?\nIch möchte wissen, …",
+      "answer": {
+        "accept": [
+          "Ich möchte wissen, ob deine Großmutter auch zu der Feier kommt."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o10",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Soll ich dich mitnehmen?\nIch weiß nicht, …",
+      "answer": {
+        "accept": [
+          "Ich weiß nicht, ob ich dich mitnehmen soll."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o11",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Wohnst du noch in Övelgönne?\nIch wüsste gern, …",
+      "answer": {
+        "accept": [
+          "Ich wüsste gern, ob du noch in Övelgönne wohnst."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o12",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Können Sie noch einmal die Modalverben erklären?\nIch wollte fragen, …",
+      "answer": {
+        "accept": [
+          "Ich wollte fragen, ob Sie noch einmal die Modalverben erklären können."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o13",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Müssen wir auch am Wochenende Hausaufgaben machen?\nKönnen Sie uns sagen, …",
+      "answer": {
+        "accept": [
+          "Können Sie uns sagen, ob wir auch am Wochenende Hausaufgaben machen müssen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o14",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Kommst du mit?\nSag uns, …",
+      "answer": {
+        "accept": [
+          "Sag uns, ob du mitkommst."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o15",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Fährt um diese Uhrzeit noch eine Straßenbahn?\nNiemand kann mir sagen, …",
+      "answer": {
+        "accept": [
+          "Niemand kann mir sagen, ob um diese Uhrzeit noch eine Straßenbahn fährt."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o16",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Hat sie eine Wohnung in Weimar gefunden?\nWeißt du, …",
+      "answer": {
+        "accept": [
+          "Weißt du, ob sie eine Wohnung in Weimar gefunden hat."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o17",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Kennt sie Weimar gut?\nMich würde interessieren, …",
+      "answer": {
+        "accept": [
+          "Mich würde interessieren, ob sie Weimar gut kennt."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o18",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Ist das Büro des Direktors noch in der zweiten Etage?\nHast du herausgefunden, …",
+      "answer": {
+        "accept": [
+          "Hast du herausgefunden, ob das Büro des Direktors noch in der zweiten Etage ist."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o19",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Hätten Sie Feuer?\nDürfte ich Sie fragen, …",
+      "answer": {
+        "accept": [
+          "Dürfte ich Sie fragen, ob Sie Feuer hätten."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o20",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Kennt er Herrn Müller?\nIch möchte gerne wissen, …",
+      "answer": {
+        "accept": [
+          "Ich möchte gerne wissen, ob er Herrn Müller kennt."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o21",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Erhalten wir am Ende des Semesters ein Sprachzertifikat?\nWeißt du, …",
+      "answer": {
+        "accept": [
+          "Weißt du, ob wir am Ende des Semesters ein Sprachzertifikat erhalten."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o22",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Gibt es in Australien auch Kängurus?\nWeißt du, …",
+      "answer": {
+        "accept": [
+          "Weißt du, ob es in Australien auch Kängurus gibt."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o23",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Hat ihre Kollegin meine Bewerbungsunterlagen schon erhalten?\nWissen Sie, …",
+      "answer": {
+        "accept": [
+          "Wissen Sie, ob ihre Kollegin meine Bewerbungsunterlagen schon erhalten hat."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "if-o24",
+      "instructions": "Bilde einen indirekten Fragesatz mit „ob“ (Ja/Nein-Frage). Das Verb steht am Ende.",
+      "source": "Hat Klara schon Pizza bestellt?\nWeißt du, …",
+      "answer": {
+        "accept": [
+          "Weißt du, ob Klara schon Pizza bestellt hat."
+        ],
+        "grading": "normalized"
+      }
+    }
+  ]
+}
