@@ -60,7 +60,13 @@ export function ExerciseItemView({ item, onAnswered, llmGrading }: Props) {
 
 function Instructions({ text }: { text?: string }) {
   if (!text) return null;
-  return <p className="mb-3 text-sm text-slate-500">{text}</p>;
+  // A left rule + muted style marks this as the task directive so it reads as
+  // guidance, not as part of the exercise sentence below it.
+  return (
+    <p className="mb-4 border-l-2 border-slate-200 pl-3 text-sm italic text-slate-500 dark:border-slate-700">
+      {text}
+    </p>
+  );
 }
 
 /** Always-visible helper text on an item (e.g. the words to use). */
