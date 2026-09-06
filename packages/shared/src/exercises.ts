@@ -37,6 +37,9 @@ export type TextAnswer = z.infer<typeof textAnswer>;
 const itemBase = {
   id: z.string().min(1),
   instructions: z.string().optional(),
+  /** A scenario/premise the item is based on, shown as a distinct quoted block
+   *  above the prompt (e.g. "Die Presse möchte alles über die Hochzeit wissen."). */
+  context: z.string().optional(),
   hint: z.string().optional(),
   explanation: z.string().optional(),
 };

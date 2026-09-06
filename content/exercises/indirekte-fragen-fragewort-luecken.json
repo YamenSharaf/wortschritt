@@ -15,6 +15,7 @@
   "items": [
     {
       "type": "cloze",
+      "context": "Die Presse möchte alles über die Hochzeit wissen.",
       "id": "if-c01",
       "text": "Die Presse möchte wissen, {{1}} Kates Vater von Beruf ist.",
       "instructions": "Ergänze das passende Fragewort (oder „ob“).",
@@ -32,6 +33,7 @@
     },
     {
       "type": "cloze",
+      "context": "Die Presse möchte alles über die Hochzeit wissen.",
       "id": "if-c02",
       "text": "Die Presse möchte wissen, {{1}} Universität Kate studiert hat.",
       "instructions": "Ergänze das passende Fragewort (oder „ob“).",
@@ -49,6 +51,7 @@
     },
     {
       "type": "cloze",
+      "context": "Die Presse möchte alles über die Hochzeit wissen.",
       "id": "if-c03",
       "text": "Die Presse möchte wissen, {{1}} Kate vor William einen anderen Freund hatte.",
       "instructions": "Ergänze das passende Fragewort (oder „ob“).",
@@ -66,6 +69,7 @@
     },
     {
       "type": "cloze",
+      "context": "Die Presse möchte alles über die Hochzeit wissen.",
       "id": "if-c04",
       "text": "Die Presse möchte wissen, {{1}} zu der Hochzeit alles eingeladen ist.",
       "instructions": "Ergänze das passende Fragewort (oder „ob“).",
@@ -83,6 +87,7 @@
     },
     {
       "type": "cloze",
+      "context": "Die Presse möchte alles über die Hochzeit wissen.",
       "id": "if-c05",
       "text": "Die Presse möchte wissen, {{1}} das Kleid von Kate aussieht.",
       "instructions": "Ergänze das passende Fragewort (oder „ob“).",
@@ -100,6 +105,7 @@
     },
     {
       "type": "cloze",
+      "context": "Die Presse möchte alles über die Hochzeit wissen.",
       "id": "if-c06",
       "text": "Die Presse möchte wissen, {{1}} Hochzeitsroute die Kutsche von William und Kate fährt.",
       "instructions": "Ergänze das passende Fragewort (oder „ob“).",
@@ -117,6 +123,7 @@
     },
     {
       "type": "cloze",
+      "context": "Die Presse möchte alles über die Hochzeit wissen.",
       "id": "if-c07",
       "text": "Die Presse möchte wissen, {{1}} Charakter Kate hat.",
       "instructions": "Ergänze das passende Fragewort (oder „ob“).",
@@ -134,6 +141,7 @@
     },
     {
       "type": "cloze",
+      "context": "Die Presse möchte alles über die Hochzeit wissen.",
       "id": "if-c08",
       "text": "Die Presse möchte wissen, {{1}} die Vorfahren von Kate stammen.",
       "instructions": "Ergänze das passende Fragewort (oder „ob“).",
@@ -151,6 +159,7 @@
     },
     {
       "type": "cloze",
+      "context": "Die Presse möchte alles über die Hochzeit wissen.",
       "id": "if-c09",
       "text": "Die Presse möchte wissen, {{1}} die Hochzeitszeremonie dauert.",
       "instructions": "Ergänze das passende Fragewort (oder „ob“).",
@@ -168,6 +177,7 @@
     },
     {
       "type": "cloze",
+      "context": "Die Presse möchte alles über die Hochzeit wissen.",
       "id": "if-c10",
       "text": "Die Presse möchte wissen, {{1}} das Hochzeitskleid gekostet hat.",
       "instructions": "Ergänze das passende Fragewort (oder „ob“).",
@@ -185,6 +195,7 @@
     },
     {
       "type": "cloze",
+      "context": "Die Presse möchte alles über die Hochzeit wissen.",
       "id": "if-c11",
       "text": "Die Presse möchte wissen, {{1}} Kopfschmuck Kate tragen wird.",
       "instructions": "Ergänze das passende Fragewort (oder „ob“).",
@@ -202,6 +213,7 @@
     },
     {
       "type": "cloze",
+      "context": "Die Presse möchte alles über die Hochzeit wissen.",
       "id": "if-c12",
       "text": "Die Presse möchte wissen, {{1}} Diadem Kate tragen wird.",
       "instructions": "Ergänze das passende Fragewort (oder „ob“).",
@@ -219,6 +231,7 @@
     },
     {
       "type": "cloze",
+      "context": "Die Presse möchte alles über die Hochzeit wissen.",
       "id": "if-c13",
       "text": "Die Presse möchte wissen, {{1}} Musik das Brautpaar ausgewählt hat.",
       "instructions": "Ergänze das passende Fragewort (oder „ob“).",
@@ -236,6 +249,7 @@
     },
     {
       "type": "cloze",
+      "context": "Die Presse möchte alles über die Hochzeit wissen.",
       "id": "if-c14",
       "text": "Die Presse möchte wissen, {{1}} Kate und William nach der Hochzeitsfeier fahren.",
       "instructions": "Ergänze das passende Fragewort (oder „ob“).",
@@ -253,6 +267,7 @@
     },
     {
       "type": "cloze",
+      "context": "Die Presse möchte alles über die Hochzeit wissen.",
       "id": "if-c15",
       "text": "Die Presse möchte wissen, {{1}} Kate und William bald ein Kind möchten.",
       "instructions": "Ergänze das passende Fragewort (oder „ob“).",
@@ -270,6 +285,7 @@
     },
     {
       "type": "cloze",
+      "context": "Die Presse möchte alles über die Hochzeit wissen.",
       "id": "if-c16",
       "text": "Die Presse möchte wissen, {{1}} Kate und William ein Kind adoptieren wollen.",
       "instructions": "Ergänze das passende Fragewort (oder „ob“).",

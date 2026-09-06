@@ -70,6 +70,19 @@ function Instructions({ text }: { text?: string }) {
 }
 
 /** Always-visible helper text on an item (e.g. the words to use). */
+/** A scenario/premise the item is based on — a distinct quoted block so it
+ *  reads apart from the prompt/question below it. */
+function Context({ text }: { text?: string }) {
+  if (!text) return null;
+  // The scenario the whole item hangs on. A filled block with a thick accent
+  // rule on the left reads as a quoted premise — clearly apart from the thin,
+  // italic task directive above and the exercise sentence below.
+  return (
+    <p className="mb-3 rounded-r-lg border-l-4 border-accent bg-slate-100 p-3 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+      {text}
+    </p>
+  );
+}
 function ItemHint({ text }: { text?: string }) {
   if (!text) return null;
   return (
@@ -130,6 +143,7 @@ function MultipleChoice({
   return (
     <div>
       <Instructions text={item.instructions} />
+      <Context text={item.context} />
       <ItemHint text={item.hint} />
       <p className="mb-4 text-lg">{item.prompt}</p>
       <div className="grid gap-2">
@@ -216,6 +230,7 @@ function Cloze({
   return (
     <div>
       <Instructions text={item.instructions} />
+      <Context text={item.context} />
       <ItemHint text={item.hint} />
       <p className="text-lg leading-loose">
         {segments.map((seg, i) => {
@@ -287,6 +302,7 @@ function Flashcard({
   return (
     <div>
       <Instructions text={item.instructions} />
+      <Context text={item.context} />
       <button
         type="button"
         onClick={() => setFlipped((f) => !f)}
@@ -399,6 +415,7 @@ function SentenceBuild({
       <Instructions
         text={item.instructions ?? "Put the words in the correct order."}
       />
+      <Context text={item.context} />
       <ItemHint text={item.hint} />
       {hasBank ? (
         <>
@@ -506,6 +523,7 @@ function Transform({
   return (
     <div>
       <Instructions text={item.instructions} />
+      <Context text={item.context} />
       <ItemHint text={item.hint} />
       <p className="mb-3 rounded-lg bg-slate-100 p-3 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
         {given}
@@ -564,6 +582,7 @@ function TrueFalse({
   return (
     <div>
       <Instructions text={item.instructions ?? "Correct or incorrect?"} />
+      <Context text={item.context} />
       <ItemHint text={item.hint} />
       <p className="mb-4 text-lg">{item.statement}</p>
       <div className="grid grid-cols-2 gap-2">
@@ -644,6 +663,7 @@ function ConjugationTable({
   return (
     <div>
       <Instructions text={item.instructions ?? "Fill in the conjugations."} />
+      <Context text={item.context} />
       <ItemHint text={item.hint} />
       <div className="overflow-x-auto">
         <table className="border-collapse text-sm">
