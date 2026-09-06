@@ -495,13 +495,22 @@ function Transform({
     onAnswered(r.correct, text);
   }
 
+  // A source may carry a given base sentence on the first line and a lead-in to
+  // complete on the following line(s) (e.g. "Wie heißt er?\nIch habe keine
+  // Ahnung, …"). Render the base as a distinct quoted block and the lead-in as
+  // the prompt, so the two aren't mashed together. Single-line sources render
+  // as just the quoted block, unchanged.
+  const [given, ...restLines] = item.source.split("\n").map((s) => s.trim());
+  const lead = restLines.filter(Boolean).join(" ");
+
   return (
     <div>
       <Instructions text={item.instructions} />
       <ItemHint text={item.hint} />
       <p className="mb-3 rounded-lg bg-slate-100 p-3 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-        {item.source}
+        {given}
       </p>
+      {lead && <p className="mb-3 text-lg leading-relaxed">{lead}</p>}
       <input
         value={text}
         disabled={result !== null}
