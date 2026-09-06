@@ -222,12 +222,16 @@ function Cloze({
               <input
                 value={value}
                 disabled={done}
+                // A visible slot marker so the gap is recognizable even when it
+                // has no cue and falls at the start of a wrapped line. Uses the
+                // blank's cue when set, otherwise a neutral ellipsis.
+                placeholder={blank?.cue || "…"}
                 onChange={(e) =>
                   setValues((v) => ({ ...v, [seg.ref]: e.target.value }))
                 }
                 onKeyDown={(e) => e.key === "Enter" && !done && check()}
                 {...answerInputProps}
-                className={`mx-1 w-28 rounded border-b-2 bg-transparent px-1 text-center outline-none ${
+                className={`mx-1 w-28 rounded border-b-2 bg-transparent px-1 text-center outline-none placeholder:text-slate-300 dark:placeholder:text-slate-600 ${
                   !done
                     ? "border-slate-400 focus:border-accent"
                     : ok
