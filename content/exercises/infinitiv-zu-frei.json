@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "id": "infinitiv-zu-frei",
+  "title": "Infinitivsatz mit „zu“: frei ergänzen",
+  "subtitle": "Free completion (AI-graded)",
+  "description": "Vervollständige die Sätze frei mit einem Infinitivsatz. Der KI-Tutor bewertet deine eigene Antwort.",
+  "level": "B1",
+  "tags": [
+    "grammatik",
+    "nebensatz",
+    "infinitivsatz",
+    "zu-infinitiv",
+    "frei"
+  ],
+  "createdAt": "2026-09-09",
+  "items": [
+    {
+      "type": "transform",
+      "id": "iz-a01",
+      "instructions": "Vervollständige den Satz frei mit einem Infinitivsatz („… zu + Infinitiv“). Jede grammatisch korrekte, sinnvolle Ergänzung ist richtig.",
+      "source": "Für mich ist es wichtig, …",
+      "answer": {
+        "accept": [
+          "Für mich ist es wichtig, jeden Tag Deutsch zu lernen.",
+          "Für mich ist es wichtig, meine Familie oft zu sehen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-a02",
+      "instructions": "Vervollständige den Satz frei mit einem Infinitivsatz („… zu + Infinitiv“). Jede grammatisch korrekte, sinnvolle Ergänzung ist richtig.",
+      "source": "Es macht mir immer große Freude, …",
+      "answer": {
+        "accept": [
+          "Es macht mir immer große Freude, mit Freunden zu kochen.",
+          "Es macht mir immer große Freude, im Park spazieren zu gehen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-a03",
+      "instructions": "Vervollständige den Satz frei mit einem Infinitivsatz („… zu + Infinitiv“). Jede grammatisch korrekte, sinnvolle Ergänzung ist richtig.",
+      "source": "Für mich ist es schwierig, …",
+      "answer": {
+        "accept": [
+          "Für mich ist es schwierig, früh aufzustehen.",
+          "Für mich ist es schwierig, mich kurz zu fassen."
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "Trennbare Verben: auf·stehen → aufzustehen."
+    },
+    {
+      "type": "transform",
+      "id": "iz-a04",
+      "instructions": "Vervollständige den Satz frei mit einem Infinitivsatz („… zu + Infinitiv“). Jede grammatisch korrekte, sinnvolle Ergänzung ist richtig.",
+      "source": "Hör auf, …",
+      "answer": {
+        "accept": [
+          "Hör auf, so laut zu reden.",
+          "Hör auf, dich ständig zu beschweren."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-a05",
+      "instructions": "Vervollständige den Satz frei mit einem Infinitivsatz („… zu + Infinitiv“). Jede grammatisch korrekte, sinnvolle Ergänzung ist richtig.",
+      "source": "Wir bitten Sie, …",
+      "answer": {
+        "accept": [
+          "Wir bitten Sie, die Tür leise zu schließen.",
+          "Wir bitten Sie, pünktlich zu erscheinen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-a06",
+      "instructions": "Vervollständige den Satz frei mit einem Infinitivsatz („… zu + Infinitiv“). Jede grammatisch korrekte, sinnvolle Ergänzung ist richtig.",
+      "source": "Macht es dir Spaß, …?",
+      "answer": {
+        "accept": [
+          "Macht es dir Spaß, neue Sprachen zu lernen?",
+          "Macht es dir Spaß, am Wochenende zu wandern?"
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-a07",
+      "instructions": "Vervollständige den Satz frei mit einem Infinitivsatz („… zu + Infinitiv“). Jede grammatisch korrekte, sinnvolle Ergänzung ist richtig.",
+      "source": "Es ist wichtig, …",
+      "answer": {
+        "accept": [
+          "Es ist wichtig, genug Wasser zu trinken.",
+          "Es ist wichtig, anderen Menschen zuzuhören."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-a08",
+      "instructions": "Vervollständige den Satz frei mit einem Infinitivsatz („… zu + Infinitiv“). Jede grammatisch korrekte, sinnvolle Ergänzung ist richtig.",
+      "source": "In meinem Heimatland ist es nicht erlaubt, …",
+      "answer": {
+        "accept": [
+          "In meinem Heimatland ist es nicht erlaubt, auf der Straße zu rauchen.",
+          "In meinem Heimatland ist es nicht erlaubt, bei Rot über die Straße zu gehen."
+        ],
+        "grading": "normalized"
+      }
+    }
+  ]
+}
