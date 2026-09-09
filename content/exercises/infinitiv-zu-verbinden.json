@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "id": "infinitiv-zu-verbinden",
+  "title": "Zwei Sätze mit „zu“ verbinden",
+  "subtitle": "Join two sentences into a zu-clause",
+  "description": "Verbinde zwei Aussagen zu einem Satz mit Infinitivsatz („… zu + Infinitiv“).",
+  "level": "B1",
+  "tags": [
+    "grammatik",
+    "nebensatz",
+    "infinitivsatz",
+    "zu-infinitiv"
+  ],
+  "createdAt": "2026-09-09",
+  "items": [
+    {
+      "type": "transform",
+      "id": "iz-v01",
+      "instructions": "Verbinde die beiden Sätze zu einem Satz mit Infinitivsatz („… zu + Infinitiv“).",
+      "source": "Das Kind will die Gorillas füttern. Das ist im Zoo nicht erlaubt.",
+      "answer": {
+        "accept": [
+          "Es ist im Zoo nicht erlaubt, die Gorillas zu füttern."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-v02",
+      "instructions": "Verbinde die beiden Sätze zu einem Satz mit Infinitivsatz („… zu + Infinitiv“).",
+      "source": "Irgendwann findet Tom seine Traumfrau. Er ist davon überzeugt.",
+      "answer": {
+        "accept": [
+          "Tom ist davon überzeugt, irgendwann seine Traumfrau zu finden."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-v03",
+      "instructions": "Verbinde die beiden Sätze zu einem Satz mit Infinitivsatz („… zu + Infinitiv“).",
+      "source": "Herr Müller könnte seinen Arbeitsplatz verlieren. Davor hat er Angst.",
+      "answer": {
+        "accept": [
+          "Herr Müller hat Angst, seinen Arbeitsplatz zu verlieren."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-v04",
+      "instructions": "Verbinde die beiden Sätze zu einem Satz mit Infinitivsatz („… zu + Infinitiv“).",
+      "source": "Frau Würzig fährt nicht gern Fahrrad. Es macht ihr keinen Spaß.",
+      "answer": {
+        "accept": [
+          "Es macht Frau Würzig keinen Spaß, Fahrrad zu fahren.",
+          "Es macht ihr keinen Spaß, Fahrrad zu fahren."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-v05",
+      "instructions": "Verbinde die beiden Sätze zu einem Satz mit Infinitivsatz („… zu + Infinitiv“).",
+      "source": "Leon repariert sein Fahrrad nicht. Er hat heute keine Zeit.",
+      "answer": {
+        "accept": [
+          "Leon hat heute keine Zeit, sein Fahrrad zu reparieren."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-v06",
+      "instructions": "Verbinde die beiden Sätze zu einem Satz mit Infinitivsatz („… zu + Infinitiv“).",
+      "source": "Marianne will nach Australien auswandern. Das hat sie nächstes Jahr vor.",
+      "answer": {
+        "accept": [
+          "Marianne hat nächstes Jahr vor, nach Australien auszuwandern."
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "vor·haben und aus·wandern sind trennbar: hat … vor / auszuwandern."
+    },
+    {
+      "type": "transform",
+      "id": "iz-v07",
+      "instructions": "Verbinde die beiden Sätze zu einem Satz mit Infinitivsatz („… zu + Infinitiv“).",
+      "source": "Morgen fliegen wir für 3 Wochen nach Spanien. Wir freuen uns.",
+      "answer": {
+        "accept": [
+          "Wir freuen uns, morgen für 3 Wochen nach Spanien zu fliegen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-v08",
+      "instructions": "Verbinde die beiden Sätze zu einem Satz mit Infinitivsatz („… zu + Infinitiv“).",
+      "source": "Ich kann seinen Lamborghini für 3000 € kaufen. Das hat er mir angeboten.",
+      "answer": {
+        "accept": [
+          "Er hat mir angeboten, seinen Lamborghini für 3000 € zu kaufen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-v09",
+      "instructions": "Verbinde die beiden Sätze zu einem Satz mit Infinitivsatz („… zu + Infinitiv“).",
+      "source": "Mein Mann soll nicht mehr rauchen. Das hat ihm sein Arzt empfohlen.",
+      "answer": {
+        "accept": [
+          "Sein Arzt hat meinem Mann empfohlen, nicht mehr zu rauchen.",
+          "Sein Arzt hat ihm empfohlen, nicht mehr zu rauchen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-v10",
+      "instructions": "Verbinde die beiden Sätze zu einem Satz mit Infinitivsatz („… zu + Infinitiv“).",
+      "source": "Du musst pünktlich zum Termin kommen. Das darfst du nicht vergessen.",
+      "answer": {
+        "accept": [
+          "Du darfst nicht vergessen, pünktlich zum Termin zu kommen."
+        ],
+        "grading": "normalized"
+      }
+    }
+  ]
+}

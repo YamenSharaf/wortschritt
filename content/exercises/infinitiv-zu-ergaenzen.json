@@ -1,0 +1,216 @@
+{
+  "schemaVersion": 1,
+  "id": "infinitiv-zu-ergaenzen",
+  "title": "Infinitivsatz mit „zu“: ergänzen",
+  "subtitle": "Complete with a zu-clause",
+  "description": "Ergänze angefangene Sätze mit einem Infinitivsatz („… zu + Infinitiv“).",
+  "level": "B1",
+  "tags": [
+    "grammatik",
+    "nebensatz",
+    "infinitivsatz",
+    "zu-infinitiv"
+  ],
+  "createdAt": "2026-09-09",
+  "items": [
+    {
+      "type": "transform",
+      "id": "iz-b01",
+      "instructions": "Ergänze den Satz mit einem Infinitivsatz („… zu + Infinitiv“). Nutze die Wörter im Hinweis.",
+      "source": "Es war wichtig, …",
+      "answer": {
+        "accept": [
+          "Es war wichtig, den Kurs zu beginnen."
+        ],
+        "grading": "normalized"
+      },
+      "hint": "der Kurs · beginnen"
+    },
+    {
+      "type": "transform",
+      "id": "iz-b02",
+      "instructions": "Ergänze den Satz mit einem Infinitivsatz („… zu + Infinitiv“). Nutze die Wörter im Hinweis.",
+      "source": "Es war schwierig, …",
+      "answer": {
+        "accept": [
+          "Es war schwierig, den Job zu verlieren."
+        ],
+        "grading": "normalized"
+      },
+      "hint": "der Job · verlieren"
+    },
+    {
+      "type": "transform",
+      "id": "iz-b03",
+      "instructions": "Ergänze den Satz mit einem Infinitivsatz („… zu + Infinitiv“). Nutze die Wörter im Hinweis.",
+      "source": "Ich war enttäuscht, …",
+      "answer": {
+        "accept": [
+          "Ich war enttäuscht, ihn nicht zu treffen."
+        ],
+        "grading": "normalized"
+      },
+      "hint": "er · nicht · treffen",
+      "explanation": "Objekt „er“ → Akkusativ „ihn“. Negation vor „zu + Infinitiv“."
+    },
+    {
+      "type": "transform",
+      "id": "iz-b04",
+      "instructions": "Ergänze den Satz mit einem Infinitivsatz („… zu + Infinitiv“). Nutze die Wörter im Hinweis.",
+      "source": "Ich habe versucht, …",
+      "answer": {
+        "accept": [
+          "Ich habe versucht, Japanisch zu lernen."
+        ],
+        "grading": "normalized"
+      },
+      "hint": "Japanisch · lernen"
+    },
+    {
+      "type": "transform",
+      "id": "iz-b05",
+      "instructions": "Ergänze den Satz mit einem Infinitivsatz („… zu + Infinitiv“). Nutze die Wörter im Hinweis.",
+      "source": "Es ist toll, …",
+      "answer": {
+        "accept": [
+          "Es ist toll, einen guten Freund zu haben."
+        ],
+        "grading": "normalized"
+      },
+      "hint": "ein guter Freund · haben",
+      "explanation": "Akkusativobjekt: einen guten Freund."
+    },
+    {
+      "type": "transform",
+      "id": "iz-b06",
+      "instructions": "Ergänze den Satz mit einem Infinitivsatz („… zu + Infinitiv“). Nutze die Wörter im Hinweis.",
+      "source": "Wir hoffen, …",
+      "answer": {
+        "accept": [
+          "Wir hoffen, bis morgen die Wörter zu lernen."
+        ],
+        "grading": "normalized"
+      },
+      "hint": "bis morgen · die Wörter · lernen"
+    },
+    {
+      "type": "transform",
+      "id": "iz-b07",
+      "instructions": "Ergänze den Satz mit einem Infinitivsatz („… zu + Infinitiv“). Nutze die Wörter im Hinweis.",
+      "source": "Wir freuen uns, …",
+      "answer": {
+        "accept": [
+          "Wir freuen uns, den Urlaub früh zu buchen."
+        ],
+        "grading": "normalized"
+      },
+      "hint": "der Urlaub · früh · buchen"
+    },
+    {
+      "type": "transform",
+      "id": "iz-b08",
+      "instructions": "Ergänze den Satz mit einem Infinitivsatz („… zu + Infinitiv“). Nutze die Wörter im Hinweis.",
+      "source": "Alle Leute haben das Recht, …",
+      "answer": {
+        "accept": [
+          "Alle Leute haben das Recht, wählen zu gehen."
+        ],
+        "grading": "normalized"
+      },
+      "hint": "wählen gehen",
+      "explanation": "„wählen gehen“: nur das zweite Verb bekommt „zu“ → wählen zu gehen."
+    },
+    {
+      "type": "transform",
+      "id": "iz-b09",
+      "instructions": "Ergänze den Satz mit einem Infinitivsatz („… zu + Infinitiv“). Nutze die Wörter im Hinweis.",
+      "source": "Bevor man eine Reise macht, ist es wichtig, …",
+      "answer": {
+        "accept": [
+          "Bevor man eine Reise macht, ist es wichtig, alle wichtigen Dinge zu erledigen."
+        ],
+        "grading": "normalized"
+      },
+      "hint": "alle wichtigen Dinge · erledigen"
+    },
+    {
+      "type": "transform",
+      "id": "iz-b10",
+      "instructions": "Ergänze den Satz mit einem Infinitivsatz („… zu + Infinitiv“). Nutze die Wörter im Hinweis.",
+      "source": "Es ist immer erlaubt, …",
+      "answer": {
+        "accept": [
+          "Es ist immer erlaubt, freundlich zu sein."
+        ],
+        "grading": "normalized"
+      },
+      "hint": "freundlich sein"
+    },
+    {
+      "type": "transform",
+      "id": "iz-b11",
+      "instructions": "Ergänze den Satz mit einem Infinitivsatz („… zu + Infinitiv“). Nutze die Wörter im Hinweis.",
+      "source": "Ich habe Lust, …",
+      "answer": {
+        "accept": [
+          "Ich habe Lust, schwimmen zu gehen."
+        ],
+        "grading": "normalized"
+      },
+      "hint": "schwimmen gehen"
+    },
+    {
+      "type": "transform",
+      "id": "iz-b12",
+      "instructions": "Ergänze den Satz mit einem Infinitivsatz („… zu + Infinitiv“). Nutze die Wörter im Hinweis.",
+      "source": "Ich habe begonnen, …",
+      "answer": {
+        "accept": [
+          "Ich habe begonnen, ein neues Buch zu schreiben."
+        ],
+        "grading": "normalized"
+      },
+      "hint": "ein neues Buch · schreiben"
+    },
+    {
+      "type": "transform",
+      "id": "iz-b13",
+      "instructions": "Ergänze den Satz mit einem Infinitivsatz („… zu + Infinitiv“). Nutze die Wörter im Hinweis.",
+      "source": "Es war blöd, …",
+      "answer": {
+        "accept": [
+          "Es war blöd, den Schlüssel zu vergessen."
+        ],
+        "grading": "normalized"
+      },
+      "hint": "der Schlüssel · vergessen"
+    },
+    {
+      "type": "transform",
+      "id": "iz-b14",
+      "instructions": "Ergänze den Satz mit einem Infinitivsatz („… zu + Infinitiv“). Nutze die Wörter im Hinweis.",
+      "source": "Wir haben es genossen, …",
+      "answer": {
+        "accept": [
+          "Wir haben es genossen, länger zu bleiben."
+        ],
+        "grading": "normalized"
+      },
+      "hint": "länger bleiben"
+    },
+    {
+      "type": "transform",
+      "id": "iz-b15",
+      "instructions": "Ergänze den Satz mit einem Infinitivsatz („… zu + Infinitiv“). Nutze die Wörter im Hinweis.",
+      "source": "Es war besser, …",
+      "answer": {
+        "accept": [
+          "Es war besser, früher anzukommen."
+        ],
+        "grading": "normalized"
+      },
+      "hint": "früher · ankommen",
+      "explanation": "an·kommen ist trennbar → „zu“ in die Mitte: anzukommen."
+    }
+  ]
+}

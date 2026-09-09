@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "id": "infinitiv-zu-es-ist",
+  "title": "„Es ist …, … zu …“",
+  "subtitle": "It is ADJ to do something",
+  "description": "Bilde Sätze mit „Es ist + Adjektiv, … zu + Infinitiv“.",
+  "level": "B1",
+  "tags": [
+    "grammatik",
+    "nebensatz",
+    "infinitivsatz",
+    "zu-infinitiv"
+  ],
+  "createdAt": "2026-09-09",
+  "items": [
+    {
+      "type": "transform",
+      "id": "iz-e01",
+      "instructions": "Bilde einen Satz nach dem Muster „Es ist …, … zu + Infinitiv.“",
+      "source": "es ist wichtig  +  den Beipackzettel lesen",
+      "answer": {
+        "accept": [
+          "Es ist wichtig, den Beipackzettel zu lesen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-e02",
+      "instructions": "Bilde einen Satz nach dem Muster „Es ist …, … zu + Infinitiv.“",
+      "source": "es ist sinnvoll  +  die Haustür abschließen",
+      "answer": {
+        "accept": [
+          "Es ist sinnvoll, die Haustür abzuschließen."
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "ab·schließen ist trennbar → abzuschließen."
+    },
+    {
+      "type": "transform",
+      "id": "iz-e03",
+      "instructions": "Bilde einen Satz nach dem Muster „Es ist …, … zu + Infinitiv.“",
+      "source": "es ist gefährlich  +  die Autotür offen lassen",
+      "answer": {
+        "accept": [
+          "Es ist gefährlich, die Autotür offen zu lassen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-e04",
+      "instructions": "Bilde einen Satz nach dem Muster „Es ist …, … zu + Infinitiv.“",
+      "source": "es ist verantwortungslos  +  kleine Kinder alleine lassen",
+      "answer": {
+        "accept": [
+          "Es ist verantwortungslos, kleine Kinder alleine zu lassen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-e05",
+      "instructions": "Bilde einen Satz nach dem Muster „Es ist …, … zu + Infinitiv.“",
+      "source": "es ist gesund  +  viel Obst und Gemüse essen",
+      "answer": {
+        "accept": [
+          "Es ist gesund, viel Obst und Gemüse zu essen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-e06",
+      "instructions": "Bilde einen Satz nach dem Muster „Es ist …, … zu + Infinitiv.“",
+      "source": "es ist schön  +  eine nette Familie haben",
+      "answer": {
+        "accept": [
+          "Es ist schön, eine nette Familie zu haben."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-e07",
+      "instructions": "Bilde einen Satz nach dem Muster „Es ist …, … zu + Infinitiv.“",
+      "source": "es ist verboten  +  im Restaurant rauchen",
+      "answer": {
+        "accept": [
+          "Es ist verboten, im Restaurant zu rauchen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-e08",
+      "instructions": "Bilde einen Satz nach dem Muster „Es ist …, … zu + Infinitiv.“",
+      "source": "es ist nie zu spät  +  etwas Neues lernen",
+      "answer": {
+        "accept": [
+          "Es ist nie zu spät, etwas Neues zu lernen."
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "„zu spät“ (Adjektiv) und „zu lernen“ (Infinitiv) — zwei verschiedene „zu“."
+    },
+    {
+      "type": "transform",
+      "id": "iz-e09",
+      "instructions": "Bilde einen Satz nach dem Muster „Es ist …, … zu + Infinitiv.“",
+      "source": "es ist praktisch  +  ein Auto haben",
+      "answer": {
+        "accept": [
+          "Es ist praktisch, ein Auto zu haben."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-e10",
+      "instructions": "Bilde einen Satz nach dem Muster „Es ist …, … zu + Infinitiv.“",
+      "source": "es ist interessant  +  in unbekannte Länder reisen",
+      "answer": {
+        "accept": [
+          "Es ist interessant, in unbekannte Länder zu reisen."
+        ],
+        "grading": "normalized"
+      }
+    }
+  ]
+}
