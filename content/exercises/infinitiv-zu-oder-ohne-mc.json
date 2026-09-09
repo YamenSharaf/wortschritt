@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "id": "infinitiv-zu-oder-ohne-mc",
+  "title": "Infinitiv – mit oder ohne „zu“?",
+  "subtitle": "zu or no zu?",
+  "description": "Entscheide: braucht der Infinitiv ein „zu“ oder nicht? (Nach Modalverben ohne „zu“.)",
+  "level": "B1",
+  "tags": [
+    "grammatik",
+    "infinitivsatz",
+    "zu-infinitiv",
+    "modalverben"
+  ],
+  "createdAt": "2026-09-09",
+  "items": [
+    {
+      "type": "multiple_choice",
+      "id": "iz-mc01",
+      "prompt": "Du musst immer gut ___.",
+      "choices": [
+        "zuhören",
+        "zuzuhören"
+      ],
+      "answerIndex": 0,
+      "explanation": "Nach dem Modalverb „musst“ steht der Infinitiv ohne „zu“: zuhören."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "iz-mc02",
+      "prompt": "Als Kind war es mir nicht erlaubt, während des Unterrichts ___.",
+      "choices": [
+        "trinken",
+        "zu trinken"
+      ],
+      "answerIndex": 1,
+      "explanation": "„erlaubt sein, …“ verlangt einen Infinitivsatz mit „zu“: zu trinken."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "iz-mc03",
+      "prompt": "Leider durften wir auch keine Kaugummis ___.",
+      "choices": [
+        "kauen",
+        "zu kauen"
+      ],
+      "answerIndex": 0,
+      "explanation": "Nach dem Modalverb „durften“ ohne „zu“: kauen."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "iz-mc04",
+      "prompt": "Ich hatte leider immer das Pech, den Wecker nicht ___.",
+      "choices": [
+        "hören",
+        "zu hören"
+      ],
+      "answerIndex": 1,
+      "explanation": "„das Pech haben, …“ → Infinitivsatz mit „zu“: zu hören."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "iz-mc05",
+      "prompt": "Es war wichtig, das Rauchen ___.",
+      "choices": [
+        "aufhören",
+        "aufzuhören"
+      ],
+      "answerIndex": 1,
+      "explanation": "„wichtig sein, …“ → mit „zu“. auf·hören ist trennbar: aufzuhören."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "iz-mc06",
+      "prompt": "Aber mit dem Schokoladeessen kann ich wahrscheinlich niemals ___.",
+      "choices": [
+        "aufhören",
+        "aufzuhören"
+      ],
+      "answerIndex": 0,
+      "explanation": "Nach dem Modalverb „kann“ ohne „zu“: aufhören."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "iz-mc07",
+      "prompt": "Kannst du mir bitte das eine Mal erlauben, länger ___?",
+      "choices": [
+        "aufbleiben",
+        "aufzubleiben"
+      ],
+      "answerIndex": 1,
+      "explanation": "„erlauben, …“ → Infinitivsatz mit „zu“. auf·bleiben ist trennbar: aufzubleiben."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "iz-mc08",
+      "prompt": "Ich hoffe, immer gesund ___.",
+      "choices": [
+        "bleiben",
+        "zu bleiben"
+      ],
+      "answerIndex": 1,
+      "explanation": "„hoffen, …“ → Infinitivsatz mit „zu“: zu bleiben."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "iz-mc09",
+      "prompt": "Immer nur ___, macht auch keinen Spaß!",
+      "choices": [
+        "fernsehen",
+        "fernzusehen"
+      ],
+      "answerIndex": 1,
+      "explanation": "Der Infinitivsatz ist hier das Subjekt → mit „zu“. fern·sehen ist trennbar: fernzusehen."
+    },
+    {
+      "type": "multiple_choice",
+      "id": "iz-mc10",
+      "prompt": "Das kannst du mir nicht ___!",
+      "choices": [
+        "verbieten",
+        "zu verbieten"
+      ],
+      "answerIndex": 0,
+      "explanation": "Nach dem Modalverb „kannst“ ohne „zu“: verbieten."
+    }
+  ]
+}

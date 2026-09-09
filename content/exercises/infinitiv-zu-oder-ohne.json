@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "id": "infinitiv-zu-oder-ohne",
+  "title": "Satz bilden – mit oder ohne „zu“",
+  "subtitle": "Build the sentence (zu or no zu)",
+  "description": "Bilde aus den Stichwörtern einen Satz. Nach Modalverben steht der Infinitiv ohne „zu“.",
+  "level": "B1",
+  "tags": [
+    "grammatik",
+    "infinitivsatz",
+    "zu-infinitiv",
+    "modalverben"
+  ],
+  "createdAt": "2026-09-09",
+  "items": [
+    {
+      "type": "transform",
+      "id": "iz-c01",
+      "instructions": "Bilde einen korrekten Satz. Achtung: nach Modalverben steht der Infinitiv OHNE „zu“.",
+      "source": "ich / Lust haben / wohnen / hier",
+      "answer": {
+        "accept": [
+          "Ich habe Lust, hier zu wohnen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-c02",
+      "instructions": "Bilde einen korrekten Satz. Achtung: nach Modalverben steht der Infinitiv OHNE „zu“.",
+      "source": "er / Angst haben / schlafen / in diesem Zimmer",
+      "answer": {
+        "accept": [
+          "Er hat Angst, in diesem Zimmer zu schlafen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-c03",
+      "instructions": "Bilde einen korrekten Satz. Achtung: nach Modalverben steht der Infinitiv OHNE „zu“.",
+      "source": "wir / anfangen / suchen / eine neue Wohnung",
+      "answer": {
+        "accept": [
+          "Wir fangen an, eine neue Wohnung zu suchen."
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "an·fangen (trennbar) im Hauptsatz: fangen … an. Der Infinitiv folgt mit „zu“: zu suchen."
+    },
+    {
+      "type": "transform",
+      "id": "iz-c04",
+      "instructions": "Bilde einen korrekten Satz. Achtung: nach Modalverben steht der Infinitiv OHNE „zu“.",
+      "source": "er / müssen / umziehen / nächsten Sommer",
+      "answer": {
+        "accept": [
+          "Er muss nächsten Sommer umziehen."
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "Modalverb „müssen“ → Infinitiv ohne „zu“: umziehen."
+    },
+    {
+      "type": "transform",
+      "id": "iz-c05",
+      "instructions": "Bilde einen korrekten Satz. Achtung: nach Modalverben steht der Infinitiv OHNE „zu“.",
+      "source": "es fällt mir schwer / verstehen / meinen Nachbarn",
+      "answer": {
+        "accept": [
+          "Es fällt mir schwer, meinen Nachbarn zu verstehen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-c06",
+      "instructions": "Bilde einen korrekten Satz. Achtung: nach Modalverben steht der Infinitiv OHNE „zu“.",
+      "source": "wollen / du / mit dem Zug / reisen / täglich ?",
+      "answer": {
+        "accept": [
+          "Willst du täglich mit dem Zug reisen?",
+          "Willst du mit dem Zug täglich reisen?"
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "Modalverb „wollen“ → ohne „zu“. Frage: Verb an Position 1."
+    },
+    {
+      "type": "transform",
+      "id": "iz-c07",
+      "instructions": "Bilde einen korrekten Satz. Achtung: nach Modalverben steht der Infinitiv OHNE „zu“.",
+      "source": "haben / du / Zeit / vorstellen / deinen neuen Geschäftspartner ?",
+      "answer": {
+        "accept": [
+          "Hast du Zeit, deinen neuen Geschäftspartner vorzustellen?"
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "„Zeit haben, …“ → mit „zu“. vor·stellen ist trennbar: vorzustellen."
+    },
+    {
+      "type": "transform",
+      "id": "iz-c08",
+      "instructions": "Bilde einen korrekten Satz. Achtung: nach Modalverben steht der Infinitiv OHNE „zu“.",
+      "source": "er / sich freuen / in Lausanne / anfangen / sein Studium",
+      "answer": {
+        "accept": [
+          "Er freut sich, in Lausanne sein Studium anzufangen.",
+          "Er freut sich, sein Studium in Lausanne anzufangen."
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "an·fangen ist trennbar → anzufangen."
+    },
+    {
+      "type": "transform",
+      "id": "iz-c09",
+      "instructions": "Bilde einen korrekten Satz. Achtung: nach Modalverben steht der Infinitiv OHNE „zu“.",
+      "source": "es ist ein schönes Gefühl, endlich / sein / in den Ferien",
+      "answer": {
+        "accept": [
+          "Es ist ein schönes Gefühl, endlich in den Ferien zu sein."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-c10",
+      "instructions": "Bilde einen korrekten Satz. Achtung: nach Modalverben steht der Infinitiv OHNE „zu“.",
+      "source": "du / dürfen / haben / in dieser Wohnung / ein Haustier ?",
+      "answer": {
+        "accept": [
+          "Darfst du in dieser Wohnung ein Haustier haben?"
+        ],
+        "grading": "normalized"
+      },
+      "explanation": "Modalverb „dürfen“ → Infinitiv ohne „zu“: haben."
+    },
+    {
+      "type": "transform",
+      "id": "iz-c11",
+      "instructions": "Bilde einen korrekten Satz. Achtung: nach Modalverben steht der Infinitiv OHNE „zu“.",
+      "source": "der Mieter / das Recht haben / kündigen / den Mietvertrag",
+      "answer": {
+        "accept": [
+          "Der Mieter hat das Recht, den Mietvertrag zu kündigen."
+        ],
+        "grading": "normalized"
+      }
+    },
+    {
+      "type": "transform",
+      "id": "iz-c12",
+      "instructions": "Bilde einen korrekten Satz. Achtung: nach Modalverben steht der Infinitiv OHNE „zu“.",
+      "source": "der Hausmeister / uns / erlauben / nicht / lassen / im Korridor / die Fahrräder",
+      "answer": {
+        "accept": [
+          "Der Hausmeister erlaubt uns nicht, die Fahrräder im Korridor zu lassen.",
+          "Der Hausmeister erlaubt uns nicht, im Korridor die Fahrräder zu lassen."
+        ],
+        "grading": "normalized"
+      }
+    }
+  ]
+}
