@@ -110,7 +110,7 @@ function Explanation({ text }: { text?: string }) {
 async function checkFreeText(
   input: string,
   answer: TextAnswer,
-  opts: { llmGrading?: boolean; prompt?: string },
+  opts: { llmGrading?: boolean; prompt?: string; context?: string },
 ): Promise<{ correct: boolean; feedback?: string }> {
   if (gradeText(input, answer)) return { correct: true };
   if (opts.llmGrading) {
@@ -119,6 +119,7 @@ async function checkFreeText(
         prompt: opts.prompt,
         expected: answer.accept,
         response: input,
+        context: opts.context,
       });
       return { correct: v.correct, feedback: v.feedback || undefined };
     } catch {
@@ -501,17 +502,6 @@ function Transform({
     null,
   );
 
-  async function check() {
-    setBusy(true);
-    const r = await checkFreeText(text, item.answer, {
-      llmGrading,
-      prompt: item.instructions ?? "Rewrite the sentence as required.",
-    });
-    setBusy(false);
-    setResult(r);
-    onAnswered(r.correct, text);
-  }
-
   // A source may carry a given base sentence on the first line and a lead-in to
   // complete on the following line(s) (e.g. "Wie heißt er?\nIch habe keine
   // Ahnung, …"). Render the base as a distinct quoted block and the lead-in as
@@ -519,6 +509,20 @@ function Transform({
   // as just the quoted block, unchanged.
   const [given, ...restLines] = item.source.split("\n").map((s) => s.trim());
   const lead = restLines.filter(Boolean).join(" ");
+
+  async function check() {
+    setBusy(true);
+    const r = await checkFreeText(text, item.answer, {
+      llmGrading,
+      prompt: item.instructions ?? "Rewrite the sentence as required.",
+      // Tell the grader what stem the learner already sees, so a correct
+      // completion-only answer (just the missing part) is accepted.
+      context: [given, lead].filter(Boolean).join(" "),
+    });
+    setBusy(false);
+    setResult(r);
+    onAnswered(r.correct, text);
+  }
 
   return (
     <div>

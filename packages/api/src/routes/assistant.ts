@@ -62,6 +62,9 @@ const gradeBody = z.object({
   prompt: z.string().max(2000).optional(),
   expected: z.array(z.string().min(1)).min(1),
   response: z.string().min(1).max(2000),
+  /** The sentence beginning already shown to the learner (if any). Lets the
+   *  grader accept a completion-only answer that fits the given stem. */
+  context: z.string().max(2000).optional(),
 });
 
 const cleanupNotesBody = z.object({
@@ -245,12 +248,15 @@ export async function assistantRoutes(app: FastifyInstance) {
       if (!isAssistantEnabled) {
         return reply.code(503).send({ error: "assistant not configured" });
       }
-      const { prompt, expected, response } = req.body;
+      const { prompt, expected, response, context } = req.body;
       const system =
-        "You grade short German-learning answers. Decide if the learner's answer is acceptable German for the task, allowing valid variants (word order, punctuation, equivalent spellings) but requiring correct grammar and meaning. Reply with ONLY a compact JSON object: {\"correct\": boolean, \"feedback\": \"one short sentence in English\"}.";
+        "You grade short German-learning answers. Decide if the learner's answer is acceptable German for the task, allowing valid variants (word order, punctuation, equivalent spellings) but requiring correct grammar and meaning. " +
+        "The learner is often completing a sentence whose beginning is already shown to them (given as 'Shown to the learner'). When it is, accept an answer that supplies only the missing part if, combined with that beginning, it forms a correct sentence — do NOT require the learner to retype the part they were already given. Only mark such an answer wrong if the completion itself is grammatically wrong or doesn't fit. " +
+        "Reply with ONLY a compact JSON object: {\"correct\": boolean, \"feedback\": \"one short sentence in English\"}.";
       const user = [
         prompt ? `Task: ${prompt}` : null,
-        `Reference answer(s): ${expected.join(" | ")}`,
+        context ? `Shown to the learner (sentence beginning): ${context}` : null,
+        `Reference answer(s) (full sentence): ${expected.join(" | ")}`,
         `Learner answer: ${response}`,
       ]
         .filter(Boolean)

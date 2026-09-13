@@ -225,6 +225,7 @@ export const api = {
     prompt?: string;
     expected: string[];
     response: string;
+    context?: string;
   }) =>
     req<{ correct: boolean; feedback: string }>("/api/assistant/grade", {
       method: "POST",
