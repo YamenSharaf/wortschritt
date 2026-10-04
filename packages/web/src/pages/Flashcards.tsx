@@ -12,7 +12,9 @@ function shuffle<T>(list: T[]): T[] {
   const a = [...list];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+    const tmp = a[i]!;
+    a[i] = a[j]!;
+    a[j] = tmp;
   }
   return a;
 }
@@ -172,6 +174,7 @@ export function Flashcards() {
   }
 
   // playing
+  if (!card) return null;
   const knownSoFar = Object.values(results).filter(Boolean).length;
   const missedSoFar = Object.values(results).filter((v) => !v).length;
   const promptText = dir === "de" ? card.display : card.translation;
