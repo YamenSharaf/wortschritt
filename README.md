@@ -14,19 +14,39 @@ without touching the codebase.
 | DB         | SQLite via Drizzle ORM (single file)               |
 | Web        | Vite + React + Tailwind (SPA)                       |
 | Auth       | Single password → signed session cookie            |
-| Packaging  | One Docker image (API serves the built SPA)        |
+| Packaging  | One Docker image (API serves the built SPA) + optional Piper TTS sidecar |
 
 The API is the product; the web app is just its first client. Because routes
 are defined with Zod, the OpenAPI spec is generated for free — a future mobile
 client can codegen a typed client against it.
 
+## What's in the app
+
+- **Cheat sheets** — non-interactive grammar reference, with optional
+  AI translation.
+- **Exercises** — interactive drills with resumable runs and per-set history.
+- **Vocab** — saved words with translations, examples and grammatical forms
+  (article/plural, Partizip II, Perfekt auxiliary), organized into groups.
+- **Flashcards** — built from a vocab group, with a know/don't-know score kept
+  per word.
+- **Notes** — free-form, categorized Markdown notes, auto-saved.
+- **Tap-to-gloss** — tap a German word for an instant translation from a bundled
+  offline dictionary (see `packages/api/assets/ATTRIBUTION.md`).
+- **AI tutor (optional)** — explain a highlighted passage, hints, "why was I
+  wrong", translations, chat, AI grading of free-text answers, "generate more"
+  items, vocab lookups, and tidying rough notes into clean Markdown. Any OpenAI-compatible endpoint works, including a
+  local model.
+- **Pronunciation (optional)** — 🔊 buttons backed by a Piper TTS sidecar, falling
+  back to the browser's voice.
+- **Dashboard** — progress, recent activity and a daily goal.
+
 ## Features vs. content
 
 - **Features (code):** exercise *types* are Zod schemas in
-  `packages/shared/src/exercises.ts` (`multiple_choice`, `fill_in_blank`,
-  `flashcard`, `sentence_order`) plus one renderer each in
-  `packages/web/src/components/ExerciseItemView.tsx`. Adding a new interactive
-  type = add a schema + a renderer. That's the only real coding.
+  `packages/shared/src/exercises.ts` — `multiple_choice`, `cloze`, `flashcard`,
+  `sentence_build`, `transform`, `true_false`, `conjugation_table` — plus one
+  renderer each in `packages/web/src/components/ExerciseItemView.tsx`. Adding a
+  new interactive type = add a schema + a renderer. That's the only real coding.
 - **Content (data):** everything else is JSON validated against those schemas.
   Two sources, merged by id at request time:
   1. **Git-versioned JSON** in `content/exercises/*.json` and
@@ -141,21 +161,49 @@ back to the browser's built-in voice.
 
 ## Data model
 
-- `settings` — single JSON row (display name, CEFR level, daily goal, theme).
-- `attempts` — one row per answered item; progress stats are derived from it.
-- `imported_content` — content added at runtime via the Import screen.
+All tables live in one SQLite file (`DATABASE_PATH`):
 
-Schema is created on boot (`CREATE TABLE IF NOT EXISTS`). `drizzle-kit` is wired
-up (`pnpm --filter @mdb/api db:generate`) for when you want versioned migrations.
+| Table | Holds |
+| --- | --- |
+| `settings` | single JSON row: display name, CEFR level, daily goal, theme, AI grading on/off, "generate more" batch size |
+| `attempts` | one row per answered item (the event log progress is derived from) |
+| `exercise_runs` | one row per completed pass through an exercise set |
+| `exercise_progress` | resumable position + answers for an unfinished set |
+| `sheet_views` | last-viewed time per cheat sheet |
+| `vocab` | saved words with cached translation, examples and AI-filled forms |
+| `vocab_groups` / `vocab_group_members` | named word groups (many-to-many) |
+| `vocab_stats` | flashcard know/don't-know tally per word |
+| `notes` | Markdown notes |
+| `imported_content` | exercises and cheat sheets added via the Import screen |
+
+Tables are created on boot (`CREATE TABLE IF NOT EXISTS` in
+`packages/api/src/db/client.ts`); new columns on existing tables are added
+there with a small `addColumn` helper. `drizzle-kit` is wired up
+(`pnpm --filter @mdb/api db:generate`) for when you want versioned migrations.
 
 ## API surface
 
+The full, typed spec is at `/api/docs` (OpenAPI UI). Everything except
+`/api/config`, `/api/health` and `/api/auth/*` requires the session cookie.
+
 ```
-POST /api/auth/login | logout        GET /api/auth/me
-GET  /api/exercises  | /:id          GET /api/exercise-types
-GET  /api/cheatsheets| /:id
-POST /api/attempts                   GET /api/progress
-GET  /api/settings   PUT /api/settings
-POST /api/import
-GET  /api/health     GET /api/docs   (OpenAPI UI)
+Auth        POST /api/auth/login | /api/auth/logout     GET /api/auth/me
+Public      GET  /api/config  /api/health  /api/docs
+Content     GET  /api/exercises[/:id]  /api/cheatsheets[/:id]  /api/exercise-types
+            POST /api/import
+Progress    POST /api/attempts                          GET /api/progress
+            POST /api/runs        GET /api/runs[/:setId]
+            GET|PUT|DELETE /api/exercise-progress/:setId
+            POST /api/sheet-views GET /api/sheet-views
+Settings    GET|PUT /api/settings
+Vocab       GET|POST /api/vocab    GET|DELETE /api/vocab/:word
+            POST|DELETE /api/vocab/:word/study
+            GET|POST /api/vocab-groups    DELETE /api/vocab-groups/:id
+            POST /api/vocab-groups/:id/words
+            DELETE /api/vocab-groups/:id/words/:word
+Notes       GET|POST /api/notes    GET|PUT|DELETE /api/notes/:id
+Dictionary  GET /api/dict/status   GET /api/dict/:word
+TTS         GET /api/tts/status    GET /api/tts    POST /api/tts/download
+Assistant   GET /api/assistant/status
+            POST /api/assistant/ask (SSE) | grade | generate | word | cleanup-notes
 ```

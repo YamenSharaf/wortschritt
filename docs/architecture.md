@@ -24,28 +24,40 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
 - Content: `content/*.json` (git) **+** `imported_content` (SQLite, via the
   Import screen) → validated by `@mdb/shared` schemas in
   `packages/api/src/content/loader.ts` → served by `routes/content.ts`.
-- Progress: `attempts` table (one row per answered item) → aggregated in
-  `services/progress.ts`.
+- Progress: `attempts` (one row per answered item) → aggregated in
+  `services/progress.ts`. Completed runs, resumable in-progress positions and
+  cheat-sheet views live in `exercise_runs`, `exercise_progress` and
+  `sheet_views` (`services/activity.ts`, `routes/activity.ts`).
+- Vocab & flashcards: `vocab`, `vocab_groups`, `vocab_group_members`,
+  `vocab_stats` (`services/vocab.ts`). Grammatical forms come from the offline
+  dictionary at read time; the AI fills the rest (e.g. the Perfekt auxiliary)
+  into `vocab.forms`.
+- Notes: `notes` table (`services/notes.ts`), Markdown, auto-saved.
+- Offline dictionary: TSVs in `packages/api/assets/` (built by the scripts in
+  `packages/api/scripts/`) are loaded by `db/dictSeed.ts` and queried via
+  `services/dict.ts` → `/api/dict/:word` (tap-to-gloss).
+- Pronunciation: `routes/tts.ts` proxies the Piper sidecar (`TTS_URL`) and
+  caches clips; unset → the browser's speech synthesis.
 - Settings: single JSON row (`services/settings.ts`).
 - Auth: single shared password (`APP_PASSWORD`) → signed cookie
   (`auth/session.ts`). All routes except `/api/config`, `/api/health`,
   `/api/auth/*` require it.
+- Schema: tables are created on boot in `db/client.ts`
+  (`CREATE TABLE IF NOT EXISTS`); add a column to an existing table with the
+  `addColumn` helper there so live databases pick it up.
 
-## API surface (selected)
+## API surface
+
+See the README for the grouped list; `/api/docs` has the full typed spec. The
+AI endpoints:
 
 ```
-GET  /api/config                       branding {appName, appEmoji}  (public)
-POST /api/auth/login|logout  GET /api/auth/me
-GET  /api/exercises|/:id  GET /api/exercise-types
-GET  /api/cheatsheets|/:id
-POST /api/attempts        GET /api/progress
-GET  /api/settings        PUT /api/settings
-POST /api/import
 GET  /api/assistant/status
-POST /api/assistant/ask       (SSE stream; task-based — see below)
-POST /api/assistant/grade     (JSON verdict)
-POST /api/assistant/generate  (validated new items)
-GET  /api/docs                (OpenAPI UI)
+POST /api/assistant/ask            (SSE stream; task-based — see below)
+POST /api/assistant/grade          (JSON verdict for a free-text answer)
+POST /api/assistant/generate       (validated new items; never persisted)
+POST /api/assistant/word           (vocab lookup: translation, examples, forms)
+POST /api/assistant/cleanup-notes  (tidy a note into clean Markdown)
 ```
 
 ## Adding a new exercise type
@@ -75,7 +87,14 @@ All tutor system prompts live in **one registry**:
 `packages/api/src/assistant/prompts.ts`. Every task inherits a shared preamble
 (explain in English, keep German in German, be concise, level-aware, light
 Markdown allowed). Tasks: `highlight`, `hint`, `why_wrong`, `translate_exercise`,
-`translate_sheet`, plus `chat` (multi-turn) and generation.
+`translate_sheet`, plus `chat` (multi-turn), grading, generation, vocab word
+lookup and note cleanup.
+
+**AI grading**: text answers are graded locally first (`gradeText`); only on a
+miss, and only when the tutor is configured and the `llmGrading` setting is on,
+`/api/assistant/grade` judges the answer against `accept` (which then serves as
+model answers). This is what makes free-completion sets (e.g.
+`content/exercises/infinitiv-zu-frei.json`) work.
 
 **To add an AI button**: add a task to `buildMessages` (or a builder like
 `buildChatSystem`), thread it through `routes/assistant.ts` (`/ask` streams via
@@ -97,6 +116,7 @@ non-default (local models).
 | `PORT` / `DATABASE_PATH` / `CONTENT_DIR` | runtime paths | 3000 / ./data/app.db / ./content |
 | `APP_NAME` / `APP_EMOJI` | branding + favicon | mit dem baby / 🍼 |
 | `ASSISTANT_BASE_URL` / `ASSISTANT_API_KEY` / `ASSISTANT_MODEL` | AI tutor | OpenAI defaults |
+| `TTS_URL` | Piper sidecar base URL (e.g. `http://piper:5000`) | unset → browser voice |
 
 ## Theming
 
@@ -110,6 +130,6 @@ saved per-browser in localStorage and applied pre-paint by an inline script in
 ## Build & deploy
 
 Production runs the API via `tsx` and serves `packages/web/dist` statically. The
-Dockerfile builds a multi-arch image; CI (`.github/workflows/docker-publish.yml`)
+Dockerfile builds a multi-arch image (and `piper/Dockerfile` the TTS sidecar); CI (`.github/workflows/docker-publish.yml`)
 pushes to GHCR on `main`/tags and then calls Komodo `CheckStackForUpdate` to
 auto-update the deployment. Self-host with `docker-compose.prod.yml`.

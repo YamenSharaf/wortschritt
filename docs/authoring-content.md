@@ -34,6 +34,9 @@ Both sources are merged by `id` at request time (DB imports win on collision).
 
 - `id` (required, unique within the set)
 - `instructions` (optional) — task line shown above the item
+- `context` (optional) — a scenario/premise the item is based on, shown as a
+  distinct quoted block above the prompt (e.g. "Die Presse möchte alles über
+  die Hochzeit wissen."). It is also passed to the AI grader.
 - `hint` (optional) — **always-visible** helper text (e.g. the words to use)
 - `explanation` (optional) — shown after answering
 
@@ -52,6 +55,12 @@ Both sources are merged by `id` at request time (DB imports win on collision).
   - `exact` — byte-for-byte.
 - When the learner's input isn't the exact canonical form (a miss, or a lenient
   accept), the app reveals `accept[0]` so they see the correct spelling.
+- **AI grading:** on a local miss, if the AI tutor is configured and the
+  `llmGrading` setting is on (the default), the tutor judges the answer, using
+  `accept` as model answers. For **free-completion** items with many valid
+  answers, list a few good examples in `accept` and say in `instructions` that
+  any correct answer counts — see `content/exercises/infinitiv-zu-frei.json`.
+  Without the tutor, such items only accept the listed answers.
 
 ## Item types
 
