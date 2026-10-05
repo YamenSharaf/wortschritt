@@ -27,11 +27,14 @@ import { ttsRoutes } from "./routes/tts";
 import { vocabRoutes } from "./routes/vocab";
 
 export async function buildApp(): Promise<FastifyInstance> {
-  ensureSchema();
+  const migration = ensureSchema();
 
   const app = Fastify({
     logger: { level: isProd ? "info" : "debug" },
   });
+  if (migration.to !== migration.from) {
+    app.log.info(migration, "database schema migrated");
+  }
 
   // Load the bundled offline dictionary into SQLite once (idempotent).
   seedDictionary(app.log);

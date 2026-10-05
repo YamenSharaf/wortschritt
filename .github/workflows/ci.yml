@@ -1,6 +1,6 @@
 name: CI
 
-# Fast checks AGENTS.md requires before a commit: typecheck + build. The Docker
+# Fast checks AGENTS.md requires before a commit: typecheck, tests, build. The Docker
 # image workflow builds the app but doesn't type-check (Vite strips types), so
 # type errors would otherwise reach main unnoticed.
 
@@ -40,6 +40,9 @@ jobs:
 
       - name: Typecheck
         run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
 
       - name: Build
         run: pnpm build

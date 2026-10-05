@@ -97,6 +97,7 @@ Useful scripts:
 pnpm dev:api        # API only
 pnpm dev:web        # web only
 pnpm typecheck      # type-check every package
+pnpm test           # run the test suites
 pnpm build          # build the web SPA
 ```
 
@@ -176,10 +177,12 @@ All tables live in one SQLite file (`DATABASE_PATH`):
 | `notes` | Markdown notes |
 | `imported_content` | exercises and cheat sheets added via the Import screen |
 
-Tables are created on boot (`CREATE TABLE IF NOT EXISTS` in
-`packages/api/src/db/client.ts`); new columns on existing tables are added
-there with a small `addColumn` helper. `drizzle-kit` is wired up
-(`pnpm --filter @mdb/api db:generate`) for when you want versioned migrations.
+The schema is versioned: on boot the API applies any pending migrations from
+`packages/api/src/db/migrations.ts`, after first writing a backup next to the
+database (`app.db.bak-<timestamp>-v<old version>`, newest 5 kept). To roll back
+a bad upgrade, stop the app, copy that backup over `app.db` (and delete
+`app.db-wal` / `app.db-shm`), and run the previous image. An app older than the
+database refuses to start rather than misread it.
 
 ## API surface
 

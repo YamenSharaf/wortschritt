@@ -42,9 +42,7 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
 - Auth: single shared password (`APP_PASSWORD`) → signed cookie
   (`auth/session.ts`). All routes except `/api/config`, `/api/health`,
   `/api/auth/*` require it.
-- Schema: tables are created on boot in `db/client.ts`
-  (`CREATE TABLE IF NOT EXISTS`); add a column to an existing table with the
-  `addColumn` helper there so live databases pick it up.
+- Schema: versioned migrations, see below.
 
 ## API surface
 
@@ -117,6 +115,47 @@ non-default (local models).
 | `APP_NAME` / `APP_EMOJI` | branding + favicon | mit dem baby / 🍼 |
 | `ASSISTANT_BASE_URL` / `ASSISTANT_API_KEY` / `ASSISTANT_MODEL` | AI tutor | OpenAI defaults |
 | `TTS_URL` | Piper sidecar base URL (e.g. `http://piper:5000`) | unset → browser voice |
+
+## Database migrations
+
+`packages/api/src/db/migrations.ts` holds an ordered list of migrations; the
+applied version is SQLite's `PRAGMA user_version`. On boot (`ensureSchema` in
+`db/client.ts`) every pending migration runs in its own transaction together
+with the version bump, so a failure leaves the database at the previous
+version. Before migrating a non-empty database the runner writes a consistent
+backup with `VACUUM INTO` (`<db>.bak-<timestamp>-v<from>`, newest 5 kept). A
+database newer than the app makes it refuse to start.
+
+Migration 1 (`baseline`) is the pre-versioning schema, written idempotently so
+existing databases (version 0) and fresh ones converge.
+
+To change the schema:
+
+1. Append `{ version: <last + 1>, name, up(db) }`. Never edit or reorder a
+   migration that has shipped.
+2. Update `db/schema.ts` (the Drizzle types) to match.
+3. Changing a primary key means rebuilding the table inside `up`: create the
+   new table, copy rows, drop the old one, rename.
+4. Cover it in `db/migrations.test.ts` with a database in the previous shape
+   and real-looking rows; `pnpm test` runs it in CI.
+
+## Planned: multi-user
+
+Agreed design, to be built in phases (0 = the migration runner above, done):
+
+| Topic | Decision |
+| --- | --- |
+| Users | A few people, internet-facing (via Cloudflare Tunnel) |
+| Admin | User #1 is `ADMIN_USERNAME` with the current `APP_PASSWORD`; all existing data and settings become theirs |
+| Onboarding | Self-registration (users set their own password), off by default; the admin enables it and it auto-closes after 24 h. Rate-limited |
+| Auth | `scrypt` password hashes, a revocable sessions table, login rate limiting |
+| Content | Exercises and cheat sheets stay a shared library. Imports record their owner; only the owner or admin may overwrite or delete one, and only admin may shadow a git content id |
+| Per user | Vocab, groups, flashcard stats, notes, attempts, runs, in-progress position, sheet views, settings |
+| AI | Per-user endpoint + key. `https://` only, connections to private/loopback/link-local IPs refused (checked on the resolved address), generic errors to the client, capped timeouts and sizes. Keys encrypted at rest with `ENCRYPTION_KEY`, never returned to the browser. The current `ASSISTANT_*` env becomes the admin's settings |
+| Instance (admin) | Branding, TTS, registration switch |
+
+Phases: 1 users + auth + rate limiting · 2 per-user data, Users screen,
+registration · 3 per-user AI settings and instance settings.
 
 ## Theming
 

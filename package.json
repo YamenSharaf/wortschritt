@@ -11,6 +11,7 @@
     "dev:web": "pnpm --filter @mdb/web dev",
     "build": "pnpm --filter @mdb/web build",
     "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
     "start": "pnpm --filter @mdb/api start"
   },
   "engines": {
