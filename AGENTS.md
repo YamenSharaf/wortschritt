@@ -15,7 +15,8 @@ validated against the schemas in `packages/shared/src/exercises.ts`.
 
 ## Working rules
 
-- **Verify before you commit**: `pnpm typecheck` and `pnpm build` must pass.
+- **Verify before you commit**: `pnpm typecheck`, `pnpm test` and `pnpm build`
+  must pass (CI runs all three).
   Content changes: validate by loading the app or importing (the loader rejects
   malformed content with a clear message).
 - **One source of truth for schemas** (`@mdb/shared`) — API and web both import
@@ -26,6 +27,9 @@ validated against the schemas in `packages/shared/src/exercises.ts`.
   contain the accepted answer.
 - **Self-contained**: the server proxies the LLM; the API key never reaches the
   browser.
+- **Schema changes are migrations**: append one to
+  `packages/api/src/db/migrations.ts` (never edit a shipped one) and update
+  `db/schema.ts` to match. See docs/architecture.md.
 
 ## Layout
 
