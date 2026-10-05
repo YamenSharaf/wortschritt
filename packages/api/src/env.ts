@@ -9,7 +9,16 @@ const optionalEnv = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess((v) => (v === "" ? undefined : v), schema);
 
 const envSchema = z.object({
+  // Initial password of the admin account, used only when the first user is
+  // created (see auth/users.ts). Change it in the app afterwards.
   APP_PASSWORD: z.string().min(1, "APP_PASSWORD must be set"),
+  // Username of that first admin account.
+  ADMIN_USERNAME: optionalEnv(
+    z
+      .string()
+      .regex(/^[a-zA-Z0-9_.-]{2,32}$/, "ADMIN_USERNAME: 2-32 of a-z, 0-9, _ . -")
+      .default("admin"),
+  ),
   SESSION_SECRET: z.string().min(8, "SESSION_SECRET must be at least 8 chars"),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_PATH: z.string().default("./data/app.db"),

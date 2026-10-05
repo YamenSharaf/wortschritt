@@ -13,7 +13,7 @@ without touching the codebase.
 | API        | Fastify + Zod (auto-generated OpenAPI at `/api/docs`) |
 | DB         | SQLite via Drizzle ORM (single file)               |
 | Web        | Vite + React + Tailwind (SPA)                       |
-| Auth       | Single password → signed session cookie            |
+| Auth       | Username + password (scrypt) → server-side sessions, rate-limited |
 | Packaging  | One Docker image (API serves the built SPA) + optional Piper TTS sidecar |
 
 The API is the product; the web app is just its first client. Because routes
@@ -82,7 +82,7 @@ Requires Node 20+ and pnpm 9+ (`corepack enable`).
 
 ```bash
 pnpm install
-cp .env.example .env        # then edit APP_PASSWORD and SESSION_SECRET
+cp .env.example .env        # then edit ADMIN_USERNAME, APP_PASSWORD and SESSION_SECRET
 
 # Run API (:3000) and web dev server (:5173) together.
 pnpm dev
@@ -114,6 +114,7 @@ only need `docker-compose.prod.yml` and a `.env` — no repo checkout, no build:
 # On your homelab host, in an empty directory:
 curl -O https://raw.githubusercontent.com/YamenSharaf/mit-dem-baby/main/docker-compose.prod.yml
 cat > .env <<'EOF'
+ADMIN_USERNAME=your-name
 APP_PASSWORD=your-strong-password
 SESSION_SECRET=some-long-random-string
 EOF
@@ -121,7 +122,12 @@ EOF
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-Open http://your-host:3000. Update to a newer image later with:
+Open http://your-host:3000 and log in as `ADMIN_USERNAME` with `APP_PASSWORD`
+(both are only used to create that first account; change the password under
+Settings → Account). Behind a Cloudflare Tunnel, login rate limits key on the
+`CF-Connecting-IP` header, so each visitor is limited separately.
+
+Update to a newer image later with:
 
 ```bash
 docker compose -f docker-compose.prod.yml pull && \
@@ -140,7 +146,7 @@ if you'd rather not track `latest`.
 ### Option B — build from source
 
 ```bash
-cp .env.example .env        # set a real APP_PASSWORD and SESSION_SECRET
+cp .env.example .env        # set ADMIN_USERNAME, a real APP_PASSWORD and SESSION_SECRET
 docker compose up -d --build
 ```
 
@@ -190,7 +196,8 @@ The full, typed spec is at `/api/docs` (OpenAPI UI). Everything except
 `/api/config`, `/api/health` and `/api/auth/*` requires the session cookie.
 
 ```
-Auth        POST /api/auth/login | /api/auth/logout     GET /api/auth/me
+Auth        POST /api/auth/login | /api/auth/logout | /api/auth/password
+            GET  /api/auth/me
 Public      GET  /api/config  /api/health  /api/docs
 Content     GET  /api/exercises[/:id]  /api/cheatsheets[/:id]  /api/exercise-types
             POST /api/import

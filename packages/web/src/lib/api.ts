@@ -1,4 +1,5 @@
 import type {
+  AuthUserDto,
   Cheatsheet,
   DictEntry,
   ExerciseItem,
@@ -67,13 +68,19 @@ export class ApiError extends Error {
 
 export const api = {
   // auth
-  me: () => req<{ authenticated: boolean }>("/api/auth/me"),
-  login: (password: string) =>
+  me: () =>
+    req<{ authenticated: boolean; user: AuthUserDto | null }>("/api/auth/me"),
+  login: (username: string, password: string) =>
     req<{ ok: true }>("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ username, password }),
     }),
   logout: () => req<{ ok: true }>("/api/auth/logout", { method: "POST" }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    req<{ ok: true }>("/api/auth/password", {
+      method: "POST",
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
 
   // content
   exercises: () => req<ExerciseSet[]>("/api/exercises"),

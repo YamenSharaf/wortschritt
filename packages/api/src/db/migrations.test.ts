@@ -59,7 +59,7 @@ test("fresh database: migrates to latest without a backup", () => {
     .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
     .all()
     .map((r) => (r as { name: string }).name);
-  for (const t of ["settings", "attempts", "vocab", "notes", "imported_content", "dict_forms"]) {
+  for (const t of ["settings", "attempts", "vocab", "notes", "imported_content", "dict_forms", "users", "sessions"]) {
     assert.ok(tables.includes(t), `missing table ${t}`);
   }
   assert.deepEqual(backups(), []);

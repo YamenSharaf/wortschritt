@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import cookie from "@fastify/cookie";
+import rateLimit from "@fastify/rate-limit";
 import fastifyStatic from "@fastify/static";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
@@ -10,6 +11,8 @@ import {
   serializerCompiler,
   validatorCompiler,
 } from "fastify-type-provider-zod";
+import { pruneExpiredSessions } from "./auth/session";
+import { ensureAdminUser } from "./auth/users";
 import { ensureSchema } from "./db/client";
 import { seedDictionary } from "./db/dictSeed";
 import { env, isProd } from "./env";
@@ -30,11 +33,17 @@ export async function buildApp(): Promise<FastifyInstance> {
   const migration = ensureSchema();
 
   const app = Fastify({
-    logger: { level: isProd ? "info" : "debug" },
+    logger: {
+      level: isProd ? "info" : env.NODE_ENV === "test" ? "silent" : "debug",
+    },
   });
   if (migration.to !== migration.from) {
     app.log.info(migration, "database schema migrated");
   }
+
+  await ensureAdminUser(app.log);
+  pruneExpiredSessions();
+  setInterval(pruneExpiredSessions, 60 * 60 * 1000).unref();
 
   // Load the bundled offline dictionary into SQLite once (idempotent).
   seedDictionary(app.log);
@@ -43,6 +52,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   app.setSerializerCompiler(serializerCompiler);
 
   await app.register(cookie, { secret: env.SESSION_SECRET });
+  // Opt-in per route via `config.rateLimit` (the auth routes).
+  await app.register(rateLimit, { global: false });
+  app.decorateRequest("user", null);
 
   await app.register(swagger, {
     openapi: {

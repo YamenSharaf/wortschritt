@@ -5,39 +5,42 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import type { AuthUserDto } from "@mdb/shared";
 import { api } from "./api";
 
 type AuthState = {
   authenticated: boolean;
+  user: AuthUserDto | null;
   loading: boolean;
-  login: (password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [authenticated, setAuthenticated] = useState(false);
+  const [user, setUser] = useState<AuthUserDto | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api
       .me()
-      .then((r) => setAuthenticated(r.authenticated))
-      .catch(() => setAuthenticated(false))
+      .then((r) => setUser(r.user))
+      .catch(() => setUser(null))
       .finally(() => setLoading(false));
   }, []);
 
   const value: AuthState = {
-    authenticated,
+    authenticated: user !== null,
+    user,
     loading,
-    login: async (password) => {
-      await api.login(password);
-      setAuthenticated(true);
+    login: async (username, password) => {
+      await api.login(username, password);
+      setUser((await api.me()).user);
     },
     logout: async () => {
       await api.logout();
-      setAuthenticated(false);
+      setUser(null);
     },
   };
 

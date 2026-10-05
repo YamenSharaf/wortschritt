@@ -147,6 +147,34 @@ export const migrations: Migration[] = [
       addColumn(db, "vocab", "forms", "TEXT");
     },
   },
+  {
+    version: 2,
+    // Accounts + server-side sessions. The first (admin) user is created from
+    // env at boot by auth/users.ts, not here, so migrations stay env-free.
+    name: "users-and-sessions",
+    up(db) {
+      db.exec(`
+        CREATE TABLE users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+          password_hash TEXT NOT NULL,
+          role TEXT NOT NULL CHECK (role IN ('admin', 'user')),
+          disabled INTEGER NOT NULL DEFAULT 0,
+          created_at INTEGER NOT NULL DEFAULT (unixepoch())
+        );
+        -- id is the SHA-256 of the cookie token, so a leaked database can't be
+        -- used to hijack sessions.
+        CREATE TABLE sessions (
+          id TEXT PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+          expires_at INTEGER NOT NULL
+        );
+        CREATE INDEX idx_sessions_user ON sessions(user_id);
+        CREATE INDEX idx_sessions_expires ON sessions(expires_at);
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

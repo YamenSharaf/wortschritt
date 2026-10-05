@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useReducer, useState } from "react";
 import {
   generateCounts,
+  MIN_PASSWORD_LENGTH,
   TTS_VOICE_CATALOG,
   type Settings,
 } from "@mdb/shared";
-import { api } from "../lib/api";
+import { api, ApiError } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import { useAsync } from "../lib/useAsync";
 import { useTheme } from "../lib/theme";
 import { ACCENTS } from "../lib/themes";
@@ -19,7 +21,7 @@ import {
 import { ImportPage } from "./Import";
 
 export function SettingsPage() {
-  const [tab, setTab] = useState<"preferences" | "import">("preferences");
+  const [tab, setTab] = useState<"preferences" | "account" | "import">("preferences");
   const tabBtn = (active: boolean) =>
     `rounded-lg px-3 py-1.5 text-sm font-medium ${
       active
@@ -33,11 +35,16 @@ export function SettingsPage() {
         <button type="button" className={tabBtn(tab === "preferences")} onClick={() => setTab("preferences")}>
           Preferences
         </button>
+        <button type="button" className={tabBtn(tab === "account")} onClick={() => setTab("account")}>
+          Account
+        </button>
         <button type="button" className={tabBtn(tab === "import")} onClick={() => setTab("import")}>
           Import content
         </button>
       </div>
-      {tab === "preferences" ? <Preferences /> : <ImportPage />}
+      {tab === "preferences" && <Preferences />}
+      {tab === "account" && <Account />}
+      {tab === "import" && <ImportPage />}
     </div>
   );
 }
@@ -314,6 +321,89 @@ function DeviceVoicePicker() {
       <p className="mt-1 text-xs text-slate-400">
         Remembered on this device only.
       </p>
+    </div>
+  );
+}
+
+function Account() {
+  const { user } = useAuth();
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function changePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (next !== confirm) {
+      setMessage({ ok: false, text: "The new passwords don't match." });
+      return;
+    }
+    setBusy(true);
+    setMessage(null);
+    try {
+      await api.changePassword(current, next);
+      setCurrent("");
+      setNext("");
+      setConfirm("");
+      setMessage({ ok: true, text: "Password changed. Your other devices were signed out." });
+    } catch (err) {
+      setMessage({
+        ok: false,
+        text: err instanceof ApiError ? err.message : "Couldn't change the password.",
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="max-w-md space-y-6">
+      <p className="text-sm text-slate-500">
+        Signed in as <span className="font-medium text-slate-800 dark:text-slate-100">{user?.username}</span>
+        {user?.role === "admin" && " (admin)"}
+      </p>
+      <form onSubmit={changePassword} className="space-y-4">
+        <h2 className="text-lg font-semibold">Change password</h2>
+        <Field label="Current password">
+          <input
+            type="password"
+            autoComplete="current-password"
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+            className="input"
+          />
+        </Field>
+        <Field label={`New password (at least ${MIN_PASSWORD_LENGTH} characters)`}>
+          <input
+            type="password"
+            autoComplete="new-password"
+            minLength={MIN_PASSWORD_LENGTH}
+            value={next}
+            onChange={(e) => setNext(e.target.value)}
+            className="input"
+          />
+        </Field>
+        <Field label="Confirm new password">
+          <input
+            type="password"
+            autoComplete="new-password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            className="input"
+          />
+        </Field>
+        <button
+          type="submit"
+          disabled={busy || !current || next.length < MIN_PASSWORD_LENGTH}
+          className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground disabled:opacity-50"
+        >
+          {busy ? "…" : "Change password"}
+        </button>
+        {message && (
+          <p className={`text-sm ${message.ok ? "text-green-600" : "text-red-600"}`}>{message.text}</p>
+        )}
+      </form>
     </div>
   );
 }

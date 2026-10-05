@@ -39,9 +39,16 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
 - Pronunciation: `routes/tts.ts` proxies the Piper sidecar (`TTS_URL`) and
   caches clips; unset → the browser's speech synthesis.
 - Settings: single JSON row (`services/settings.ts`).
-- Auth: single shared password (`APP_PASSWORD`) → signed cookie
-  (`auth/session.ts`). All routes except `/api/config`, `/api/health`,
-  `/api/auth/*` require it.
+- Auth: `users` + `sessions` tables (`auth/`). Login checks a scrypt hash
+  (`auth/password.ts`) and creates a server-side session; the cookie holds a
+  random token, the database only its SHA-256. `requireAuth` (`auth/session.ts`)
+  401s without a valid session and sets `req.user`. All routes except
+  `/api/config`, `/api/health`, `/api/auth/*` require it. The first boot after
+  the `users` table exists creates the admin from `ADMIN_USERNAME` /
+  `APP_PASSWORD` (`auth/users.ts`).
+- Brute-force protection: password routes are limited per client IP
+  (`@fastify/rate-limit`, 10/min, keyed on `CF-Connecting-IP` when present) and
+  per username (10 failures / 15 min lock that name, `auth/loginGuard.ts`).
 - Schema: versioned migrations, see below.
 
 ## API surface
@@ -109,7 +116,8 @@ non-default (local models).
 
 | Var | Purpose | Default |
 | --- | --- | --- |
-| `APP_PASSWORD` | login password (required) | — |
+| `APP_PASSWORD` | initial password of the admin account (required; only read when the first user is created) | — |
+| `ADMIN_USERNAME` | username of that admin account | admin |
 | `SESSION_SECRET` | cookie signing key (required, ≥8) | — |
 | `PORT` / `DATABASE_PATH` / `CONTENT_DIR` | runtime paths | 3000 / ./data/app.db / ./content |
 | `APP_NAME` / `APP_EMOJI` | branding + favicon | mit dem baby / 🍼 |
@@ -141,7 +149,7 @@ To change the schema:
 
 ## Planned: multi-user
 
-Agreed design, to be built in phases (0 = the migration runner above, done):
+Agreed design, built in phases (0 = the migration runner above; 1 = accounts, sessions and rate limiting, see Data flow → Auth):
 
 | Topic | Decision |
 | --- | --- |
