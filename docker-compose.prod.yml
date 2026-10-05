@@ -17,6 +17,8 @@ services:
     environment:
       APP_PASSWORD: ${APP_PASSWORD:?set APP_PASSWORD in .env}
       SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
+      # Admin account created on first boot (password = APP_PASSWORD).
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       NODE_ENV: production
       PORT: "3000"
       DATABASE_PATH: /app/data/app.db

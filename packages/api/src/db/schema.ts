@@ -131,3 +131,25 @@ export const importedContent = sqliteTable("imported_content", {
     .notNull()
     .default(sql`(unixepoch())`),
 });
+
+/** Accounts. `username` is unique case-insensitively (COLLATE NOCASE). */
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  username: text("username").notNull(),
+  passwordHash: text("password_hash").notNull(),
+  role: text("role", { enum: ["admin", "user"] }).notNull(),
+  disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+/** Server-side sessions. `id` is the SHA-256 (hex) of the cookie token. */
+export const sessions = sqliteTable("sessions", {
+  id: text("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+  expiresAt: integer("expires_at").notNull(),
+});

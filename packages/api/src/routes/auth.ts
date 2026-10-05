@@ -1,13 +1,26 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { loginBody } from "@mdb/shared";
+import { changePasswordBody, loginBody, meResponse } from "@mdb/shared";
+import { clearFailures, clientIp, lockedFor, recordFailure } from "../auth/loginGuard";
+import { dummyHash, verifyPassword } from "../auth/password";
 import {
-  clearSession,
-  isAuthenticated,
+  endOtherSessions,
+  endSession,
+  getSessionUser,
+  requireAuth,
   startSession,
-  verifyPassword,
 } from "../auth/session";
+import { findUserById, findUserByUsername, setPassword } from "../auth/users";
+
+const error = z.object({ error: z.string() });
+
+/** Per-IP limit on password-checking routes (see also auth/loginGuard.ts). */
+const passwordRateLimit = {
+  max: 10,
+  timeWindow: "1 minute",
+  keyGenerator: clientIp,
+};
 
 export async function authRoutes(app: FastifyInstance) {
   const r = app.withTypeProvider<ZodTypeProvider>();
@@ -15,20 +28,31 @@ export async function authRoutes(app: FastifyInstance) {
   r.post(
     "/api/auth/login",
     {
+      config: { rateLimit: passwordRateLimit },
       schema: {
         tags: ["auth"],
         body: loginBody,
-        response: {
-          200: z.object({ ok: z.literal(true) }),
-          401: z.object({ error: z.string() }),
-        },
+        response: { 200: z.object({ ok: z.literal(true) }), 401: error, 429: error },
       },
     },
     async (req, reply) => {
-      if (!verifyPassword(req.body.password)) {
-        return reply.code(401).send({ error: "invalid password" });
+      const { username, password } = req.body;
+      const wait = lockedFor(username);
+      if (wait > 0) {
+        reply.header("retry-after", wait);
+        return reply.code(429).send({ error: "too many attempts, try again later" });
       }
-      startSession(reply);
+      const user = findUserByUsername(username);
+      // Always run a full hash check so unknown usernames take as long as
+      // wrong passwords.
+      const ok = await verifyPassword(password, user?.passwordHash ?? (await dummyHash()));
+      if (!user || !ok || user.disabled) {
+        recordFailure(username);
+        req.log.warn({ username, ip: clientIp(req) }, "failed login");
+        return reply.code(401).send({ error: "invalid username or password" });
+      }
+      clearFailures(username);
+      startSession(reply, user.id);
       return { ok: true as const };
     },
   );
@@ -36,20 +60,44 @@ export async function authRoutes(app: FastifyInstance) {
   r.post(
     "/api/auth/logout",
     { schema: { tags: ["auth"], response: { 200: z.object({ ok: z.literal(true) }) } } },
-    async (_req, reply) => {
-      clearSession(reply);
+    async (req, reply) => {
+      endSession(req, reply);
       return { ok: true as const };
     },
   );
 
   r.get(
     "/api/auth/me",
+    { schema: { tags: ["auth"], response: { 200: meResponse } } },
+    async (req) => {
+      const user = getSessionUser(req);
+      return {
+        authenticated: Boolean(user),
+        user: user ? { username: user.username, role: user.role } : null,
+      };
+    },
+  );
+
+  // Change your own password. Signs out your other sessions.
+  r.post(
+    "/api/auth/password",
     {
+      preHandler: requireAuth,
+      config: { rateLimit: passwordRateLimit },
       schema: {
         tags: ["auth"],
-        response: { 200: z.object({ authenticated: z.boolean() }) },
+        body: changePasswordBody,
+        response: { 200: z.object({ ok: z.literal(true) }), 401: error, 403: error },
       },
     },
-    async (req) => ({ authenticated: isAuthenticated(req) }),
+    async (req, reply) => {
+      const user = findUserById(req.user!.id)!;
+      if (!(await verifyPassword(req.body.currentPassword, user.passwordHash))) {
+        return reply.code(403).send({ error: "current password is incorrect" });
+      }
+      await setPassword(user.id, req.body.newPassword);
+      endOtherSessions(user.id, req);
+      return { ok: true as const };
+    },
   );
 }

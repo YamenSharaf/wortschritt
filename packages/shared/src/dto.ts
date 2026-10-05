@@ -52,7 +52,30 @@ export type TtsStatus = z.infer<typeof ttsStatus>;
 
 /** Login: single shared password. */
 export const loginBody = z.object({
-  password: z.string().min(1),
+  username: z.string().trim().min(1).max(64),
+  password: z.string().min(1).max(256),
+});
+
+/** Minimum length for passwords set in the app. */
+export const MIN_PASSWORD_LENGTH = 10;
+
+export const changePasswordBody = z.object({
+  currentPassword: z.string().min(1).max(256),
+  newPassword: z
+    .string()
+    .min(MIN_PASSWORD_LENGTH, `Use at least ${MIN_PASSWORD_LENGTH} characters`)
+    .max(256),
+});
+
+export const authUser = z.object({
+  username: z.string(),
+  role: z.enum(["admin", "user"]),
+});
+export type AuthUserDto = z.infer<typeof authUser>;
+
+export const meResponse = z.object({
+  authenticated: z.boolean(),
+  user: authUser.nullable(),
 });
 
 /** Record the result of answering one item. */

@@ -8,6 +8,8 @@ services:
       # Override these — do NOT ship the defaults.
       APP_PASSWORD: ${APP_PASSWORD:-change-me}
       SESSION_SECRET: ${SESSION_SECRET:-please-change-this-to-a-long-random-string}
+      # Admin account created on first boot (password = APP_PASSWORD).
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       NODE_ENV: production
       PORT: "3000"
       DATABASE_PATH: /app/data/app.db
