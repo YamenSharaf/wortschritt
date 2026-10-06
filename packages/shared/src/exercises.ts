@@ -32,8 +32,8 @@ export const textAnswer = z.object({
    *                        surrounding whitespace is ignored).
    * open                 — open-ended task: `accept` holds EXAMPLES, not the
    *                        full list. A match is accepted locally; anything
-   *                        else goes to the learner's AI tutor, or — without
-   *                        one — to self-assessment against the examples.
+   *                        else goes to the learner's AI tutor; without one,
+   *                        the possible answers are shown with no verdict.
    *                        Only for transform and sentence_build.
    */
   grading: z

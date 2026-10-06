@@ -70,8 +70,8 @@ guide the tutor's "generate more items" uses.
   completion): `accept` holds a few **examples**, not the full list, and the
   item shows an "Open answer" badge. A match with an example is accepted
   locally; anything else is judged by the learner's AI tutor, or — if they have
-  none (or it fails) — by the learner, who compares their answer with the
-  examples. Only valid on `transform` and `sentence_build`. See
+  none (or it fails) — shown next to the possible answers, without a verdict.
+  Only valid on `transform` and `sentence_build`. See
   `content/exercises/infinitiv-zu-frei.json`:
   ```jsonc
   { "type": "transform", "id": "iz-a01",
