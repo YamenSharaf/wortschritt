@@ -5,6 +5,8 @@
  * everywhere. Adding a new AI button = add a task here + wire a button.
  */
 
+import { itemFormatGuide } from "@mdb/shared";
+
 export type TutorTask =
   | "highlight"
   | "hint"
@@ -153,17 +155,6 @@ export function buildNotesCleanup(ctx: {
   return { system, user: ctx.text };
 }
 
-/** JSON shapes for every item type — shared by generation and the Import UI. */
-const ITEM_SCHEMA_REF = `Item type shapes (use the exact keys). Do NOT include an "id" — it is assigned automatically:
-- multiple_choice: { "type":"multiple_choice","prompt":"...","choices":["a","b"],"answerIndex":0,"explanation":"optional" }
-- cloze: { "type":"cloze","instructions":"optional","text":"Ich {{1}} früh {{2}}.","blanks":[{"ref":"1","cue":"optional hint","answer":{"accept":["stehe"]}},{"ref":"2","answer":{"accept":["auf"]}}] }
-- flashcard: { "type":"flashcard","front":"...","back":"..." }
-- sentence_build: { "type":"sentence_build","instructions":"optional","tokens":["Ich","bin","müde"],"answer":{"accept":["Ich bin müde."],"grading":"caseInsensitive"} } — if you omit "tokens", you MUST put the words to use in "hint" (e.g. "Wörter: heute · wir · lernen · müssen"), since it is shown to the learner.
-- transform: { "type":"transform","instructions":"e.g. Ins Perfekt setzen.","source":"Ich lerne Deutsch.","answer":{"accept":["Ich habe Deutsch gelernt."]} }
-- true_false: { "type":"true_false","statement":"...","correct":true,"correction":"optional corrected German" }
-- conjugation_table: { "type":"conjugation_table","rows":["ich","du"],"columns":[{"header":"gehen","answers":["gehe","gehst"]}] }
-Rules: cloze {{ref}} placeholders must each have a matching blank; conjugation_table each column's answers must have exactly one entry per row.`;
-
 /** Author new German exercise items in the style of a completed set. */
 export function buildGenerateMessages(ctx: {
   title: string;
@@ -175,10 +166,10 @@ export function buildGenerateMessages(ctx: {
 }): { system: string; user: string } {
   const system =
     "You are a German-language exercise author. Create NEW practice items matching the given set's topic, level, and item types. " +
-    "The learning content must be in German and grammatically correct, with the correct answer(s) provided. Keep any explanations short and in English. " +
+    "The learning content must be in German and grammatically correct, with the correct answer(s) provided. " +
     `Use ONLY these item types: ${ctx.types.join(", ")}. ` +
     'Output ONLY a JSON object of the form {"items":[ ... ]} — no prose, no markdown code fences.\n\n' +
-    ITEM_SCHEMA_REF;
+    itemFormatGuide({ withIds: false });
   const user =
     `Set: "${ctx.title}" · level ${ctx.level} · topics: ${ctx.tags.join(", ") || "—"}\n` +
     `Generate ${ctx.count} new items using the types above. Make them distinct from these examples (same style and difficulty, new content):\n` +

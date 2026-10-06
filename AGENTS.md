@@ -22,7 +22,9 @@ validated against the schemas in `packages/shared/src/exercises.ts`.
 - **One source of truth for schemas** (`@mdb/shared`) — API and web both import
   it. Grading lives in `packages/shared/src/grading.ts`; reuse `gradeText`.
 - **All tutor prompts** live in `packages/api/src/assistant/prompts.ts`. Adding
-  an AI use-case = a task there + a button.
+  an AI use-case = a task there + a button. The content-format guide given to
+  LLMs (Import's "Copy LLM prompt" and "generate more") is one module,
+  `packages/shared/src/authoring.ts`; a new exercise type needs an example there.
 - **Never leak answers**: `describeItem` labels (used by translate) must not
   contain the accepted answer.
 - **Self-contained**: the server proxies the LLM; API keys never reach the

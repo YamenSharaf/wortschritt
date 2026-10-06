@@ -23,11 +23,13 @@ export const textAnswer = z.object({
   /** Accepted answers. First entry is treated as the canonical/model answer. */
   accept: z.array(z.string().min(1)).min(1),
   /**
-   * exact           — byte-for-byte.
-   * normalized      — trim + collapse spaces + ignore trailing . ? ! (keeps
-   *                   German capitalisation, which is meaningful).
-   * caseInsensitive — like normalized, but also case-folded (good for
-   *                   single-word blanks or reordering pre-supplied tokens).
+   * normalized (default) — lenient: trims, collapses spaces, ignores trailing
+   *                        . ? ! and surrounding quotes, and folds case and
+   *                        umlauts (ä→a, ö→o, ü→u, ß→ss). See grading.ts.
+   * caseInsensitive      — currently identical to normalized (kept so
+   *                        existing content stays valid).
+   * exact                — must match an accepted answer exactly (only
+   *                        surrounding whitespace is ignored).
    */
   grading: z.enum(["exact", "normalized", "caseInsensitive"]).default("normalized"),
 });
@@ -112,7 +114,7 @@ export const trueFalseItem = z.object({
 /** One column of a conjugation grid; `answers` aligns to `rows`. */
 export const conjugationColumn = z.object({
   header: z.string().min(1),
-  answers: z.array(z.string()).min(1),
+  answers: z.array(z.string().min(1)).min(1),
 });
 /** Fill a pronoun × verb grid. */
 export const conjugationTableItem = z.object({
@@ -157,14 +159,42 @@ export const exerciseSet = z
     description: z.string().default(""),
     level: cefrLevel,
     tags: z.array(z.string()).default([]),
-    /** When this material was added (ISO date). Filled from the file's mtime
-     *  or the import time when absent; used to sort "recently added" first. */
+    /** When this material was added (ISO date); sorts "recently added" first.
+     *  Imports get their import time; undated files sort last. */
     createdAt: z.string().optional(),
     items: z.array(exerciseItem).min(1),
   })
   // Cross-field structural checks that a per-field schema can't express.
   .superRefine((set, ctx) => {
+    // Progress, resume position and run results are keyed by item id.
+    const seen = new Set<string>();
     set.items.forEach((item, i) => {
+      if (seen.has(item.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["items", i, "id"],
+          message: `Duplicate item id "${item.id}" (ids must be unique within a set)`,
+        });
+      }
+      seen.add(item.id);
+    });
+    set.items.forEach((item, i) => {
+      if (item.type === "multiple_choice") {
+        if (item.answerIndex >= item.choices.length) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["items", i, "answerIndex"],
+            message: `answerIndex ${item.answerIndex} is out of range (${item.choices.length} choices, counted from 0)`,
+          });
+        }
+        if (new Set(item.choices.map((c) => c.trim())).size !== item.choices.length) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["items", i, "choices"],
+            message: "Choices must be distinct",
+          });
+        }
+      }
       if (item.type === "cloze") {
         const refs = new Set(item.blanks.map((b) => b.ref));
         const used = new Set<string>();
