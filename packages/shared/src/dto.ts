@@ -101,6 +101,28 @@ export const updateUserBody = z.object({
 });
 export const adminSetPasswordBody = z.object({ password: newPassword });
 
+/** A user's AI tutor settings as shown in the app (never includes the key). */
+export const aiSettingsView = z.object({
+  /** ENCRYPTION_KEY is set, so keys can be stored. */
+  encryptionAvailable: z.boolean(),
+  /** Set up and usable. */
+  configured: z.boolean(),
+  baseUrl: z.string(),
+  model: z.string(),
+  hasKey: z.boolean(),
+  /** A key is stored but can't be decrypted (ENCRYPTION_KEY changed): re-enter it. */
+  keyUnreadable: z.boolean(),
+});
+export type AiSettingsView = z.infer<typeof aiSettingsView>;
+
+export const saveAiSettingsBody = z.object({
+  baseUrl: z.string().trim().min(1).max(500),
+  model: z.string().trim().min(1).max(200),
+  /** New key; null removes the stored key; omitted keeps it. */
+  apiKey: z.string().trim().min(1).max(1000).nullable().optional(),
+});
+export type SaveAiSettingsBody = z.infer<typeof saveAiSettingsBody>;
+
 export const authUser = z.object({
   username: z.string(),
   role: z.enum(["admin", "user"]),

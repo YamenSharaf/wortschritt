@@ -1,5 +1,6 @@
 import type {
   AdminUser,
+  AiSettingsView,
   AuthUserDto,
   Cheatsheet,
   DictEntry,
@@ -89,6 +90,17 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
+
+  // AI tutor settings (per user; the key is write-only)
+  aiSettings: () => req<AiSettingsView>("/api/assistant/settings"),
+  saveAiSettings: (body: { baseUrl: string; model: string; apiKey?: string | null }) =>
+    req<AiSettingsView>("/api/assistant/settings", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  deleteAiSettings: () =>
+    req<AiSettingsView>("/api/assistant/settings", { method: "DELETE" }),
+  testAi: () => req<{ ok: true; reply: string }>("/api/assistant/test", { method: "POST" }),
 
   // admin
   adminUsers: () => req<AdminUser[]>("/api/admin/users"),

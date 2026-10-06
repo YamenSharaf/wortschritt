@@ -16,7 +16,10 @@ services:
       CONTENT_DIR: /app/content
       APP_NAME: ${APP_NAME:-mit dem baby}
       APP_EMOJI: ${APP_EMOJI:-🍼}
-      # AI tutor (optional) — see .env.example for details.
+      # AI tutor: each user sets their own provider in the app; their API keys
+      # are encrypted with this (openssl rand -base64 32 — keep a copy).
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+      # Legacy: copied once into the admin's AI settings on first boot.
       ASSISTANT_BASE_URL: ${ASSISTANT_BASE_URL:-https://api.openai.com/v1}
       ASSISTANT_API_KEY: ${ASSISTANT_API_KEY:-}
       ASSISTANT_MODEL: ${ASSISTANT_MODEL:-gpt-4o-mini}

@@ -19,11 +19,12 @@ import {
   speak,
 } from "../lib/tts";
 import { ImportPage } from "./Import";
+import { AiSettings } from "./AiSettings";
 import { UsersAdmin } from "./UsersAdmin";
 
 export function SettingsPage() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<"preferences" | "account" | "users" | "import">(
+  const [tab, setTab] = useState<"preferences" | "account" | "ai" | "users" | "import">(
     "preferences",
   );
   const tabBtn = (active: boolean) =>
@@ -42,6 +43,9 @@ export function SettingsPage() {
         <button type="button" className={tabBtn(tab === "account")} onClick={() => setTab("account")}>
           Account
         </button>
+        <button type="button" className={tabBtn(tab === "ai")} onClick={() => setTab("ai")}>
+          AI tutor
+        </button>
         {user?.role === "admin" && (
           <button type="button" className={tabBtn(tab === "users")} onClick={() => setTab("users")}>
             Users
@@ -53,6 +57,7 @@ export function SettingsPage() {
       </div>
       {tab === "preferences" && <Preferences />}
       {tab === "account" && <Account />}
+      {tab === "ai" && <AiSettings />}
       {tab === "users" && user?.role === "admin" && <UsersAdmin />}
       {tab === "import" && <ImportPage />}
     </div>
@@ -184,7 +189,7 @@ function Preferences() {
           </span>
         </label>
         <p className="-mt-2 text-xs text-slate-400">
-          Only used when the tutor is configured. Falls back to exact matching
+          Only used when your AI tutor is set up (the AI tutor tab). Falls back to exact matching
           otherwise.
         </p>
         <button

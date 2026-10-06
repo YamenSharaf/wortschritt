@@ -2,13 +2,16 @@ import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import {
+  aiSettingsView,
   exerciseItem,
   exerciseSet,
   MAX_GENERATE_COUNT,
+  saveAiSettingsBody,
   wordLookup,
   wordQueryBody,
   type ExerciseItem,
 } from "@mdb/shared";
+import { clientIp } from "../auth/loginGuard";
 import { requireAuth } from "../auth/session";
 import {
   buildMessages,
@@ -17,7 +20,14 @@ import {
   buildNotesCleanup,
   buildWordMessages,
 } from "../assistant/prompts";
-import { env, isAssistantEnabled } from "../env";
+import { aiErrorMessage, collectCompletion, streamCompletion } from "../assistant/client";
+import {
+  deleteAiSettings,
+  getAiConfig,
+  getAiSettingsView,
+  saveAiSettings,
+} from "../assistant/config";
+import { EgressError } from "../assistant/egress";
 import { getSettings } from "../services/settings";
 
 const askBody = z.object({
@@ -142,73 +152,7 @@ function extractJsonObject(content: string): unknown | null {
   return null;
 }
 
-type CompletionResult =
-  | { ok: true; content: string }
-  | { ok: false; status: number; detail: string };
-
-/**
- * Call the OpenAI-compatible chat endpoint in STREAMING mode and accumulate the
- * full text. We stream even for these one-shot calls (generate, grade) because
- * the streaming tutor already proves that path works against the configured
- * gateway, whereas a single buffered request for a large response is what tends
- * to fail (proxy timeouts, stream-only gateways) — same URL, key and model.
- */
-async function collectCompletion(
-  messages: Array<{ role: string; content: string }>,
-  opts: { temperature: number; maxTokens: number; signal?: AbortSignal },
-): Promise<CompletionResult> {
-  const upstream = await fetch(
-    `${env.ASSISTANT_BASE_URL.replace(/\/$/, "")}/chat/completions`,
-    {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...(env.ASSISTANT_API_KEY
-          ? { authorization: `Bearer ${env.ASSISTANT_API_KEY}` }
-          : {}),
-      },
-      body: JSON.stringify({
-        model: env.ASSISTANT_MODEL,
-        stream: true,
-        temperature: opts.temperature,
-        max_tokens: opts.maxTokens,
-        messages,
-      }),
-      signal: opts.signal,
-    },
-  );
-  if (!upstream.ok || !upstream.body) {
-    const detail = await upstream.text().catch(() => "");
-    return { ok: false, status: upstream.status, detail };
-  }
-  const reader = upstream.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let content = "";
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-    for (const line of lines) {
-      const s = line.trim();
-      if (!s.startsWith("data:")) continue;
-      const data = s.slice(5).trim();
-      if (data === "[DONE]") return { ok: true, content };
-      try {
-        const j = JSON.parse(data) as {
-          choices?: Array<{ delta?: { content?: string } }>;
-        };
-        const delta = j?.choices?.[0]?.delta?.content;
-        if (typeof delta === "string") content += delta;
-      } catch {
-        /* ignore keep-alive / non-JSON lines */
-      }
-    }
-  }
-  return { ok: true, content };
-}
+const NOT_SET_UP = "Set up your AI tutor under Settings → AI tutor first.";
 
 export async function assistantRoutes(app: FastifyInstance) {
   const r = app.withTypeProvider<ZodTypeProvider>();
@@ -225,7 +169,88 @@ export async function assistantRoutes(app: FastifyInstance) {
         },
       },
     },
-    async () => ({ enabled: isAssistantEnabled, model: env.ASSISTANT_MODEL }),
+    async (req) => {
+      const ai = getAiConfig(req.user!.id);
+      return { enabled: ai !== null, model: ai?.model ?? "" };
+    },
+  );
+
+  // The signed-in user's AI tutor settings (never returns the key).
+  r.get(
+    "/api/assistant/settings",
+    {
+      preHandler: requireAuth,
+      schema: { tags: ["assistant"], response: { 200: aiSettingsView } },
+    },
+    async (req) => getAiSettingsView(req.user!.id),
+  );
+
+  r.put(
+    "/api/assistant/settings",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["assistant"],
+        body: saveAiSettingsBody,
+        response: { 200: aiSettingsView, 400: z.object({ error: z.string() }) },
+      },
+    },
+    async (req, reply) => {
+      if (req.body.apiKey && !getAiSettingsView(req.user!.id).encryptionAvailable) {
+        return reply.code(400).send({
+          error: "This server can't store API keys yet (the admin needs to set ENCRYPTION_KEY).",
+        });
+      }
+      try {
+        return saveAiSettings(req.user!.id, req.body);
+      } catch (err) {
+        if (err instanceof EgressError) return reply.code(400).send({ error: err.message });
+        throw err;
+      }
+    },
+  );
+
+  r.delete(
+    "/api/assistant/settings",
+    {
+      preHandler: requireAuth,
+      schema: { tags: ["assistant"], response: { 200: aiSettingsView } },
+    },
+    async (req) => {
+      deleteAiSettings(req.user!.id);
+      return getAiSettingsView(req.user!.id);
+    },
+  );
+
+  // "Test connection": one tiny completion against the saved settings.
+  r.post(
+    "/api/assistant/test",
+    {
+      preHandler: requireAuth,
+      config: { rateLimit: { max: 10, timeWindow: "1 minute", keyGenerator: clientIp } },
+      schema: {
+        tags: ["assistant"],
+        response: {
+          200: z.object({ ok: z.literal(true), reply: z.string() }),
+          502: z.object({ error: z.string() }),
+          503: z.object({ error: z.string() }),
+        },
+      },
+    },
+    async (req, reply) => {
+      const ai = getAiConfig(req.user!.id);
+      if (!ai) return reply.code(503).send({ error: NOT_SET_UP });
+      try {
+        const text = await collectCompletion(
+          ai,
+          [{ role: "user", content: "Reply with just the word: OK" }],
+          { temperature: 0, maxTokens: 5 },
+        );
+        return { ok: true as const, reply: text.trim().slice(0, 100) };
+      } catch (err) {
+        return reply.code(502).send({ error: aiErrorMessage(err, req.log, "test") });
+      }
+    },
   );
 
   // Judge a free-text answer (used as a lenient fallback when local grading
@@ -245,9 +270,8 @@ export async function assistantRoutes(app: FastifyInstance) {
       },
     },
     async (req, reply) => {
-      if (!isAssistantEnabled) {
-        return reply.code(503).send({ error: "assistant not configured" });
-      }
+      const ai = getAiConfig(req.user!.id);
+      if (!ai) return reply.code(503).send({ error: NOT_SET_UP });
       const { prompt, expected, response, context } = req.body;
       const system =
         "You grade short German-learning answers. Decide if the learner's answer is acceptable German for the task, allowing valid variants (word order, punctuation, equivalent spellings) but requiring correct grammar and meaning. " +
@@ -263,24 +287,17 @@ export async function assistantRoutes(app: FastifyInstance) {
         .join("\n");
 
       try {
-        const result = await collectCompletion(
+        const content = await collectCompletion(
+          ai,
           [
             { role: "system", content: system },
             { role: "user", content: user },
           ],
           { temperature: 0, maxTokens: 256 },
         );
-        if (!result.ok) {
-          app.log.error(
-            { status: result.status, detail: result.detail },
-            "grade upstream error",
-          );
-          return reply.code(502).send({ error: "grading failed" });
-        }
-        return parseVerdict(result.content);
+        return parseVerdict(content);
       } catch (err) {
-        app.log.error(err, "grade request failed");
-        return reply.code(502).send({ error: "grading failed" });
+        return reply.code(502).send({ error: aiErrorMessage(err, req.log, "grade") });
       }
     },
   );
@@ -304,33 +321,24 @@ export async function assistantRoutes(app: FastifyInstance) {
       },
     },
     async (req, reply) => {
-      if (!isAssistantEnabled) {
-        return reply.code(503).send({ error: "assistant not configured" });
-      }
+      const ai = getAiConfig(req.user!.id);
+      if (!ai) return reply.code(503).send({ error: NOT_SET_UP });
       const { word, context, meaning, count } = req.body;
       const { system, user } = buildWordMessages({ word, context, meaning, count });
       try {
-        const result = await collectCompletion(
+        const content = await collectCompletion(
+          ai,
           [
             { role: "system", content: system },
             { role: "user", content: user },
           ],
           { temperature: 0.4, maxTokens: 900 },
         );
-        if (!result.ok) {
-          app.log.error(
-            { status: result.status, detail: result.detail },
-            "word upstream error",
-          );
-          return reply
-            .code(502)
-            .send({ error: `upstream ${result.status}: ${result.detail.slice(0, 200)}` });
-        }
-        const obj = extractJsonObject(result.content);
+        const obj = extractJsonObject(content);
         const parsed = obj ? wordLookup.safeParse(obj) : null;
         if (!parsed || !parsed.success) {
           app.log.warn(
-            { content: result.content.slice(0, 300) },
+            { content: content.slice(0, 300) },
             "word: could not parse tutor reply",
           );
           return reply
@@ -339,9 +347,7 @@ export async function assistantRoutes(app: FastifyInstance) {
         }
         return parsed.data;
       } catch (err) {
-        app.log.error(err, "word request failed");
-        const reason = err instanceof Error ? err.message : String(err);
-        return reply.code(502).send({ error: `request failed: ${reason}` });
+        return reply.code(502).send({ error: aiErrorMessage(err, req.log, "word") });
       }
     },
   );
@@ -363,32 +369,23 @@ export async function assistantRoutes(app: FastifyInstance) {
       },
     },
     async (req, reply) => {
-      if (!isAssistantEnabled) {
-        return reply.code(503).send({ error: "assistant not configured" });
-      }
+      const ai = getAiConfig(req.user!.id);
+      if (!ai) return reply.code(503).send({ error: NOT_SET_UP });
       const { system, user } = buildNotesCleanup({
         level: getSettings(req.user!.id).level,
         text: req.body.text,
       });
       try {
-        const result = await collectCompletion(
+        const content = await collectCompletion(
+          ai,
           [
             { role: "system", content: system },
             { role: "user", content: user },
           ],
           { temperature: 0.2, maxTokens: 4096 },
         );
-        if (!result.ok) {
-          app.log.error(
-            { status: result.status, detail: result.detail },
-            "cleanup-notes upstream error",
-          );
-          return reply
-            .code(502)
-            .send({ error: `upstream ${result.status}: ${result.detail.slice(0, 200)}` });
-        }
         // Strip an accidental ```markdown fence if the model added one anyway.
-        let text = result.content.trim();
+        let text = content.trim();
         const fence = text.match(/^```(?:markdown|md)?\s*([\s\S]*?)```$/i);
         if (fence?.[1]) text = fence[1].trim();
         if (!text) {
@@ -396,9 +393,7 @@ export async function assistantRoutes(app: FastifyInstance) {
         }
         return { text };
       } catch (err) {
-        app.log.error(err, "cleanup-notes request failed");
-        const reason = err instanceof Error ? err.message : String(err);
-        return reply.code(502).send({ error: `request failed: ${reason}` });
+        return reply.code(502).send({ error: aiErrorMessage(err, req.log, "cleanup-notes") });
       }
     },
   );
@@ -425,9 +420,8 @@ export async function assistantRoutes(app: FastifyInstance) {
       },
     },
     async (req, reply) => {
-      if (!isAssistantEnabled) {
-        return reply.code(503).send({ error: "assistant not configured" });
-      }
+      const ai = getAiConfig(req.user!.id);
+      if (!ai) return reply.code(503).send({ error: NOT_SET_UP });
       const { count, set } = req.body;
       const { system, user } = buildGenerateMessages({
         title: set.title,
@@ -442,23 +436,14 @@ export async function assistantRoutes(app: FastifyInstance) {
         // Scale the token budget with how many items were asked for (each item
         // is a few hundred tokens of JSON). Streamed (see collectCompletion) so
         // it uses the same upstream path as the tutor, which is known to work.
-        const result = await collectCompletion(
+        const content = await collectCompletion(
+          ai,
           [
             { role: "system", content: system },
             { role: "user", content: user },
           ],
           { temperature: 0.8, maxTokens: Math.min(8192, 1024 + count * 500) },
         );
-        if (!result.ok) {
-          app.log.error(
-            { status: result.status, detail: result.detail },
-            "generate upstream error",
-          );
-          return reply
-            .code(502)
-            .send({ error: `upstream ${result.status}: ${result.detail.slice(0, 300)}` });
-        }
-        const content = result.content;
         const match = content.match(/\{[\s\S]*\}/);
         let rawItems: unknown[] = [];
         if (match) {
@@ -482,9 +467,7 @@ export async function assistantRoutes(app: FastifyInstance) {
         }
         return { items, received: rawItems.length };
       } catch (err) {
-        app.log.error(err, "generate request failed");
-        const reason = err instanceof Error ? err.message : String(err);
-        return reply.code(502).send({ error: `request failed: ${reason}` });
+        return reply.code(502).send({ error: aiErrorMessage(err, req.log, "generate") });
       }
     },
   );
@@ -495,9 +478,8 @@ export async function assistantRoutes(app: FastifyInstance) {
     "/api/assistant/ask",
     { preHandler: requireAuth, schema: { tags: ["assistant"], body: askBody } },
     async (req, reply) => {
-      if (!isAssistantEnabled) {
-        return reply.code(503).send({ error: "assistant not configured" });
-      }
+      const ai = getAiConfig(req.user!.id);
+      if (!ai) return reply.code(503).send({ error: NOT_SET_UP });
 
       const { task, selection, question, context, item, response, text, history } =
         req.body;
@@ -549,71 +531,19 @@ export async function assistantRoutes(app: FastifyInstance) {
       req.raw.on("close", () => controller.abort());
 
       try {
-        const upstream = await fetch(
-          `${env.ASSISTANT_BASE_URL.replace(/\/$/, "")}/chat/completions`,
-          {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-              ...(env.ASSISTANT_API_KEY
-                ? { authorization: `Bearer ${env.ASSISTANT_API_KEY}` }
-                : {}),
-            },
-            body: JSON.stringify({
-              model: env.ASSISTANT_MODEL,
-              stream: true,
-              temperature: 0.3,
-              max_tokens: 1024,
-              messages,
-            }),
-            signal: controller.signal,
-          },
-        );
-
-        if (!upstream.ok || !upstream.body) {
-          const detail = await upstream.text().catch(() => "");
-          app.log.error(
-            { status: upstream.status, detail },
-            "assistant upstream error",
-          );
-          send({ error: `upstream error (${upstream.status})` });
-          raw.write("data: [DONE]\n\n");
-          raw.end();
-          return;
-        }
-
-        // Re-parse the upstream SSE and forward only the text deltas.
-        const reader = upstream.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        for (;;) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-          for (const line of lines) {
-            const s = line.trim();
-            if (!s.startsWith("data:")) continue;
-            const data = s.slice(5).trim();
-            if (data === "[DONE]") continue;
-            let json: unknown;
-            try {
-              json = JSON.parse(data);
-            } catch {
-              continue;
-            }
-            const token = (json as ChatChunk)?.choices?.[0]?.delta?.content;
-            if (token) send({ token });
-          }
+        for await (const token of streamCompletion(ai, messages, {
+          temperature: 0.3,
+          maxTokens: 1024,
+          signal: controller.signal,
+        })) {
+          send({ token });
         }
         raw.write("data: [DONE]\n\n");
         raw.end();
       } catch (err) {
         if (!controller.signal.aborted) {
-          app.log.error(err, "assistant stream failed");
           try {
-            send({ error: "assistant request failed" });
+            send({ error: aiErrorMessage(err, req.log, "assistant stream") });
             raw.write("data: [DONE]\n\n");
           } catch {
             /* socket already gone */
@@ -628,7 +558,3 @@ export async function assistantRoutes(app: FastifyInstance) {
     },
   );
 }
-
-type ChatChunk = {
-  choices?: Array<{ delta?: { content?: string } }>;
-};

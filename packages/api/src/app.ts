@@ -11,6 +11,7 @@ import {
   serializerCompiler,
   validatorCompiler,
 } from "fastify-type-provider-zod";
+import { seedAdminAiFromEnv } from "./assistant/config";
 import { pruneExpiredSessions } from "./auth/session";
 import { ensureAdminUser } from "./auth/users";
 import { ensureSchema } from "./db/client";
@@ -43,6 +44,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   }
 
   await ensureAdminUser(app.log);
+  seedAdminAiFromEnv(app.log);
   pruneExpiredSessions();
   setInterval(pruneExpiredSessions, 60 * 60 * 1000).unref();
 
