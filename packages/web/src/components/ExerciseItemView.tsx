@@ -391,10 +391,16 @@ function ResultBanner({
         </p>
       )}
       {open && (
-        <p className="mt-1 text-sm">
-          <span className="text-slate-500">Possible answers: </span>
-          <span className="font-medium">{answer.accept.join(" · ")}</span>
-        </p>
+        <div className="mt-2 rounded-lg bg-slate-100 p-3 text-sm dark:bg-slate-800">
+          <p className="mb-1 text-slate-500">Possible answers:</p>
+          <ul className="space-y-1">
+            {answer.accept.map((a) => (
+              <li key={a} className="font-medium text-slate-800 dark:text-slate-100">
+                {a}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
       {showAnswer && (
         <p className="mt-1 text-sm">
