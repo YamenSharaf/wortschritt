@@ -37,7 +37,7 @@ export async function vocabRoutes(app: FastifyInstance) {
       preHandler: requireAuth,
       schema: { tags: ["vocab"], response: { 200: z.array(vocabGroup) } },
     },
-    async () => listGroups(),
+    async (req) => listGroups(req.user!.id),
   );
 
   r.post(
@@ -50,7 +50,7 @@ export async function vocabRoutes(app: FastifyInstance) {
         response: { 200: vocabGroup },
       },
     },
-    async (req) => createGroup(req.body.name),
+    async (req) => createGroup(req.user!.id, req.body.name),
   );
 
   r.delete(
@@ -64,7 +64,7 @@ export async function vocabRoutes(app: FastifyInstance) {
       },
     },
     async (req) => {
-      deleteGroup(req.params.id);
+      deleteGroup(req.user!.id, req.params.id);
       return { ok: true as const };
     },
   );
@@ -81,7 +81,7 @@ export async function vocabRoutes(app: FastifyInstance) {
       },
     },
     async (req) => {
-      addWordToGroup(req.params.id, req.body.word);
+      addWordToGroup(req.user!.id, req.params.id, req.body.word);
       return { ok: true as const };
     },
   );
@@ -100,7 +100,7 @@ export async function vocabRoutes(app: FastifyInstance) {
       },
     },
     async (req) => {
-      removeWordFromGroup(req.params.id, req.params.word);
+      removeWordFromGroup(req.user!.id, req.params.id, req.params.word);
       return { ok: true as const };
     },
   );
@@ -112,7 +112,7 @@ export async function vocabRoutes(app: FastifyInstance) {
       preHandler: requireAuth,
       schema: { tags: ["vocab"], response: { 200: z.array(vocabEntry) } },
     },
-    async () => listVocab(),
+    async (req) => listVocab(req.user!.id),
   );
 
   r.get(
@@ -125,7 +125,7 @@ export async function vocabRoutes(app: FastifyInstance) {
         response: { 200: vocabEntry.nullable() },
       },
     },
-    async (req) => getVocab(req.params.word),
+    async (req) => getVocab(req.user!.id, req.params.word),
   );
 
   r.post(
@@ -138,7 +138,7 @@ export async function vocabRoutes(app: FastifyInstance) {
         response: { 200: vocabEntry },
       },
     },
-    async (req) => upsertVocab(req.body),
+    async (req) => upsertVocab(req.user!.id, req.body),
   );
 
   r.delete(
@@ -152,7 +152,7 @@ export async function vocabRoutes(app: FastifyInstance) {
       },
     },
     async (req) => {
-      removeVocab(req.params.word);
+      removeVocab(req.user!.id, req.params.word);
       return { ok: true as const };
     },
   );
@@ -169,7 +169,7 @@ export async function vocabRoutes(app: FastifyInstance) {
         response: { 200: vocabStat },
       },
     },
-    async (req) => recordStudy(req.params.word, req.body.known),
+    async (req) => recordStudy(req.user!.id, req.params.word, req.body.known),
   );
 
   r.delete(
@@ -183,7 +183,7 @@ export async function vocabRoutes(app: FastifyInstance) {
       },
     },
     async (req) => {
-      resetStudy(req.params.word);
+      resetStudy(req.user!.id, req.params.word);
       return { ok: true as const };
     },
   );

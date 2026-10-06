@@ -175,6 +175,172 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 3,
+    // Per-user data. Every learner table gains a user_id (deleting a user
+    // deletes their data); tables keyed by word / set / sheet are rebuilt with
+    // (user_id, …) keys so two users can't collide. Existing rows go to the
+    // admin. Content (imported_content) stays shared but records its owner.
+    name: "per-user-data",
+    up(db) {
+      // Owner for the pre-existing rows. A database upgraded straight from
+      // v1 has no users yet: create a placeholder admin (empty hash = can't
+      // log in) that auth/users.ts completes from ADMIN_USERNAME/APP_PASSWORD.
+      db.exec(`
+        INSERT INTO users (username, password_hash, role)
+          SELECT 'admin', '', 'admin' WHERE NOT EXISTS (SELECT 1 FROM users);
+      `);
+      const OWNER = `(SELECT id FROM users WHERE role = 'admin' ORDER BY id LIMIT 1)`;
+      const USER_FK = `INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE`;
+
+      /** Rebuild `table` with a new definition, copying rows via `select`. */
+      const rebuild = (table: string, columns: string, select: string, indexes: string[]) => {
+        db.exec(`
+          CREATE TABLE ${table}_new (${columns});
+          INSERT INTO ${table}_new ${select};
+          DROP TABLE ${table};
+          ALTER TABLE ${table}_new RENAME TO ${table};
+          ${indexes.map((i) => `${i};`).join("\n")}
+        `);
+      };
+
+      rebuild(
+        "settings",
+        `user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+         data TEXT NOT NULL,
+         updated_at INTEGER NOT NULL DEFAULT (unixepoch())`,
+        `SELECT ${OWNER}, data, updated_at FROM settings WHERE id = 1`,
+        [],
+      );
+      rebuild(
+        "attempts",
+        `id INTEGER PRIMARY KEY AUTOINCREMENT,
+         user_id ${USER_FK},
+         set_id TEXT NOT NULL,
+         item_id TEXT NOT NULL,
+         correct INTEGER NOT NULL,
+         answered_at INTEGER NOT NULL DEFAULT (unixepoch())`,
+        `SELECT id, ${OWNER}, set_id, item_id, correct, answered_at FROM attempts`,
+        [
+          "CREATE INDEX idx_attempts_user_answered ON attempts(user_id, answered_at)",
+          "CREATE INDEX idx_attempts_user_set ON attempts(user_id, set_id)",
+        ],
+      );
+      rebuild(
+        "exercise_runs",
+        `id INTEGER PRIMARY KEY AUTOINCREMENT,
+         user_id ${USER_FK},
+         set_id TEXT NOT NULL,
+         set_title TEXT NOT NULL,
+         total INTEGER NOT NULL,
+         answered INTEGER NOT NULL,
+         correct INTEGER NOT NULL,
+         results TEXT NOT NULL,
+         finished_at INTEGER NOT NULL DEFAULT (unixepoch())`,
+        `SELECT id, ${OWNER}, set_id, set_title, total, answered, correct, results, finished_at
+         FROM exercise_runs`,
+        [
+          "CREATE INDEX idx_runs_user_set ON exercise_runs(user_id, set_id)",
+          "CREATE INDEX idx_runs_user_finished ON exercise_runs(user_id, finished_at)",
+        ],
+      );
+      rebuild(
+        "exercise_progress",
+        `user_id ${USER_FK},
+         set_id TEXT NOT NULL,
+         position INTEGER NOT NULL,
+         results TEXT NOT NULL,
+         responses TEXT NOT NULL,
+         updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+         PRIMARY KEY (user_id, set_id)`,
+        `SELECT ${OWNER}, set_id, position, results, responses, updated_at FROM exercise_progress`,
+        [],
+      );
+      rebuild(
+        "sheet_views",
+        `user_id ${USER_FK},
+         sheet_id TEXT NOT NULL,
+         title TEXT NOT NULL,
+         viewed_at INTEGER NOT NULL DEFAULT (unixepoch()),
+         PRIMARY KEY (user_id, sheet_id)`,
+        `SELECT ${OWNER}, sheet_id, title, viewed_at FROM sheet_views`,
+        ["CREATE INDEX idx_sheet_views_user_viewed ON sheet_views(user_id, viewed_at)"],
+      );
+      rebuild(
+        "vocab",
+        `user_id ${USER_FK},
+         word TEXT NOT NULL,
+         display TEXT NOT NULL,
+         translation TEXT NOT NULL,
+         examples TEXT NOT NULL,
+         forms TEXT,
+         created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+         PRIMARY KEY (user_id, word)`,
+        `SELECT ${OWNER}, word, display, translation, examples, forms, created_at FROM vocab`,
+        ["CREATE INDEX idx_vocab_user_created ON vocab(user_id, created_at)"],
+      );
+      rebuild(
+        "vocab_groups",
+        `id INTEGER PRIMARY KEY AUTOINCREMENT,
+         user_id ${USER_FK},
+         name TEXT NOT NULL,
+         created_at INTEGER NOT NULL DEFAULT (unixepoch())`,
+        `SELECT id, ${OWNER}, name, created_at FROM vocab_groups`,
+        ["CREATE INDEX idx_vocab_groups_user ON vocab_groups(user_id)"],
+      );
+      rebuild(
+        "vocab_group_members",
+        `group_id INTEGER NOT NULL,
+         user_id ${USER_FK},
+         word TEXT NOT NULL,
+         PRIMARY KEY (group_id, word)`,
+        `SELECT group_id, ${OWNER}, word FROM vocab_group_members`,
+        ["CREATE INDEX idx_vgm_user_word ON vocab_group_members(user_id, word)"],
+      );
+      rebuild(
+        "vocab_stats",
+        `user_id ${USER_FK},
+         word TEXT NOT NULL,
+         known INTEGER NOT NULL DEFAULT 0,
+         missed INTEGER NOT NULL DEFAULT 0,
+         last_result INTEGER,
+         last_studied_at INTEGER,
+         PRIMARY KEY (user_id, word)`,
+        `SELECT ${OWNER}, word, known, missed, last_result, last_studied_at FROM vocab_stats`,
+        [],
+      );
+      rebuild(
+        "notes",
+        `id TEXT PRIMARY KEY,
+         user_id ${USER_FK},
+         title TEXT NOT NULL DEFAULT 'Untitled',
+         category TEXT NOT NULL DEFAULT '',
+         body TEXT NOT NULL DEFAULT '',
+         created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+         updated_at INTEGER NOT NULL DEFAULT (unixepoch())`,
+        `SELECT id, ${OWNER}, title, category, body, created_at, updated_at FROM notes`,
+        ["CREATE INDEX idx_notes_user_updated ON notes(user_id, updated_at)"],
+      );
+
+      db.exec(`
+        -- Shown on the admin's Users screen.
+        ALTER TABLE users ADD COLUMN last_login_at INTEGER;
+        UPDATE users SET last_login_at =
+          (SELECT MAX(created_at) FROM sessions WHERE sessions.user_id = users.id);
+
+        -- Shared library: keep rows when their importer is deleted.
+        ALTER TABLE imported_content
+          ADD COLUMN created_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
+        UPDATE imported_content SET created_by = ${OWNER};
+
+        -- Instance-wide settings (e.g. registration window), key → value.
+        CREATE TABLE app_settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        );
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

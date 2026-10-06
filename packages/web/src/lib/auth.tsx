@@ -13,6 +13,7 @@ type AuthState = {
   user: AuthUserDto | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
+  register: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -36,6 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     login: async (username, password) => {
       await api.login(username, password);
+      setUser((await api.me()).user);
+    },
+    register: async (username, password) => {
+      await api.register(username, password);
       setUser((await api.me()).user);
     },
     logout: async () => {

@@ -49,6 +49,15 @@ function byNewest<T extends { createdAt?: string }>(items: T[]): T[] {
   return [...items].sort((a, b) => ts(b.createdAt) - ts(a.createdAt));
 }
 
+/** Ids of the git-versioned (built-in) content of one kind. */
+export function builtInIds(kind: "exercise" | "cheatsheet"): Set<string> {
+  const items =
+    kind === "exercise"
+      ? readJsonDir(join(resolve(env.CONTENT_DIR), "exercises"), exerciseSet)
+      : readJsonDir(join(resolve(env.CONTENT_DIR), "cheatsheets"), cheatsheet);
+  return new Set(items.map((i) => i.id));
+}
+
 /** Git-versioned exercise sets + those imported at runtime, merged by id. */
 export function loadExerciseSets(): ExerciseSet[] {
   const fromFiles = readJsonDir(

@@ -36,7 +36,7 @@ export async function activityRoutes(app: FastifyInstance) {
       },
     },
     async (req) => {
-      recordRun(req.body);
+      recordRun(req.user!.id, req.body);
       return { ok: true as const };
     },
   );
@@ -51,7 +51,7 @@ export async function activityRoutes(app: FastifyInstance) {
         response: { 200: z.array(runSummary) },
       },
     },
-    async (req) => latestRunsPerSet(req.query.limit),
+    async (req) => latestRunsPerSet(req.user!.id, req.query.limit),
   );
 
   r.get(
@@ -64,7 +64,7 @@ export async function activityRoutes(app: FastifyInstance) {
         response: { 200: exerciseRun.nullable() },
       },
     },
-    async (req) => latestRunForSet(req.params.setId),
+    async (req) => latestRunForSet(req.user!.id, req.params.setId),
   );
 
   r.post(
@@ -78,7 +78,7 @@ export async function activityRoutes(app: FastifyInstance) {
       },
     },
     async (req) => {
-      recordSheetView(req.body);
+      recordSheetView(req.user!.id, req.body);
       return { ok: true as const };
     },
   );
@@ -93,7 +93,7 @@ export async function activityRoutes(app: FastifyInstance) {
         response: { 200: z.array(sheetView) },
       },
     },
-    async (req) => recentSheetViews(req.query.limit),
+    async (req) => recentSheetViews(req.user!.id, req.query.limit),
   );
 
   // Resumable in-progress position within an exercise set.
@@ -107,7 +107,7 @@ export async function activityRoutes(app: FastifyInstance) {
         response: { 200: exerciseProgress.nullable() },
       },
     },
-    async (req) => getExerciseProgress(req.params.setId),
+    async (req) => getExerciseProgress(req.user!.id, req.params.setId),
   );
 
   r.put(
@@ -122,7 +122,7 @@ export async function activityRoutes(app: FastifyInstance) {
       },
     },
     async (req) => {
-      saveExerciseProgress(req.params.setId, req.body);
+      saveExerciseProgress(req.user!.id, req.params.setId, req.body);
       return { ok: true as const };
     },
   );
@@ -138,7 +138,7 @@ export async function activityRoutes(app: FastifyInstance) {
       },
     },
     async (req) => {
-      clearExerciseProgress(req.params.setId);
+      clearExerciseProgress(req.user!.id, req.params.setId);
       return { ok: true as const };
     },
   );

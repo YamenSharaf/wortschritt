@@ -1,6 +1,6 @@
 # mit dem baby 🍼
 
-A self-hosted, single-user German learning app. Cheat sheets (non-interactive
+A self-hosted German learning app for a few people. Cheat sheets (non-interactive
 reference) + exercises (interactive drills), with a clean separation between
 **features** (code) and **content** (data) so you can add material with an LLM
 without touching the codebase.
@@ -30,6 +30,10 @@ client can codegen a typed client against it.
 - **Flashcards** — built from a vocab group, with a know/don't-know score kept
   per word.
 - **Notes** — free-form, categorized Markdown notes, auto-saved.
+- **Accounts** — a few people can share one instance: each has their own
+  vocab, notes, progress and settings, while exercises and cheat sheets are a
+  shared library. The admin manages accounts under Settings → Users and can open
+  self-registration for 24 hours at a time.
 - **Tap-to-gloss** — tap a German word for an instant translation from a bundled
   offline dictionary (see `packages/api/assets/ATTRIBUTION.md`).
 - **AI tutor (optional)** — explain a highlighted passage, hints, "why was I
@@ -168,11 +172,14 @@ back to the browser's built-in voice.
 
 ## Data model
 
-All tables live in one SQLite file (`DATABASE_PATH`):
+All tables live in one SQLite file (`DATABASE_PATH`). Learner data is per
+user (a `user_id` column, deleted together with the user); content is shared.
 
 | Table | Holds |
 | --- | --- |
-| `settings` | single JSON row: display name, CEFR level, daily goal, theme, AI grading on/off, "generate more" batch size |
+| `users` / `sessions` | accounts (scrypt hashes, role, disabled) and server-side sessions |
+| `app_settings` | instance-wide settings, e.g. when self-registration closes |
+| `settings` | per user: display name, CEFR level, daily goal, theme, AI grading on/off, "generate more" batch size |
 | `attempts` | one row per answered item (the event log progress is derived from) |
 | `exercise_runs` | one row per completed pass through an exercise set |
 | `exercise_progress` | resumable position + answers for an unfinished set |
@@ -181,7 +188,7 @@ All tables live in one SQLite file (`DATABASE_PATH`):
 | `vocab_groups` / `vocab_group_members` | named word groups (many-to-many) |
 | `vocab_stats` | flashcard know/don't-know tally per word |
 | `notes` | Markdown notes |
-| `imported_content` | exercises and cheat sheets added via the Import screen |
+| `imported_content` | shared exercises and cheat sheets added via the Import screen, with who imported them |
 
 The schema is versioned: on boot the API applies any pending migrations from
 `packages/api/src/db/migrations.ts`, after first writing a backup next to the
@@ -197,7 +204,11 @@ The full, typed spec is at `/api/docs` (OpenAPI UI). Everything except
 
 ```
 Auth        POST /api/auth/login | /api/auth/logout | /api/auth/password
-            GET  /api/auth/me
+            GET  /api/auth/me    GET /api/auth/registration
+            POST /api/auth/register      (only while registration is open)
+Admin       GET  /api/admin/users        PATCH|DELETE /api/admin/users/:id
+            POST /api/admin/users/:id/password
+            GET|PUT /api/admin/registration
 Public      GET  /api/config  /api/health  /api/docs
 Content     GET  /api/exercises[/:id]  /api/cheatsheets[/:id]  /api/exercise-types
             POST /api/import

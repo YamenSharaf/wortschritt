@@ -5,7 +5,7 @@ import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { TTS_VOICE_CATALOG, TTS_VOICE_IDS, ttsStatus } from "@mdb/shared";
-import { requireAuth } from "../auth/session";
+import { requireAdmin, requireAuth } from "../auth/session";
 import { env, isTtsEnabled } from "../env";
 
 const base = env.TTS_URL ? env.TTS_URL.replace(/\/$/, "") : null;
@@ -106,16 +106,19 @@ export async function ttsRoutes(app: FastifyInstance) {
   );
 
   // Download a voice into the shared volume (allowlisted to the catalog).
+  // Admin-only: it writes to the server for everyone.
   r.post(
     "/api/tts/download",
     {
-      preHandler: requireAuth,
+      preHandler: requireAdmin,
       schema: {
         tags: ["tts"],
         body: z.object({ voice: z.string().min(1) }),
         response: {
           200: z.object({ ok: z.literal(true), installed: z.array(z.string()) }),
           400: z.object({ error: z.string() }),
+          401: z.object({ error: z.string() }),
+          403: z.object({ error: z.string() }),
           502: z.object({ error: z.string() }),
           503: z.object({ error: z.string() }),
         },

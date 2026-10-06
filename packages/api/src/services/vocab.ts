@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type {
   SaveVocabBody,
   VocabEntry,
@@ -10,6 +10,21 @@ import { db, schema } from "../db/client";
 import { formsFor } from "./dict";
 
 const key = (w: string) => w.trim().toLowerCase();
+
+// Vocabulary is private: every query below is scoped to one user.
+const vocabKey = (userId: number, word: string) =>
+  and(eq(schema.vocab.userId, userId), eq(schema.vocab.word, key(word)));
+const statKey = (userId: number, word: string) =>
+  and(eq(schema.vocabStats.userId, userId), eq(schema.vocabStats.word, key(word)));
+
+type VocabRow = typeof schema.vocab.$inferSelect;
+function toEntry(
+  { userId: _owner, ...r }: VocabRow,
+  groups: number[],
+  stats: VocabStat | null,
+): VocabEntry {
+  return { ...r, groups, stats, forms: displayForms(r.display, r.forms) };
+}
 
 /** Merge the offline-derived forms (pos, Partizip II, article, plural) with the
  *  AI-supplied stored forms (which add the perfect auxiliary). Offline wins for
@@ -41,8 +56,12 @@ function toStat(r: StatRow): VocabStat {
 }
 
 /** group_id list for each word, so entries can carry their memberships. */
-function membershipByWord(): Map<string, number[]> {
-  const rows = db.select().from(schema.vocabGroupMembers).all();
+function membershipByWord(userId: number): Map<string, number[]> {
+  const rows = db
+    .select()
+    .from(schema.vocabGroupMembers)
+    .where(eq(schema.vocabGroupMembers.userId, userId))
+    .all();
   const map = new Map<string, number[]>();
   for (const r of rows) {
     const list = map.get(r.word) ?? [];
@@ -52,60 +71,55 @@ function membershipByWord(): Map<string, number[]> {
   return map;
 }
 
-function statsByWord(): Map<string, VocabStat> {
-  const rows = db.select().from(schema.vocabStats).all();
+function statsByWord(userId: number): Map<string, VocabStat> {
+  const rows = db
+    .select()
+    .from(schema.vocabStats)
+    .where(eq(schema.vocabStats.userId, userId))
+    .all();
   const map = new Map<string, VocabStat>();
   for (const r of rows) map.set(r.word, toStat(r));
   return map;
 }
 
-export function listVocab(): VocabEntry[] {
+export function listVocab(userId: number): VocabEntry[] {
   const rows = db
     .select()
     .from(schema.vocab)
+    .where(eq(schema.vocab.userId, userId))
     .orderBy(desc(schema.vocab.createdAt))
     .all();
-  const groups = membershipByWord();
-  const stats = statsByWord();
-  return rows.map((r) => ({
-    ...r,
-    groups: groups.get(r.word) ?? [],
-    stats: stats.get(r.word) ?? null,
-    forms: displayForms(r.display, r.forms),
-  }));
+  const groups = membershipByWord(userId);
+  const stats = statsByWord(userId);
+  return rows.map((r) =>
+    toEntry(r, groups.get(r.word) ?? [], stats.get(r.word) ?? null),
+  );
 }
 
-export function getVocab(word: string): VocabEntry | null {
-  const r = db
-    .select()
-    .from(schema.vocab)
-    .where(eq(schema.vocab.word, key(word)))
-    .get();
+export function getVocab(userId: number, word: string): VocabEntry | null {
+  const r = db.select().from(schema.vocab).where(vocabKey(userId, word)).get();
   if (!r) return null;
   const groups = db
     .select()
     .from(schema.vocabGroupMembers)
-    .where(eq(schema.vocabGroupMembers.word, r.word))
+    .where(
+      and(
+        eq(schema.vocabGroupMembers.userId, userId),
+        eq(schema.vocabGroupMembers.word, r.word),
+      ),
+    )
     .all()
     .map((m) => m.groupId);
-  const stat = db
-    .select()
-    .from(schema.vocabStats)
-    .where(eq(schema.vocabStats.word, r.word))
-    .get();
-  return {
-    ...r,
-    groups,
-    stats: stat ? toStat(stat) : null,
-    forms: displayForms(r.display, r.forms),
-  };
+  const stat = db.select().from(schema.vocabStats).where(statKey(userId, r.word)).get();
+  return toEntry(r, groups, stat ? toStat(stat) : null);
 }
 
 /** Record one flashcard grade for a word; increments the running tally. */
-export function recordStudy(word: string, known: boolean): VocabStat {
+export function recordStudy(userId: number, word: string, known: boolean): VocabStat {
   const w = key(word);
   db.insert(schema.vocabStats)
     .values({
+      userId,
       word: w,
       known: known ? 1 : 0,
       missed: known ? 0 : 1,
@@ -113,7 +127,7 @@ export function recordStudy(word: string, known: boolean): VocabStat {
       lastStudiedAt: sql`(unixepoch())`,
     })
     .onConflictDoUpdate({
-      target: schema.vocabStats.word,
+      target: [schema.vocabStats.userId, schema.vocabStats.word],
       set: {
         known: sql`${schema.vocabStats.known} + ${known ? 1 : 0}`,
         missed: sql`${schema.vocabStats.missed} + ${known ? 0 : 1}`,
@@ -122,19 +136,13 @@ export function recordStudy(word: string, known: boolean): VocabStat {
       },
     })
     .run();
-  const row = db
-    .select()
-    .from(schema.vocabStats)
-    .where(eq(schema.vocabStats.word, w))
-    .get();
+  const row = db.select().from(schema.vocabStats).where(statKey(userId, w)).get();
   return toStat(row!);
 }
 
 /** Clear a word's flashcard tally. */
-export function resetStudy(word: string): void {
-  db.delete(schema.vocabStats)
-    .where(eq(schema.vocabStats.word, key(word)))
-    .run();
+export function resetStudy(userId: number, word: string): void {
+  db.delete(schema.vocabStats).where(statKey(userId, word)).run();
 }
 
 /** Drop empty AI form fields; null when nothing usable remains. */
@@ -150,10 +158,11 @@ function cleanForms(
 }
 
 /** Insert or update by normalized word; preserves the original createdAt. */
-export function upsertVocab(body: SaveVocabBody): VocabEntry {
+export function upsertVocab(userId: number, body: SaveVocabBody): VocabEntry {
   const word = key(body.word);
   const forms = cleanForms(body.forms);
   const row = {
+    userId,
     word,
     display: (body.display ?? body.word).trim(),
     translation: body.translation,
@@ -163,7 +172,7 @@ export function upsertVocab(body: SaveVocabBody): VocabEntry {
   db.insert(schema.vocab)
     .values(row)
     .onConflictDoUpdate({
-      target: schema.vocab.word,
+      target: [schema.vocab.userId, schema.vocab.word],
       set: {
         display: row.display,
         translation: row.translation,
@@ -173,56 +182,80 @@ export function upsertVocab(body: SaveVocabBody): VocabEntry {
       },
     })
     .run();
-  return getVocab(word)!;
+  return getVocab(userId, word)!;
 }
 
-export function removeVocab(word: string): void {
-  const w = key(word);
-  db.delete(schema.vocab).where(eq(schema.vocab.word, w)).run();
+export function removeVocab(userId: number, word: string): void {
+  db.delete(schema.vocab).where(vocabKey(userId, word)).run();
   db.delete(schema.vocabGroupMembers)
-    .where(eq(schema.vocabGroupMembers.word, w))
+    .where(
+      and(
+        eq(schema.vocabGroupMembers.userId, userId),
+        eq(schema.vocabGroupMembers.word, key(word)),
+      ),
+    )
     .run();
-  db.delete(schema.vocabStats).where(eq(schema.vocabStats.word, w)).run();
+  db.delete(schema.vocabStats).where(statKey(userId, word)).run();
 }
 
 // --- groups ----------------------------------------------------------------
 
-export function listGroups(): VocabGroup[] {
+export function listGroups(userId: number): VocabGroup[] {
   return db.all(sql`
     SELECT g.id AS id, g.name AS name, g.created_at AS createdAt,
            (SELECT count(*) FROM vocab_group_members m WHERE m.group_id = g.id) AS count
     FROM vocab_groups g
+    WHERE g.user_id = ${userId}
     ORDER BY g.name COLLATE NOCASE ASC
   `) as VocabGroup[];
 }
 
-export function createGroup(name: string): VocabGroup {
+/** Whether group `id` exists and belongs to the user. */
+export function ownsGroup(userId: number, id: number): boolean {
+  return Boolean(
+    db
+      .select({ id: schema.vocabGroups.id })
+      .from(schema.vocabGroups)
+      .where(and(eq(schema.vocabGroups.id, id), eq(schema.vocabGroups.userId, userId)))
+      .get(),
+  );
+}
+
+export function createGroup(userId: number, name: string): VocabGroup {
   const res = db
     .insert(schema.vocabGroups)
-    .values({ name: name.trim() })
+    .values({ userId, name: name.trim() })
     .run();
   const id = Number(res.lastInsertRowid);
   return { id, name: name.trim(), count: 0, createdAt: 0 };
 }
 
-export function deleteGroup(id: number): void {
+// The group mutations below are no-ops for groups the user doesn't own.
+
+export function deleteGroup(userId: number, id: number): void {
+  if (!ownsGroup(userId, id)) return;
   db.delete(schema.vocabGroups).where(eq(schema.vocabGroups.id, id)).run();
   db.delete(schema.vocabGroupMembers)
     .where(eq(schema.vocabGroupMembers.groupId, id))
     .run();
 }
 
-export function addWordToGroup(id: number, word: string): void {
+export function addWordToGroup(userId: number, id: number, word: string): void {
+  if (!ownsGroup(userId, id)) return;
   db.insert(schema.vocabGroupMembers)
-    .values({ groupId: id, word: key(word) })
+    .values({ groupId: id, userId, word: key(word) })
     .onConflictDoNothing()
     .run();
 }
 
-export function removeWordFromGroup(id: number, word: string): void {
+export function removeWordFromGroup(userId: number, id: number, word: string): void {
+  if (!ownsGroup(userId, id)) return;
   db.delete(schema.vocabGroupMembers)
     .where(
-      sql`${schema.vocabGroupMembers.groupId} = ${id} AND ${schema.vocabGroupMembers.word} = ${key(word)}`,
+      and(
+        eq(schema.vocabGroupMembers.groupId, id),
+        eq(schema.vocabGroupMembers.word, key(word)),
+      ),
     )
     .run();
 }

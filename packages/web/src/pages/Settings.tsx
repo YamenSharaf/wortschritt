@@ -19,9 +19,13 @@ import {
   speak,
 } from "../lib/tts";
 import { ImportPage } from "./Import";
+import { UsersAdmin } from "./UsersAdmin";
 
 export function SettingsPage() {
-  const [tab, setTab] = useState<"preferences" | "account" | "import">("preferences");
+  const { user } = useAuth();
+  const [tab, setTab] = useState<"preferences" | "account" | "users" | "import">(
+    "preferences",
+  );
   const tabBtn = (active: boolean) =>
     `rounded-lg px-3 py-1.5 text-sm font-medium ${
       active
@@ -31,19 +35,25 @@ export function SettingsPage() {
   return (
     <div>
       <h1 className="mb-4 text-2xl font-bold">Settings</h1>
-      <div className="mb-6 inline-flex gap-1 rounded-xl border border-slate-200 p-1 dark:border-slate-800">
+      <div className="mb-6 inline-flex flex-wrap gap-1 rounded-xl border border-slate-200 p-1 dark:border-slate-800">
         <button type="button" className={tabBtn(tab === "preferences")} onClick={() => setTab("preferences")}>
           Preferences
         </button>
         <button type="button" className={tabBtn(tab === "account")} onClick={() => setTab("account")}>
           Account
         </button>
+        {user?.role === "admin" && (
+          <button type="button" className={tabBtn(tab === "users")} onClick={() => setTab("users")}>
+            Users
+          </button>
+        )}
         <button type="button" className={tabBtn(tab === "import")} onClick={() => setTab("import")}>
           Import content
         </button>
       </div>
       {tab === "preferences" && <Preferences />}
       {tab === "account" && <Account />}
+      {tab === "users" && user?.role === "admin" && <UsersAdmin />}
       {tab === "import" && <ImportPage />}
     </div>
   );
@@ -199,6 +209,7 @@ function PronunciationSetting({
   onChange: (v: string) => void;
 }) {
   const status = useAsync(() => api.ttsStatus(), []);
+  const { user } = useAuth();
   const [installed, setInstalled] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -261,7 +272,8 @@ function PronunciationSetting({
             (set <code>TTS_URL</code>).
           </p>
         )}
-        {available && notInstalled.length > 0 && (
+        {/* Downloads write to the server for everyone: admin only. */}
+        {available && user?.role === "admin" && notInstalled.length > 0 && (
             <div>
               <p className="mb-1 text-xs font-medium text-slate-400">
                 Download more voices
