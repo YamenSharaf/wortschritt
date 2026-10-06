@@ -237,6 +237,25 @@ test("provider errors: status shown, upstream body and internals never leaked", 
   provider = () => sse(["O", "K"]);
 });
 
+test("grading: open-ended items tell the AI the answers are only examples", async () => {
+  provider = () => sse(['{"correct": true, "feedback": "Fits the task."}']);
+  const body = {
+    prompt: "Vervollständige den Satz frei.",
+    expected: ["Für mich ist es wichtig, viel zu lesen."],
+    response: "Für mich ist es wichtig, oft zu reisen.",
+  };
+  let res = await admin("POST", "/api/assistant/grade", { ...body, open: true });
+  assert.deepEqual(res.json(), { correct: true, feedback: "Fits the task." });
+  let user = JSON.stringify(calls.at(-1)!.body.messages);
+  assert.match(user, /Example answers \(open-ended/);
+
+  res = await admin("POST", "/api/assistant/grade", body);
+  user = JSON.stringify(calls.at(-1)!.body.messages);
+  assert.match(user, /Reference answer\(s\)/);
+  assert.doesNotMatch(user, /Example answers \(open-ended/);
+  provider = () => sse(["O", "K"]);
+});
+
 test("streaming tutor relays tokens and reports errors safely", async () => {
   provider = () => sse(["Der ", "Dativ"]);
   let res = await admin("POST", "/api/assistant/ask", { task: "highlight", selection: "dem Kind" });

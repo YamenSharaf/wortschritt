@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import {
   gradeText,
   isCanonical,
+  isOpenAnswer,
   modelAnswer,
   type ExerciseItem,
   type TextAnswer,
@@ -103,16 +104,20 @@ function Explanation({ text }: { text?: string }) {
   );
 }
 
+type FreeTextResult = { correct: boolean; feedback?: string };
+
 /**
  * Grade a free-text answer: local first, then the tutor on a miss (if enabled).
- * Always returns the model answer to reveal.
+ * For an open-ended answer whose miss can't be judged (no tutor, or it
+ * failed), returns "self-assess" so the learner compares with the examples.
  */
 async function checkFreeText(
   input: string,
   answer: TextAnswer,
   opts: { llmGrading?: boolean; prompt?: string; context?: string },
-): Promise<{ correct: boolean; feedback?: string }> {
+): Promise<FreeTextResult | "self-assess"> {
   if (gradeText(input, answer)) return { correct: true };
+  const open = isOpenAnswer(answer);
   if (opts.llmGrading) {
     try {
       const v = await api.gradeAnswer({
@@ -120,13 +125,74 @@ async function checkFreeText(
         expected: answer.accept,
         response: input,
         context: opts.context,
+        open,
       });
       return { correct: v.correct, feedback: v.feedback || undefined };
     } catch {
-      /* fall back to the local miss */
+      /* fall back below */
     }
   }
-  return { correct: false };
+  return open ? "self-assess" : { correct: false };
+}
+
+/** Marks an open-ended task, so a learner knows their own wording counts. */
+function OpenAnswerBadge({ answer }: { answer: TextAnswer }) {
+  if (!isOpenAnswer(answer)) return null;
+  return (
+    <p className="mb-3 text-xs">
+      <span className="rounded-full border border-slate-300 px-2 py-0.5 text-slate-500 dark:border-slate-700">
+        Open answer — any correct answer counts
+      </span>
+    </p>
+  );
+}
+
+/**
+ * Without an AI tutor, an open answer that doesn't match an example can't be
+ * graded automatically: show the examples and let the learner judge.
+ */
+function SelfAssess({
+  answer,
+  input,
+  onDecide,
+}: {
+  answer: TextAnswer;
+  input: string;
+  onDecide: (correct: boolean) => void;
+}) {
+  return (
+    <div className="mt-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+      <p className="text-sm text-slate-500">
+        This one has many correct answers. Compare yours with the examples:
+      </p>
+      <p className="mt-2 text-sm">
+        <span className="text-slate-500">Yours: </span>
+        <span className="font-medium">{input}</span>
+      </p>
+      <ul className="mt-1 list-disc pl-5 text-sm">
+        {answer.accept.map((a) => (
+          <li key={a}>{a}</li>
+        ))}
+      </ul>
+      <p className="mt-3 text-sm font-medium">Is your answer correct German that fits the task?</p>
+      <div className="mt-2 flex gap-2">
+        <button
+          type="button"
+          onClick={() => onDecide(true)}
+          className="rounded-lg border border-green-500 px-3 py-1.5 text-sm hover:bg-green-50 dark:hover:bg-green-950"
+        >
+          Yes, it's correct
+        </button>
+        <button
+          type="button"
+          onClick={() => onDecide(false)}
+          className="rounded-lg border border-red-500 px-3 py-1.5 text-sm hover:bg-red-50 dark:hover:bg-red-950"
+        >
+          No
+        </button>
+      </div>
+    </div>
+  );
 }
 
 // --- multiple choice -------------------------------------------------------
@@ -356,14 +422,22 @@ function ResultBanner({
   input: string;
   feedback?: string;
 }) {
+  const open = isOpenAnswer(answer);
   // Show the canonical spelling on a miss, or when a lenient match differs
-  // from it (e.g. missing umlaut / wrong capitalization).
-  const showAnswer = !result || !isCanonical(input, answer);
+  // from it (e.g. missing umlaut / wrong capitalization). Open answers have
+  // no single canonical form: show the examples instead, whatever the result.
+  const showAnswer = !open && (!result || !isCanonical(input, answer));
   return (
     <div className="mt-3">
       <p className={`font-medium ${result ? "text-green-600" : "text-red-600"}`}>
         {result ? "Correct!" : "Not quite."}
       </p>
+      {open && (
+        <p className="mt-1 text-sm">
+          <span className="text-slate-500">Example answers: </span>
+          <span className="font-medium">{answer.accept.join(" · ")}</span>
+        </p>
+      )}
       {showAnswer && (
         <p className="mt-1 text-sm">
           <span className="text-slate-500">Answer: </span>
@@ -389,9 +463,8 @@ function SentenceBuild({
   const [text, setText] = useState("");
   const [chosen, setChosen] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ correct: boolean; feedback?: string } | null>(
-    null,
-  );
+  const [result, setResult] = useState<FreeTextResult | null>(null);
+  const [selfAssess, setSelfAssess] = useState(false);
   const hasBank = !!item.tokens && item.tokens.length > 0;
   const remaining = (item.tokens ?? [])
     .map((_, i) => i)
@@ -407,8 +480,15 @@ function SentenceBuild({
       prompt: item.instructions ?? "Build a correct German sentence.",
     });
     setBusy(false);
+    if (r === "self-assess") return setSelfAssess(true);
     setResult(r);
     onAnswered(r.correct, built);
+  }
+
+  function decide(correct: boolean) {
+    setSelfAssess(false);
+    setResult({ correct, feedback: "Self-assessed." });
+    onAnswered(correct, built);
   }
 
   return (
@@ -416,6 +496,7 @@ function SentenceBuild({
       <Instructions
         text={item.instructions ?? "Put the words in the correct order."}
       />
+      <OpenAnswerBadge answer={item.answer} />
       <Context text={item.context} />
       <ItemHint text={item.hint} />
       {hasBank ? (
@@ -426,7 +507,7 @@ function SentenceBuild({
                 <button
                   key={pos}
                   type="button"
-                  disabled={result !== null}
+                  disabled={result !== null || selfAssess}
                   onClick={() => setChosen((c) => c.filter((_, i) => i !== pos))}
                   className="rounded bg-accent px-3 py-1 text-accent-foreground"
                 >
@@ -440,7 +521,7 @@ function SentenceBuild({
               <button
                 key={i}
                 type="button"
-                disabled={result !== null}
+                disabled={result !== null || selfAssess}
                 onClick={() => setChosen((c) => [...c, i])}
                 className="rounded border border-slate-300 px-3 py-1 dark:border-slate-700"
               >
@@ -452,16 +533,18 @@ function SentenceBuild({
       ) : (
         <input
           value={text}
-          disabled={result !== null}
+          disabled={result !== null || selfAssess}
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && result === null && check()}
+          onKeyDown={(e) => e.key === "Enter" && result === null && !selfAssess && check()}
           placeholder="Type the sentence…"
           {...answerInputProps}
           className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 dark:border-slate-700"
         />
       )}
 
-      {result === null ? (
+      {selfAssess ? (
+        <SelfAssess answer={item.answer} input={built} onDecide={decide} />
+      ) : result === null ? (
         <button
           type="button"
           disabled={busy || (hasBank ? chosen.length === 0 : !text.trim())}
@@ -498,9 +581,8 @@ function Transform({
 }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ correct: boolean; feedback?: string } | null>(
-    null,
-  );
+  const [result, setResult] = useState<FreeTextResult | null>(null);
+  const [selfAssess, setSelfAssess] = useState(false);
 
   // A source may carry a given base sentence on the first line and a lead-in to
   // complete on the following line(s) (e.g. "Wie heißt er?\nIch habe keine
@@ -520,13 +602,21 @@ function Transform({
       context: [given, lead].filter(Boolean).join(" "),
     });
     setBusy(false);
+    if (r === "self-assess") return setSelfAssess(true);
     setResult(r);
     onAnswered(r.correct, text);
+  }
+
+  function decide(correct: boolean) {
+    setSelfAssess(false);
+    setResult({ correct, feedback: "Self-assessed." });
+    onAnswered(correct, text);
   }
 
   return (
     <div>
       <Instructions text={item.instructions} />
+      <OpenAnswerBadge answer={item.answer} />
       <Context text={item.context} />
       <ItemHint text={item.hint} />
       <p className="mb-3 rounded-lg bg-slate-100 p-3 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
@@ -535,14 +625,16 @@ function Transform({
       {lead && <p className="mb-3 text-lg leading-relaxed">{lead}</p>}
       <input
         value={text}
-        disabled={result !== null}
+        disabled={result !== null || selfAssess}
         onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && result === null && check()}
+        onKeyDown={(e) => e.key === "Enter" && result === null && !selfAssess && check()}
         placeholder="Your answer…"
         {...answerInputProps}
         className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 dark:border-slate-700"
       />
-      {result === null ? (
+      {selfAssess ? (
+        <SelfAssess answer={item.answer} input={text} onDecide={decide} />
+      ) : result === null ? (
         <button
           type="button"
           disabled={busy || !text.trim()}

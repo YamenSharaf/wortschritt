@@ -47,7 +47,7 @@ guide the tutor's "generate more items" uses.
 - `hint` (optional) — **always-visible** helper text (e.g. the words to use)
 - `explanation` (optional) — shown after answering
 
-### Text-answer grading (used by cloze, sentence_build, transform)
+### Text-answer grading (`answer` of cloze blanks, sentence_build, transform)
 
 ```jsonc
 "answer": { "accept": ["muss"], "grading": "normalized" }
@@ -62,12 +62,25 @@ guide the tutor's "generate more items" uses.
   - `exact` — must match exactly (only surrounding whitespace is ignored).
 - When the learner's input isn't the exact canonical form (a miss, or a lenient
   accept), the app reveals `accept[0]` so they see the correct spelling.
-- **AI grading:** on a local miss, if the AI tutor is configured and the
-  `llmGrading` setting is on (the default), the tutor judges the answer, using
-  `accept` as model answers. For **free-completion** items with many valid
-  answers, list a few good examples in `accept` and say in `instructions` that
-  any correct answer counts — see `content/exercises/infinitiv-zu-frei.json`.
-  Without the tutor, such items only accept the listed answers.
+- **AI grading** (`transform` and `sentence_build` only — cloze blanks are
+  always graded locally): on a local miss, if the learner has an AI tutor set up
+  and the `llmGrading` setting on (the default), the tutor judges the answer,
+  using `accept` as reference answers.
+- **`open`** — for open-ended tasks with many correct answers (free
+  completion): `accept` holds a few **examples**, not the full list, and the
+  item shows an "Open answer" badge. A match with an example is accepted
+  locally; anything else is judged by the learner's AI tutor, or — if they have
+  none (or it fails) — by the learner, who compares their answer with the
+  examples. Only valid on `transform` and `sentence_build`. See
+  `content/exercises/infinitiv-zu-frei.json`:
+  ```jsonc
+  { "type": "transform", "id": "iz-a01",
+    "instructions": "Vervollständige den Satz frei mit einem Infinitivsatz.",
+    "source": "Für mich ist es wichtig, …",
+    "answer": { "accept": ["Für mich ist es wichtig, jeden Tag Deutsch zu lernen.",
+                           "Für mich ist es wichtig, meine Familie oft zu sehen."],
+                "grading": "open" } }
+  ```
 
 ## Item types
 

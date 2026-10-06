@@ -26,7 +26,9 @@ function fold(s: string): string {
 
 /**
  * Local, dependency-free grading for a free-text answer. Consulted first
- * everywhere; LLM grading (when enabled) only runs on a local miss.
+ * everywhere; LLM grading (when enabled) only runs on a local miss. "open"
+ * answers match their examples leniently; a miss there isn't final (see
+ * isOpenAnswer).
  */
 export function gradeText(input: string, answer: TextAnswer): boolean {
   if (answer.grading === "exact") {
@@ -34,6 +36,11 @@ export function gradeText(input: string, answer: TextAnswer): boolean {
   }
   const got = fold(input);
   return answer.accept.some((a) => fold(a) === got);
+}
+
+/** An open-ended task whose `accept` lists examples, not every right answer. */
+export function isOpenAnswer(answer: TextAnswer): boolean {
+  return answer.grading === "open";
 }
 
 /** The canonical answer to show the learner after they submit. */

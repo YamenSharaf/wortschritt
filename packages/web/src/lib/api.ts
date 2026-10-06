@@ -274,6 +274,7 @@ export const api = {
     expected: string[];
     response: string;
     context?: string;
+    open?: boolean;
   }) =>
     req<{ correct: boolean; feedback: string }>("/api/assistant/grade", {
       method: "POST",

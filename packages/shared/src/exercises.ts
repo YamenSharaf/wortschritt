@@ -30,8 +30,15 @@ export const textAnswer = z.object({
    *                        existing content stays valid).
    * exact                — must match an accepted answer exactly (only
    *                        surrounding whitespace is ignored).
+   * open                 — open-ended task: `accept` holds EXAMPLES, not the
+   *                        full list. A match is accepted locally; anything
+   *                        else goes to the learner's AI tutor, or — without
+   *                        one — to self-assessment against the examples.
+   *                        Only for transform and sentence_build.
    */
-  grading: z.enum(["exact", "normalized", "caseInsensitive"]).default("normalized"),
+  grading: z
+    .enum(["exact", "normalized", "caseInsensitive", "open"])
+    .default("normalized"),
 });
 export type TextAnswer = z.infer<typeof textAnswer>;
 
@@ -196,6 +203,15 @@ export const exerciseSet = z
         }
       }
       if (item.type === "cloze") {
+        item.blanks.forEach((b, bi) => {
+          if (b.answer.grading === "open") {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ["items", i, "blanks", bi, "answer", "grading"],
+              message: `"open" grading is only for transform and sentence_build items`,
+            });
+          }
+        });
         const refs = new Set(item.blanks.map((b) => b.ref));
         const used = new Set<string>();
         for (const m of item.text.matchAll(placeholderRe)) {
