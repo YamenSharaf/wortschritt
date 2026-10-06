@@ -13,7 +13,14 @@ The schemas are the source of truth: `packages/shared/src/exercises.ts`.
 - **Runtime import**: the in-app **Import** screen accepts pasted JSON, validates
   it, and stores it in SQLite (survives image updates). Same schemas.
 
-Both sources are merged by `id` at request time (DB imports win on collision).
+Both sources are merged by `id` at request time. Imports are a shared library:
+only whoever imported an item (or an admin) can replace it, and only an admin
+may reuse the `id` of a built-in file (the import then wins).
+
+**Generating with an LLM:** the Import page's **Copy LLM prompt** gives you a
+complete prompt (format, one valid example per item type, the rules below and
+the house style). It's built from `packages/shared/src/authoring.ts` — the same
+guide the tutor's "generate more items" uses.
 
 ## Exercise set
 
@@ -32,7 +39,7 @@ Both sources are merged by `id` at request time (DB imports win on collision).
 
 ### Fields common to every item
 
-- `id` (required, unique within the set)
+- `id` (required, **unique within the set** — enforced; progress is tracked per item id)
 - `instructions` (optional) — task line shown above the item
 - `context` (optional) — a scenario/premise the item is based on, shown as a
   distinct quoted block above the prompt (e.g. "Die Presse möchte alles über
@@ -52,7 +59,7 @@ Both sources are merged by `id` at request time (DB imports win on collision).
   - `normalized` (default) & `caseInsensitive` — both are **lenient**: they fold
     case and umlauts (ä→a, ö→o, ü→u, ß→ss) and ignore trailing punctuation. So
     "Muss"/"mussen" match "muss"/"müssen". The canonical spelling is shown anyway.
-  - `exact` — byte-for-byte.
+  - `exact` — must match exactly (only surrounding whitespace is ignored).
 - When the learner's input isn't the exact canonical form (a miss, or a lenient
   accept), the app reveals `accept[0]` so they see the correct spelling.
 - **AI grading:** on a local miss, if the AI tutor is configured and the
@@ -69,6 +76,8 @@ Both sources are merged by `id` at request time (DB imports win on collision).
 { "type": "multiple_choice", "id": "q1", "prompt": "Ich sehe ___ Hund.",
   "choices": ["der", "den", "dem"], "answerIndex": 1, "explanation": "…" }
 ```
+- `answerIndex` is 0-based and must point at one of the `choices`; choices must
+  be distinct (both enforced).
 
 ### `cloze` — fill one or more blanks
 ```jsonc
@@ -118,7 +127,7 @@ Both sources are merged by `id` at request time (DB imports win on collision).
   "rows": ["ich", "du", "er/sie/es", "wir", "ihr", "sie/Sie"],
   "columns": [ { "header": "gehen", "answers": ["gehe","gehst","geht","gehen","geht","gehen"] } ] }
 ```
-- Each column's `answers` must have **exactly one entry per row** (enforced).
+- Each column's `answers` must have **exactly one non-empty entry per row** (enforced).
 
 ## Cheat sheets
 
@@ -138,7 +147,13 @@ Both sources are merged by `id` at request time (DB imports win on collision).
 
 ## Rules of thumb for generating content
 
-- German content; keep answers grammatically correct.
+- House style: everything the learner reads (prompts, instructions, hints,
+  explanations, descriptions) is simple German at the set's level; only
+  `subtitle` is a short English gloss. Tags are lowercase German keywords
+  (`grammatik`, `dativ`, …); cheat sheet `category` is usually `grammatik`.
+- Keep answers grammatically correct, and list valid variants in `accept`
+  (but not case/umlaut/punctuation variants — grading already ignores those).
+- Leave optional fields out rather than filling them with placeholder text.
 - Give unique `id`s; keep set `id` filename-friendly.
 - Prefer `cloze` for gap-fills (supports multiple blanks + cues), `transform`
   for rewrites, `sentence_build` for word-order.

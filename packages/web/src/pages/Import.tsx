@@ -1,38 +1,12 @@
 import { useMemo, useState } from "react";
-import { cheatsheet, exerciseSet, importBody } from "@mdb/shared";
+import { buildImportPrompt, cheatsheet, EXAMPLE_SET, exerciseSet, importBody } from "@mdb/shared";
 import { api } from "../lib/api";
 
 type Kind = "exercise" | "cheatsheet";
 
-const SAMPLE_EXERCISE = {
-  schemaVersion: 1,
-  id: "akkusativ-basics",
-  title: "Akkusativ — Grundlagen",
-  subtitle: "Accusative — the basics",
-  description: "Übe die Akkusativ-Artikel.",
-  level: "A1",
-  tags: ["grammatik", "akkusativ"],
-  items: [
-    {
-      type: "multiple_choice",
-      id: "q1",
-      prompt: "Ich sehe ___ Hund.",
-      choices: ["der", "den", "dem"],
-      answerIndex: 1,
-      explanation: "Akkusativ maskulin: der → den.",
-    },
-    {
-      type: "cloze",
-      id: "q2",
-      text: "Er kauft {{1}} Apfel.",
-      blanks: [{ ref: "1", cue: "ein", answer: { accept: ["einen"] } }],
-    },
-  ],
-};
-
 export function ImportPage() {
   const [kind, setKind] = useState<Kind>("exercise");
-  const [text, setText] = useState(JSON.stringify(SAMPLE_EXERCISE, null, 2));
+  const [text, setText] = useState(JSON.stringify(EXAMPLE_SET, null, 2));
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,7 +52,7 @@ export function ImportPage() {
   }
 
   function copyLlmPrompt() {
-    const prompt = buildLlmPrompt(kind);
+    const prompt = buildImportPrompt(kind);
     void navigator.clipboard.writeText(prompt);
     setMessage("LLM prompt copied to clipboard.");
   }
@@ -144,48 +118,4 @@ export function ImportPage() {
       )}
     </div>
   );
-}
-
-function buildLlmPrompt(kind: Kind): string {
-  if (kind === "cheatsheet") {
-    return `Generate a German-learning cheat sheet as JSON in exactly this format:
-{
-  "id": "short-slug",
-  "title": "Titel (German)",
-  "subtitle": "short English gloss of the title (optional)",
-  "category": "grammar | vocabulary | ...",
-  "sections": [
-    { "heading": "Heading", "body": "Markdown text" }
-  ]
-}
-The learning content is in German; keep the JSON keys exactly as shown.
-Output ONLY the JSON, with no explanation.`;
-  }
-  return `Generate a German-learning exercise as JSON in exactly this format:
-{
-  "schemaVersion": 1,
-  "id": "short-slug",
-  "title": "Titel (German)",
-  "subtitle": "short English gloss of the title (optional)",
-  "description": "short description",
-  "level": "A1 | A2 | B1 | B2 | C1 | C2",
-  "tags": ["topic"],
-  "items": [
-    { "type": "multiple_choice", "id": "q1", "prompt": "...", "choices": ["a","b"], "answerIndex": 0, "explanation": "optional" },
-    { "type": "cloze", "id": "q2", "text": "Ich {{1}} früh {{2}}.", "blanks": [ { "ref": "1", "cue": "aufstehen", "answer": { "accept": ["stehe"] } }, { "ref": "2", "answer": { "accept": ["auf"] } } ] },
-    { "type": "flashcard", "id": "q3", "front": "Front", "back": "Back" },
-    { "type": "sentence_build", "id": "q4", "tokens": ["Ich","bin","müde"], "answer": { "accept": ["Ich bin müde."], "grading": "caseInsensitive" } },
-    { "type": "transform", "id": "q5", "instructions": "Ins Perfekt setzen.", "source": "Ich lerne Deutsch.", "answer": { "accept": ["Ich habe Deutsch gelernt."] } },
-    { "type": "true_false", "id": "q6", "statement": "Sie hat gegangen nach Hause.", "correct": false, "correction": "Sie ist nach Hause gegangen." },
-    { "type": "conjugation_table", "id": "q7", "rows": ["ich","du","er/sie/es","wir","ihr","sie/Sie"], "columns": [ { "header": "müssen", "answers": ["muss","musst","muss","müssen","müsst","müssen"] } ] }
-  ]
-}
-Item type notes:
-- cloze: put {{ref}} placeholders in "text"; every placeholder needs a blank with
-  the same "ref". Use "cue" to show a hint (e.g. the infinitive) beside a blank.
-- sentence_build: give the word bank in "tokens"; the ordered sentence is in
-  "answer". Use grading "caseInsensitive" so capitalisation of the bank is ignored.
-- conjugation_table: each column's "answers" must have one entry per row.
-Use only these item types. The learning content is in German; keep the JSON keys
-exactly as shown. Output ONLY the JSON, with no explanation.`;
 }

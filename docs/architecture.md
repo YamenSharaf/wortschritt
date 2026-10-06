@@ -92,8 +92,10 @@ This is the one place a new *feature* is coded. Steps:
    tutor (hint/translate/why-wrong) and generation get a readable label +
    expected answers. **Never put the answer in `label`** — it's used for
    translate, which must not reveal the solution.
-4. **Generation** — add the JSON shape to `ITEM_SCHEMA_REF` in
-   `packages/api/src/assistant/prompts.ts` so "generate more" can produce it.
+4. **LLM guide** — add a valid example to `EXAMPLE_ITEMS` (and a rule line to
+   `ITEM_RULES`) in `packages/shared/src/authoring.ts`. That one guide feeds both
+   the Import page's "Copy LLM prompt" and the tutor's "generate more", and
+   `content/content.test.ts` checks every example against the schemas.
 
 Grading for text answers lives in `packages/shared/src/grading.ts` (`gradeText`,
 lenient by default) — reuse it, don't reinvent.

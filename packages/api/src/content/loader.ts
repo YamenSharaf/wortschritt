@@ -64,16 +64,7 @@ export function loadExerciseSets(): ExerciseSet[] {
     join(resolve(env.CONTENT_DIR), "exercises"),
     exerciseSet,
   );
-  const fromDb = db
-    .select()
-    .from(schema.importedContent)
-    .all()
-    .filter((r) => r.kind === "exercise")
-    .map((r) => ({
-      ...exerciseSet.parse(r.data),
-      createdAt: r.createdAt.toISOString(),
-    }));
-  return byNewest(dedupeById([...fromFiles, ...fromDb]));
+  return byNewest(dedupeById([...fromFiles, ...imported("exercise", exerciseSet)]));
 }
 
 /** Git-versioned cheatsheets + those imported at runtime, merged by id. */
@@ -82,16 +73,45 @@ export function loadCheatsheets(): Cheatsheet[] {
     join(resolve(env.CONTENT_DIR), "cheatsheets"),
     cheatsheet,
   );
-  const fromDb = db
+  return byNewest(dedupeById([...fromFiles, ...imported("cheatsheet", cheatsheet)]));
+}
+
+/** Ids already reported as invalid, so the warning isn't repeated per request. */
+const reportedInvalid = new Set<string>();
+
+/**
+ * Runtime imports of one kind. Imports were validated when they were saved,
+ * but the schema can get stricter later (e.g. unique item ids): an import
+ * that no longer passes is skipped and logged once, instead of breaking the
+ * whole list for everyone. Re-importing a fixed version brings it back.
+ */
+function imported<S extends z.ZodTypeAny>(
+  kind: "exercise" | "cheatsheet",
+  schema_: S,
+): (z.infer<S> & { createdAt: string })[] {
+  const out: (z.infer<S> & { createdAt: string })[] = [];
+  const rows = db
     .select()
     .from(schema.importedContent)
     .all()
-    .filter((r) => r.kind === "cheatsheet")
-    .map((r) => ({
-      ...cheatsheet.parse(r.data),
-      createdAt: r.createdAt.toISOString(),
-    }));
-  return byNewest(dedupeById([...fromFiles, ...fromDb]));
+    .filter((r) => r.kind === kind);
+  for (const r of rows) {
+    const parsed = schema_.safeParse(r.data);
+    if (parsed.success) {
+      out.push({ ...parsed.data, createdAt: r.createdAt.toISOString() });
+      continue;
+    }
+    if (!reportedInvalid.has(r.id)) {
+      reportedInvalid.add(r.id);
+      const issues = parsed.error.issues.map(
+        (i: z.ZodIssue) => `${i.path.join(".") || "(root)"}: ${i.message}`,
+      );
+      console.warn(
+        JSON.stringify({ level: 40, msg: "skipping invalid imported content", id: r.id, kind, issues }),
+      );
+    }
+  }
+  return out;
 }
 
 /** Runtime imports (DB) win over file content when ids collide. */

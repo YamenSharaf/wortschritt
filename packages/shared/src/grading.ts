@@ -29,7 +29,9 @@ function fold(s: string): string {
  * everywhere; LLM grading (when enabled) only runs on a local miss.
  */
 export function gradeText(input: string, answer: TextAnswer): boolean {
-  if (answer.grading === "exact") return answer.accept.includes(input);
+  if (answer.grading === "exact") {
+    return answer.accept.some((a) => a.trim() === input.trim());
+  }
   const got = fold(input);
   return answer.accept.some((a) => fold(a) === got);
 }

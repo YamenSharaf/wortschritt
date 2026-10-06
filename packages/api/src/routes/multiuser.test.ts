@@ -219,6 +219,21 @@ test("shared library: imports are visible to all, editable only by their owner",
   assert.equal((await admin("POST", "/api/import", exerciseSet("als-oder-wenn"))).statusCode, 200);
 });
 
+test("an old import that fails a newer, stricter schema is skipped, not fatal", async () => {
+  const { db, schema } = await import("../db/client");
+  const broken = exerciseSet("old-import").data;
+  // Duplicate item ids: accepted before that rule existed.
+  broken.items = [broken.items[0], broken.items[0]];
+  db.insert(schema.importedContent)
+    .values({ id: "old-import", kind: "exercise", data: broken })
+    .run();
+  const res = await ben("GET", "/api/exercises");
+  assert.equal(res.statusCode, 200);
+  const ids = (res.json() as { id: string }[]).map((s) => s.id);
+  assert.ok(!ids.includes("old-import"));
+  assert.ok(ids.includes("anna-set"), "other imports still listed");
+});
+
 test("admin: disable signs a user out; the last admin is protected", async () => {
   const users = (await admin("GET", "/api/admin/users")).json() as {
     id: number; username: string; role: string; lastLoginAt: number | null;
