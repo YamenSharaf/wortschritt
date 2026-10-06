@@ -38,8 +38,9 @@ client can codegen a typed client against it.
   offline dictionary (see `packages/api/assets/ATTRIBUTION.md`).
 - **AI tutor (optional)** — explain a highlighted passage, hints, "why was I
   wrong", translations, chat, AI grading of free-text answers, "generate more"
-  items, vocab lookups, and tidying rough notes into clean Markdown. Any OpenAI-compatible endpoint works, including a
-  local model.
+  items, vocab lookups, and tidying rough notes into clean Markdown. Each user
+  connects their own OpenAI-compatible provider under Settings → AI tutor
+  (https, publicly reachable); keys are stored encrypted (`ENCRYPTION_KEY`).
 - **Pronunciation (optional)** — 🔊 buttons backed by a Piper TTS sidecar, falling
   back to the browser's voice.
 - **Dashboard** — progress, recent activity and a daily goal.
@@ -121,6 +122,8 @@ cat > .env <<'EOF'
 ADMIN_USERNAME=your-name
 APP_PASSWORD=your-strong-password
 SESSION_SECRET=some-long-random-string
+# Encrypts users' AI keys. `openssl rand -base64 32`; keep a copy.
+ENCRYPTION_KEY=...
 EOF
 
 docker compose -f docker-compose.prod.yml up -d
@@ -188,6 +191,7 @@ user (a `user_id` column, deleted together with the user); content is shared.
 | `vocab_groups` / `vocab_group_members` | named word groups (many-to-many) |
 | `vocab_stats` | flashcard know/don't-know tally per word |
 | `notes` | Markdown notes |
+| `ai_settings` | per user: AI endpoint, model and encrypted API key |
 | `imported_content` | shared exercises and cheat sheets added via the Import screen, with who imported them |
 
 The schema is versioned: on boot the API applies any pending migrations from
@@ -226,5 +230,6 @@ Notes       GET|POST /api/notes    GET|PUT|DELETE /api/notes/:id
 Dictionary  GET /api/dict/status   GET /api/dict/:word
 TTS         GET /api/tts/status    GET /api/tts    POST /api/tts/download
 Assistant   GET /api/assistant/status
-            POST /api/assistant/ask (SSE) | grade | generate | word | cleanup-notes
+            POST /api/assistant/ask (SSE) | grade | generate | word | cleanup-notes | test
+            GET|PUT|DELETE /api/assistant/settings    (your own endpoint; key write-only)
 ```

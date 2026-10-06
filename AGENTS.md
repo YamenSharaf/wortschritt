@@ -25,8 +25,10 @@ validated against the schemas in `packages/shared/src/exercises.ts`.
   an AI use-case = a task there + a button.
 - **Never leak answers**: `describeItem` labels (used by translate) must not
   contain the accepted answer.
-- **Self-contained**: the server proxies the LLM; the API key never reaches the
-  browser.
+- **Self-contained**: the server proxies the LLM; API keys never reach the
+  browser. Every request to a user's AI endpoint goes through
+  `packages/api/src/assistant/client.ts` (the egress guard: https, public IPs
+  only, no redirects, size/time caps). Never `fetch` a user-supplied URL directly.
 - **Learner data is per user**: a new table holding someone's data needs a
   `user_id` column (FK to `users`, `ON DELETE CASCADE`), its service functions
   take `userId` first and filter on it in every query, and the route passes

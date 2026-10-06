@@ -118,9 +118,22 @@ model answers). This is what makes free-completion sets (e.g.
 SSE; `/grade` and `/generate` return JSON), add a client call in
 `packages/web/src/lib/api.ts`, and a button. That's the whole pattern.
 
-The server proxies an **OpenAI-compatible** endpoint; the API key never reaches
-the browser. Enabled when `ASSISTANT_API_KEY` is set or `ASSISTANT_BASE_URL` is
-non-default (local models).
+**Per-user endpoints.** Each user sets their own **OpenAI-compatible** endpoint,
+model and key under Settings → AI tutor (`ai_settings` table,
+`assistant/config.ts`); without one, their tutor UI stays hidden. Keys are
+encrypted at rest with AES-256-GCM under a key derived from `ENCRYPTION_KEY`
+(`assistant/secrets.ts`), are write-only in the API and never reach the browser.
+On first boot the legacy `ASSISTANT_*` env config is copied once into the first
+admin's settings.
+
+**Every upstream AI request goes through `assistant/client.ts`**
+(`streamCompletion` / `collectCompletion`), which uses the egress guard in
+`assistant/egress.ts`: `https://` only, no credentials in the URL, no
+redirects, and connections only to public IPs — enforced in the socket's DNS
+lookup, so hostnames that resolve privately (or re-resolve) are refused. It also
+applies a timeout and a response-size cap. Errors reach the user only as
+`AiRequestError.publicMessage` (e.g. "The AI provider answered 401."); details
+go to the server log. Never call `fetch` on a user-supplied URL directly.
 
 ## Configuration (env vars)
 
@@ -133,7 +146,8 @@ non-default (local models).
 | `SESSION_SECRET` | cookie signing key (required, ≥8) | — |
 | `PORT` / `DATABASE_PATH` / `CONTENT_DIR` | runtime paths | 3000 / ./data/app.db / ./content |
 | `APP_NAME` / `APP_EMOJI` | branding + favicon | mit dem baby / 🍼 |
-| `ASSISTANT_BASE_URL` / `ASSISTANT_API_KEY` / `ASSISTANT_MODEL` | AI tutor | OpenAI defaults |
+| `ENCRYPTION_KEY` | encrypts users' saved AI keys (≥32 chars, e.g. `openssl rand -base64 32`; keep a copy — if it changes, saved keys must be re-entered) | unset → AI keys can't be saved |
+| `ASSISTANT_BASE_URL` / `ASSISTANT_API_KEY` / `ASSISTANT_MODEL` | legacy single-user AI config; copied once into the admin's AI settings, then unused | OpenAI defaults |
 | `TTS_URL` | Piper sidecar base URL (e.g. `http://piper:5000`) | unset → browser voice |
 
 ## Database migrations
@@ -162,8 +176,9 @@ To change the schema:
 ## Planned: multi-user
 
 Agreed design, built in phases (0 = the migration runner above; 1 = accounts,
-sessions and rate limiting; 2 = per-user data, Users screen and registration —
-see Data flow → Auth / Users):
+sessions and rate limiting; 2 = per-user data, Users screen and registration;
+3 = per-user AI settings — see Data flow → Auth / Users and The AI tutor).
+Branding and `TTS_URL` deliberately stay env vars.
 
 | Topic | Decision |
 | --- | --- |
@@ -174,7 +189,7 @@ see Data flow → Auth / Users):
 | Content | Exercises and cheat sheets stay a shared library. Imports record their owner; only the owner or admin may overwrite or delete one, and only admin may shadow a git content id |
 | Per user | Vocab, groups, flashcard stats, notes, attempts, runs, in-progress position, sheet views, settings |
 | AI | Per-user endpoint + key. `https://` only, connections to private/loopback/link-local IPs refused (checked on the resolved address), generic errors to the client, capped timeouts and sizes. Keys encrypted at rest with `ENCRYPTION_KEY`, never returned to the browser. The current `ASSISTANT_*` env becomes the admin's settings |
-| Instance (admin) | Branding, TTS, registration switch |
+| Instance (admin) | Registration switch (branding and TTS stay env vars) |
 
 Phases: 1 users + auth + rate limiting · 2 per-user data, Users screen,
 registration · 3 per-user AI settings and instance settings.

@@ -29,8 +29,16 @@ const envSchema = z.object({
   APP_NAME: optionalEnv(z.string().min(1).default("mit dem baby")),
   APP_EMOJI: optionalEnv(z.string().min(1).default("🍼")),
 
-  // Optional AI tutor. OpenAI-compatible endpoint (OpenAI, Ollama, LM Studio,
-  // OpenRouter, vLLM, …). Leave unset/blank to disable the feature entirely.
+  // Encrypts the API keys users save for their AI tutor (Settings → AI tutor).
+  // Generate with `openssl rand -base64 32` and keep a copy: if it's lost or
+  // changed, saved AI keys can't be decrypted and must be re-entered. Unset =
+  // users can't save AI settings.
+  ENCRYPTION_KEY: optionalEnv(
+    z.string().min(32, "ENCRYPTION_KEY must be at least 32 characters").optional(),
+  ),
+
+  // Legacy single-user AI tutor config. Only read once, to seed the admin's
+  // per-user AI settings on first boot (see assistant/config.ts).
   ASSISTANT_BASE_URL: optionalEnv(
     z.string().url().default("https://api.openai.com/v1"),
   ),
@@ -54,9 +62,9 @@ if (!parsed.success) {
 export const env = parsed.data;
 export const isProd = env.NODE_ENV === "production";
 
-// The tutor is enabled once you point it somewhere: either a key (hosted APIs)
-// or a non-default base URL (local models that need no key).
-export const isAssistantEnabled =
+// Whether the legacy env config was set: either a key (hosted APIs) or a
+// non-default base URL (local models that need no key).
+export const hasLegacyAssistantEnv =
   env.ASSISTANT_API_KEY.length > 0 ||
   env.ASSISTANT_BASE_URL !== "https://api.openai.com/v1";
 

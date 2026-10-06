@@ -341,6 +341,23 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 4,
+    // Each user's own AI tutor endpoint. The API key is encrypted
+    // (assistant/secrets.ts) and never sent back to the browser.
+    name: "per-user-ai-settings",
+    up(db) {
+      db.exec(`
+        CREATE TABLE ai_settings (
+          user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+          base_url TEXT NOT NULL,
+          model TEXT NOT NULL,
+          api_key_enc TEXT,
+          updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+        );
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

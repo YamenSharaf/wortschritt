@@ -171,3 +171,14 @@ export const appSettings = sqliteTable("app_settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
 });
+
+/** Per-user AI tutor endpoint; the key is encrypted (assistant/secrets.ts). */
+export const aiSettings = sqliteTable("ai_settings", {
+  userId: integer("user_id").primaryKey(),
+  baseUrl: text("base_url").notNull(),
+  model: text("model").notNull(),
+  apiKeyEnc: text("api_key_enc"),
+  updatedAt: integer("updated_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
