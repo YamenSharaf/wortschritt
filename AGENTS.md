@@ -1,6 +1,6 @@
 # AGENTS.md — orientation for AI agents
 
-A single-user, self-hosted German-learning app. **Read the docs before working:**
+A small multi-user, self-hosted German-learning app. **Read the docs before working:**
 
 - **[docs/authoring-content.md](docs/authoring-content.md)** — how to generate
   new exercises and cheat sheets (the JSON schemas, every item type, grading).
@@ -27,6 +27,11 @@ validated against the schemas in `packages/shared/src/exercises.ts`.
   contain the accepted answer.
 - **Self-contained**: the server proxies the LLM; the API key never reaches the
   browser.
+- **Learner data is per user**: a new table holding someone's data needs a
+  `user_id` column (FK to `users`, `ON DELETE CASCADE`), its service functions
+  take `userId` first and filter on it in every query, and the route passes
+  `req.user!.id`. Cover it in `routes/multiuser.test.ts` (another user can't
+  read or change it).
 - **Schema changes are migrations**: append one to
   `packages/api/src/db/migrations.ts` (never edit a shipped one) and update
   `db/schema.ts` to match. See docs/architecture.md.

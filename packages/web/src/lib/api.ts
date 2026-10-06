@@ -1,4 +1,5 @@
 import type {
+  AdminUser,
   AuthUserDto,
   Cheatsheet,
   DictEntry,
@@ -21,6 +22,7 @@ import type {
   VocabFormsInput,
   VocabGroup,
   VocabStat,
+  RegistrationStatus,
   WordLookup,
 } from "@mdb/shared";
 
@@ -76,10 +78,37 @@ export const api = {
       body: JSON.stringify({ username, password }),
     }),
   logout: () => req<{ ok: true }>("/api/auth/logout", { method: "POST" }),
+  registration: () => req<RegistrationStatus>("/api/auth/registration"),
+  register: (username: string, password: string) =>
+    req<{ ok: true }>("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    }),
   changePassword: (currentPassword: string, newPassword: string) =>
     req<{ ok: true }>("/api/auth/password", {
       method: "POST",
       body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+
+  // admin
+  adminUsers: () => req<AdminUser[]>("/api/admin/users"),
+  adminUpdateUser: (id: number, patch: { disabled?: boolean; role?: "admin" | "user" }) =>
+    req<{ ok: true }>(`/api/admin/users/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+  adminSetPassword: (id: number, password: string) =>
+    req<{ ok: true }>(`/api/admin/users/${id}/password`, {
+      method: "POST",
+      body: JSON.stringify({ password }),
+    }),
+  adminDeleteUser: (id: number) =>
+    req<{ ok: true }>(`/api/admin/users/${id}`, { method: "DELETE" }),
+  adminRegistration: () => req<RegistrationStatus>("/api/admin/registration"),
+  adminSetRegistration: (open: boolean) =>
+    req<RegistrationStatus>("/api/admin/registration", {
+      method: "PUT",
+      body: JSON.stringify({ open }),
     }),
 
   // content

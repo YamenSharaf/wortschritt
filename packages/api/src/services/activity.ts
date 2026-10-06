@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type {
   ExerciseProgress,
   ExerciseRun,
@@ -10,9 +10,10 @@ import type {
 } from "@mdb/shared";
 import { db, schema } from "../db/client";
 
-export function recordRun(r: RecordRunBody): void {
+export function recordRun(userId: number, r: RecordRunBody): void {
   db.insert(schema.exerciseRuns)
     .values({
+      userId,
       setId: r.setId,
       setTitle: r.setTitle,
       total: r.total,
@@ -27,13 +28,15 @@ export function recordRun(r: RecordRunBody): void {
  * The most recent run of each set, newest first. Uses a groupwise-max join so
  * only the latest row per set survives.
  */
-export function latestRunsPerSet(limit?: number): RunSummary[] {
+export function latestRunsPerSet(userId: number, limit?: number): RunSummary[] {
   const rows = db.all(sql`
     SELECT r.set_id AS setId, r.set_title AS setTitle, r.total AS total,
            r.answered AS answered, r.correct AS correct, r.finished_at AS finishedAt
     FROM exercise_runs r
     JOIN (
-      SELECT set_id, MAX(id) AS mid FROM exercise_runs GROUP BY set_id
+      SELECT set_id, MAX(id) AS mid FROM exercise_runs
+      WHERE user_id = ${userId}
+      GROUP BY set_id
     ) g ON r.id = g.mid
     ORDER BY r.finished_at DESC, r.id DESC
     ${limit ? sql`LIMIT ${limit}` : sql``}
@@ -42,11 +45,13 @@ export function latestRunsPerSet(limit?: number): RunSummary[] {
 }
 
 /** The latest run for one set, including per-item results. */
-export function latestRunForSet(setId: string): ExerciseRun | null {
+export function latestRunForSet(userId: number, setId: string): ExerciseRun | null {
   const row = db
     .select()
     .from(schema.exerciseRuns)
-    .where(eq(schema.exerciseRuns.setId, setId))
+    .where(
+      and(eq(schema.exerciseRuns.userId, userId), eq(schema.exerciseRuns.setId, setId)),
+    )
     .orderBy(desc(schema.exerciseRuns.id))
     .limit(1)
     .get();
@@ -64,11 +69,14 @@ export function latestRunForSet(setId: string): ExerciseRun | null {
 
 // --- resumable exercise position ------------------------------------------
 
-export function getExerciseProgress(setId: string): ExerciseProgress | null {
+const progressKey = (userId: number, setId: string) =>
+  and(eq(schema.exerciseProgress.userId, userId), eq(schema.exerciseProgress.setId, setId));
+
+export function getExerciseProgress(userId: number, setId: string): ExerciseProgress | null {
   const row = db
     .select()
     .from(schema.exerciseProgress)
-    .where(eq(schema.exerciseProgress.setId, setId))
+    .where(progressKey(userId, setId))
     .get();
   if (!row) return null;
   return {
@@ -81,10 +89,12 @@ export function getExerciseProgress(setId: string): ExerciseProgress | null {
 }
 
 export function saveExerciseProgress(
+  userId: number,
   setId: string,
   body: SaveExerciseProgressBody,
 ): void {
   const row = {
+    userId,
     setId,
     position: body.index,
     results: body.results,
@@ -93,7 +103,7 @@ export function saveExerciseProgress(
   db.insert(schema.exerciseProgress)
     .values(row)
     .onConflictDoUpdate({
-      target: schema.exerciseProgress.setId,
+      target: [schema.exerciseProgress.userId, schema.exerciseProgress.setId],
       set: {
         position: row.position,
         results: row.results,
@@ -104,26 +114,29 @@ export function saveExerciseProgress(
     .run();
 }
 
-export function clearExerciseProgress(setId: string): void {
-  db.delete(schema.exerciseProgress)
-    .where(eq(schema.exerciseProgress.setId, setId))
-    .run();
+export function clearExerciseProgress(userId: number, setId: string): void {
+  db.delete(schema.exerciseProgress).where(progressKey(userId, setId)).run();
 }
 
-export function recordSheetView(v: SheetViewBody): void {
+export function recordSheetView(userId: number, v: SheetViewBody): void {
   db.insert(schema.sheetViews)
-    .values({ sheetId: v.sheetId, title: v.title })
+    .values({ userId, sheetId: v.sheetId, title: v.title })
     .onConflictDoUpdate({
-      target: schema.sheetViews.sheetId,
+      target: [schema.sheetViews.userId, schema.sheetViews.sheetId],
       set: { title: v.title, viewedAt: sql`(unixepoch())` },
     })
     .run();
 }
 
-export function recentSheetViews(limit = 6): SheetView[] {
+export function recentSheetViews(userId: number, limit = 6): SheetView[] {
   return db
-    .select()
+    .select({
+      sheetId: schema.sheetViews.sheetId,
+      title: schema.sheetViews.title,
+      viewedAt: schema.sheetViews.viewedAt,
+    })
     .from(schema.sheetViews)
+    .where(eq(schema.sheetViews.userId, userId))
     .orderBy(desc(schema.sheetViews.viewedAt))
     .limit(limit)
     .all();

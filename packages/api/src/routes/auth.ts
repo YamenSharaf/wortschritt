@@ -1,7 +1,13 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { changePasswordBody, loginBody, meResponse } from "@mdb/shared";
+import {
+  changePasswordBody,
+  loginBody,
+  meResponse,
+  registerBody,
+  registrationStatus as registrationStatusDto,
+} from "@mdb/shared";
 import { clearFailures, clientIp, lockedFor, recordFailure } from "../auth/loginGuard";
 import { dummyHash, verifyPassword } from "../auth/password";
 import {
@@ -11,7 +17,8 @@ import {
   requireAuth,
   startSession,
 } from "../auth/session";
-import { findUserById, findUserByUsername, setPassword } from "../auth/users";
+import { createUser, findUserById, findUserByUsername, setPassword } from "../auth/users";
+import { registrationStatus } from "../services/registration";
 
 const error = z.object({ error: z.string() });
 
@@ -75,6 +82,41 @@ export async function authRoutes(app: FastifyInstance) {
         authenticated: Boolean(user),
         user: user ? { username: user.username, role: user.role } : null,
       };
+    },
+  );
+
+  // Public: whether the login page should offer "Create account".
+  r.get(
+    "/api/auth/registration",
+    { schema: { tags: ["auth"], response: { 200: registrationStatusDto } } },
+    async () => registrationStatus(),
+  );
+
+  // Self-registration, only while the admin has it open. Signs the new user in.
+  r.post(
+    "/api/auth/register",
+    {
+      config: {
+        rateLimit: { max: 5, timeWindow: "1 hour", keyGenerator: clientIp },
+      },
+      schema: {
+        tags: ["auth"],
+        body: registerBody,
+        response: { 200: z.object({ ok: z.literal(true) }), 403: error, 409: error },
+      },
+    },
+    async (req, reply) => {
+      if (!registrationStatus().open) {
+        return reply.code(403).send({ error: "registration is closed" });
+      }
+      const { username, password } = req.body;
+      if (findUserByUsername(username)) {
+        return reply.code(409).send({ error: "that username is taken" });
+      }
+      const user = await createUser(username, password);
+      req.log.info({ username, ip: clientIp(req) }, "user registered");
+      startSession(reply, user.id);
+      return { ok: true as const };
     },
   );
 

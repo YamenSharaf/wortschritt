@@ -80,7 +80,7 @@ test("legacy database: keeps every row, adds missing columns, writes a backup", 
   assert.equal(count("attempts"), 2);
   assert.equal(count("vocab"), 1);
   assert.equal(count("notes"), 1);
-  const settings = db.prepare("SELECT data FROM settings WHERE id = 1").get() as {
+  const settings = db.prepare("SELECT data FROM settings").get() as {
     data: string;
   };
   assert.equal(JSON.parse(settings.data).displayName, "Yamen");
@@ -126,7 +126,9 @@ test("database from a newer app version: refuses to start", () => {
 
 test("no backup path (e.g. :memory:): migrates without writing files", () => {
   const db = new Database(":memory:");
-  db.exec("CREATE TABLE settings (id INTEGER PRIMARY KEY, data TEXT NOT NULL)");
+  db.exec(
+    "CREATE TABLE settings (id INTEGER PRIMARY KEY, data TEXT NOT NULL, updated_at INTEGER NOT NULL DEFAULT 0)",
+  );
   const result = runMigrations(db, null);
 
   assert.equal(result.backup, null);
@@ -155,5 +157,81 @@ test("failing migration: rolls back to the previous version, data intact", () =>
     (db.prepare("SELECT COUNT(*) AS n FROM attempts").get() as { n: number }).n,
     2,
   );
+  db.close();
+});
+
+const ownerIds = (db: Database.Database, table: string) =>
+  (db.prepare(`SELECT DISTINCT user_id AS u FROM ${table}`).all() as { u: number }[]).map(
+    (r) => r.u,
+  );
+
+test("v0 → latest: data goes to a placeholder admin that can't log in yet", () => {
+  const db = legacyDb(dbPath);
+  runMigrations(db, dbPath);
+
+  const users = db.prepare("SELECT id, role, password_hash AS h FROM users").all() as {
+    id: number;
+    role: string;
+    h: string;
+  }[];
+  assert.equal(users.length, 1);
+  assert.equal(users[0]!.role, "admin");
+  assert.equal(users[0]!.h, "", "placeholder is completed from env at boot");
+  for (const t of ["attempts", "vocab", "notes", "settings"]) {
+    assert.deepEqual(ownerIds(db, t), [users[0]!.id], t);
+  }
+  db.close();
+});
+
+test("v2 → v3: every row is assigned to the existing admin, nothing lost", () => {
+  const db = legacyDb(dbPath);
+  // Bring the legacy DB to v2 and add the Phase 1 admin, as on the live server.
+  runMigrations(db, dbPath, migrations.slice(0, 2));
+  db.exec(`
+    DELETE FROM users;
+    INSERT INTO users (id, username, password_hash, role) VALUES (7, 'yamen', 'scrypt$x', 'admin');
+    INSERT INTO exercise_runs (set_id, set_title, total, answered, correct, results)
+      VALUES ('perfekt', 'Perfekt', 10, 10, 8, '{}');
+    INSERT INTO exercise_progress (set_id, position, results, responses)
+      VALUES ('perfekt', 3, '{}', '{}');
+    INSERT INTO sheet_views (sheet_id, title) VALUES ('perfekt', 'Perfekt');
+    INSERT INTO vocab_groups (id, name) VALUES (1, 'Küche');
+    INSERT INTO vocab_group_members (group_id, word) VALUES (1, 'haus');
+    INSERT INTO vocab_stats (word, known, missed) VALUES ('haus', 3, 1);
+    INSERT INTO imported_content (id, kind, data) VALUES ('mine', 'exercise', '{}');
+  `);
+  const before = (t: string) =>
+    (db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get() as { n: number }).n;
+  const tables = [
+    "settings", "attempts", "exercise_runs", "exercise_progress", "sheet_views",
+    "vocab", "vocab_groups", "vocab_group_members", "vocab_stats", "notes",
+  ];
+  const counts = Object.fromEntries(tables.map((t) => [t, before(t)]));
+
+  runMigrations(db, dbPath);
+
+  assert.equal(version(db), LATEST_VERSION);
+  assert.equal((db.prepare("SELECT COUNT(*) AS n FROM users").get() as { n: number }).n, 1);
+  for (const t of tables) {
+    assert.equal(before(t), counts[t], `${t} row count`);
+    assert.deepEqual(ownerIds(db, t), counts[t] ? [7] : [], `${t} owner`);
+  }
+  const imported = db.prepare("SELECT created_by AS c FROM imported_content").get() as {
+    c: number;
+  };
+  assert.equal(imported.c, 7);
+  // The same word can now exist once per user.
+  db.exec(`
+    INSERT INTO users (id, username, password_hash, role) VALUES (8, 'anna', 'x', 'user');
+    INSERT INTO vocab (user_id, word, display, translation, examples)
+      VALUES (8, 'haus', 'das Haus', 'house', '[]');
+  `);
+  // And deleting a user deletes their data.
+  db.exec("DELETE FROM users WHERE id = 8");
+  assert.equal(
+    (db.prepare("SELECT COUNT(*) AS n FROM vocab WHERE user_id = 8").get() as { n: number }).n,
+    0,
+  );
+  assert.deepEqual(db.pragma("foreign_key_check"), []);
   db.close();
 });

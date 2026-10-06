@@ -1,15 +1,16 @@
-import { sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { AttemptBody, ProgressSummary } from "@mdb/shared";
 import { db, schema } from "../db/client";
 import { getSettings } from "./settings";
 
-export function recordAttempt(a: AttemptBody): void {
+export function recordAttempt(userId: number, a: AttemptBody): void {
   db.insert(schema.attempts)
-    .values({ setId: a.setId, itemId: a.itemId, correct: a.correct })
+    .values({ userId, setId: a.setId, itemId: a.itemId, correct: a.correct })
     .run();
 }
 
-export function getProgressSummary(): ProgressSummary {
+export function getProgressSummary(userId: number): ProgressSummary {
+  const mine = eq(schema.attempts.userId, userId);
   const startOfToday = Math.floor(new Date().setHours(0, 0, 0, 0) / 1000);
 
   const totals = db
@@ -18,12 +19,13 @@ export function getProgressSummary(): ProgressSummary {
       correct: sql<number>`sum(case when ${schema.attempts.correct} then 1 else 0 end)`,
     })
     .from(schema.attempts)
+    .where(mine)
     .get();
 
   const today = db
     .select({ answered: sql<number>`count(*)` })
     .from(schema.attempts)
-    .where(sql`${schema.attempts.answeredAt} >= ${startOfToday}`)
+    .where(and(mine, sql`${schema.attempts.answeredAt} >= ${startOfToday}`))
     .get();
 
   const perSet = db
@@ -33,6 +35,7 @@ export function getProgressSummary(): ProgressSummary {
       correct: sql<number>`sum(case when ${schema.attempts.correct} then 1 else 0 end)`,
     })
     .from(schema.attempts)
+    .where(mine)
     .groupBy(schema.attempts.setId)
     .all();
 
@@ -40,7 +43,7 @@ export function getProgressSummary(): ProgressSummary {
     totalAnswered: totals?.answered ?? 0,
     totalCorrect: totals?.correct ?? 0,
     answeredToday: today?.answered ?? 0,
-    dailyGoal: getSettings().dailyGoal,
+    dailyGoal: getSettings(userId).dailyGoal,
     perSet: perSet.map((p) => ({
       setId: p.setId,
       answered: p.answered,

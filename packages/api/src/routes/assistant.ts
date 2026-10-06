@@ -367,7 +367,7 @@ export async function assistantRoutes(app: FastifyInstance) {
         return reply.code(503).send({ error: "assistant not configured" });
       }
       const { system, user } = buildNotesCleanup({
-        level: getSettings().level,
+        level: getSettings(req.user!.id).level,
         text: req.body.text,
       });
       try {
@@ -501,7 +501,7 @@ export async function assistantRoutes(app: FastifyInstance) {
 
       const { task, selection, question, context, item, response, text, history } =
         req.body;
-      const level = getSettings().level;
+      const level = getSettings(req.user!.id).level;
 
       // Build the chat-completions message list. "chat" is multi-turn; the rest
       // are a single system+user pair from the prompt registry.

@@ -1,10 +1,10 @@
 import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import type { Settings } from "@mdb/shared";
 
-/** Single-row settings blob (id is always 1). */
+/** Per-user settings blob (one row per user). */
 export const settings = sqliteTable("settings", {
-  id: integer("id").primaryKey(),
+  userId: integer("user_id").primaryKey(),
   data: text("data", { mode: "json" }).$type<Settings>().notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" })
     .notNull()
@@ -14,6 +14,7 @@ export const settings = sqliteTable("settings", {
 /** One row per answered item — the raw event log progress is derived from. */
 export const attempts = sqliteTable("attempts", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
   setId: text("set_id").notNull(),
   itemId: text("item_id").notNull(),
   correct: integer("correct", { mode: "boolean" }).notNull(),
@@ -25,6 +26,7 @@ export const attempts = sqliteTable("attempts", {
 /** One row per completed practice run (a pass through an exercise set). */
 export const exerciseRuns = sqliteTable("exercise_runs", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
   setId: text("set_id").notNull(),
   setTitle: text("set_title").notNull(),
   total: integer("total").notNull(),
@@ -41,7 +43,8 @@ export const exerciseRuns = sqliteTable("exercise_runs", {
 /** Resumable in-progress position for an exercise set (one row per set;
  *  cleared when the set is finished). */
 export const exerciseProgress = sqliteTable("exercise_progress", {
-  setId: text("set_id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  setId: text("set_id").notNull(),
   position: integer("position").notNull(),
   results: text("results", { mode: "json" })
     .$type<Record<string, boolean>>()
@@ -52,22 +55,24 @@ export const exerciseProgress = sqliteTable("exercise_progress", {
   updatedAt: integer("updated_at")
     .notNull()
     .default(sql`(unixepoch())`),
-});
+}, (t) => [primaryKey({ columns: [t.userId, t.setId] })]);
 
 /** Last-viewed timestamp per cheat sheet (one row per sheet). */
 export const sheetViews = sqliteTable("sheet_views", {
-  sheetId: text("sheet_id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  sheetId: text("sheet_id").notNull(),
   title: text("title").notNull(),
   viewedAt: integer("viewed_at")
     .notNull()
     .default(sql`(unixepoch())`),
-});
+}, (t) => [primaryKey({ columns: [t.userId, t.sheetId] })]);
 
 /** Saved vocabulary. `word` is the lowercased key; `display` keeps the form
  *  shown to the user. Translation + examples are cached so we don't re-query
  *  the AI on every view. */
 export const vocab = sqliteTable("vocab", {
-  word: text("word").primaryKey(),
+  userId: integer("user_id").notNull(),
+  word: text("word").notNull(),
   display: text("display").notNull(),
   translation: text("translation").notNull(),
   examples: text("examples", { mode: "json" })
@@ -79,11 +84,12 @@ export const vocab = sqliteTable("vocab", {
   createdAt: integer("created_at")
     .notNull()
     .default(sql`(unixepoch())`),
-});
+}, (t) => [primaryKey({ columns: [t.userId, t.word] })]);
 
 /** Named collections. A word can belong to several groups (many-to-many). */
 export const vocabGroups = sqliteTable("vocab_groups", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
   name: text("name").notNull(),
   createdAt: integer("created_at")
     .notNull()
@@ -92,22 +98,25 @@ export const vocabGroups = sqliteTable("vocab_groups", {
 
 export const vocabGroupMembers = sqliteTable("vocab_group_members", {
   groupId: integer("group_id").notNull(),
+  userId: integer("user_id").notNull(),
   word: text("word").notNull(),
-});
+}, (t) => [primaryKey({ columns: [t.groupId, t.word] })]);
 
 /** Flashcard self-assessment tally per word (know / don't-know), kept across
  *  study sessions. `lastResult` is 1 = known, 0 = missed, null = never studied. */
 export const vocabStats = sqliteTable("vocab_stats", {
-  word: text("word").primaryKey(),
+  userId: integer("user_id").notNull(),
+  word: text("word").notNull(),
   known: integer("known").notNull().default(0),
   missed: integer("missed").notNull().default(0),
   lastResult: integer("last_result"),
   lastStudiedAt: integer("last_studied_at"),
-});
+}, (t) => [primaryKey({ columns: [t.userId, t.word] })]);
 
 /** Free-form, categorized learning notes (Markdown), auto-saved. */
 export const notes = sqliteTable("notes", {
   id: text("id").primaryKey(),
+  userId: integer("user_id").notNull(),
   title: text("title").notNull().default("Untitled"),
   category: text("category").notNull().default(""),
   body: text("body").notNull().default(""),
@@ -127,6 +136,8 @@ export const importedContent = sqliteTable("imported_content", {
   id: text("id").primaryKey(),
   kind: text("kind", { enum: ["exercise", "cheatsheet"] }).notNull(),
   data: text("data", { mode: "json" }).notNull(),
+  /** Who imported it (null if that user was deleted). */
+  createdBy: integer("created_by"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -139,6 +150,7 @@ export const users = sqliteTable("users", {
   passwordHash: text("password_hash").notNull(),
   role: text("role", { enum: ["admin", "user"] }).notNull(),
   disabled: integer("disabled", { mode: "boolean" }).notNull().default(false),
+  lastLoginAt: integer("last_login_at"),
   createdAt: integer("created_at")
     .notNull()
     .default(sql`(unixepoch())`),
@@ -152,4 +164,10 @@ export const sessions = sqliteTable("sessions", {
     .notNull()
     .default(sql`(unixepoch())`),
   expiresAt: integer("expires_at").notNull(),
+});
+
+/** Instance-wide settings, key → value (e.g. `registration_open_until`). */
+export const appSettings = sqliteTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
 });

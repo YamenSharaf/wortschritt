@@ -19,7 +19,7 @@ export async function progressRoutes(app: FastifyInstance) {
       },
     },
     async (req) => {
-      recordAttempt(req.body);
+      recordAttempt(req.user!.id, req.body);
       return { ok: true as const };
     },
   );
@@ -30,6 +30,6 @@ export async function progressRoutes(app: FastifyInstance) {
       preHandler: requireAuth,
       schema: { tags: ["progress"], response: { 200: progressSummary } },
     },
-    async () => getProgressSummary(),
+    async (req) => getProgressSummary(req.user!.id),
   );
 }

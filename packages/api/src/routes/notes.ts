@@ -22,7 +22,7 @@ export async function notesRoutes(app: FastifyInstance) {
       preHandler: requireAuth,
       schema: { tags: ["notes"], response: { 200: z.array(note) } },
     },
-    async () => listNotes(),
+    async (req) => listNotes(req.user!.id),
   );
 
   r.get(
@@ -35,7 +35,7 @@ export async function notesRoutes(app: FastifyInstance) {
         response: { 200: note.nullable() },
       },
     },
-    async (req) => getNote(req.params.id),
+    async (req) => getNote(req.user!.id, req.params.id),
   );
 
   r.post(
@@ -48,7 +48,7 @@ export async function notesRoutes(app: FastifyInstance) {
         response: { 200: note },
       },
     },
-    async (req) => createNote(req.body),
+    async (req) => createNote(req.user!.id, req.body),
   );
 
   r.put(
@@ -66,7 +66,7 @@ export async function notesRoutes(app: FastifyInstance) {
       },
     },
     async (req, reply) => {
-      const updated = updateNote(req.params.id, req.body);
+      const updated = updateNote(req.user!.id, req.params.id, req.body);
       if (!updated) return reply.code(404).send({ error: "note not found" });
       return updated;
     },
@@ -83,7 +83,7 @@ export async function notesRoutes(app: FastifyInstance) {
       },
     },
     async (req) => {
-      removeNote(req.params.id);
+      removeNote(req.user!.id, req.params.id);
       return { ok: true as const };
     },
   );

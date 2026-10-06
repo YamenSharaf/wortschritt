@@ -59,13 +59,47 @@ export const loginBody = z.object({
 /** Minimum length for passwords set in the app. */
 export const MIN_PASSWORD_LENGTH = 10;
 
+/** Usernames: 2–32 letters, digits, `_`, `.`, `-` (matched case-insensitively). */
+export const username = z
+  .string()
+  .trim()
+  .regex(/^[a-zA-Z0-9_.-]{2,32}$/, "2–32 letters, digits, _ . or -");
+
+const newPassword = z
+  .string()
+  .min(MIN_PASSWORD_LENGTH, `Use at least ${MIN_PASSWORD_LENGTH} characters`)
+  .max(256);
+
+export const registerBody = z.object({ username, password: newPassword });
+
 export const changePasswordBody = z.object({
   currentPassword: z.string().min(1).max(256),
-  newPassword: z
-    .string()
-    .min(MIN_PASSWORD_LENGTH, `Use at least ${MIN_PASSWORD_LENGTH} characters`)
-    .max(256),
+  newPassword,
 });
+
+export const registrationStatus = z.object({
+  open: z.boolean(),
+  /** Unix seconds when registration closes again, or null when closed. */
+  openUntil: z.number().nullable(),
+});
+export type RegistrationStatus = z.infer<typeof registrationStatus>;
+export const setRegistrationBody = z.object({ open: z.boolean() });
+
+export const adminUser = z.object({
+  id: z.number(),
+  username: z.string(),
+  role: z.enum(["admin", "user"]),
+  disabled: z.boolean(),
+  createdAt: z.number(),
+  /** Unix seconds of the newest session start, or null if never signed in. */
+  lastLoginAt: z.number().nullable(),
+});
+export type AdminUser = z.infer<typeof adminUser>;
+export const updateUserBody = z.object({
+  disabled: z.boolean().optional(),
+  role: z.enum(["admin", "user"]).optional(),
+});
+export const adminSetPasswordBody = z.object({ password: newPassword });
 
 export const authUser = z.object({
   username: z.string(),

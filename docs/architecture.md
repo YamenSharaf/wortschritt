@@ -1,6 +1,6 @@
 # Architecture (for agents & contributors)
 
-A single-user, self-hosted German-learning app. Core principle: **features are
+A small multi-user, self-hosted German-learning app. Core principle: **features are
 code, content is data.** Coded exercise *types* + renderers; everything else is
 JSON validated against Zod schemas.
 
@@ -46,6 +46,18 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   `/api/config`, `/api/health`, `/api/auth/*` require it. The first boot after
   the `users` table exists creates the admin from `ADMIN_USERNAME` /
   `APP_PASSWORD` (`auth/users.ts`).
+- Users: learner tables carry `user_id` (FK to `users`, `ON DELETE CASCADE`);
+  every service function takes the `userId` first and every query filters on
+  it, so routes pass `req.user!.id`. Content (`content/`, `imported_content`)
+  is a shared library: imports record `created_by`, only their importer or an
+  admin may overwrite them, and only an admin may reuse a built-in id
+  (`routes/import.ts`).
+- Admin: `requireAdmin` guards `/api/admin/*` (users list, enable/disable,
+  role, temporary password, delete; registration window) and voice downloads.
+  The last active admin can't be demoted, disabled or deleted.
+- Registration: closed by default; the admin opens it for 24 h
+  (`services/registration.ts`, stored in `app_settings`), after which
+  `/api/auth/register` refuses until reopened. Rate-limited to 5/h per IP.
 - Brute-force protection: password routes are limited per client IP
   (`@fastify/rate-limit`, 10/min, keyed on `CF-Connecting-IP` when present) and
   per username (10 failures / 15 min lock that name, `auth/loginGuard.ts`).
@@ -149,7 +161,9 @@ To change the schema:
 
 ## Planned: multi-user
 
-Agreed design, built in phases (0 = the migration runner above; 1 = accounts, sessions and rate limiting, see Data flow → Auth):
+Agreed design, built in phases (0 = the migration runner above; 1 = accounts,
+sessions and rate limiting; 2 = per-user data, Users screen and registration —
+see Data flow → Auth / Users):
 
 | Topic | Decision |
 | --- | --- |

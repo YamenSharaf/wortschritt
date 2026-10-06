@@ -17,6 +17,7 @@ import { ensureSchema } from "./db/client";
 import { seedDictionary } from "./db/dictSeed";
 import { env, isProd } from "./env";
 import { activityRoutes } from "./routes/activity";
+import { adminRoutes } from "./routes/admin";
 import { assistantRoutes } from "./routes/assistant";
 import { authRoutes } from "./routes/auth";
 import { configRoutes } from "./routes/config";
@@ -68,6 +69,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await app.register(configRoutes);
   await app.register(authRoutes);
+  await app.register(adminRoutes);
   await app.register(contentRoutes);
   await app.register(progressRoutes);
   await app.register(activityRoutes);

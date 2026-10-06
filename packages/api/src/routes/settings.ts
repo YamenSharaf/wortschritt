@@ -13,7 +13,7 @@ export async function settingsRoutes(app: FastifyInstance) {
       preHandler: requireAuth,
       schema: { tags: ["settings"], response: { 200: settingsSchema } },
     },
-    async () => getSettings(),
+    async (req) => getSettings(req.user!.id),
   );
 
   r.put(
@@ -26,6 +26,6 @@ export async function settingsRoutes(app: FastifyInstance) {
         response: { 200: settingsSchema },
       },
     },
-    async (req) => saveSettings(req.body),
+    async (req) => saveSettings(req.user!.id, req.body),
   );
 }

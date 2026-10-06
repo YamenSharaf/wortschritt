@@ -38,6 +38,10 @@ export function startSession(reply: FastifyReply, userId: number): void {
   db.insert(schema.sessions)
     .values({ id: sessionId(token), userId, expiresAt: now() + SESSION_TTL_S })
     .run();
+  db.update(schema.users)
+    .set({ lastLoginAt: now() })
+    .where(eq(schema.users.id, userId))
+    .run();
   reply.setCookie(COOKIE_NAME, token, {
     path: "/",
     httpOnly: true,
@@ -103,6 +107,18 @@ export const requireAuth: preHandlerHookHandler = async (req, reply) => {
   const user = getSessionUser(req);
   if (!user) {
     return reply.code(401).send({ error: "unauthenticated" });
+  }
+  req.user = user;
+};
+
+/** preHandler for admin-only routes: 401 without a session, 403 for non-admins. */
+export const requireAdmin: preHandlerHookHandler = async (req, reply) => {
+  const user = getSessionUser(req);
+  if (!user) {
+    return reply.code(401).send({ error: "unauthenticated" });
+  }
+  if (user.role !== "admin") {
+    return reply.code(403).send({ error: "admin only" });
   }
   req.user = user;
 };
