@@ -75,6 +75,8 @@ const gradeBody = z.object({
   /** The sentence beginning already shown to the learner (if any). Lets the
    *  grader accept a completion-only answer that fits the given stem. */
   context: z.string().max(2000).optional(),
+  /** Open-ended task: `expected` are examples, not the full list. */
+  open: z.boolean().optional(),
 });
 
 const cleanupNotesBody = z.object({
@@ -272,15 +274,18 @@ export async function assistantRoutes(app: FastifyInstance) {
     async (req, reply) => {
       const ai = getAiConfig(req.user!.id);
       if (!ai) return reply.code(503).send({ error: NOT_SET_UP });
-      const { prompt, expected, response, context } = req.body;
+      const { prompt, expected, response, context, open } = req.body;
       const system =
         "You grade short German-learning answers. Decide if the learner's answer is acceptable German for the task, allowing valid variants (word order, punctuation, equivalent spellings) but requiring correct grammar and meaning. " +
         "The learner is often completing a sentence whose beginning is already shown to them (given as 'Shown to the learner'). When it is, accept an answer that supplies only the missing part if, combined with that beginning, it forms a correct sentence — do NOT require the learner to retype the part they were already given. Only mark such an answer wrong if the completion itself is grammatically wrong or doesn't fit. " +
+        "When the reference answers are marked as examples, the task is open-ended: judge whether the learner's answer correctly and sensibly fulfils the task on its own merits — it does not need to resemble the examples. " +
         "Reply with ONLY a compact JSON object: {\"correct\": boolean, \"feedback\": \"one short sentence in English\"}.";
       const user = [
         prompt ? `Task: ${prompt}` : null,
         context ? `Shown to the learner (sentence beginning): ${context}` : null,
-        `Reference answer(s) (full sentence): ${expected.join(" | ")}`,
+        open
+          ? `Example answers (open-ended — any other correct answer also counts): ${expected.join(" | ")}`
+          : `Reference answer(s) (full sentence): ${expected.join(" | ")}`,
         `Learner answer: ${response}`,
       ]
         .filter(Boolean)

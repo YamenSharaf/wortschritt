@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "infinitiv-zu-frei",
   "title": "Infinitivsatz mit „zu“: frei ergänzen",
-  "subtitle": "Free completion (AI-graded)",
-  "description": "Vervollständige die Sätze frei mit einem Infinitivsatz. Der KI-Tutor bewertet deine eigene Antwort.",
+  "subtitle": "Free completion (open answers)",
+  "description": "Vervollständige die Sätze frei mit einem Infinitivsatz. Der KI-Tutor bewertet deine Antwort – ohne Tutor vergleichst du sie selbst mit Beispielen.",
   "level": "B1",
   "tags": [
     "grammatik",
@@ -24,7 +24,7 @@
           "Für mich ist es wichtig, jeden Tag Deutsch zu lernen.",
           "Für mich ist es wichtig, meine Familie oft zu sehen."
         ],
-        "grading": "normalized"
+        "grading": "open"
       }
     },
     {
@@ -37,7 +37,7 @@
           "Es macht mir immer große Freude, mit Freunden zu kochen.",
           "Es macht mir immer große Freude, im Park spazieren zu gehen."
         ],
-        "grading": "normalized"
+        "grading": "open"
       }
     },
     {
@@ -50,7 +50,7 @@
           "Für mich ist es schwierig, früh aufzustehen.",
           "Für mich ist es schwierig, mich kurz zu fassen."
         ],
-        "grading": "normalized"
+        "grading": "open"
       },
       "explanation": "Trennbare Verben: auf·stehen → aufzustehen."
     },
@@ -64,7 +64,7 @@
           "Hör auf, so laut zu reden.",
           "Hör auf, dich ständig zu beschweren."
         ],
-        "grading": "normalized"
+        "grading": "open"
       }
     },
     {
@@ -77,7 +77,7 @@
           "Wir bitten Sie, die Tür leise zu schließen.",
           "Wir bitten Sie, pünktlich zu erscheinen."
         ],
-        "grading": "normalized"
+        "grading": "open"
       }
     },
     {
@@ -90,7 +90,7 @@
           "Macht es dir Spaß, neue Sprachen zu lernen?",
           "Macht es dir Spaß, am Wochenende zu wandern?"
         ],
-        "grading": "normalized"
+        "grading": "open"
       }
     },
     {
@@ -103,7 +103,7 @@
           "Es ist wichtig, genug Wasser zu trinken.",
           "Es ist wichtig, anderen Menschen zuzuhören."
         ],
-        "grading": "normalized"
+        "grading": "open"
       }
     },
     {
@@ -116,7 +116,7 @@
           "In meinem Heimatland ist es nicht erlaubt, auf der Straße zu rauchen.",
           "In meinem Heimatland ist es nicht erlaubt, bei Rot über die Straße zu gehen."
         ],
-        "grading": "normalized"
+        "grading": "open"
       }
     }
   ]

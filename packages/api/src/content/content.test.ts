@@ -12,6 +12,7 @@ import {
   exerciseItem,
   exerciseSet,
   gradeText,
+  isOpenAnswer,
   itemFormatGuide,
 } from "@mdb/shared";
 
@@ -140,4 +141,36 @@ test("generation guide: same examples, without ids", () => {
     assert.ok(!("id" in item));
     assert.ok(exerciseItem.safeParse({ ...item, id: "x" }).success, item.type);
   }
+});
+
+// --- open-ended answers --------------------------------------------------------
+
+test('"open" grading: allowed on transform and sentence_build, refused on cloze', () => {
+  const open = { accept: ["Für mich ist es wichtig, viel zu lesen."], grading: "open" };
+  const transform = { type: "transform", id: "t", source: "Für mich ist es wichtig, …", answer: open };
+  const build = { type: "sentence_build", id: "b", hint: "Wörter: frei", answer: open };
+  assert.deepEqual(issues(exerciseSet.safeParse(set([transform, build]))), []);
+
+  const cloze = {
+    type: "cloze", id: "c", text: "Ich {{1}} gern.",
+    blanks: [{ ref: "1", answer: { accept: ["lese"], grading: "open" } }],
+  };
+  assert.match(issues(exerciseSet.safeParse(set([cloze])))[0]!, /only for transform and sentence_build/);
+});
+
+test('"open" grading: examples still match leniently; isOpenAnswer tells them apart', () => {
+  const open = { accept: ["Für mich ist es wichtig, viel zu lesen."], grading: "open" as const };
+  assert.ok(gradeText("für mich ist es wichtig, viel zu lesen", open));
+  assert.ok(!gradeText("Für mich ist es wichtig, oft zu reisen.", open), "other answers aren't final locally");
+  assert.ok(isOpenAnswer(open));
+  assert.ok(!isOpenAnswer({ accept: ["x"], grading: "normalized" }));
+});
+
+test("the free-answer example inside the authoring guide is valid", () => {
+  const guide = itemFormatGuide({ withIds: true });
+  const raw = guide.slice(guide.indexOf('{"type":"transform","instructions":"Vervollständige'));
+  const json = raw.slice(0, raw.indexOf("}}") + 2);
+  const item = { ...JSON.parse(json), id: "x" };
+  assert.deepEqual(issues(exerciseSet.safeParse(set([item]))), []);
+  assert.equal(item.answer.grading, "open");
 });
