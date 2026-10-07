@@ -647,3 +647,59 @@ export const wordDetails = z.object({
   source: z.object({ url: z.string(), license: z.string(), licenseUrl: z.string() }),
 });
 export type WordDetails = z.infer<typeof wordDetails>;
+
+// --- story generation ------------------------------------------------------
+
+/** "Ein Tag am See!" → "ein-tag-am-see" (a valid story id). */
+export function slugify(title: string): string {
+  const slug = title
+    .toLowerCase()
+    .replace(/ä/g, "ae")
+    .replace(/ö/g, "oe")
+    .replace(/ü/g, "ue")
+    .replace(/ß/g, "ss")
+    .normalize("NFKD")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60)
+    .replace(/-+$/, "");
+  return slug || "story";
+}
+
+/** Target length in words. */
+export const STORY_LENGTHS = { short: 150, medium: 350, long: 700 } as const;
+
+/** Which of the learner's data the story should keep in mind. */
+export const storyContextOptions = z.object({
+  mistakes: z.boolean().default(true),
+  vocab: z.boolean().default(true),
+  topics: z.boolean().default(false),
+});
+export type StoryContextOptions = z.infer<typeof storyContextOptions>;
+
+/** Exactly what is sent to the AI (shown as a preview before generating). */
+export const storyContext = z.object({
+  level: cefrLevel,
+  /** Items the learner still gets wrong: the task, the right answer, theirs. */
+  mistakes: z.array(
+    z.object({ source: z.string(), task: z.string(), answer: z.string(), response: z.string().nullable() }),
+  ),
+  /** Saved words to work in (weakest flashcards and newest first). */
+  words: z.array(z.string()),
+  /** Recently practised exercise sets. */
+  topics: z.array(z.string()),
+});
+export type StoryContext = z.infer<typeof storyContext>;
+
+export const generateStoryBody = z.object({
+  /** What the story should be about, in the learner's own words. */
+  prompt: z.string().trim().min(3).max(2000),
+  /** Defaults to the learner's level. */
+  level: cefrLevel.optional(),
+  length: z.enum(["short", "medium", "long"]).default("medium"),
+  questions: z.number().int().min(0).max(8).default(4),
+  /** "known": mostly words at or below the level; "stretch": ~5% new words, glossed. */
+  vocabulary: z.enum(["known", "stretch"]).default("known"),
+  context: storyContextOptions.default({}),
+});
+export type GenerateStoryBody = z.infer<typeof generateStoryBody>;

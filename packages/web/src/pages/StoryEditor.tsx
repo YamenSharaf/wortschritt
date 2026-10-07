@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   buildStoryPrompt,
   itemFormatGuide,
+  slugify,
   story as storySchema,
   type CefrLevel,
   type Story,
@@ -11,22 +12,6 @@ import {
 import { api, ApiError } from "../lib/api";
 
 const LEVELS: CefrLevel[] = ["A1", "A2", "B1", "B2", "C1", "C2"];
-
-/** "Ein Tag am See!" → "ein-tag-am-see". */
-export function slugify(title: string): string {
-  const slug = title
-    .toLowerCase()
-    .replace(/ä/g, "ae")
-    .replace(/ö/g, "oe")
-    .replace(/ü/g, "ue")
-    .replace(/ß/g, "ss")
-    .normalize("NFKD")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60)
-    .replace(/-+$/, "");
-  return slug || "story";
-}
 
 type Form = {
   title: string;

@@ -15,6 +15,7 @@ import type {
   ExerciseProgress,
   ExerciseRun,
   ExerciseSet,
+  GenerateStoryBody,
   ImportBody,
   Note,
   ProgressSummary,
@@ -26,6 +27,8 @@ import type {
   Settings,
   SheetView,
   Story,
+  StoryContext,
+  StoryContextOptions,
   StorySummary,
   StoryView,
   TtsStatus,
@@ -179,6 +182,10 @@ export const api = {
     }),
   wordDetails: (word: string) =>
     req<WordDetails | null>(`/api/dict/${encodeURIComponent(word)}/details`),
+  storyContext: (o: StoryContextOptions) =>
+    req<StoryContext>(
+      `/api/story-context?mistakes=${o.mistakes}&vocab=${o.vocab}&topics=${o.topics}`,
+    ),
   lemmas: (words: string[]) =>
     req<Record<string, string>>("/api/dict/lemmas", {
       method: "POST",
@@ -406,12 +413,18 @@ export type AskBody = {
   history?: ChatTurn[];
 };
 
-export async function askAssistant(
-  body: AskBody,
-  onToken: (token: string) => void,
+/**
+ * POST a JSON body to a Server-Sent Events endpoint and hand each `data:`
+ * object to `onEvent` until `[DONE]`. Non-2xx answers throw an ApiError; an
+ * `{error}` event throws an Error with its message.
+ */
+async function postSse(
+  url: string,
+  body: unknown,
+  onEvent: (data: Record<string, unknown>) => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  const res = await fetch("/api/assistant/ask", {
+  const res = await fetch(url, {
     method: "POST",
     credentials: "same-origin",
     headers: { "content-type": "application/json" },
@@ -443,14 +456,52 @@ export async function askAssistant(
       if (!s.startsWith("data:")) continue;
       const data = s.slice(5).trim();
       if (data === "[DONE]") return;
-      let parsed: { token?: string; error?: string };
+      let parsed: Record<string, unknown>;
       try {
         parsed = JSON.parse(data);
       } catch {
         continue;
       }
-      if (parsed.error) throw new Error(parsed.error);
-      if (parsed.token) onToken(parsed.token);
+      if (typeof parsed.error === "string") throw new Error(parsed.error);
+      onEvent(parsed);
     }
   }
+}
+
+export function askAssistant(
+  body: AskBody,
+  onToken: (token: string) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  return postSse(
+    "/api/assistant/ask",
+    body,
+    (e) => typeof e.token === "string" && onToken(e.token),
+    signal,
+  );
+}
+
+export type StoryGenerationEvent =
+  | { phase: "writing"; chars: number }
+  | { phase: "checking" }
+  | { phase: "fixing"; problems: number };
+
+/** Write and save a story with the learner's AI; resolves with its id. */
+export async function generateStory(
+  body: GenerateStoryBody,
+  onProgress: (e: StoryGenerationEvent) => void,
+  signal?: AbortSignal,
+): Promise<{ id: string; questionsDropped: boolean }> {
+  let result: { id: string; questionsDropped: boolean } | null = null;
+  await postSse(
+    "/api/stories/generate",
+    body,
+    (e) => {
+      if (e.done) result = e.done as { id: string; questionsDropped: boolean };
+      else if (typeof e.phase === "string") onProgress(e as StoryGenerationEvent);
+    },
+    signal,
+  );
+  if (!result) throw new Error("The story generator stopped before finishing. Try again.");
+  return result;
 }

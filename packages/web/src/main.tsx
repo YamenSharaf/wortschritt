@@ -26,6 +26,7 @@ import { OAuthConsent } from "./pages/OAuthConsent";
 import { SettingsPage } from "./pages/Settings";
 import { StoriesPage } from "./pages/Stories";
 import { StoryEditor } from "./pages/StoryEditor";
+import { StoryGenerate } from "./pages/StoryGenerate";
 import { StoryReader } from "./pages/StoryReader";
 import { VocabPage } from "./pages/Vocab";
 
@@ -43,6 +44,7 @@ const router = createBrowserRouter([
       { path: "exercises/:id", element: <ExercisePlayer /> },
       { path: "stories", element: <StoriesPage /> },
       { path: "stories/new", element: <StoryEditor /> },
+      { path: "stories/generate", element: <StoryGenerate /> },
       { path: "stories/:id", element: <StoryReader /> },
       { path: "stories/:id/edit", element: <StoryEditor key="edit" /> },
       { path: "vocab", element: <VocabPage /> },

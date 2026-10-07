@@ -22,6 +22,7 @@ import { lookupWord } from "../services/dict";
 import { getProgressSummary } from "../services/progress";
 import { wordDetails } from "../services/wiktionary";
 import { deleteStory, getStory, listStories, saveStory } from "../services/stories";
+import { buildStoryContext } from "../services/storyGen";
 import {
   addWordToGroup,
   createGroup,
@@ -357,6 +358,22 @@ export function createMcpServer(user: AuthUser): McpServer {
         ? json({ saved: story.id, replaced: res.replaced, questions: story.questions.length })
         : fail(res.error);
     },
+  );
+
+  tool(
+    "get_story_context",
+    {
+      title: "Context for a tailored story",
+      description:
+        "What to keep in mind when writing a story for this user — the same context the app's own story generator uses: their level, exercise items they still get wrong (task, right answer, what they wrote), saved words to work in (weakest first) and recently practised topics. Then write the story (get_authoring_guide kind \"story\") and save it with save_story.",
+      inputSchema: {
+        mistakes: z.boolean().default(true),
+        vocab: z.boolean().default(true),
+        topics: z.boolean().default(true),
+      },
+      annotations: READ,
+    },
+    async (opts) => json(buildStoryContext(user.id, opts)),
   );
 
   tool(

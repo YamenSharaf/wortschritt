@@ -1,7 +1,17 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { saveStoryBody, story, storyProgressBody, storySummary, storyView } from "@mdb/shared";
+import {
+  generateStoryBody,
+  saveStoryBody,
+  story,
+  storyContext,
+  storyProgressBody,
+  storySummary,
+  storyView,
+} from "@mdb/shared";
+import { aiErrorMessage } from "../assistant/client";
+import { getAiChain } from "../assistant/config";
 import { requireAuth } from "../auth/session";
 import {
   deleteStory,
@@ -11,6 +21,12 @@ import {
   setStoryProgress,
   updateStory,
 } from "../services/stories";
+import { buildStoryContext, generateStory, StoryGenerationError } from "../services/storyGen";
+
+const flag = z
+  .enum(["true", "false"])
+  .optional()
+  .transform((v) => v === "true");
 
 const ok = z.object({ ok: z.literal(true) });
 const failure = z.object({ error: z.string() });
@@ -78,5 +94,77 @@ export async function storyRoutes(app: FastifyInstance) {
       setStoryProgress(req.user!.id, req.params.id, req.body.progress, req.body.read)
         ? { ok: true as const }
         : reply.code(404).send({ error: "no such story" }),
+  );
+
+  // What story generation would send about the learner (the preview).
+  r.get(
+    "/api/story-context",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["stories"],
+        querystring: z.object({ mistakes: flag, vocab: flag, topics: flag }),
+        response: { 200: storyContext },
+      },
+    },
+    async (req) => buildStoryContext(req.user!.id, req.query),
+  );
+
+  /**
+   * Write a story with the learner's AI and save it. Streams Server-Sent
+   * Events — {phase:"writing",chars} / {phase:"checking"} / {phase:"fixing"},
+   * then {done:{id,questionsDropped}} or {error} — so a slow model doesn't hit
+   * a proxy's idle timeout.
+   */
+  r.post(
+    "/api/stories/generate",
+    {
+      preHandler: requireAuth,
+      schema: { tags: ["stories"], body: generateStoryBody },
+    },
+    async (req, reply) => {
+      const ai = getAiChain(req.user!.id);
+      if (!ai) return reply.code(503).send({ error: "Set up your AI tutor under Settings → AI tutor first." });
+
+      reply.hijack();
+      const raw = reply.raw;
+      raw.writeHead(200, {
+        "Content-Type": "text/event-stream; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
+      });
+      const send = (obj: unknown) => {
+        try {
+          raw.write(`data: ${JSON.stringify(obj)}\n\n`);
+        } catch {
+          /* socket gone */
+        }
+      };
+      const controller = new AbortController();
+      req.raw.on("close", () => controller.abort());
+      try {
+        const { view, questionsDropped } = await generateStory(req.user!.id, ai, req.body, {
+          signal: controller.signal,
+          onProgress: send,
+          onFallback: (failed, error) =>
+            req.log.warn({ provider: failed.provider, model: failed.model, error: error.publicMessage }, "AI model failed, trying the next one"),
+        });
+        req.log.info({ id: view.story.id, by: req.user!.username }, "story generated");
+        send({ done: { id: view.story.id, questionsDropped } });
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          send({
+            error: err instanceof StoryGenerationError ? err.message : aiErrorMessage(err, req.log, "story generation"),
+          });
+        }
+      }
+      try {
+        raw.write("data: [DONE]\n\n");
+        raw.end();
+      } catch {
+        /* already closed */
+      }
+    },
   );
 }

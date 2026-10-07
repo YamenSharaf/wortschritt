@@ -42,7 +42,9 @@ client can codegen a typed client against it.
   `DICTIONARY_API_URL=off` to stay offline).
 - **Stories** — private reading texts with a customizable reader (fonts, size,
   spacing, width, sepia/dark, read-aloud, saved words underlined) and
-  comprehension questions.
+  comprehension questions. Generate one from a sentence with your AI tutor,
+  optionally keeping your recent mistakes, the words you're learning and
+  recent topics in mind.
 - **AI tutor (optional)** — explain a highlighted passage, hints, "why was I
   wrong", translations, chat, AI grading of free-text answers, "generate more"
   items, vocab lookups, and tidying rough notes into clean Markdown. Each user
@@ -260,7 +262,7 @@ a learner does:
 | Library (shared) | `list_exercise_sets`, `get_exercise_set`, `list_cheatsheets`, `get_cheatsheet`, `get_authoring_guide`, `validate_content`, `save_exercise_set`, `save_cheatsheet`, `delete_content` |
 | Vocabulary (private) | `list_vocab`, `get_vocab`, `save_vocab`, `delete_vocab`, `list_vocab_groups`, `create_vocab_group`, `delete_vocab_group`, `add_words_to_group`, `remove_word_from_group` |
 | Notes (private) | `list_notes`, `get_note`, `create_note`, `update_note`, `delete_note` |
-| Stories (private) | `list_stories`, `get_story`, `save_story`, `delete_story` (+ `validate_content` / `get_authoring_guide` with kind `story`) |
+| Stories (private) | `list_stories`, `get_story`, `save_story`, `delete_story`, `get_story_context` (+ `validate_content` / `get_authoring_guide` with kind `story`) |
 | History (private) | `get_progress`, `get_mistakes`, `get_activity`, `get_set_history` |
 | Other | `lookup_word`, `whoami` |
 
@@ -299,7 +301,8 @@ Vocab       GET|POST /api/vocab    GET|DELETE /api/vocab/:word
             DELETE /api/vocab-groups/:id/words/:word
 Notes       GET|POST /api/notes    GET|PUT|DELETE /api/notes/:id
 Stories     GET|POST /api/stories  GET|PUT|DELETE /api/stories/:id
-            PUT /api/stories/:id/progress
+            PUT /api/stories/:id/progress   GET /api/story-context
+            POST /api/stories/generate (SSE: progress, then the new story's id)
 Dictionary  GET /api/dict/status   GET /api/dict/:word[/details]   POST /api/dict/lemmas
 TTS         GET /api/tts/status    GET /api/tts    POST /api/tts/download
 Assistant   GET /api/assistant/status
