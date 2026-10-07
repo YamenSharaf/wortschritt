@@ -64,6 +64,12 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   session cookie, so every `requireAuth` / `requireAdmin` route works for both.
   `requireSession` (cookie only) guards token management and the password
   change. `/api/docs` (UI and spec) is behind `requireAuth`.
+- MCP (`routes/mcp.ts`, `mcp/server.ts`): `POST /mcp`, Streamable HTTP in
+  stateless JSON mode, API token only (a cookie gets a 401). Each request builds
+  a fresh `McpServer` bound to the token's user; tools call the same services
+  as the routes (`services/library.ts` holds the import ownership rules for
+  both). Adding a feature that agents should use = a service function + a
+  route + a tool there, with a test in `mcp/mcp.test.ts`.
 - Brute-force protection: password routes are limited per client IP
   (`@fastify/rate-limit`, 10/min, keyed on `CF-Connecting-IP` when present) and
   per username (10 failures / 15 min lock that name, `auth/loginGuard.ts`).

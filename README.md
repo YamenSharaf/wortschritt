@@ -224,6 +224,27 @@ A token acts as its user (same private data, same role), except that it can't
 manage tokens or change the password. Revoking it, or disabling/deleting the
 user, stops it immediately.
 
+### MCP server (AI agents)
+
+The app is also an MCP server at `/mcp` (Streamable HTTP, stateless). Add it as
+a custom connector in Claude (or any MCP client) with the URL
+`https://your-host/mcp` and the header `Authorization: Bearer mdb_…`; it acts
+as the token's user. Tools cover everything above that a learner does:
+
+| Area | Tools |
+|------|-------|
+| Library (shared) | `list_exercise_sets`, `get_exercise_set`, `list_cheatsheets`, `get_cheatsheet`, `get_authoring_guide`, `validate_content`, `save_exercise_set`, `save_cheatsheet`, `delete_content` |
+| Vocabulary (private) | `list_vocab`, `get_vocab`, `save_vocab`, `delete_vocab`, `list_vocab_groups`, `create_vocab_group`, `delete_vocab_group`, `add_words_to_group`, `remove_word_from_group` |
+| Notes (private) | `list_notes`, `get_note`, `create_note`, `update_note`, `delete_note` |
+| Other | `get_progress`, `whoami` |
+
+Agents get the content format the app enforces: the server's instructions point
+them to `get_authoring_guide` (the same guide as Import's "Copy LLM prompt"),
+the save tools take the real schemas as input schemas, `validate_content` is a
+dry run that lists every problem by path, and saving never replaces an existing
+id unless asked (`overwrite: true`). Only an item's importer or an admin can
+replace or delete it; built-in items can't be deleted.
+
 ```
 Auth        POST /api/auth/login | /api/auth/logout | /api/auth/password
             GET  /api/auth/me    GET /api/auth/registration
@@ -233,6 +254,7 @@ Admin       GET  /api/admin/users        PATCH|DELETE /api/admin/users/:id
             POST /api/admin/users/:id/password
             GET|PUT /api/admin/registration
 Public      GET  /api/config  /api/health  /api/docs
+MCP         POST /mcp            (API token only; see above)
 Content     GET  /api/exercises[/:id]  /api/cheatsheets[/:id]  /api/exercise-types
             POST /api/import   GET /api/imports   DELETE /api/imports/:id
 Progress    POST /api/attempts                          GET /api/progress

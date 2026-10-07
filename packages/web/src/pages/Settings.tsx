@@ -465,6 +465,11 @@ function ApiTokens() {
         </a>
         .
       </p>
+      <p className="text-sm text-slate-500">
+        AI agents (Claude, etc.): add an MCP connector with URL{" "}
+        <code className="break-all">{`${window.location.origin}/mcp`}</code> and the header{" "}
+        <code>Authorization: Bearer &lt;token&gt;</code>.
+      </p>
       {created && (
         <div className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950">
           <p className="mb-2 font-medium">Copy it now — it won't be shown again:</p>

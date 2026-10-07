@@ -36,6 +36,11 @@ validated against the schemas in `packages/shared/src/exercises.ts`.
   take `userId` first and filter on it in every query, and the route passes
   `req.user!.id`. Cover it in `routes/multiuser.test.ts` (another user can't
   read or change it).
+- **MCP tools mirror the API**: `packages/api/src/mcp/server.ts` exposes the
+  app to agents via the same services as the routes. A new learner-facing
+  feature gets a tool there too (input schemas from `@mdb/shared`, per-user
+  like its route); content tools must keep using the shared schemas and the
+  authoring guide so agents can't save malformed content.
 - **Schema changes are migrations**: append one to
   `packages/api/src/db/migrations.ts` (never edit a shipped one) and update
   `db/schema.ts` to match. See docs/architecture.md.
