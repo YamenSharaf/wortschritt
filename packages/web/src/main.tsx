@@ -22,11 +22,13 @@ import { ImportPage } from "./pages/Import";
 import { Login } from "./pages/Login";
 import { NoteEditor } from "./pages/NoteEditor";
 import { NotesPage } from "./pages/Notes";
+import { OAuthConsent } from "./pages/OAuthConsent";
 import { SettingsPage } from "./pages/Settings";
 import { VocabPage } from "./pages/Vocab";
 
 const router = createBrowserRouter([
   { path: "/login", element: <Login /> },
+  { path: "/oauth/authorize", element: <OAuthConsent /> },
   {
     path: "/",
     element: <App />,

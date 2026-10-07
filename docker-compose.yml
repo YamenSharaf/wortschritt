@@ -24,6 +24,9 @@ services:
       ASSISTANT_API_KEY: ${ASSISTANT_API_KEY:-}
       ASSISTANT_MODEL: ${ASSISTANT_MODEL:-gpt-4o-mini}
       TTS_URL: ${TTS_URL-http://piper:5000}
+      # Public URL (e.g. https://deutsch.example.com) for MCP sign-in (OAuth).
+      # Optional: by default it's taken from the request (works behind a tunnel).
+      PUBLIC_URL: ${PUBLIC_URL:-}
     volumes:
       # Persist the SQLite database across restarts/upgrades.
       - ./data:/app/data

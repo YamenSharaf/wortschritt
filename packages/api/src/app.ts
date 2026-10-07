@@ -12,6 +12,7 @@ import {
   validatorCompiler,
 } from "fastify-type-provider-zod";
 import { seedAdminAiFromEnv } from "./assistant/config";
+import { pruneOAuth } from "./auth/oauth";
 import { pruneExpiredSessions, requireAuth } from "./auth/session";
 import { ensureAdminUser } from "./auth/users";
 import { ensureSchema } from "./db/client";
@@ -26,6 +27,7 @@ import { contentRoutes } from "./routes/content";
 import { dictRoutes } from "./routes/dict";
 import { importRoutes } from "./routes/import";
 import { mcpRoutes } from "./routes/mcp";
+import { oauthRoutes } from "./routes/oauth";
 import { notesRoutes } from "./routes/notes";
 import { progressRoutes } from "./routes/progress";
 import { settingsRoutes } from "./routes/settings";
@@ -46,8 +48,12 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await ensureAdminUser(app.log);
   seedAdminAiFromEnv(app.log);
-  pruneExpiredSessions();
-  setInterval(pruneExpiredSessions, 60 * 60 * 1000).unref();
+  const prune = () => {
+    pruneExpiredSessions();
+    pruneOAuth();
+  };
+  prune();
+  setInterval(prune, 60 * 60 * 1000).unref();
 
   // Load the bundled offline dictionary into SQLite once (idempotent).
   seedDictionary(app.log);
@@ -60,6 +66,11 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(rateLimit, { global: false });
   app.decorateRequest("user", null);
   app.decorateRequest("authVia", null);
+  // Nothing here is meant to be framed (the OAuth consent page in particular).
+  app.addHook("onSend", async (_req, reply) => {
+    reply.header("x-frame-options", "DENY");
+    reply.header("content-security-policy", "frame-ancestors 'none'");
+  });
 
   await app.register(swagger, {
     openapi: {
@@ -96,6 +107,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(dictRoutes);
   await app.register(assistantRoutes);
   await app.register(mcpRoutes);
+  await app.register(oauthRoutes);
 
   // In production, serve the built SPA from the same container/origin.
   const webDist = resolve(process.cwd(), "../web/dist");

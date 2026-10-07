@@ -2,6 +2,8 @@ import type {
   AdminUser,
   ApiTokenView,
   ImportedItem,
+  OAuthGrantView,
+  OAuthRequestView,
   AiModelOption,
   AiSettingsView,
   AiTestResult,
@@ -132,6 +134,18 @@ export const api = {
     }),
   deleteApiToken: (id: number) =>
     req<ApiTokenView[]>(`/api/auth/tokens/${id}`, { method: "DELETE" }),
+
+  // OAuth: the consent screen and connected apps
+  oauthRequest: (query: string) =>
+    req<OAuthRequestView | { redirect: string }>(`/api/oauth/authorize${query}`),
+  oauthDecide: (params: Record<string, string>, approve: boolean) =>
+    req<{ redirect: string }>("/api/oauth/authorize", {
+      method: "POST",
+      body: JSON.stringify({ params, approve }),
+    }),
+  oauthGrants: () => req<OAuthGrantView[]>("/api/oauth/grants"),
+  deleteOAuthGrant: (id: number) =>
+    req<OAuthGrantView[]>(`/api/oauth/grants/${id}`, { method: "DELETE" }),
 
   // imported (shared-library) content
   imports: () => req<ImportedItem[]>("/api/imports"),

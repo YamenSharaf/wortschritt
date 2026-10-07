@@ -4,6 +4,7 @@ import {
   MIN_PASSWORD_LENGTH,
   TTS_VOICE_CATALOG,
   type ApiTokenView,
+  type OAuthGrantView,
   type Settings,
 } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
@@ -423,8 +424,56 @@ function Account() {
           <p className={`text-sm ${message.ok ? "text-green-600" : "text-red-600"}`}>{message.text}</p>
         )}
       </form>
+      <ConnectedApps />
       <ApiTokens />
     </div>
+  );
+}
+
+/** Apps signed in via OAuth (MCP connectors). */
+function ConnectedApps() {
+  const [grants, setGrants] = useState<OAuthGrantView[] | null>(null);
+
+  useEffect(() => {
+    api.oauthGrants().then(setGrants).catch(() => setGrants([]));
+  }, []);
+
+  return (
+    <section className="space-y-3">
+      <h2 className="text-lg font-semibold">Connected apps</h2>
+      <p className="text-sm text-slate-500">
+        To connect an AI agent like Claude, add a custom connector with the URL{" "}
+        <code className="break-all">{`${window.location.origin}/mcp`}</code>. It will ask you to
+        sign in here and allow access.
+      </p>
+      {grants && grants.length === 0 && <p className="text-sm text-slate-400">No apps connected.</p>}
+      {grants && grants.length > 0 && (
+        <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200 text-sm dark:divide-slate-800 dark:border-slate-800">
+          {grants.map((g) => (
+            <li key={g.id} className="flex items-center gap-2 p-3">
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">{g.clientName}</p>
+                <p className="text-xs text-slate-400">
+                  connected {timeAgo(g.createdAt)} ·{" "}
+                  {g.lastUsedAt ? `last used ${timeAgo(g.lastUsedAt)}` : "never used"}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-red-600 dark:border-slate-700"
+                onClick={async () => {
+                  if (window.confirm(`Disconnect "${g.clientName}"? It loses access right away.`)) {
+                    setGrants(await api.deleteOAuthGrant(g.id));
+                  }
+                }}
+              >
+                Disconnect
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -466,8 +515,8 @@ function ApiTokens() {
         .
       </p>
       <p className="text-sm text-slate-500">
-        AI agents (Claude, etc.): add an MCP connector with URL{" "}
-        <code className="break-all">{`${window.location.origin}/mcp`}</code> and the header{" "}
+        MCP connectors that take a header instead of signing in: URL{" "}
+        <code className="break-all">{`${window.location.origin}/mcp`}</code> with{" "}
         <code>Authorization: Bearer &lt;token&gt;</code>.
       </p>
       {created && (

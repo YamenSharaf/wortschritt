@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { MIN_PASSWORD_LENGTH } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -18,6 +18,10 @@ export function Login() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Where to go after signing in (e.g. back to an OAuth consent screen).
+  // Same-origin paths only, so the login page can't be used as a redirector.
+  const next = useSearchParams()[0].get("next");
+  const target = next && /^\/(?![/\\])/.test(next) ? next : "/";
 
   // Offer "Create account" only while the admin has registration open.
   useEffect(() => {
@@ -29,7 +33,7 @@ export function Login() {
 
   // Once authenticated, redirect declaratively instead of navigating in render.
   if (authenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={target} replace />;
   }
 
   const registering = mode === "register";

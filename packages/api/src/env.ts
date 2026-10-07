@@ -48,6 +48,11 @@ const envSchema = z.object({
   // Optional Piper TTS sidecar (base URL, e.g. http://piper:5000). Unset =
   // pronunciation falls back to the browser's built-in speech synthesis.
   TTS_URL: optionalEnv(z.string().url().optional()),
+
+  // The app's public URL (e.g. https://deutsch.example.com), used as the OAuth
+  // issuer for MCP connectors. Unset = taken from the request's Host and
+  // X-Forwarded-Proto headers (fine behind a Cloudflare tunnel).
+  PUBLIC_URL: optionalEnv(z.string().url().optional()),
 });
 
 const parsed = envSchema.safeParse(process.env);
