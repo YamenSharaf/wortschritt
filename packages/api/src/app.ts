@@ -32,6 +32,7 @@ import { oauthRoutes } from "./routes/oauth";
 import { notesRoutes } from "./routes/notes";
 import { progressRoutes } from "./routes/progress";
 import { settingsRoutes } from "./routes/settings";
+import { storyRoutes } from "./routes/stories";
 import { ttsRoutes } from "./routes/tts";
 import { vocabRoutes } from "./routes/vocab";
 
@@ -106,6 +107,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(settingsRoutes);
   await app.register(importRoutes);
   await app.register(notesRoutes);
+  await app.register(storyRoutes);
   await app.register(dictRoutes);
   await app.register(assistantRoutes);
   await app.register(mcpRoutes);

@@ -122,3 +122,105 @@ export function speak(text: string, lang = "de-DE"): void {
   }
   speakDevice(text, lang);
 }
+
+// --- reading aloud (stories) -------------------------------------------------
+
+let sequenceToken = 0;
+/** The latest started sequence (an older one never reports onEnd). */
+let activeSequence = 0;
+
+/** Stop whatever is being read (a word or a whole story). */
+export function stopSpeaking(): void {
+  sequenceToken++;
+  if (audio) {
+    audio.pause();
+    audio = null;
+  }
+  if (webSpeechSupported()) window.speechSynthesis.cancel();
+}
+
+/** Split text into chunks of at most `max` characters at sentence ends
+ *  (server clips cap at 500; long device utterances get cut off too). */
+export function chunkText(text: string, max = 480): string[] {
+  const sentences = text.replace(/\s+/g, " ").trim().match(/[^.!?…]+[.!?…]+["“”»«]*\s*|[^.!?…]+$/g) ?? [];
+  const out: string[] = [];
+  let cur = "";
+  for (const s of sentences) {
+    if ((cur + s).length > max && cur) {
+      out.push(cur.trim());
+      cur = "";
+    }
+    // A single overlong sentence: split it hard.
+    if (s.length > max) {
+      for (let i = 0; i < s.length; i += max) out.push(s.slice(i, i + max).trim());
+      continue;
+    }
+    cur += s;
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out.filter(Boolean);
+}
+
+function playDevice(text: string, lang: string, rate: number): Promise<void> {
+  return new Promise((resolve) => {
+    if (!webSpeechSupported()) return resolve();
+    const synth = window.speechSynthesis;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang;
+    const list = voices.length ? voices : synth.getVoices();
+    const pref = getDeviceVoicePref();
+    const voice = (pref && list.find((v) => v.voiceURI === pref)) || pickVoice(list, lang);
+    if (voice) u.voice = voice;
+    u.rate = rate;
+    u.onend = () => resolve();
+    u.onerror = () => resolve();
+    synth.speak(u);
+  });
+}
+
+function playServer(text: string, voice: string, rate: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const a = new Audio(`/api/tts?voice=${encodeURIComponent(voice)}&text=${encodeURIComponent(text)}`);
+    audio = a;
+    a.playbackRate = rate;
+    a.onended = () => resolve();
+    a.onerror = () => reject(new Error("clip failed"));
+    a.play().catch(reject);
+  });
+}
+
+/**
+ * Read texts one after another (a story's paragraphs). `onIndex(i)` fires as
+ * paragraph i starts, `onEnd` once when finished or stopped. Returns a stop
+ * function. Uses the Piper voice when set up, the device voice otherwise.
+ */
+export function speakSequence(
+  texts: string[],
+  opts: { lang?: string; rate?: number; onIndex?: (i: number) => void; onEnd?: () => void } = {},
+): () => void {
+  stopSpeaking();
+  const token = ++sequenceToken;
+  activeSequence = token;
+  const { lang = "de-DE", rate = 0.95 } = opts;
+  const live = () => token === sequenceToken;
+  void (async () => {
+    for (let i = 0; i < texts.length && live(); i++) {
+      opts.onIndex?.(i);
+      for (const chunk of chunkText(texts[i] ?? "")) {
+        if (!live()) break;
+        if (serverTts.enabled && serverTts.voice) {
+          try {
+            await playServer(chunk, serverTts.voice, rate);
+            continue;
+          } catch {
+            if (!live()) break;
+          }
+        }
+        await playDevice(chunk, lang, rate);
+      }
+    }
+    if (live()) sequenceToken++;
+    if (activeSequence === token) opts.onEnd?.();
+  })();
+  return stopSpeaking;
+}

@@ -3,12 +3,14 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import {
   buildImportPrompt,
+  buildStoryPrompt,
   cheatsheet,
   createNoteBody,
   exerciseSet,
   importBody,
   saveNoteBody,
   saveVocabBody,
+  story as storySchema,
 } from "@mdb/shared";
 import type { AuthUser } from "../auth/users";
 import { builtInIds, loadCheatsheets, loadExerciseSets } from "../content/loader";
@@ -17,6 +19,7 @@ import { getActivity, getMistakes, getSetHistory } from "../services/history";
 import { deleteImport, listImports, saveImport } from "../services/library";
 import { createNote, getNote, listNotes, removeNote, updateNote } from "../services/notes";
 import { getProgressSummary } from "../services/progress";
+import { deleteStory, getStory, listStories, saveStory } from "../services/stories";
 import {
   addWordToGroup,
   createGroup,
@@ -45,11 +48,11 @@ import {
 export const INSTRUCTIONS = `mit-dem-baby is a German-learning app. You act as one signed-in user.
 
 - Shared library (every user sees it): exercise sets and cheat sheets. Some are built in (read-only); the rest were imported by users. You can replace or delete only items you imported — an admin can delete anyone's.
-- Private to this user: vocabulary (with groups), notes and practice progress and history.
+- Private to this user: stories (reading texts with comprehension questions), vocabulary (with groups), notes, and practice progress and history.
 
 Targeted practice: get_mistakes returns the items this user still gets wrong, with what they answered and the item itself — a good basis for a new exercise set on the same weak points.
 
-Writing content: call get_authoring_guide first and follow it exactly — the app validates every set and sheet against its schema and rejects anything malformed. Use validate_content for a dry run, check list_exercise_sets / list_cheatsheets so you don't reuse an id, then save with save_exercise_set or save_cheatsheet. Everything the learner reads is simple German at the set's level.`;
+Writing content (exercise sets, cheat sheets, stories): call get_authoring_guide first and follow it exactly — the app validates every set and sheet against its schema and rejects anything malformed. Use validate_content for a dry run, check list_exercise_sets / list_cheatsheets so you don't reuse an id, then save with save_exercise_set or save_cheatsheet. Everything the learner reads is simple German at the set's level.`;
 
 const json = (value: unknown): CallToolResult => ({
   content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
@@ -68,14 +71,19 @@ function formatIssues(error: z.ZodError): string[] {
   return error.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`);
 }
 
-function guide(kind: "exercise" | "cheatsheet"): string {
+function guide(kind: "exercise" | "cheatsheet" | "story"): string {
   // The Import page's prompt, minus its chat-only ending ("output only JSON",
   // the topic placeholder): here the JSON goes into a tool argument.
-  const body = buildImportPrompt(kind)
+  const body = (kind === "story" ? buildStoryPrompt() : buildImportPrompt(kind))
     .split("\n")
     .filter((line) => !/Output ONLY the JSON|^Topic\b/.test(line))
     .join("\n")
     .trimEnd();
+  if (kind === "story") {
+    return `${body}
+
+Saving: pass the object (not a JSON string) to save_story (argument \`story\`). Stories are private to this user. Saving never replaces an existing id unless you pass overwrite: true (which keeps the reading progress). Call validate_content with kind "story" first if you are unsure.`;
+  }
   const tool = kind === "exercise" ? "save_exercise_set (argument `set`)" : "save_cheatsheet (argument `sheet`)";
   return `${body}
 
@@ -111,8 +119,8 @@ export function createMcpServer(user: AuthUser): McpServer {
     {
       title: "Content format guide",
       description:
-        "The exact JSON format for exercise sets or cheat sheets: a complete valid example, every item type, and the rules the app checks. Read it before creating or editing content.",
-      inputSchema: { kind: z.enum(["exercise", "cheatsheet"]) },
+        "The exact JSON format for exercise sets, cheat sheets or stories: a complete valid example, every item type, and the rules the app checks. Read it before creating or editing content.",
+      inputSchema: { kind: z.enum(["exercise", "cheatsheet", "story"]) },
       annotations: READ,
     },
     async ({ kind }) => ({ content: [{ type: "text", text: guide(kind) }] }),
@@ -207,14 +215,24 @@ export function createMcpServer(user: AuthUser): McpServer {
     {
       title: "Validate content (dry run)",
       description:
-        "Check an exercise set or cheat sheet against the app's schema without saving it. Returns every problem with its path (e.g. items.3.answer.accept), and whether saving its id would be allowed.",
+        "Check an exercise set, cheat sheet or story against the app's schema without saving it. Returns every problem with its path (e.g. items.3.answer.accept), and whether saving its id would be allowed.",
       inputSchema: {
-        kind: z.enum(["exercise", "cheatsheet"]),
-        data: z.unknown().describe("The exercise set or cheat sheet object"),
+        kind: z.enum(["exercise", "cheatsheet", "story"]),
+        data: z.unknown().describe("The exercise set, cheat sheet or story object"),
       },
       annotations: READ,
     },
     async ({ kind, data }) => {
+      if (kind === "story") {
+        const r = storySchema.safeParse(data);
+        if (!r.success) return json({ valid: false, errors: formatIssues(r.error) });
+        const taken = Boolean(getStory(user.id, r.data.id));
+        return json({
+          valid: true,
+          id: r.data.id,
+          id_status: taken ? `you already have a story "${r.data.id}"; saving needs overwrite: true` : `"${r.data.id}" is free`,
+        });
+      }
       const parsed = importBody.safeParse({ kind, data });
       if (!parsed.success) {
         return json({ valid: false, errors: formatIssues(parsed.error).map((e) => e.replace(/^data\.?/, "") || "(root)") });
@@ -291,6 +309,63 @@ export function createMcpServer(user: AuthUser): McpServer {
       }
       return fail(res.error);
     },
+  );
+
+  // --- stories (private) -----------------------------------------------------
+  tool(
+    "list_stories",
+    {
+      title: "List stories",
+      description:
+        "This user's stories (private reading texts), newest first: id, title, level, tags, word and question counts, reading progress (0–1) and when they finished it.",
+      annotations: READ,
+    },
+    async () => json(listStories(user.id)),
+  );
+
+  tool(
+    "get_story",
+    {
+      title: "Get a story",
+      description: "One story in the save format (body in Markdown, glossary, questions), plus reading progress.",
+      inputSchema: { id: z.string().min(1) },
+      annotations: READ,
+    },
+    async ({ id }) => {
+      const view = getStory(user.id, id);
+      return view ? json(view) : fail(`No story "${id}". Use list_stories.`);
+    },
+  );
+
+  tool(
+    "save_story",
+    {
+      title: "Save a story",
+      description:
+        "Add a story for this user to read (validated against the schema). Read get_authoring_guide with kind \"story\" first. Fails if the id exists unless overwrite is true (which keeps the reading progress). Answers to its questions go into the user's history as set \"story:<id>\".",
+      inputSchema: {
+        story: storySchema,
+        overwrite: z.boolean().default(false).describe("Replace the user's story with the same id"),
+      },
+      annotations: WRITE,
+    },
+    async ({ story, overwrite }) => {
+      const res = saveStory(user.id, story, { overwrite });
+      return res.ok
+        ? json({ saved: story.id, replaced: res.replaced, questions: story.questions.length })
+        : fail(res.error);
+    },
+  );
+
+  tool(
+    "delete_story",
+    {
+      title: "Delete a story",
+      description: "Delete one of this user's stories. Past answers to its questions stay in their history.",
+      inputSchema: { id: z.string().min(1) },
+      annotations: DELETE,
+    },
+    async ({ id }) => (deleteStory(user.id, id) ? json({ deleted: id }) : fail(`No story "${id}". Use list_stories.`)),
   );
 
   // --- vocabulary (private) --------------------------------------------------

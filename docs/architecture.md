@@ -45,6 +45,15 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   dictionary at read time; the AI fills the rest (e.g. the Perfekt auxiliary)
   into `vocab.forms`.
 - Notes: `notes` table (`services/notes.ts`), Markdown, auto-saved.
+- Stories: `stories` table (`services/stories.ts`, `routes/stories.ts`),
+  private per user; `data` is a validated `story` (Markdown body, glossary,
+  questions as exercise items — `checkItems` gives them the exercise-set
+  checks). Reader: `pages/StoryReader.tsx`. Its settings are
+  `settings.reader` (per account). Paragraphs (blank-line blocks) are the
+  read-aloud units (`speakSequence` in `lib/tts.ts`). Saved words are
+  underlined with the CSS Custom Highlight API (no DOM changes), matching base
+  forms via `POST /api/dict/lemmas`. Question answers are attempts/runs with
+  set id `story:<id>`, so history and `get_mistakes` include them.
 - Offline dictionary: TSVs in `packages/api/assets/` (built by the scripts in
   `packages/api/scripts/`) are loaded by `db/dictSeed.ts` and queried via
   `services/dict.ts` → `/api/dict/:word` (tap-to-gloss).

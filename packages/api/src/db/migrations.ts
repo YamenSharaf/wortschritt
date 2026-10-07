@@ -483,6 +483,26 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 9,
+    // Stories: private reading texts (validated JSON), with where the learner
+    // stopped reading and when they finished.
+    name: "stories",
+    up(db) {
+      db.exec(`
+        CREATE TABLE stories (
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          id TEXT NOT NULL,
+          data TEXT NOT NULL,
+          progress REAL NOT NULL DEFAULT 0,
+          read_at INTEGER,
+          created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+          updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+          PRIMARY KEY (user_id, id)
+        );
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

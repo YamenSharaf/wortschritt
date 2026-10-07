@@ -155,6 +155,90 @@ export type ExerciseType = (typeof EXERCISE_TYPES)[number];
 
 const placeholderRe = /\{\{\s*([^}]+?)\s*\}\}/g;
 
+/**
+ * Cross-item checks shared by exercise sets and story questions: unique ids,
+ * choices in range, cloze placeholders matching blanks, table shapes. `base`
+ * is the path to the items array (for error messages).
+ */
+export function checkItems(items: ExerciseItem[], ctx: z.RefinementCtx, base: (string | number)[]): void {
+  // Progress, resume position and run results are keyed by item id.
+  const seen = new Set<string>();
+  items.forEach((item, i) => {
+    if (seen.has(item.id)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: [...base, i, "id"],
+        message: `Duplicate item id "${item.id}" (ids must be unique within a set)`,
+      });
+    }
+    seen.add(item.id);
+  });
+  items.forEach((item, i) => {
+    if (item.type === "multiple_choice") {
+      if (item.answerIndex >= item.choices.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [...base, i, "answerIndex"],
+          message: `answerIndex ${item.answerIndex} is out of range (${item.choices.length} choices, counted from 0)`,
+        });
+      }
+      if (new Set(item.choices.map((c) => c.trim())).size !== item.choices.length) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [...base, i, "choices"],
+          message: "Choices must be distinct",
+        });
+      }
+    }
+    if (item.type === "cloze") {
+      item.blanks.forEach((b, bi) => {
+        if (b.answer.grading === "open") {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [...base, i, "blanks", bi, "answer", "grading"],
+            message: `"open" grading is only for transform and sentence_build items`,
+          });
+        }
+      });
+      const refs = new Set(item.blanks.map((b) => b.ref));
+      const used = new Set<string>();
+      for (const m of item.text.matchAll(placeholderRe)) {
+        const r = m[1];
+        if (r) used.add(r);
+      }
+      for (const r of used) {
+        if (!refs.has(r)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [...base, i, "text"],
+            message: `Placeholder {{${r}}} has no matching blank`,
+          });
+        }
+      }
+      for (const b of item.blanks) {
+        if (!used.has(b.ref)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [...base, i, "blanks"],
+            message: `Blank "${b.ref}" is not referenced in text`,
+          });
+        }
+      }
+    }
+    if (item.type === "conjugation_table") {
+      item.columns.forEach((c, ci) => {
+        if (c.answers.length !== item.rows.length) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [...base, i, "columns", ci, "answers"],
+            message: `Expected ${item.rows.length} answers (one per row), got ${c.answers.length}`,
+          });
+        }
+      });
+    }
+  });
+}
+
 /** A named, orderable collection of items — the unit you practice. */
 export const exerciseSet = z
   .object({
@@ -172,84 +256,7 @@ export const exerciseSet = z
     items: z.array(exerciseItem).min(1),
   })
   // Cross-field structural checks that a per-field schema can't express.
-  .superRefine((set, ctx) => {
-    // Progress, resume position and run results are keyed by item id.
-    const seen = new Set<string>();
-    set.items.forEach((item, i) => {
-      if (seen.has(item.id)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["items", i, "id"],
-          message: `Duplicate item id "${item.id}" (ids must be unique within a set)`,
-        });
-      }
-      seen.add(item.id);
-    });
-    set.items.forEach((item, i) => {
-      if (item.type === "multiple_choice") {
-        if (item.answerIndex >= item.choices.length) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["items", i, "answerIndex"],
-            message: `answerIndex ${item.answerIndex} is out of range (${item.choices.length} choices, counted from 0)`,
-          });
-        }
-        if (new Set(item.choices.map((c) => c.trim())).size !== item.choices.length) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ["items", i, "choices"],
-            message: "Choices must be distinct",
-          });
-        }
-      }
-      if (item.type === "cloze") {
-        item.blanks.forEach((b, bi) => {
-          if (b.answer.grading === "open") {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              path: ["items", i, "blanks", bi, "answer", "grading"],
-              message: `"open" grading is only for transform and sentence_build items`,
-            });
-          }
-        });
-        const refs = new Set(item.blanks.map((b) => b.ref));
-        const used = new Set<string>();
-        for (const m of item.text.matchAll(placeholderRe)) {
-          const r = m[1];
-          if (r) used.add(r);
-        }
-        for (const r of used) {
-          if (!refs.has(r)) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              path: ["items", i, "text"],
-              message: `Placeholder {{${r}}} has no matching blank`,
-            });
-          }
-        }
-        for (const b of item.blanks) {
-          if (!used.has(b.ref)) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              path: ["items", i, "blanks"],
-              message: `Blank "${b.ref}" is not referenced in text`,
-            });
-          }
-        }
-      }
-      if (item.type === "conjugation_table") {
-        item.columns.forEach((c, ci) => {
-          if (c.answers.length !== item.rows.length) {
-            ctx.addIssue({
-              code: z.ZodIssueCode.custom,
-              path: ["items", i, "columns", ci, "answers"],
-              message: `Expected ${item.rows.length} answers (one per row), got ${c.answers.length}`,
-            });
-          }
-        });
-      }
-    });
-  });
+  .superRefine((set, ctx) => checkItems(set.items, ctx, ["items"]));
 export type ExerciseSet = z.infer<typeof exerciseSet>;
 
 /**
@@ -274,3 +281,38 @@ export const cheatsheet = z.object({
   sections: z.array(cheatsheetSection).min(1),
 });
 export type Cheatsheet = z.infer<typeof cheatsheet>;
+
+/**
+ * ---------------------------------------------------------------------------
+ * STORIES  (reading texts, private to the learner who added them)
+ * ---------------------------------------------------------------------------
+ */
+export const storyGlossaryEntry = z.object({
+  term: z.string().min(1),
+  /** Short English meaning (or a simple German paraphrase). */
+  meaning: z.string().min(1),
+});
+
+export const story = z
+  .object({
+    schemaVersion: z.literal(1).default(1),
+    /** URL slug, unique per learner. */
+    id: z
+      .string()
+      .min(1)
+      .max(80)
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "id must be a lowercase slug, e.g. ein-tag-am-see"),
+    title: z.string().min(1).max(200),
+    /** Optional short English gloss of the (German) title. */
+    subtitle: z.string().max(200).optional(),
+    level: cefrLevel,
+    tags: z.array(z.string()).default([]),
+    /** The story, in Markdown. Paragraphs are separated by blank lines. */
+    body: z.string().min(1).max(60_000),
+    /** Words worth explaining, shown in a drawer next to the text. */
+    glossary: z.array(storyGlossaryEntry).default([]),
+    /** Comprehension questions, using the exercise item types. */
+    questions: z.array(exerciseItem).default([]),
+  })
+  .superRefine((s, ctx) => checkItems(s.questions, ctx, ["questions"]));
+export type Story = z.infer<typeof story>;

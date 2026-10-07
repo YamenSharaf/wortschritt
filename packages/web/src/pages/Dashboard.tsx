@@ -45,7 +45,7 @@ export function Dashboard() {
             {recentRuns.map((r) => (
               <Link
                 key={r.setId}
-                to={`/exercises/${r.setId}`}
+                to={runHref(r.setId)}
                 className="flex items-center justify-between gap-3 bg-white px-4 py-3 hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/60"
               >
                 <div className="min-w-0">
@@ -153,4 +153,9 @@ function Stat({ label, value }: { label: string; value: string | number }) {
       <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
     </div>
   );
+}
+
+/** A run's page: an exercise set, or a story whose questions were answered. */
+function runHref(setId: string): string {
+  return setId.startsWith("story:") ? `/stories/${setId.slice(6)}` : `/exercises/${setId}`;
 }
