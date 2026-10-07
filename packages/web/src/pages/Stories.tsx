@@ -31,12 +31,20 @@ export function StoriesPage() {
     <div>
       <div className="mb-4 flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Stories</h1>
-        <Link
-          to="/stories/new"
-          className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground"
-        >
-          New story
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            to="/stories/new"
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium dark:border-slate-700"
+          >
+            Write
+          </Link>
+          <Link
+            to="/stories/generate"
+            className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground"
+          >
+            ✨ Generate
+          </Link>
+        </div>
       </div>
       {list.length > 3 && (
         <div className="mb-3">
@@ -49,8 +57,15 @@ export function StoriesPage() {
         <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-slate-500 dark:border-slate-700">
           <p className="mb-1 font-medium text-slate-700 dark:text-slate-200">No stories yet</p>
           <p className="text-sm">
-            Write or paste one, or ask an AI agent connected via MCP to write one for you. Stories are
-            private to you.
+            <Link to="/stories/generate" className="underline">
+              Generate one
+            </Link>{" "}
+            from a short description — tailored to your level, your mistakes and the words you're
+            learning — or{" "}
+            <Link to="/stories/new" className="underline">
+              write or paste your own
+            </Link>
+            . Stories are private to you.
           </p>
         </div>
       )}

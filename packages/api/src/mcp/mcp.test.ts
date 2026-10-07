@@ -116,7 +116,7 @@ test("initialize: instructions and every tool, with annotations", async () => {
     "add_words_to_group", "create_note", "create_vocab_group", "delete_content", "delete_note",
     "delete_story", "delete_vocab", "delete_vocab_group", "get_activity", "get_authoring_guide",
     "get_cheatsheet", "get_exercise_set", "get_mistakes", "get_note", "get_progress", "get_set_history",
-    "get_story", "get_vocab", "list_cheatsheets", "list_exercise_sets", "list_notes", "list_stories",
+    "get_story", "get_story_context", "get_vocab", "list_cheatsheets", "list_exercise_sets", "list_notes", "list_stories",
     "list_vocab", "list_vocab_groups", "lookup_word", "remove_word_from_group", "save_cheatsheet", "save_exercise_set",
     "save_story", "save_vocab", "update_note", "validate_content", "whoami",
   ]);
@@ -277,6 +277,9 @@ test("stories: guide, validate, save, read back, private, delete", async () => {
   assert.match(await admin.err("get_story", { id: EXAMPLE_STORY.id }), /No story/);
   assert.match(await admin.err("delete_story", { id: EXAMPLE_STORY.id }), /No story/);
   assert.deepEqual(await anna.ok("delete_story", { id: EXAMPLE_STORY.id }), { deleted: EXAMPLE_STORY.id });
+
+  const ctx = await anna.ok("get_story_context", {});
+  assert.deepEqual(Object.keys(ctx).sort(), ["level", "mistakes", "topics", "words"]);
 });
 
 test("progress and history", async () => {

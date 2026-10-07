@@ -54,6 +54,16 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   underlined with the CSS Custom Highlight API (no DOM changes), matching base
   forms via `POST /api/dict/lemmas`. Question answers are attempts/runs with
   set id `story:<id>`, so history and `get_mistakes` include them.
+- Story generation (`services/storyGen.ts`, prompt `buildStoryMessages` in
+  `assistant/prompts.ts`): `POST /api/stories/generate` streams SSE progress
+  (a long story can outlast a proxy's idle timeout) and saves the result.
+  `buildStoryContext` picks what the learner opted into — unresolved
+  mistakes (task, right answer, their answer), saved words (weakest
+  flashcards first), recent set titles — and is also the preview
+  (`GET /api/story-context`) and the MCP tool `get_story_context`, so what
+  is shown is what is sent. The server sets id (free slug of the title) and
+  level; invalid JSON gets one repair round with the exact problems, and if
+  only the questions are still broken the story is kept without them.
 - Offline dictionary: TSVs in `packages/api/assets/` (built by the scripts in
   `packages/api/scripts/`) are loaded by `db/dictSeed.ts` and queried via
   `services/dict.ts` → `/api/dict/:word` (tap-to-gloss).

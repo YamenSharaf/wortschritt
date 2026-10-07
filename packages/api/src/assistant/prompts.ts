@@ -5,7 +5,7 @@
  * everywhere. Adding a new AI button = add a task here + wire a button.
  */
 
-import { itemFormatGuide } from "@mdb/shared";
+import { buildStoryPrompt, itemFormatGuide, STORY_LENGTHS, type GenerateStoryBody, type StoryContext } from "@mdb/shared";
 
 export type TutorTask =
   | "highlight"
@@ -175,4 +175,61 @@ export function buildGenerateMessages(ctx: {
     `Generate ${ctx.count} new items using the types above. Make them distinct from these examples (same style and difficulty, new content):\n` +
     ctx.samples;
   return { system, user };
+}
+
+/**
+ * Write a graded-reader story from the learner's request, keeping their
+ * context in mind. The system prompt is the story authoring guide (the same
+ * one the editor's "Copy LLM prompt" and agents use); the user message is the
+ * request plus the context the learner chose to include.
+ */
+export function buildStoryMessages(ctx: {
+  request: GenerateStoryBody;
+  level: string;
+  context: StoryContext;
+}): { system: string; user: string } {
+  const guide = buildStoryPrompt()
+    .split("\n")
+    .filter((line) => !/^Topic\b/.test(line))
+    .join("\n")
+    .trimEnd();
+  const system =
+    "You write short graded readers in German for language learners: engaging, natural, correct German " +
+    "pitched exactly at the requested CEFR level. Never mention that the text is for practice, and never quote exercises.\n\n" +
+    guide;
+
+  const { request: r, context: c } = ctx;
+  const words = STORY_LENGTHS[r.length];
+  const lines = [
+    `The learner asks for: ${r.prompt}`,
+    "",
+    `Level: ${ctx.level}. Length: about ${words} words (body only).`,
+    r.questions > 0
+      ? `Questions: exactly ${r.questions} comprehension questions about the story, mixing item types (true_false, multiple_choice, and cloze or transform where they fit).`
+      : 'Questions: none — "questions": [].',
+    r.vocabulary === "stretch"
+      ? `Vocabulary: mostly at ${ctx.level}, plus a few new, useful words slightly above it (about 1 in 20); put every new word in the glossary.`
+      : `Vocabulary: only words a ${ctx.level} learner knows; the glossary holds just the few that may still be unfamiliar.`,
+  ];
+  if (c.mistakes.length) {
+    lines.push(
+      "",
+      "The learner recently got these wrong. Use the same grammar and words correctly and naturally in the story, several times where it fits (don't copy the sentences):",
+      ...c.mistakes.map(
+        (m) => `- ${m.task} → correct: ${m.answer}${m.response ? ` (they wrote: ${m.response})` : ""}`,
+      ),
+    );
+  }
+  if (c.words.length) {
+    lines.push("", `Words the learner is learning — work in as many as fit naturally: ${c.words.join(", ")}`);
+  }
+  if (c.topics.length) {
+    lines.push("", `Recently practised topics (connect to them if it fits the request): ${c.topics.join("; ")}`);
+  }
+  return { system, user: lines.join("\n") };
+}
+
+/** Follow-up when the story's JSON didn't validate. */
+export function buildStoryRepair(problems: string[]): string {
+  return `That JSON has these problems:\n${problems.map((p) => `- ${p}`).join("\n")}\n\nReturn the complete corrected JSON only.`;
 }
