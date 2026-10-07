@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { ImportedItem } from "@mdb/shared";
 import { buildImportPrompt, cheatsheet, EXAMPLE_SET, exerciseSet, importBody } from "@mdb/shared";
 import { api } from "../lib/api";
 
@@ -9,6 +10,7 @@ export function ImportPage() {
   const [text, setText] = useState(JSON.stringify(EXAMPLE_SET, null, 2));
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
 
   const schema = kind === "exercise" ? exerciseSet : cheatsheet;
 
@@ -46,6 +48,7 @@ export function ImportPage() {
     try {
       const res = await api.import(body.data);
       setMessage(`Imported: "${res.id}" (${res.kind})`);
+      setReload((n) => n + 1);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -116,6 +119,58 @@ export function ImportPage() {
           {error}
         </pre>
       )}
+
+      <ImportedList reload={reload} />
     </div>
+  );
+}
+
+/** The shared library's imports, with Delete for your own (or all, as admin). */
+function ImportedList({ reload }: { reload: number }) {
+  const [items, setItems] = useState<ImportedItem[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.imports().then(setItems).catch(() => setError("Couldn't load imports."));
+  }, [reload]);
+
+  async function remove(item: ImportedItem) {
+    if (!window.confirm(`Delete "${item.title}" for everyone?`)) return;
+    try {
+      await api.deleteImport(item.id);
+      setItems((list) => list?.filter((i) => i.id !== item.id) ?? null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  if (!items || items.length === 0) return null;
+  return (
+    <section className="mt-10">
+      <h2 className="mb-2 text-lg font-semibold">Imported content</h2>
+      {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+      <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200 text-sm dark:divide-slate-800 dark:border-slate-800">
+        {items.map((i) => (
+          <li key={i.id} className="flex items-center gap-2 p-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium">{i.title}</p>
+              <p className="truncate text-xs text-slate-400">
+                {i.kind === "exercise" ? "Exercise" : "Cheat sheet"} · {i.id}
+                {i.createdBy ? ` · by ${i.createdBy}` : ""}
+              </p>
+            </div>
+            {i.canDelete && (
+              <button
+                type="button"
+                onClick={() => void remove(i)}
+                className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-red-600 hover:border-slate-500 dark:border-slate-700"
+              >
+                Delete
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

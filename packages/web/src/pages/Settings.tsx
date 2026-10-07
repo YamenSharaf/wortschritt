@@ -3,10 +3,12 @@ import {
   generateCounts,
   MIN_PASSWORD_LENGTH,
   TTS_VOICE_CATALOG,
+  type ApiTokenView,
   type Settings,
 } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { timeAgo } from "../lib/time";
 import { useAsync } from "../lib/useAsync";
 import { useTheme } from "../lib/theme";
 import { ACCENTS } from "../lib/themes";
@@ -421,7 +423,106 @@ function Account() {
           <p className={`text-sm ${message.ok ? "text-green-600" : "text-red-600"}`}>{message.text}</p>
         )}
       </form>
+      <ApiTokens />
     </div>
+  );
+}
+
+/** Personal API tokens for scripts and integrations (e.g. an MCP server). */
+function ApiTokens() {
+  const [tokens, setTokens] = useState<ApiTokenView[] | null>(null);
+  const [name, setName] = useState("");
+  const [created, setCreated] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.apiTokens().then(setTokens).catch(() => setError("Couldn't load tokens."));
+  }, []);
+
+  async function create(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      const res = await api.createApiToken(name.trim());
+      setTokens(res.tokens);
+      setCreated(res.token);
+      setCopied(false);
+      setName("");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't create the token.");
+    }
+  }
+
+  return (
+    <section className="space-y-3">
+      <h2 className="text-lg font-semibold">API tokens</h2>
+      <p className="text-sm text-slate-500">
+        For scripts and integrations: send <code>Authorization: Bearer &lt;token&gt;</code>. A
+        token can do everything you can, except manage tokens or change your password. API docs:{" "}
+        <a href="/api/docs" className="underline" target="_blank" rel="noreferrer">
+          /api/docs
+        </a>
+        .
+      </p>
+      {created && (
+        <div className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950">
+          <p className="mb-2 font-medium">Copy it now — it won't be shown again:</p>
+          <code className="block break-all rounded bg-white p-2 text-xs dark:bg-slate-900">{created}</code>
+          <button
+            type="button"
+            className="mt-2 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium dark:border-slate-700"
+            onClick={() => {
+              void navigator.clipboard.writeText(created);
+              setCopied(true);
+            }}
+          >
+            {copied ? "Copied ✓" : "Copy"}
+          </button>
+        </div>
+      )}
+      {tokens && tokens.length > 0 && (
+        <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200 text-sm dark:divide-slate-800 dark:border-slate-800">
+          {tokens.map((t) => (
+            <li key={t.id} className="flex items-center gap-2 p-3">
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">{t.name}</p>
+                <p className="text-xs text-slate-400">
+                  {t.prefix}… · {t.lastUsedAt ? `last used ${timeAgo(t.lastUsedAt)}` : "never used"}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-red-600 dark:border-slate-700"
+                onClick={async () => {
+                  if (window.confirm(`Revoke "${t.name}"? Anything using it stops working.`)) {
+                    setTokens(await api.deleteApiToken(t.id));
+                  }
+                }}
+              >
+                Revoke
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <form onSubmit={create} className="flex gap-2">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Token name, e.g. MCP server"
+          className="input"
+        />
+        <button
+          type="submit"
+          disabled={!name.trim()}
+          className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
+        >
+          Create token
+        </button>
+      </form>
+      {error && <p className="text-sm text-red-600">{error}</p>}
+    </section>
   );
 }
 

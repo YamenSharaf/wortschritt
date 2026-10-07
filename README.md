@@ -182,6 +182,7 @@ user (a `user_id` column, deleted together with the user); content is shared.
 | Table | Holds |
 | --- | --- |
 | `users` / `sessions` | accounts (scrypt hashes, role, disabled) and server-side sessions |
+| `api_tokens` | personal API tokens (SHA-256 only) |
 | `app_settings` | instance-wide settings, e.g. when self-registration closes |
 | `settings` | per user: display name, CEFR level, daily goal, theme, AI grading on/off, "generate more" batch size |
 | `attempts` | one row per answered item (the event log progress is derived from) |
@@ -204,19 +205,36 @@ database refuses to start rather than misread it.
 
 ## API surface
 
-The full, typed spec is at `/api/docs` (OpenAPI UI). Everything except
-`/api/config`, `/api/health` and `/api/auth/*` requires the session cookie.
+The full, typed spec is at `/api/docs` (OpenAPI UI and `/api/docs/json`; needs
+a sign-in or a token). Everything except `/api/config`, `/api/health` and the
+login/registration routes requires authentication.
+
+### Using the API from scripts
+
+Create a personal token under **Settings → Account → API tokens** (shown once),
+then send it as a Bearer token:
+
+```bash
+curl -H "Authorization: Bearer mdb_…" https://your-host/api/notes
+curl -H "Authorization: Bearer mdb_…" -H "content-type: application/json" \
+     -d '{"word":"Baum","translation":"tree"}' https://your-host/api/vocab
+```
+
+A token acts as its user (same private data, same role), except that it can't
+manage tokens or change the password. Revoking it, or disabling/deleting the
+user, stops it immediately.
 
 ```
 Auth        POST /api/auth/login | /api/auth/logout | /api/auth/password
             GET  /api/auth/me    GET /api/auth/registration
+            GET|POST /api/auth/tokens   DELETE /api/auth/tokens/:id  (session only)
             POST /api/auth/register      (only while registration is open)
 Admin       GET  /api/admin/users        PATCH|DELETE /api/admin/users/:id
             POST /api/admin/users/:id/password
             GET|PUT /api/admin/registration
 Public      GET  /api/config  /api/health  /api/docs
 Content     GET  /api/exercises[/:id]  /api/cheatsheets[/:id]  /api/exercise-types
-            POST /api/import
+            POST /api/import   GET /api/imports   DELETE /api/imports/:id
 Progress    POST /api/attempts                          GET /api/progress
             POST /api/runs        GET /api/runs[/:setId]
             GET|PUT|DELETE /api/exercise-progress/:setId

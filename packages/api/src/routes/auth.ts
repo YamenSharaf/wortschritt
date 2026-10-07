@@ -2,7 +2,9 @@ import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import {
+  apiTokenView,
   changePasswordBody,
+  createTokenBody,
   loginBody,
   meResponse,
   registerBody,
@@ -11,12 +13,13 @@ import {
 import { clearFailures, clientIp, lockedFor, recordFailure } from "../auth/loginGuard";
 import { dummyHash, verifyPassword } from "../auth/password";
 import {
+  authenticate,
   endOtherSessions,
   endSession,
-  getSessionUser,
-  requireAuth,
+  requireSession,
   startSession,
 } from "../auth/session";
+import { createToken, deleteToken, listTokens, MAX_TOKENS_PER_USER } from "../auth/tokens";
 import { createUser, findUserById, findUserByUsername, setPassword } from "../auth/users";
 import { registrationStatus } from "../services/registration";
 
@@ -77,7 +80,7 @@ export async function authRoutes(app: FastifyInstance) {
     "/api/auth/me",
     { schema: { tags: ["auth"], response: { 200: meResponse } } },
     async (req) => {
-      const user = getSessionUser(req);
+      const user = authenticate(req)?.user;
       return {
         authenticated: Boolean(user),
         user: user ? { username: user.username, role: user.role } : null,
@@ -120,11 +123,12 @@ export async function authRoutes(app: FastifyInstance) {
     },
   );
 
-  // Change your own password. Signs out your other sessions.
+  // Change your own password. Signs out your other sessions. Browser session
+  // only: an API token can't change the password.
   r.post(
     "/api/auth/password",
     {
-      preHandler: requireAuth,
+      preHandler: requireSession,
       config: { rateLimit: passwordRateLimit },
       schema: {
         tags: ["auth"],
@@ -140,6 +144,58 @@ export async function authRoutes(app: FastifyInstance) {
       await setPassword(user.id, req.body.newPassword);
       endOtherSessions(user.id, req);
       return { ok: true as const };
+    },
+  );
+
+  // --- personal API tokens (managed from a signed-in browser session) -------
+
+  r.get(
+    "/api/auth/tokens",
+    {
+      preHandler: requireSession,
+      schema: { tags: ["auth"], response: { 200: z.array(apiTokenView) } },
+    },
+    async (req) => listTokens(req.user!.id),
+  );
+
+  r.post(
+    "/api/auth/tokens",
+    {
+      preHandler: requireSession,
+      schema: {
+        tags: ["auth"],
+        body: createTokenBody,
+        response: {
+          200: z.object({ token: z.string(), tokens: z.array(apiTokenView) }),
+          400: error,
+        },
+      },
+    },
+    async (req, reply) => {
+      const token = createToken(req.user!.id, req.body.name);
+      if (!token) {
+        return reply
+          .code(400)
+          .send({ error: `You can have at most ${MAX_TOKENS_PER_USER} tokens; delete one first.` });
+      }
+      req.log.info({ username: req.user!.username, name: req.body.name }, "API token created");
+      return { token, tokens: listTokens(req.user!.id) };
+    },
+  );
+
+  r.delete(
+    "/api/auth/tokens/:id",
+    {
+      preHandler: requireSession,
+      schema: {
+        tags: ["auth"],
+        params: z.object({ id: z.coerce.number().int().positive() }),
+        response: { 200: z.array(apiTokenView) },
+      },
+    },
+    async (req) => {
+      deleteToken(req.user!.id, req.params.id);
+      return listTokens(req.user!.id);
     },
   );
 }

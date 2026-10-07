@@ -192,3 +192,16 @@ export const aiModels = sqliteTable("ai_models", {
   model: text("model").notNull(),
   position: integer("position").notNull(),
 });
+
+/** Personal API tokens; `tokenHash` is the SHA-256 (hex) of the token. */
+export const apiTokens = sqliteTable("api_tokens", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
+  tokenHash: text("token_hash").notNull(),
+  prefix: text("prefix").notNull(),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+  lastUsedAt: integer("last_used_at"),
+});
