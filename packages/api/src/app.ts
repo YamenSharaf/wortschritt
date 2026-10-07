@@ -12,7 +12,7 @@ import {
   validatorCompiler,
 } from "fastify-type-provider-zod";
 import { seedAdminAiFromEnv } from "./assistant/config";
-import { pruneExpiredSessions } from "./auth/session";
+import { pruneExpiredSessions, requireAuth } from "./auth/session";
 import { ensureAdminUser } from "./auth/users";
 import { ensureSchema } from "./db/client";
 import { seedDictionary } from "./db/dictSeed";
@@ -58,14 +58,26 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Opt-in per route via `config.rateLimit` (the auth routes).
   await app.register(rateLimit, { global: false });
   app.decorateRequest("user", null);
+  app.decorateRequest("authVia", null);
 
   await app.register(swagger, {
     openapi: {
       info: { title: "mit-dem-baby API", version: "0.1.0" },
+      components: {
+        securitySchemes: {
+          // Personal API tokens (Settings → Account → API tokens).
+          bearer: { type: "http", scheme: "bearer" },
+        },
+      },
+      security: [{ bearer: [] }],
     },
     transform: jsonSchemaTransform,
   });
-  await app.register(swaggerUi, { routePrefix: "/api/docs" });
+  // The docs (UI and JSON spec) require a signed-in session or an API token.
+  await app.register(swaggerUi, {
+    routePrefix: "/api/docs",
+    uiHooks: { onRequest: requireAuth },
+  });
 
   app.get("/api/health", async () => ({ status: "ok" }));
 

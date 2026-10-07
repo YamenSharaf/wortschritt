@@ -398,6 +398,26 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 6,
+    // Personal API tokens for scripts and integrations (e.g. an MCP server).
+    // Stored as SHA-256 only; `prefix` lets the user recognise a token.
+    name: "api-tokens",
+    up(db) {
+      db.exec(`
+        CREATE TABLE api_tokens (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          name TEXT NOT NULL,
+          token_hash TEXT NOT NULL UNIQUE,
+          prefix TEXT NOT NULL,
+          created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+          last_used_at INTEGER
+        );
+        CREATE INDEX idx_api_tokens_user ON api_tokens(user_id);
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

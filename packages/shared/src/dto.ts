@@ -170,6 +170,31 @@ export const aiTestResult = z.object({
 });
 export type AiTestResult = z.infer<typeof aiTestResult>;
 
+/** A personal API token as listed (the token itself is shown only once). */
+export const apiTokenView = z.object({
+  id: z.number(),
+  name: z.string(),
+  /** First characters, to recognise it, e.g. "mdb_Ab3xY". */
+  prefix: z.string(),
+  createdAt: z.number(),
+  lastUsedAt: z.number().nullable(),
+});
+export type ApiTokenView = z.infer<typeof apiTokenView>;
+export const createTokenBody = z.object({ name: z.string().trim().min(1).max(60) });
+
+/** An imported (shared-library) exercise set or cheat sheet. */
+export const importedItem = z.object({
+  id: z.string(),
+  kind: z.enum(["exercise", "cheatsheet"]),
+  title: z.string(),
+  createdAt: z.string(),
+  /** Username of the importer, or null if that account was deleted. */
+  createdBy: z.string().nullable(),
+  /** The signed-in user may delete it (their own import, or they're admin). */
+  canDelete: z.boolean(),
+});
+export type ImportedItem = z.infer<typeof importedItem>;
+
 export const authUser = z.object({
   username: z.string(),
   role: z.enum(["admin", "user"]),

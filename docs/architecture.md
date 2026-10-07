@@ -58,6 +58,12 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
 - Registration: closed by default; the admin opens it for 24 h
   (`services/registration.ts`, stored in `app_settings`), after which
   `/api/auth/register` refuses until reopened. Rate-limited to 5/h per IP.
+- API tokens (`auth/tokens.ts`): `Authorization: Bearer mdb_…`, stored as
+  SHA-256, ≤10 per user. `authenticate()` in `auth/session.ts` accepts a token
+  (no fallback to the cookie if the header is present but wrong) or the
+  session cookie, so every `requireAuth` / `requireAdmin` route works for both.
+  `requireSession` (cookie only) guards token management and the password
+  change. `/api/docs` (UI and spec) is behind `requireAuth`.
 - Brute-force protection: password routes are limited per client IP
   (`@fastify/rate-limit`, 10/min, keyed on `CF-Connecting-IP` when present) and
   per username (10 failures / 15 min lock that name, `auth/loginGuard.ts`).

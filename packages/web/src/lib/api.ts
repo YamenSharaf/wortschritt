@@ -1,5 +1,7 @@
 import type {
   AdminUser,
+  ApiTokenView,
+  ImportedItem,
   AiModelOption,
   AiSettingsView,
   AiTestResult,
@@ -120,6 +122,21 @@ export const api = {
   deleteAiSettings: () =>
     req<AiSettingsView>("/api/assistant/settings", { method: "DELETE" }),
   testAi: () => req<AiTestResult>("/api/assistant/test", { method: "POST" }),
+
+  // personal API tokens (from a signed-in session)
+  apiTokens: () => req<ApiTokenView[]>("/api/auth/tokens"),
+  createApiToken: (name: string) =>
+    req<{ token: string; tokens: ApiTokenView[] }>("/api/auth/tokens", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    }),
+  deleteApiToken: (id: number) =>
+    req<ApiTokenView[]>(`/api/auth/tokens/${id}`, { method: "DELETE" }),
+
+  // imported (shared-library) content
+  imports: () => req<ImportedItem[]>("/api/imports"),
+  deleteImport: (id: string) =>
+    req<{ ok: true }>(`/api/imports/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   // admin
   adminUsers: () => req<AdminUser[]>("/api/admin/users"),

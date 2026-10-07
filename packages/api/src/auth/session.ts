@@ -7,12 +7,15 @@ import type {
 } from "fastify";
 import { db, schema } from "../db/client";
 import { isProd } from "../env";
+import { looksLikeApiToken, userFromToken } from "./tokens";
 import type { AuthUser } from "./users";
 
 declare module "fastify" {
   interface FastifyRequest {
     /** Set by `requireAuth` for authenticated requests. */
     user: AuthUser | null;
+    /** How the request authenticated (set alongside `user`). */
+    authVia: "session" | "token" | null;
   }
 }
 
@@ -102,23 +105,57 @@ export function pruneExpiredSessions(): void {
   db.delete(schema.sessions).where(lte(schema.sessions.expiresAt, now())).run();
 }
 
+/**
+ * The user behind a request: an `Authorization: Bearer mdb_…` API token if
+ * the header is present (no fallback to the cookie when it's invalid), else
+ * the session cookie.
+ */
+export function authenticate(
+  req: FastifyRequest,
+): { user: AuthUser; via: "session" | "token" } | null {
+  const header = req.headers.authorization;
+  if (header !== undefined) {
+    const m = /^Bearer\s+(\S+)$/i.exec(header);
+    const user = m && looksLikeApiToken(m[1]!) ? userFromToken(m[1]!) : null;
+    return user ? { user, via: "token" } : null;
+  }
+  const user = getSessionUser(req);
+  return user ? { user, via: "session" } : null;
+}
+
 /** preHandler that 401s unauthenticated requests and sets `req.user`. */
 export const requireAuth: preHandlerHookHandler = async (req, reply) => {
-  const user = getSessionUser(req);
-  if (!user) {
+  const auth = authenticate(req);
+  if (!auth) {
     return reply.code(401).send({ error: "unauthenticated" });
   }
-  req.user = user;
+  req.user = auth.user;
+  req.authVia = auth.via;
 };
 
-/** preHandler for admin-only routes: 401 without a session, 403 for non-admins. */
-export const requireAdmin: preHandlerHookHandler = async (req, reply) => {
-  const user = getSessionUser(req);
-  if (!user) {
+/** Like requireAuth, but only for a signed-in browser session — for actions an
+ *  API token must not be able to do itself (managing tokens, the password). */
+export const requireSession: preHandlerHookHandler = async (req, reply) => {
+  const auth = authenticate(req);
+  if (!auth) {
     return reply.code(401).send({ error: "unauthenticated" });
   }
-  if (user.role !== "admin") {
+  if (auth.via !== "session") {
+    return reply.code(403).send({ error: "sign in to the app to do this" });
+  }
+  req.user = auth.user;
+  req.authVia = auth.via;
+};
+
+/** preHandler for admin-only routes: 401 without auth, 403 for non-admins. */
+export const requireAdmin: preHandlerHookHandler = async (req, reply) => {
+  const auth = authenticate(req);
+  if (!auth) {
+    return reply.code(401).send({ error: "unauthenticated" });
+  }
+  if (auth.user.role !== "admin") {
     return reply.code(403).send({ error: "admin only" });
   }
-  req.user = user;
+  req.user = auth.user;
+  req.authVia = auth.via;
 };
