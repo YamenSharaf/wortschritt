@@ -451,3 +451,32 @@ export const progressSummary = z.object({
   ),
 });
 export type ProgressSummary = z.infer<typeof progressSummary>;
+
+/** The consent screen for an OAuth (MCP connector) sign-in. */
+export const oauthRequestView = z.object({
+  client: z.object({
+    name: z.string(),
+    /** The client's homepage, if it gave one. */
+    uri: z.string().nullable(),
+    /** Where the browser goes after Allow/Deny. */
+    redirectHost: z.string(),
+  }),
+  username: z.string(),
+});
+export type OAuthRequestView = z.infer<typeof oauthRequestView>;
+
+/** Allow or deny; `params` is the authorization request's query string. */
+export const oauthDecisionBody = z.object({
+  params: z.record(z.string(), z.string()),
+  approve: z.boolean(),
+});
+
+/** An app the user has connected (Settings → Connected apps). */
+export const oauthGrantView = z.object({
+  id: z.number().int(),
+  clientName: z.string(),
+  clientUri: z.string().nullable(),
+  createdAt: z.number().int(),
+  lastUsedAt: z.number().int().nullable(),
+});
+export type OAuthGrantView = z.infer<typeof oauthGrantView>;

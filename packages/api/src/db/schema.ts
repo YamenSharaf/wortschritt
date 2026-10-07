@@ -205,3 +205,46 @@ export const apiTokens = sqliteTable("api_tokens", {
     .default(sql`(unixepoch())`),
   lastUsedAt: integer("last_used_at"),
 });
+
+/** OAuth clients: dynamically registered, or cached Client ID Metadata Documents. */
+export const oauthClients = sqliteTable("oauth_clients", {
+  clientId: text("client_id").primaryKey(),
+  clientName: text("client_name").notNull(),
+  clientUri: text("client_uri"),
+  redirectUris: text("redirect_uris", { mode: "json" }).$type<string[]>().notNull(),
+  secretHash: text("secret_hash"),
+  /** 1 = the client_id is a URL to its metadata document (CIMD). */
+  metadataDocument: integer("metadata_document", { mode: "boolean" }).notNull().default(false),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+  fetchedAt: integer("fetched_at"),
+});
+
+export const oauthCodes = sqliteTable("oauth_codes", {
+  codeHash: text("code_hash").primaryKey(),
+  clientId: text("client_id").notNull(),
+  userId: integer("user_id").notNull(),
+  redirectUri: text("redirect_uri").notNull(),
+  codeChallenge: text("code_challenge").notNull(),
+  resource: text("resource").notNull(),
+  scope: text("scope").notNull(),
+  expiresAt: integer("expires_at").notNull(),
+});
+
+/** One per approval: the current access + refresh token pair (rotated on refresh). */
+export const oauthGrants = sqliteTable("oauth_grants", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  clientId: text("client_id").notNull(),
+  scope: text("scope").notNull(),
+  resource: text("resource").notNull(),
+  accessHash: text("access_hash").notNull(),
+  accessExpiresAt: integer("access_expires_at").notNull(),
+  refreshHash: text("refresh_hash").notNull(),
+  refreshExpiresAt: integer("refresh_expires_at").notNull(),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+  lastUsedAt: integer("last_used_at"),
+});

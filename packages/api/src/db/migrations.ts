@@ -418,6 +418,51 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 7,
+    // OAuth for MCP clients (e.g. Claude's connectors): registered clients,
+    // one-time authorization codes, and the access each user granted. Codes
+    // and tokens are stored as SHA-256 only.
+    name: "oauth",
+    up(db) {
+      db.exec(`
+        CREATE TABLE oauth_clients (
+          client_id TEXT PRIMARY KEY,
+          client_name TEXT NOT NULL,
+          client_uri TEXT,
+          redirect_uris TEXT NOT NULL,
+          secret_hash TEXT,
+          metadata_document INTEGER NOT NULL DEFAULT 0,
+          created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+          fetched_at INTEGER
+        );
+        CREATE TABLE oauth_codes (
+          code_hash TEXT PRIMARY KEY,
+          client_id TEXT NOT NULL REFERENCES oauth_clients(client_id) ON DELETE CASCADE,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          redirect_uri TEXT NOT NULL,
+          code_challenge TEXT NOT NULL,
+          resource TEXT NOT NULL,
+          scope TEXT NOT NULL,
+          expires_at INTEGER NOT NULL
+        );
+        CREATE TABLE oauth_grants (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          client_id TEXT NOT NULL REFERENCES oauth_clients(client_id) ON DELETE CASCADE,
+          scope TEXT NOT NULL,
+          resource TEXT NOT NULL,
+          access_hash TEXT NOT NULL UNIQUE,
+          access_expires_at INTEGER NOT NULL,
+          refresh_hash TEXT NOT NULL UNIQUE,
+          refresh_expires_at INTEGER NOT NULL,
+          created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+          last_used_at INTEGER
+        );
+        CREATE INDEX idx_oauth_grants_user ON oauth_grants(user_id);
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

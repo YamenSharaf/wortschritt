@@ -36,6 +36,9 @@ services:
       # Pronunciation: the Piper TTS sidecar below. Remove the piper service and
       # set TTS_URL="" to fall back to the browser's built-in voice everywhere.
       TTS_URL: ${TTS_URL-http://piper:5000}
+      # Public URL (e.g. https://deutsch.example.com) for MCP sign-in (OAuth).
+      # Optional: by default it's taken from the request (works behind a tunnel).
+      PUBLIC_URL: ${PUBLIC_URL:-}
     volumes:
       # SQLite database (progress, settings, imported content) — back this up.
       - ./data:/app/data

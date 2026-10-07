@@ -183,6 +183,7 @@ user (a `user_id` column, deleted together with the user); content is shared.
 | --- | --- |
 | `users` / `sessions` | accounts (scrypt hashes, role, disabled) and server-side sessions |
 | `api_tokens` | personal API tokens (SHA-256 only) |
+| `oauth_clients`, `oauth_codes`, `oauth_grants` | MCP sign-ins: registered apps, one-time codes, granted access (SHA-256 only) |
 | `app_settings` | instance-wide settings, e.g. when self-registration closes |
 | `settings` | per user: display name, CEFR level, daily goal, theme, AI grading on/off, "generate more" batch size |
 | `attempts` | one row per answered item (the event log progress is derived from) |
@@ -228,8 +229,21 @@ user, stops it immediately.
 
 The app is also an MCP server at `/mcp` (Streamable HTTP, stateless). Add it as
 a custom connector in Claude (or any MCP client) with the URL
-`https://your-host/mcp` and the header `Authorization: Bearer mdb_…`; it acts
-as the token's user. Tools cover everything above that a learner does:
+`https://your-host/mcp`. Two ways to sign in:
+
+- **OAuth (no setup):** the client opens the app's sign-in page, the user
+  allows access, and the browser returns to the client. Each user connects as
+  themselves; **Settings → Account → Connected apps** lists and disconnects
+  them. The app is its own authorization server (discovery under
+  `/.well-known/`, Dynamic Client Registration and Client ID Metadata
+  Documents, PKCE S256, 1 h access tokens that only work on `/mcp`, rotating
+  30-day refresh tokens). Set `PUBLIC_URL` if the issuer URL can't be derived
+  from the request's `Host` / `X-Forwarded-Proto`.
+- **API token:** clients that take a header instead send
+  `Authorization: Bearer mdb_…`.
+
+Either way the connection acts as that user. Tools cover everything above that
+a learner does:
 
 | Area | Tools |
 |------|-------|
@@ -254,7 +268,10 @@ Admin       GET  /api/admin/users        PATCH|DELETE /api/admin/users/:id
             POST /api/admin/users/:id/password
             GET|PUT /api/admin/registration
 Public      GET  /api/config  /api/health  /api/docs
-MCP         POST /mcp            (API token only; see above)
+MCP         POST /mcp            (OAuth or API token; see above)
+OAuth       GET  /.well-known/oauth-protected-resource[/mcp]  /.well-known/oauth-authorization-server
+            POST /oauth/register  /oauth/token  /oauth/revoke   (page: /oauth/authorize)
+            GET|POST /api/oauth/authorize   GET /api/oauth/grants   DELETE /api/oauth/grants/:id
 Content     GET  /api/exercises[/:id]  /api/cheatsheets[/:id]  /api/exercise-types
             POST /api/import   GET /api/imports   DELETE /api/imports/:id
 Progress    POST /api/attempts                          GET /api/progress

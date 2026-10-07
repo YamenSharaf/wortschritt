@@ -1,18 +1,27 @@
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { clientIp } from "../auth/loginGuard";
+import { looksLikeAccessToken, publicOrigin, resourceMetadataUrl, userFromAccessToken } from "../auth/oauth";
 import { authenticate } from "../auth/session";
 import { createMcpServer } from "../mcp/server";
 
-/** API tokens only: a browser session has no business here, and requiring the
- *  header keeps cross-site requests riding on the cookie out. */
+/**
+ * An OAuth access token (MCP connectors that sign in) or a personal API token
+ * (connectors configured with a header). Not the session cookie: requiring
+ * the header keeps cross-site requests riding on it out. The 401 points
+ * clients to the OAuth metadata, which starts the sign-in flow.
+ */
 const requireToken: preHandlerHookHandler = async (req, reply) => {
-  const auth = authenticate(req);
+  const origin = publicOrigin(req);
+  const m = /^Bearer\s+(\S+)$/i.exec(req.headers.authorization ?? "");
+  const oauthUser = m && looksLikeAccessToken(m[1]!) ? userFromAccessToken(m[1]!, origin) : null;
+  const auth = oauthUser ? { user: oauthUser, via: "token" as const } : authenticate(req);
   if (!auth || auth.via !== "token") {
+    const invalid = req.headers.authorization ? ', error="invalid_token"' : "";
     return reply
       .code(401)
-      .header("www-authenticate", 'Bearer realm="mit-dem-baby"')
-      .send({ error: "send an API token: Authorization: Bearer mdb_…" });
+      .header("www-authenticate", `Bearer resource_metadata="${resourceMetadataUrl(origin)}"${invalid}`)
+      .send({ error: "sign in via OAuth, or send an API token: Authorization: Bearer mdb_…" });
   }
   req.user = auth.user;
   req.authVia = auth.via;
