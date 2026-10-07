@@ -57,6 +57,13 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
 - Offline dictionary: TSVs in `packages/api/assets/` (built by the scripts in
   `packages/api/scripts/`) are loaded by `db/dictSeed.ts` and queried via
   `services/dict.ts` → `/api/dict/:word` (tap-to-gloss).
+- Online dictionary (`services/wiktionary.ts`): `/api/dict/:word/details`
+  asks freedictionaryapi.com (Wiktionary, CC BY-SA — the popup credits it)
+  for the offline base form, follows one "form of" hop, trims the answer and
+  caches it in `dict_cache` (hits forever, misses a week, errors never). It
+  goes through the egress guard with a timeout and size cap; any failure
+  just leaves the offline gloss. `DICTIONARY_API_URL=off` disables it. MCP:
+  `lookup_word`.
 - Pronunciation: `routes/tts.ts` proxies the Piper sidecar (`TTS_URL`) and
   caches clips; unset → the browser's speech synthesis.
 - Settings: single JSON row (`services/settings.ts`).

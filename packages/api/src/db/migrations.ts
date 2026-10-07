@@ -503,6 +503,21 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 10,
+    // Cache of online dictionary lookups (shared reference data, like the
+    // offline dictionary). data = parsed details JSON, or NULL = not found.
+    name: "dict-cache",
+    up(db) {
+      db.exec(`
+        CREATE TABLE dict_cache (
+          word TEXT PRIMARY KEY,
+          data TEXT,
+          fetched_at INTEGER NOT NULL DEFAULT (unixepoch())
+        );
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

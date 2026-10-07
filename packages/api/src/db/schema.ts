@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import type { Settings, Story } from "@mdb/shared";
+import type { Settings, Story, WordDetails } from "@mdb/shared";
 
 /** Per-user settings blob (one row per user). */
 export const settings = sqliteTable("settings", {
@@ -279,3 +279,12 @@ export const stories = sqliteTable("stories", {
     .notNull()
     .default(sql`(unixepoch())`),
 }, (t) => [primaryKey({ columns: [t.userId, t.id] })]);
+
+/** Online dictionary lookups, cached (shared). `data` null = not found. */
+export const dictCache = sqliteTable("dict_cache", {
+  word: text("word").primaryKey(),
+  data: text("data", { mode: "json" }).$type<WordDetails>(),
+  fetchedAt: integer("fetched_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});

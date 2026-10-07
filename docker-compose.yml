@@ -27,6 +27,8 @@ services:
       # Public URL (e.g. https://deutsch.example.com) for MCP sign-in (OAuth).
       # Optional: by default it's taken from the request (works behind a tunnel).
       PUBLIC_URL: ${PUBLIC_URL:-}
+      # Online dictionary (Wiktionary) under the offline gloss; "off" = offline only.
+      DICTIONARY_API_URL: ${DICTIONARY_API_URL:-}
     volumes:
       # Persist the SQLite database across restarts/upgrades.
       - ./data:/app/data

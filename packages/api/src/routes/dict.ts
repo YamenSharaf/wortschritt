@@ -1,9 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { dictEntry, lemmasBody, lemmasResult } from "@mdb/shared";
+import { dictEntry, lemmasBody, lemmasResult, wordDetails as wordDetailsDto } from "@mdb/shared";
+import { clientIp } from "../auth/loginGuard";
 import { requireAuth } from "../auth/session";
 import { dictAvailable, lookupWord } from "../services/dict";
+import { wordDetails } from "../services/wiktionary";
 
 export async function dictRoutes(app: FastifyInstance) {
   const r = app.withTypeProvider<ZodTypeProvider>();
@@ -36,6 +38,25 @@ export async function dictRoutes(app: FastifyInstance) {
         if (lemma) out[w] = lemma;
       }
       return out;
+    },
+  );
+
+  // Wiktionary details (definitions, IPA, examples) for the tap popup, loaded
+  // after the offline gloss. Looks up the offline base form first.
+  r.get(
+    "/api/dict/:word/details",
+    {
+      preHandler: requireAuth,
+      config: { rateLimit: { max: 90, timeWindow: "1 minute", keyGenerator: clientIp } },
+      schema: {
+        tags: ["dict"],
+        params: z.object({ word: z.string().min(1).max(64) }),
+        response: { 200: wordDetailsDto.nullable() },
+      },
+    },
+    async (req) => {
+      const surface = req.params.word.trim();
+      return wordDetails([lookupWord(surface)?.lemma ?? surface, surface]);
     },
   );
 

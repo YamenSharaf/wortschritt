@@ -20,6 +20,8 @@ Object.assign(process.env, {
   NODE_ENV: "test",
   TTS_URL: "",
   ASSISTANT_API_KEY: "",
+  // No network in tests: lookup_word uses the offline dictionary only.
+  DICTIONARY_API_URL: "off",
 });
 
 let app: FastifyInstance;
@@ -115,7 +117,7 @@ test("initialize: instructions and every tool, with annotations", async () => {
     "delete_story", "delete_vocab", "delete_vocab_group", "get_activity", "get_authoring_guide",
     "get_cheatsheet", "get_exercise_set", "get_mistakes", "get_note", "get_progress", "get_set_history",
     "get_story", "get_vocab", "list_cheatsheets", "list_exercise_sets", "list_notes", "list_stories",
-    "list_vocab", "list_vocab_groups", "remove_word_from_group", "save_cheatsheet", "save_exercise_set",
+    "list_vocab", "list_vocab_groups", "lookup_word", "remove_word_from_group", "save_cheatsheet", "save_exercise_set",
     "save_story", "save_vocab", "update_note", "validate_content", "whoami",
   ]);
   const save = tools.find((t) => t.name === "save_exercise_set")!;
@@ -245,6 +247,13 @@ test("notes: CRUD, private to the user", async () => {
 
   await anna.ok("delete_note", { id: note.id });
   assert.deepEqual(await anna.ok("list_notes"), []);
+});
+
+test("lookup_word: the offline entry (online details off in tests)", async () => {
+  const r = await anna.ok("lookup_word", { word: "ging" });
+  assert.equal(r.offline.lemma, "gehen");
+  assert.equal(r.details, null);
+  assert.match(await anna.err("lookup_word", { word: "xyzzyq" }), /wasn't found/);
 });
 
 test("stories: guide, validate, save, read back, private, delete", async () => {

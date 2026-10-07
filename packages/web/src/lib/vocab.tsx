@@ -12,6 +12,7 @@ import type {
   SaveVocabBody,
   VocabEntry,
   VocabGroup,
+  WordDetails,
   WordLookup,
 } from "@mdb/shared";
 import { SpeakButton } from "../components/SpeakButton";
@@ -230,6 +231,8 @@ function WordOverlay({
   const { enabled } = useVocab();
   // undefined = still looking up; null = no offline entry.
   const [dict, setDict] = useState<DictEntry | null | undefined>(undefined);
+  // Wiktionary details, loaded alongside (slower; null = none).
+  const [details, setDetails] = useState<WordDetails | null | undefined>(undefined);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -240,10 +243,15 @@ function WordOverlay({
   useEffect(() => {
     let alive = true;
     setDict(undefined);
+    setDetails(undefined);
     api
       .dict(anchor.display)
       .then((d) => alive && setDict(d))
       .catch(() => alive && setDict(null));
+    api
+      .wordDetails(anchor.display)
+      .then((d) => alive && setDetails(d))
+      .catch(() => alive && setDetails(null));
     return () => {
       alive = false;
     };
@@ -260,6 +268,7 @@ function WordOverlay({
           <WordMenu
             display={anchor.display}
             dict={dict}
+            details={details}
             aiEnabled={enabled}
             onTranslate={onTranslate}
             onClose={onClose}
@@ -282,10 +291,13 @@ function DictGloss({
   display,
   dict,
   aiEnabled,
+  hasDetails,
 }: {
   display: string;
   dict: DictEntry | null | undefined;
   aiEnabled: boolean;
+  /** Wiktionary definitions follow below, so no "no definition" hint. */
+  hasDetails: boolean;
 }) {
   if (dict === undefined) {
     return (
@@ -313,7 +325,7 @@ function DictGloss({
         <p className="mt-0.5 text-sm text-slate-700 dark:text-slate-200">
           {dict.gloss}
         </p>
-      ) : (
+      ) : hasDetails ? null : (
         <p className="mt-0.5 text-xs text-slate-400">
           {aiEnabled ? "Tap Translate for the meaning." : "No offline definition."}
         </p>
@@ -333,15 +345,70 @@ function DictGloss({
   );
 }
 
+const WIKI_POS: Record<string, string> = { adj: "adjective", adv: "adverb", prep: "preposition", conj: "conjunction", pron: "pronoun", det: "determiner", num: "number", intj: "interjection" };
+
+/** Wiktionary senses under the offline gloss (credited: CC BY-SA). */
+function DetailsView({ details, showHead }: { details: WordDetails | null | undefined; showHead: boolean }) {
+  const [all, setAll] = useState(false);
+  if (details === undefined) {
+    return <div className="px-3 py-2 text-xs text-slate-400">Loading definitions…</div>;
+  }
+  if (!details) return null;
+  const senses = details.entries.flatMap((e) => e.senses.map((s) => ({ ...s, pos: e.pos })));
+  const shown = all ? senses : senses.slice(0, 3);
+  const ipa = details.entries.find((e) => e.ipa)?.ipa;
+  return (
+    <div className="max-h-64 overflow-y-auto border-b border-slate-200 px-3 py-2 font-content text-sm dark:border-slate-700">
+      {showHead && <div className="font-semibold">{details.word}</div>}
+      {(ipa || details.formOf) && (
+        <div className="mb-1 flex flex-wrap gap-x-2 text-xs text-slate-400">
+          {ipa && <span>{ipa}</span>}
+          {details.formOf && <span>{details.formOf}</span>}
+        </div>
+      )}
+      <ol className="space-y-1.5">
+        {shown.map((s, i) => (
+          <li key={i} className="flex gap-1.5">
+            <span className="shrink-0 text-xs text-slate-400">{i + 1}.</span>
+            <div className="min-w-0">
+              {details.entries.length > 1 && (
+                <span className="mr-1 text-[10px] uppercase tracking-wide text-slate-400">{WIKI_POS[s.pos] ?? s.pos}</span>
+              )}
+              <span className="text-slate-700 dark:text-slate-200">{s.definition}</span>
+              {s.examples[0] && <p className="mt-0.5 text-xs italic text-slate-500">{s.examples[0]}</p>}
+            </div>
+          </li>
+        ))}
+      </ol>
+      {senses.length > shown.length && (
+        <button type="button" onClick={() => setAll(true)} className="mt-1 text-xs text-slate-500 underline">
+          {senses.length - shown.length} more
+        </button>
+      )}
+      <p className="mt-1.5 text-[10px] text-slate-400">
+        <a href={details.source.url} target="_blank" rel="noreferrer" className="underline">
+          Wiktionary
+        </a>{" "}
+        ·{" "}
+        <a href={details.source.licenseUrl} target="_blank" rel="noreferrer" className="underline">
+          {details.source.license}
+        </a>
+      </p>
+    </div>
+  );
+}
+
 function WordMenu({
   display,
   dict,
+  details,
   aiEnabled,
   onTranslate,
   onClose,
 }: {
   display: string;
   dict: DictEntry | null | undefined;
+  details: WordDetails | null | undefined;
   aiEnabled: boolean;
   onTranslate: () => void;
   onClose: () => void;
@@ -350,7 +417,8 @@ function WordMenu({
     "flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap px-2.5 py-2.5 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800";
   return (
     <div>
-      <DictGloss display={display} dict={dict} aiEnabled={aiEnabled} />
+      <DictGloss display={display} dict={dict} aiEnabled={aiEnabled} hasDetails={Boolean(details)} />
+      <DetailsView details={details} showHead={dict === null} />
       <div className="flex items-stretch divide-x divide-slate-200 dark:divide-slate-700">
         {ttsSupported() && (
           <button type="button" onClick={() => speak(display)} className={item}>
