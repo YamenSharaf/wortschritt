@@ -358,6 +358,46 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 5,
+    // Several AI providers per user (one key each) and an ordered list of
+    // provider + model entries tried in turn ("try A, then B"). The single
+    // ai_settings row becomes provider 1 with model entry 1.
+    name: "ai-providers-and-fallback-order",
+    up(db) {
+      db.exec(`
+        CREATE TABLE ai_providers (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          name TEXT NOT NULL,
+          base_url TEXT NOT NULL,
+          api_key_enc TEXT,
+          created_at INTEGER NOT NULL DEFAULT (unixepoch())
+        );
+        CREATE INDEX idx_ai_providers_user ON ai_providers(user_id);
+        CREATE TABLE ai_models (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          provider_id INTEGER NOT NULL REFERENCES ai_providers(id) ON DELETE CASCADE,
+          model TEXT NOT NULL,
+          position INTEGER NOT NULL
+        );
+        CREATE INDEX idx_ai_models_user ON ai_models(user_id, position);
+
+        INSERT INTO ai_providers (user_id, name, base_url, api_key_enc)
+          SELECT user_id,
+                 CASE WHEN base_url LIKE 'https://openrouter.ai/%' THEN 'OpenRouter'
+                      WHEN base_url LIKE 'https://api.openai.com/%' THEN 'OpenAI'
+                      ELSE 'My endpoint' END,
+                 base_url, api_key_enc
+          FROM ai_settings;
+        INSERT INTO ai_models (user_id, provider_id, model, position)
+          SELECT s.user_id, p.id, s.model, 0
+          FROM ai_settings s JOIN ai_providers p ON p.user_id = s.user_id;
+        DROP TABLE ai_settings;
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

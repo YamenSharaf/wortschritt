@@ -1,4 +1,5 @@
 import type { FastifyBaseLogger } from "fastify";
+import type { AiModelOption } from "@mdb/shared";
 import type { AiConfig } from "./config";
 import { EgressError, guardedFetch } from "./egress";
 
@@ -24,8 +25,8 @@ const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 type Message = { role: string; content: string };
 type ChatChunk = { choices?: Array<{ delta?: { content?: string } }> };
 
-/** Yields the text deltas of a chat completion. */
-export async function* streamCompletion(
+/** Yields the text deltas of a chat completion from one entry. */
+async function* streamOne(
   cfg: AiConfig,
   messages: Message[],
   opts: { temperature: number; maxTokens: number; signal?: AbortSignal },
@@ -92,15 +93,130 @@ export async function* streamCompletion(
   }
 }
 
-/** The whole completion as one string. */
-export async function collectCompletion(
-  cfg: AiConfig,
+/** Called when an entry fails and the next one is tried. */
+export type OnFallback = (failed: AiConfig, error: AiRequestError) => void;
+
+/**
+ * Yields the text deltas of a chat completion, trying the user's entries in
+ * order: if an entry fails before producing any text, the next one is tried.
+ * Once text has started we stay with that entry (no mixed answers). When all
+ * fail, the first entry's error is thrown.
+ */
+export async function* streamCompletion(
+  chain: AiConfig[],
   messages: Message[],
-  opts: { temperature: number; maxTokens: number; signal?: AbortSignal },
+  opts: { temperature: number; maxTokens: number; signal?: AbortSignal; onFallback?: OnFallback },
+): AsyncGenerator<string> {
+  let firstError: AiRequestError | null = null;
+  for (const cfg of chain) {
+    const stream = streamOne(cfg, messages, opts);
+    let first: IteratorResult<string>;
+    try {
+      first = await stream.next();
+    } catch (err) {
+      if (opts.signal?.aborted) throw err;
+      const e = toAiError(err);
+      firstError ??= e;
+      opts.onFallback?.(cfg, e);
+      continue;
+    }
+    if (!first.done) yield first.value;
+    yield* stream;
+    return;
+  }
+  throw firstError ?? new AiRequestError("No AI model is set up.");
+}
+
+/** The whole completion as one string (with the same fallback). */
+export async function collectCompletion(
+  chain: AiConfig[],
+  messages: Message[],
+  opts: { temperature: number; maxTokens: number; signal?: AbortSignal; onFallback?: OnFallback },
 ): Promise<string> {
   let content = "";
-  for await (const token of streamCompletion(cfg, messages, opts)) content += token;
+  for await (const token of streamCompletion(chain, messages, opts)) content += token;
   return content;
+}
+
+/** One entry only, no fallback — for "Test connection". */
+export function collectFromOne(
+  cfg: AiConfig,
+  messages: Message[],
+  opts: { temperature: number; maxTokens: number },
+): Promise<string> {
+  return collectCompletion([cfg], messages, opts);
+}
+
+const MAX_MODELS_BYTES = 16 * 1024 * 1024;
+const MAX_MODEL_PAGES = 10;
+
+/** USD per token (OpenRouter's string format) → USD per 1M tokens. */
+function perMillion(v: unknown): number | null {
+  const n = typeof v === "string" || typeof v === "number" ? Number(v) : NaN;
+  return Number.isFinite(n) && n >= 0 ? Math.round(n * 1e6 * 1000) / 1000 : null;
+}
+
+/**
+ * The provider's model list (`GET {baseUrl}/models`, the OpenAI-compatible
+ * shape `{ data: [{ id, … }] }`). OpenRouter's extra fields (name, context
+ * length, pricing) are used when present; its pages are followed.
+ */
+export async function listModels(provider: {
+  baseUrl: string;
+  apiKey: string | null;
+}): Promise<AiModelOption[]> {
+  const out: AiModelOption[] = [];
+  let url: string | null = `${provider.baseUrl}/models`;
+  let bytes = 0;
+  for (let page = 0; url && page < MAX_MODEL_PAGES; page++) {
+    let res;
+    try {
+      res = await guardedFetch(url, {
+        headers: provider.apiKey ? { authorization: `Bearer ${provider.apiKey}` } : {},
+        signal: AbortSignal.timeout(30_000),
+      });
+    } catch (err) {
+      throw toAiError(err);
+    }
+    if (!res.ok) {
+      const detail = (await res.text().catch(() => "")).slice(0, 2000);
+      throw new AiRequestError(`The provider answered ${res.status}.`, { status: res.status, detail });
+    }
+    let text = "";
+    const decoder = new TextDecoder();
+    try {
+      for await (const chunk of res.body!) {
+        bytes += chunk.byteLength;
+        if (bytes > MAX_MODELS_BYTES) throw new AiRequestError("The model list was too large.");
+        text += decoder.decode(chunk, { stream: true });
+      }
+    } catch (err) {
+      throw toAiError(err);
+    }
+    let json: { data?: unknown; links?: { next?: unknown } };
+    try {
+      json = JSON.parse(text);
+    } catch {
+      throw new AiRequestError("The provider doesn't offer a model list.");
+    }
+    if (!Array.isArray(json.data)) throw new AiRequestError("The provider doesn't offer a model list.");
+    for (const m of json.data as Array<Record<string, unknown>>) {
+      if (typeof m?.id !== "string" || !m.id) continue;
+      const pricing = (m.pricing ?? {}) as Record<string, unknown>;
+      out.push({
+        id: m.id,
+        name: typeof m.name === "string" && m.name !== m.id ? m.name : null,
+        contextLength: typeof m.context_length === "number" ? m.context_length : null,
+        promptPrice: perMillion(pricing.prompt),
+        completionPrice: perMillion(pricing.completion),
+      });
+    }
+    // OpenRouter paginates with links.next (a path or absolute URL on the same host).
+    const next = typeof json.links?.next === "string" ? json.links.next : null;
+    url = next ? new URL(next, provider.baseUrl).toString() : null;
+    if (url && new URL(url).host !== new URL(provider.baseUrl).host) url = null;
+  }
+  return out.sort((a, b) => a.id.localeCompare(b.id));
 }
 
 function toAiError(err: unknown): AiRequestError {
