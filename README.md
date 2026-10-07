@@ -35,7 +35,14 @@ client can codegen a typed client against it.
   shared library. The admin manages accounts under Settings → Users and can open
   self-registration for 24 hours at a time.
 - **Tap-to-gloss** — tap a German word for an instant translation from a bundled
-  offline dictionary (see `packages/api/assets/ATTRIBUTION.md`).
+  offline dictionary (see `packages/api/assets/ATTRIBUTION.md`), then fuller
+  definitions, pronunciation and examples from
+  [Wiktionary](https://en.wiktionary.org) (CC BY-SA, via
+  [freedictionaryapi.com](https://freedictionaryapi.com); cached;
+  `DICTIONARY_API_URL=off` to stay offline).
+- **Stories** — private reading texts with a customizable reader (fonts, size,
+  spacing, width, sepia/dark, read-aloud, saved words underlined) and
+  comprehension questions.
 - **AI tutor (optional)** — explain a highlighted passage, hints, "why was I
   wrong", translations, chat, AI grading of free-text answers, "generate more"
   items, vocab lookups, and tidying rough notes into clean Markdown. Each user
@@ -196,6 +203,7 @@ user (a `user_id` column, deleted together with the user); content is shared.
 | `vocab_reviews` | one row per flashcard answer |
 | `notes` | Markdown notes |
 | `stories` | private reading texts (validated JSON) with reading progress |
+| `dict_cache` | online dictionary (Wiktionary) lookups, shared |
 | `ai_providers` / `ai_models` | per user: AI providers (encrypted keys) and the model fallback order |
 | `imported_content` | shared exercises and cheat sheets added via the Import screen, with who imported them |
 
@@ -254,7 +262,7 @@ a learner does:
 | Notes (private) | `list_notes`, `get_note`, `create_note`, `update_note`, `delete_note` |
 | Stories (private) | `list_stories`, `get_story`, `save_story`, `delete_story` (+ `validate_content` / `get_authoring_guide` with kind `story`) |
 | History (private) | `get_progress`, `get_mistakes`, `get_activity`, `get_set_history` |
-| Other | `whoami` |
+| Other | `lookup_word`, `whoami` |
 
 Agents get the content format the app enforces: the server's instructions point
 them to `get_authoring_guide` (the same guide as Import's "Copy LLM prompt"),
@@ -292,7 +300,7 @@ Vocab       GET|POST /api/vocab    GET|DELETE /api/vocab/:word
 Notes       GET|POST /api/notes    GET|PUT|DELETE /api/notes/:id
 Stories     GET|POST /api/stories  GET|PUT|DELETE /api/stories/:id
             PUT /api/stories/:id/progress
-Dictionary  GET /api/dict/status   GET /api/dict/:word   POST /api/dict/lemmas
+Dictionary  GET /api/dict/status   GET /api/dict/:word[/details]   POST /api/dict/lemmas
 TTS         GET /api/tts/status    GET /api/tts    POST /api/tts/download
 Assistant   GET /api/assistant/status
             POST /api/assistant/ask (SSE) | grade | generate | word | cleanup-notes | test

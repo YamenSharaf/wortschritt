@@ -49,6 +49,12 @@ const envSchema = z.object({
   // pronunciation falls back to the browser's built-in speech synthesis.
   TTS_URL: optionalEnv(z.string().url().optional()),
 
+  // Online dictionary (Wiktionary data) shown under the offline gloss when a
+  // word is tapped. Results are cached in the database. "off" = offline only.
+  DICTIONARY_API_URL: optionalEnv(
+    z.union([z.literal("off"), z.string().url()]).default("https://freedictionaryapi.com/api/v1"),
+  ),
+
   // The app's public URL (e.g. https://deutsch.example.com), used as the OAuth
   // issuer for MCP connectors. Unset = taken from the request's Host and
   // X-Forwarded-Proto headers (fine behind a Cloudflare tunnel).

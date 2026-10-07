@@ -620,3 +620,30 @@ export const storyProgressBody = z.object({
 /** Batch lemma lookup (offline dictionary): surface form → base form. */
 export const lemmasBody = z.object({ words: z.array(z.string().min(1).max(64)).max(3000) });
 export const lemmasResult = z.record(z.string(), z.string());
+
+// --- online dictionary (Wiktionary via freedictionaryapi.com) --------------
+
+/** Fuller dictionary data for a word, loaded after the instant offline gloss. */
+export const wordDetails = z.object({
+  /** The headword these entries are for (usually the base form). */
+  word: z.string(),
+  /** When the looked-up word is an inflection, e.g. "first/third-person
+   *  singular preterite of gehen" (then `entries` are the base form's). */
+  formOf: z.string().nullable(),
+  entries: z.array(
+    z.object({
+      pos: z.string(),
+      ipa: z.string().nullable(),
+      senses: z.array(
+        z.object({
+          definition: z.string(),
+          tags: z.array(z.string()),
+          examples: z.array(z.string()),
+        }),
+      ),
+    }),
+  ),
+  /** Attribution (Wiktionary content is CC BY-SA). */
+  source: z.object({ url: z.string(), license: z.string(), licenseUrl: z.string() }),
+});
+export type WordDetails = z.infer<typeof wordDetails>;

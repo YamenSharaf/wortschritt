@@ -34,6 +34,7 @@ import type {
   VocabGroup,
   VocabStat,
   RegistrationStatus,
+  WordDetails,
   WordLookup,
 } from "@mdb/shared";
 
@@ -176,6 +177,8 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ progress, read }),
     }),
+  wordDetails: (word: string) =>
+    req<WordDetails | null>(`/api/dict/${encodeURIComponent(word)}/details`),
   lemmas: (words: string[]) =>
     req<Record<string, string>>("/api/dict/lemmas", {
       method: "POST",

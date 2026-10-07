@@ -18,7 +18,9 @@ import { latestRunsPerSet } from "../services/activity";
 import { getActivity, getMistakes, getSetHistory } from "../services/history";
 import { deleteImport, listImports, saveImport } from "../services/library";
 import { createNote, getNote, listNotes, removeNote, updateNote } from "../services/notes";
+import { lookupWord } from "../services/dict";
 import { getProgressSummary } from "../services/progress";
+import { wordDetails } from "../services/wiktionary";
 import { deleteStory, getStory, listStories, saveStory } from "../services/stories";
 import {
   addWordToGroup,
@@ -366,6 +368,23 @@ export function createMcpServer(user: AuthUser): McpServer {
       annotations: DELETE,
     },
     async ({ id }) => (deleteStory(user.id, id) ? json({ deleted: id }) : fail(`No story "${id}". Use list_stories.`)),
+  );
+
+  tool(
+    "lookup_word",
+    {
+      title: "Look up a German word",
+      description:
+        "Dictionary lookup, as when the learner taps a word: the base form, part of speech, article, plural and Partizip II (offline), plus English definitions, pronunciation (IPA) and examples from Wiktionary when available. Use it to check vocabulary before saving it or writing a glossary.",
+      inputSchema: { word: z.string().min(1).max(64) },
+      annotations: { ...READ, openWorldHint: true },
+    },
+    async ({ word }) => {
+      const offline = lookupWord(word);
+      const details = await wordDetails([offline?.lemma ?? word, word]);
+      if (!offline && !details) return fail(`"${word}" wasn't found.`);
+      return json({ offline, details });
+    },
   );
 
   // --- vocabulary (private) --------------------------------------------------
