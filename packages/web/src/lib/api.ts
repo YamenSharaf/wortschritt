@@ -25,6 +25,9 @@ import type {
   SaveVocabBody,
   Settings,
   SheetView,
+  Story,
+  StorySummary,
+  StoryView,
   TtsStatus,
   VocabEntry,
   VocabFormsInput,
@@ -154,6 +157,29 @@ export const api = {
     req<{ timezone: string }>("/api/admin/timezone", {
       method: "PUT",
       body: JSON.stringify({ timezone }),
+    }),
+
+  // stories (private reading texts)
+  stories: () => req<StorySummary[]>("/api/stories"),
+  story: (id: string) => req<StoryView>(`/api/stories/${encodeURIComponent(id)}`),
+  createStory: (story: Story) =>
+    req<StoryView>("/api/stories", { method: "POST", body: JSON.stringify({ story }) }),
+  updateStory: (story: Story) =>
+    req<StoryView>(`/api/stories/${encodeURIComponent(story.id)}`, {
+      method: "PUT",
+      body: JSON.stringify(story),
+    }),
+  deleteStory: (id: string) =>
+    req<{ ok: true }>(`/api/stories/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  storyProgress: (id: string, progress: number, read?: boolean) =>
+    req<{ ok: true }>(`/api/stories/${encodeURIComponent(id)}/progress`, {
+      method: "PUT",
+      body: JSON.stringify({ progress, read }),
+    }),
+  lemmas: (words: string[]) =>
+    req<Record<string, string>>("/api/dict/lemmas", {
+      method: "POST",
+      body: JSON.stringify({ words }),
     }),
 
   // imported (shared-library) content

@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import type { cheatsheet, exerciseItem, exerciseSet } from "./exercises";
+import type { cheatsheet, exerciseItem, exerciseSet, story } from "./exercises";
 
 /**
  * ---------------------------------------------------------------------------
@@ -90,6 +90,36 @@ export const EXAMPLE_CHEATSHEET: z.input<typeof cheatsheet> = {
   ],
 };
 
+export const EXAMPLE_STORY: z.input<typeof story> = {
+  schemaVersion: 1,
+  id: "ein-sonntag-am-see",
+  title: "Ein Sonntag am See",
+  subtitle: "A Sunday at the lake",
+  level: "A2",
+  tags: ["freizeit", "perfekt"],
+  body: "Am Sonntag ist Lena früh **aufgestanden**. Die Sonne hat geschienen, und sie wollte nicht zu Hause bleiben.\n\nSie hat ihre Freundin Mia angerufen: „Kommst du mit zum See?“ Mia hat sofort Ja gesagt.\n\nAm See sind die beiden geschwommen und haben Eis gegessen. Am Abend war Lena müde, aber glücklich.",
+  glossary: [
+    { term: "aufstehen", meaning: "to get up" },
+    { term: "der See", meaning: "the lake" },
+  ],
+  questions: [
+    {
+      id: "q1",
+      type: "true_false",
+      statement: "Lena ist am Sonntag zu Hause geblieben.",
+      correct: false,
+      explanation: "Sie ist mit Mia zum See gefahren.",
+    },
+    {
+      id: "q2",
+      type: "multiple_choice",
+      prompt: "Was haben Lena und Mia am See gemacht?",
+      choices: ["Sie haben Fußball gespielt.", "Sie sind geschwommen und haben Eis gegessen.", "Sie haben ein Buch gelesen."],
+      answerIndex: 1,
+    },
+  ],
+};
+
 const ITEM_RULES = `Item types (use only these; keys exactly as in the examples):
 - multiple_choice: "answerIndex" is the 0-based position of the correct entry in "choices"; choices must be distinct.
 - cloze: "text" contains {{ref}} placeholders; every placeholder needs a blank with the same "ref" and every blank must be used. "cue" (optional) is shown beside the blank, e.g. the infinitive.
@@ -155,4 +185,25 @@ ${itemFormatGuide({ withIds: true })}
 Output ONLY the JSON, with no explanation and no code fences.
 
 Topic and level: <describe what to practise, e.g. "Dativ-Präpositionen, A2, 12 items, mixed types">`;
+}
+
+/** "Copy LLM prompt" for a story, and the story authoring guide for agents. */
+export function buildStoryPrompt(): string {
+  return `Write a German reading story as JSON. Here is a complete, valid example — follow its structure, not its content:
+${JSON.stringify(EXAMPLE_STORY, null, 2)}
+
+Story fields:
+- "id": a short slug (lowercase letters, digits and hyphens), unique among the learner's stories.
+- "title" in German; "subtitle" (optional) is a short English gloss.
+- "level": exactly one of A1, A2, B1, B2, C1, C2. Vocabulary and grammar must fit it.
+- "tags": lowercase German keywords for topic and grammar.
+- "body": the story in Markdown. Separate paragraphs with a blank line (\\n\\n in JSON); keep paragraphs short (2–5 sentences). Bold (**…**) only a few words worth noticing. Natural, correct German; dialogue in „…“.
+- "glossary": words a learner at this level may not know, as {"term", "meaning"}: the base form ("der See", "aufstehen") with a short English meaning.
+- "questions": 3–6 comprehension questions about the story, using the item types below. Answers must follow from the text.
+
+${itemFormatGuide({ withIds: true })}
+
+Output ONLY the JSON, with no explanation and no code fences.
+
+Topic, level and length: <describe the story, e.g. "a trip to the bakery, A2, about 300 words">`;
 }

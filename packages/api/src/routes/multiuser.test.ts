@@ -206,6 +206,25 @@ test("learner data is private: another user can't read or change it", async () =
   assert.equal((await anna("GET", "/api/vocab/haus")).json().translation, "home (anna)");
 });
 
+test("stories are private: another user can't read, change or delete them", async () => {
+  const { EXAMPLE_STORY } = await import("@mdb/shared");
+  assert.equal((await admin("POST", "/api/stories", { story: EXAMPLE_STORY })).statusCode, 200);
+  const id = EXAMPLE_STORY.id;
+
+  assert.deepEqual((await anna("GET", "/api/stories")).json(), []);
+  assert.equal((await anna("GET", `/api/stories/${id}`)).statusCode, 404);
+  assert.equal((await anna("PUT", `/api/stories/${id}`, { ...EXAMPLE_STORY, title: "pwned" })).statusCode, 404);
+  assert.equal((await anna("PUT", `/api/stories/${id}/progress`, { progress: 1, read: true })).statusCode, 404);
+  assert.equal((await anna("DELETE", `/api/stories/${id}`)).statusCode, 404);
+
+  // The same id is anna's own story.
+  assert.equal((await anna("POST", "/api/stories", { story: { ...EXAMPLE_STORY, title: "Annas Version" } })).statusCode, 200);
+  const mine = (await admin("GET", `/api/stories/${id}`)).json();
+  assert.equal(mine.story.title, EXAMPLE_STORY.title);
+  assert.equal(mine.readAt, null);
+  assert.equal((await anna("GET", `/api/stories/${id}`)).json().story.title, "Annas Version");
+});
+
 test("shared library: imports are visible to all, editable only by their owner", async () => {
   assert.equal((await anna("POST", "/api/import", exerciseSet("anna-set"))).statusCode, 200);
   const benSees = (await ben("GET", "/api/exercises")).json() as { id: string }[];
@@ -293,6 +312,7 @@ test("admin: deleting a user deletes their data but keeps their imports", async 
   const { eq } = await import("drizzle-orm");
   assert.equal(db.select().from(schema.vocab).where(eq(schema.vocab.userId, annaId)).all().length, 0);
   assert.equal(db.select().from(schema.vocabStats).where(eq(schema.vocabStats.userId, annaId)).all().length, 0);
+  assert.equal(db.select().from(schema.stories).where(eq(schema.stories.userId, annaId)).all().length, 0);
   const sets = (await ben("GET", "/api/exercises")).json() as { id: string }[];
   assert.ok(sets.some((s) => s.id === "anna-set"), "anna's import stays in the library");
   // yamen's data is untouched.

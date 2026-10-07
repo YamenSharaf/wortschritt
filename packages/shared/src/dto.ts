@@ -1,9 +1,25 @@
 import { z } from "zod";
-import { cefrLevel, cheatsheet, exerciseItem, exerciseSet } from "./exercises";
+import { cefrLevel, cheatsheet, exerciseItem, exerciseSet, story } from "./exercises";
 
 /** Choices offered for "generate N more" (in increments of 5). */
 export const generateCounts = [5, 10, 15, 20] as const;
 export const MAX_GENERATE_COUNT = 20;
+
+/** How stories are displayed (Settings → per account, changed in the reader). */
+export const readerSettings = z.object({
+  font: z.enum(["serif", "sans", "readable"]).default("serif"),
+  /** Text size in px. */
+  size: z.number().int().min(14).max(30).default(19),
+  lineHeight: z.enum(["compact", "normal", "relaxed"]).default("normal"),
+  width: z.enum(["narrow", "medium", "wide"]).default("medium"),
+  /** "auto" follows the app theme. */
+  theme: z.enum(["auto", "light", "sepia", "dark"]).default("auto"),
+  /** Underline words that are already in the learner's vocabulary. */
+  highlightVocab: z.boolean().default(true),
+  /** Read-aloud speed (1 = normal). */
+  speechRate: z.number().min(0.6).max(1.4).default(0.95),
+});
+export type ReaderSettings = z.infer<typeof readerSettings>;
 
 /** User-configurable settings. Persisted as a single JSON row. */
 export const settingsSchema = z.object({
@@ -23,6 +39,7 @@ export const settingsSchema = z.object({
   /** Preferred pronunciation voice. "" = the device's built-in TTS; otherwise
    *  a Piper voice id (needs the TTS sidecar). */
   ttsVoice: z.string().default(""),
+  reader: readerSettings.default({}),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
@@ -516,8 +533,8 @@ export type Mistake = z.infer<typeof mistake>;
 
 export const activityEvent = z.object({
   at: z.number().int(),
-  kind: z.enum(["run", "word_added", "note_created", "note_edited", "sheet_viewed"]),
-  /** Set, word, note or sheet id. */
+  kind: z.enum(["run", "word_added", "note_created", "note_edited", "sheet_viewed", "story_added", "story_read"]),
+  /** Set, word, note, sheet or story id (runs of a story's questions: "story:<id>"). */
   ref: z.string(),
   title: z.string(),
   /** For runs: "8/10". */
@@ -557,3 +574,49 @@ export const setHistory = z.object({
   ),
 });
 export type SetHistory = z.infer<typeof setHistory>;
+
+// --- stories ---------------------------------------------------------------
+
+/** Exercise-history id of a story's questions (attempts and runs). */
+export const storySetId = (id: string) => `story:${id}`;
+
+export const storySummary = z.object({
+  id: z.string(),
+  title: z.string(),
+  subtitle: z.string().optional(),
+  level: cefrLevel,
+  tags: z.array(z.string()),
+  words: z.number().int(),
+  questions: z.number().int(),
+  /** How far the learner has scrolled (0–1). */
+  progress: z.number(),
+  readAt: z.number().int().nullable(),
+  createdAt: z.number().int(),
+  updatedAt: z.number().int(),
+});
+export type StorySummary = z.infer<typeof storySummary>;
+
+export const storyView = z.object({
+  story,
+  progress: z.number(),
+  readAt: z.number().int().nullable(),
+  createdAt: z.number().int(),
+  updatedAt: z.number().int(),
+});
+export type StoryView = z.infer<typeof storyView>;
+
+export const saveStoryBody = z.object({
+  story,
+  /** Replace an existing story with the same id. */
+  overwrite: z.boolean().default(false),
+});
+
+export const storyProgressBody = z.object({
+  progress: z.number().min(0).max(1),
+  /** Mark as read (true) or unread (false); leave out to keep. */
+  read: z.boolean().optional(),
+});
+
+/** Batch lemma lookup (offline dictionary): surface form → base form. */
+export const lemmasBody = z.object({ words: z.array(z.string().min(1).max(64)).max(3000) });
+export const lemmasResult = z.record(z.string(), z.string());

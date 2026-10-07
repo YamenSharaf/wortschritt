@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { dictEntry } from "@mdb/shared";
+import { dictEntry, lemmasBody, lemmasResult } from "@mdb/shared";
 import { requireAuth } from "../auth/session";
 import { dictAvailable, lookupWord } from "../services/dict";
 
@@ -19,6 +19,24 @@ export async function dictRoutes(app: FastifyInstance) {
       },
     },
     async () => ({ available: dictAvailable() }),
+  );
+
+  // Base forms of many words at once (e.g. to underline saved words in a
+  // story even when they're inflected). Unknown words are left out.
+  r.post(
+    "/api/dict/lemmas",
+    {
+      preHandler: requireAuth,
+      schema: { tags: ["dict"], body: lemmasBody, response: { 200: lemmasResult } },
+    },
+    async (req) => {
+      const out: Record<string, string> = {};
+      for (const w of new Set(req.body.words)) {
+        const lemma = lookupWord(w)?.lemma;
+        if (lemma) out[w] = lemma;
+      }
+      return out;
+    },
   );
 
   r.get(

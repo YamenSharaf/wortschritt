@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, lt } from "drizzle-orm";
-import type { ActivityDay, ActivityEvent, ActivityView, ExerciseSet, Mistake, SetHistory } from "@mdb/shared";
+import type { ActivityDay, ActivityEvent, ActivityView, ExerciseItem, Mistake, SetHistory } from "@mdb/shared";
 import { loadExerciseSets } from "../content/loader";
+import { storyQuestionSets, storyTimeline } from "./stories";
 import { db, schema } from "../db/client";
 import { dateStart, dayKey, getTimezone } from "./timezone";
 
@@ -13,8 +14,13 @@ import { dateStart, dayKey, getTimezone } from "./timezone";
 
 const toSec = (d: Date | number) => (d instanceof Date ? Math.floor(d.getTime() / 1000) : d);
 
-function setsById(): Map<string, ExerciseSet> {
-  return new Map(loadExerciseSets().map((s) => [s.id, s]));
+/** The library's sets plus this learner's story questions ("story:<id>"). */
+function setsById(userId: number): Map<string, { title: string; items: ExerciseItem[] }> {
+  const sets = new Map<string, { title: string; items: ExerciseItem[] }>(
+    loadExerciseSets().map((s) => [s.id, s]),
+  );
+  for (const [id, s] of storyQuestionSets(userId)) sets.set(id, s);
+  return sets;
 }
 
 export function getMistakes(
@@ -47,7 +53,7 @@ export function getMistakes(
     if (!r.correct) entry.wrong.push(r);
   }
 
-  const sets = setsById();
+  const sets = setsById(userId);
   const out: Mistake[] = [];
   for (const { latestCorrect, wrong } of byItem.values()) {
     const last = wrong[0];
@@ -141,6 +147,10 @@ export function getActivity(userId: number, opts: { from?: string; to?: string }
       events.push({ at: n.updatedAt, kind: "note_edited", ref: n.id, title: n.title });
     }
   }
+  for (const st of storyTimeline(userId)) {
+    if (inRange(st.createdAt)) events.push({ at: st.createdAt, kind: "story_added", ref: st.id, title: st.title });
+    if (st.readAt && inRange(st.readAt)) events.push({ at: st.readAt, kind: "story_read", ref: st.id, title: st.title });
+  }
   for (const v of db.select().from(schema.sheetViews).where(eq(schema.sheetViews.userId, userId)).all()) {
     // Only the latest view per sheet is kept.
     if (inRange(v.viewedAt)) events.push({ at: v.viewedAt, kind: "sheet_viewed", ref: v.sheetId, title: v.title });
@@ -156,7 +166,7 @@ export function getActivity(userId: number, opts: { from?: string; to?: string }
 
 /** Every run of one set (newest first, up to 50) and per-item totals. */
 export function getSetHistory(userId: number, setId: string): SetHistory {
-  const set = setsById().get(setId);
+  const set = setsById(userId).get(setId);
   const runs = db
     .select()
     .from(schema.exerciseRuns)

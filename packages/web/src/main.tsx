@@ -24,6 +24,9 @@ import { NoteEditor } from "./pages/NoteEditor";
 import { NotesPage } from "./pages/Notes";
 import { OAuthConsent } from "./pages/OAuthConsent";
 import { SettingsPage } from "./pages/Settings";
+import { StoriesPage } from "./pages/Stories";
+import { StoryEditor } from "./pages/StoryEditor";
+import { StoryReader } from "./pages/StoryReader";
 import { VocabPage } from "./pages/Vocab";
 
 const router = createBrowserRouter([
@@ -38,6 +41,10 @@ const router = createBrowserRouter([
       { path: "cheatsheets/:id", element: <CheatsheetView /> },
       { path: "exercises", element: <Exercises /> },
       { path: "exercises/:id", element: <ExercisePlayer /> },
+      { path: "stories", element: <StoriesPage /> },
+      { path: "stories/new", element: <StoryEditor /> },
+      { path: "stories/:id", element: <StoryReader /> },
+      { path: "stories/:id/edit", element: <StoryEditor key="edit" /> },
       { path: "vocab", element: <VocabPage /> },
       { path: "vocab/study", element: <Flashcards /> },
       { path: "notes", element: <NotesPage /> },

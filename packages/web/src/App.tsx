@@ -32,6 +32,12 @@ const Gear = ({ className }: IconProps) => (
     <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1" strokeLinecap="round" />
   </svg>
 );
+const OpenBook = ({ className }: IconProps) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
+    <path d="M12 6.5C10 5 7 4.5 3 5v13c4-.5 7 0 9 1.5 2-1.5 5-2 9-1.5V5c-4-.5-7 0-9 1.5Z" strokeLinejoin="round" />
+    <path d="M12 6.5v13" strokeLinecap="round" />
+  </svg>
+);
 const Cards = ({ className }: IconProps) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
     <rect x="3" y="7" width="14" height="12" rx="2" strokeLinejoin="round" />
@@ -49,6 +55,7 @@ const navItems = [
   { to: "/", label: "Home", end: true, Icon: Home },
   { to: "/cheatsheets", label: "Sheets", Icon: Book },
   { to: "/exercises", label: "Practice", Icon: Dumbbell },
+  { to: "/stories", label: "Stories", Icon: OpenBook },
   { to: "/vocab", label: "Vocab", Icon: Cards },
   { to: "/notes", label: "Notes", Icon: Pencil },
   { to: "/settings", label: "Settings", Icon: Gear },
@@ -166,8 +173,8 @@ export function App() {
         <Outlet />
       </main>
 
-      {/* Mobile bottom tab bar — fixed 6 columns, each capped to 1/6 width */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 overflow-hidden border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
+      {/* Mobile bottom tab bar — one fixed column per item */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-7 overflow-hidden border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
         {navItems.map(({ to, label, end, Icon }) => (
           <NavLink
             key={to}

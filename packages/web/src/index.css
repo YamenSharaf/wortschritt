@@ -169,3 +169,81 @@ body {
     @apply mb-0;
   }
 }
+
+/* Story reader. Its colours come from the reader theme (data-theme), not the
+   app theme, so sepia works in either mode; "auto" follows the app. */
+.reader {
+  --r-bg: 255 255 255;
+  --r-fg: 30 41 59;
+  --r-muted: 100 116 139;
+  --r-rule: 226 232 240;
+  --r-mark: 37 99 235;
+  background: rgb(var(--r-bg));
+  color: rgb(var(--r-fg));
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+}
+:root.dark .reader[data-theme="auto"],
+.reader[data-theme="dark"] {
+  --r-bg: 17 20 26;
+  --r-fg: 226 232 240;
+  --r-muted: 148 163 184;
+  --r-rule: 51 65 85;
+  --r-mark: 96 165 250;
+}
+.reader[data-theme="sepia"] {
+  --r-bg: 248 241 227;
+  --r-fg: 67 52 34;
+  --r-muted: 128 108 84;
+  --r-rule: 224 209 183;
+  --r-mark: 180 110 20;
+}
+.reader-muted {
+  color: rgb(var(--r-muted));
+}
+.reader-rule {
+  border-color: rgb(var(--r-rule));
+}
+.reader-text :where(p) {
+  margin: 0 0 1em;
+}
+.reader-text :where(h1, h2, h3) {
+  margin: 1.4em 0 0.5em;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.reader-text :where(strong) {
+  font-weight: 600;
+}
+.reader-text :where(blockquote) {
+  margin: 0 0 1em;
+  padding-left: 1em;
+  border-left: 3px solid rgb(var(--r-rule));
+  color: rgb(var(--r-muted));
+}
+.reader-text :where(ul, ol) {
+  margin: 0 0 1em;
+  padding-left: 1.4em;
+  list-style: disc;
+}
+.reader-text :where(ol) {
+  list-style: decimal;
+}
+.reader-text :where(hr) {
+  margin: 1.5em auto;
+  width: 4rem;
+  border-color: rgb(var(--r-rule));
+}
+.reader-block {
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+}
+.reader-block.is-speaking {
+  background: rgb(var(--r-mark) / 0.1);
+  box-shadow: 0 0 0 0.4rem rgb(var(--r-mark) / 0.1);
+}
+/* Saved words (CSS Custom Highlight API; ignored where unsupported). */
+::highlight(saved-vocab) {
+  text-decoration: underline dotted rgb(14 165 233 / 0.85);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}

@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
-import { integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import type { Settings } from "@mdb/shared";
+import { integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import type { Settings, Story } from "@mdb/shared";
 
 /** Per-user settings blob (one row per user). */
 export const settings = sqliteTable("settings", {
@@ -263,3 +263,19 @@ export const oauthGrants = sqliteTable("oauth_grants", {
     .default(sql`(unixepoch())`),
   lastUsedAt: integer("last_used_at"),
 });
+
+/** A learner's stories (private). `data` is a validated `story`. */
+export const stories = sqliteTable("stories", {
+  userId: integer("user_id").notNull(),
+  id: text("id").notNull(),
+  data: text("data", { mode: "json" }).$type<Story>().notNull(),
+  /** How far they've scrolled, 0–1. */
+  progress: real("progress").notNull().default(0),
+  readAt: integer("read_at"),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+}, (t) => [primaryKey({ columns: [t.userId, t.id] })]);

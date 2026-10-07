@@ -4,16 +4,19 @@ import { join, resolve } from "node:path";
 import { test } from "node:test";
 import {
   buildImportPrompt,
+  buildStoryPrompt,
   cheatsheet,
   EXAMPLE_CHEATSHEET,
   EXAMPLE_ITEMS,
   EXAMPLE_SET,
+  EXAMPLE_STORY,
   EXERCISE_TYPES,
   exerciseItem,
   exerciseSet,
   gradeText,
   isOpenAnswer,
   itemFormatGuide,
+  story,
 } from "@mdb/shared";
 
 const contentDir = resolve(import.meta.dirname, "../../../../content");
@@ -94,6 +97,7 @@ test("the guide has one valid example per item type", () => {
   );
   assert.deepEqual(issues(exerciseSet.safeParse(EXAMPLE_SET)), []);
   assert.deepEqual(issues(cheatsheet.safeParse(EXAMPLE_CHEATSHEET)), []);
+  assert.deepEqual(issues(story.safeParse(EXAMPLE_STORY)), []);
 });
 
 test("no example value is filler a model could copy verbatim", () => {
@@ -108,6 +112,28 @@ test("no example value is filler a model could copy verbatim", () => {
   };
   walk(EXAMPLE_SET, "set");
   walk(EXAMPLE_CHEATSHEET, "sheet");
+  walk(EXAMPLE_STORY, "story");
+});
+
+test("story prompt: the example in it is a valid story", () => {
+  const prompt = buildStoryPrompt();
+  const json = prompt.slice(prompt.indexOf("{"), prompt.indexOf("\n}\n") + 2);
+  assert.deepEqual(issues(story.safeParse(JSON.parse(json))), []);
+  assert.match(prompt, /blank line/);
+});
+
+test("story questions get the same checks as exercise sets", () => {
+  const bad = {
+    ...EXAMPLE_STORY,
+    questions: [
+      { id: "q1", type: "multiple_choice", prompt: "?", choices: ["a", "b"], answerIndex: 2 },
+      { id: "q1", type: "true_false", statement: "x", correct: true },
+    ],
+  };
+  const found = issues(story.safeParse(bad));
+  assert.ok(found.some((i) => i.startsWith("questions.0.answerIndex")), found.join("\n"));
+  assert.ok(found.some((i) => i.startsWith("questions.1.id")), found.join("\n"));
+  assert.ok(issues(story.safeParse({ ...EXAMPLE_STORY, id: "Mein Tag" })).some((i) => i.startsWith("id")));
 });
 
 /** The JSON object lines printed by itemFormatGuide. */

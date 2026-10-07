@@ -112,11 +112,11 @@ test("initialize: instructions and every tool, with annotations", async () => {
   const names = tools.map((t) => t.name).sort();
   assert.deepEqual(names, [
     "add_words_to_group", "create_note", "create_vocab_group", "delete_content", "delete_note",
-    "delete_vocab", "delete_vocab_group", "get_activity", "get_authoring_guide", "get_cheatsheet",
-    "get_exercise_set", "get_mistakes", "get_note", "get_progress", "get_set_history", "get_vocab",
-    "list_cheatsheets", "list_exercise_sets", "list_notes",
+    "delete_story", "delete_vocab", "delete_vocab_group", "get_activity", "get_authoring_guide",
+    "get_cheatsheet", "get_exercise_set", "get_mistakes", "get_note", "get_progress", "get_set_history",
+    "get_story", "get_vocab", "list_cheatsheets", "list_exercise_sets", "list_notes", "list_stories",
     "list_vocab", "list_vocab_groups", "remove_word_from_group", "save_cheatsheet", "save_exercise_set",
-    "save_vocab", "update_note", "validate_content", "whoami",
+    "save_story", "save_vocab", "update_note", "validate_content", "whoami",
   ]);
   const save = tools.find((t) => t.name === "save_exercise_set")!;
   // The real schema, so the agent sees every item type and field.
@@ -245,6 +245,29 @@ test("notes: CRUD, private to the user", async () => {
 
   await anna.ok("delete_note", { id: note.id });
   assert.deepEqual(await anna.ok("list_notes"), []);
+});
+
+test("stories: guide, validate, save, read back, private, delete", async () => {
+  const { EXAMPLE_STORY } = await import("@mdb/shared");
+  const r = await anna.client.callTool({ name: "get_authoring_guide", arguments: { kind: "story" } });
+  const guide = (r.content as { text: string }[])[0]!.text;
+  assert.match(guide, /save_story/);
+  assert.doesNotMatch(guide, /Output ONLY|<describe/);
+
+  const bad = await anna.ok("validate_content", { kind: "story", data: { ...EXAMPLE_STORY, level: "Z9" } });
+  assert.equal(bad.valid, false);
+  assert.ok(bad.errors.some((e: string) => e.startsWith("level:")), bad.errors.join("\n"));
+  assert.equal((await anna.ok("validate_content", { kind: "story", data: EXAMPLE_STORY })).id_status, `"${EXAMPLE_STORY.id}" is free`);
+
+  assert.deepEqual(await anna.ok("save_story", { story: EXAMPLE_STORY }), { saved: EXAMPLE_STORY.id, replaced: false, questions: 2 });
+  assert.match(await anna.err("save_story", { story: EXAMPLE_STORY }), /overwrite: true/);
+  assert.match((await anna.ok("validate_content", { kind: "story", data: EXAMPLE_STORY })).id_status, /already have/);
+  assert.equal((await anna.ok("list_stories"))[0].id, EXAMPLE_STORY.id);
+  assert.equal((await anna.ok("get_story", { id: EXAMPLE_STORY.id })).story.body, EXAMPLE_STORY.body);
+  assert.deepEqual(await admin.ok("list_stories"), [], "private");
+  assert.match(await admin.err("get_story", { id: EXAMPLE_STORY.id }), /No story/);
+  assert.match(await admin.err("delete_story", { id: EXAMPLE_STORY.id }), /No story/);
+  assert.deepEqual(await anna.ok("delete_story", { id: EXAMPLE_STORY.id }), { deleted: EXAMPLE_STORY.id });
 });
 
 test("progress and history", async () => {

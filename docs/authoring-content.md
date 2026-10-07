@@ -158,6 +158,34 @@ guide the tutor's "generate more items" uses.
 - `body` is **Markdown** (GitHub-flavored tables supported), rendered read-only.
 - Learners can translate a section on demand (keeps the German being taught).
 
+## Stories
+
+Private reading texts: each learner has their own (Stories page, or an agent
+via the MCP tool `save_story`). Not files in `content/` — they live in the
+`stories` table, validated against `story` in `packages/shared/src/exercises.ts`.
+
+```jsonc
+{
+  "id": "ein-sonntag-am-see",            // lowercase slug, unique per learner
+  "title": "Ein Sonntag am See",
+  "subtitle": "A Sunday at the lake",   // optional English gloss
+  "level": "A2",
+  "tags": ["freizeit", "perfekt"],
+  "body": "Am Sonntag ist Lena früh **aufgestanden**. …\n\nSie hat …",
+  "glossary": [{ "term": "der See", "meaning": "the lake" }],
+  "questions": [ /* exercise items, any type — see above */ ]
+}
+```
+- `body` is Markdown. **Blank lines separate paragraphs**, which are also the
+  units of read-aloud; keep them short.
+- `glossary`: base forms ("der See", "aufstehen") with a short English meaning.
+- `questions`: comprehension questions as exercise items (same rules: unique
+  ids, valid `answerIndex`, …). Answers are recorded in history under the set
+  id `story:<id>`.
+- The full prompt with a valid example is `buildStoryPrompt()` in
+  `packages/shared/src/authoring.ts` (the editor's "Copy LLM prompt", and
+  `get_authoring_guide` with kind `story`).
+
 ## Rules of thumb for generating content
 
 - House style: everything the learner reads (prompts, instructions, hints,
