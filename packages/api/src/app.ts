@@ -25,6 +25,7 @@ import { configRoutes } from "./routes/config";
 import { contentRoutes } from "./routes/content";
 import { dictRoutes } from "./routes/dict";
 import { importRoutes } from "./routes/import";
+import { mcpRoutes } from "./routes/mcp";
 import { notesRoutes } from "./routes/notes";
 import { progressRoutes } from "./routes/progress";
 import { settingsRoutes } from "./routes/settings";
@@ -94,6 +95,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(notesRoutes);
   await app.register(dictRoutes);
   await app.register(assistantRoutes);
+  await app.register(mcpRoutes);
 
   // In production, serve the built SPA from the same container/origin.
   const webDist = resolve(process.cwd(), "../web/dist");
