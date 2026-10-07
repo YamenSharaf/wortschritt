@@ -235,3 +235,42 @@ test("v2 → v3: every row is assigned to the existing admin, nothing lost", () 
   assert.deepEqual(db.pragma("foreign_key_check"), []);
   db.close();
 });
+
+test("v4 → v5: a saved AI endpoint becomes provider 1 with model entry 1", () => {
+  const db = legacyDb(dbPath);
+  runMigrations(db, dbPath, migrations.slice(0, 4));
+  db.exec(`
+    DELETE FROM users;
+    INSERT INTO users (id, username, password_hash, role) VALUES (7, 'yamen', 'scrypt$x', 'admin');
+    INSERT INTO users (id, username, password_hash, role) VALUES (8, 'anna', 'scrypt$x', 'user');
+    INSERT INTO ai_settings (user_id, base_url, model, api_key_enc)
+      VALUES (7, 'https://ai.example.com/v1', 'my-model', 'v1.a.b.c'),
+             (8, 'https://openrouter.ai/api/v1', 'openai/gpt-4o-mini', NULL);
+  `);
+  runMigrations(db, dbPath);
+
+  const providers = db
+    .prepare("SELECT user_id AS u, name, base_url AS url, api_key_enc AS k FROM ai_providers ORDER BY user_id")
+    .all();
+  assert.deepEqual(providers, [
+    { u: 7, name: "My endpoint", url: "https://ai.example.com/v1", k: "v1.a.b.c" },
+    { u: 8, name: "OpenRouter", url: "https://openrouter.ai/api/v1", k: null },
+  ]);
+  const models = db
+    .prepare(
+      "SELECT m.user_id AS u, m.model, m.position AS pos, p.user_id AS pu FROM ai_models m JOIN ai_providers p ON p.id = m.provider_id ORDER BY m.user_id",
+    )
+    .all();
+  assert.deepEqual(models, [
+    { u: 7, model: "my-model", pos: 0, pu: 7 },
+    { u: 8, model: "openai/gpt-4o-mini", pos: 0, pu: 8 },
+  ]);
+  assert.equal(
+    db.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE name = 'ai_settings'").get() &&
+      (db.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE name = 'ai_settings'").get() as { n: number }).n,
+    0,
+    "old table dropped",
+  );
+  assert.deepEqual(db.pragma("foreign_key_check"), []);
+  db.close();
+});

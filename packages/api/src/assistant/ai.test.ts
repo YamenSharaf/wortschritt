@@ -82,7 +82,11 @@ test("secrets: round-trip, unique ciphertexts, tampering detected", () => {
 
 // --- integration ---------------------------------------------------------------
 
-type Call = { url: string; auth: string | null; body: { model: string; messages: unknown[] } };
+type Call = {
+  url: string;
+  auth: string | null;
+  body: { model: string; messages: unknown[] } | null;
+};
 const calls: Call[] = [];
 /** What the mock provider does next. */
 let provider: (call: Call) => Response = () => sse(["O", "K"]);
@@ -99,7 +103,7 @@ before(async () => {
     const call: Call = {
       url,
       auth: headers.get("authorization"),
-      body: JSON.parse(String(init.body)),
+      body: init.body ? JSON.parse(String(init.body)) : null,
     };
     calls.push(call);
     return provider(call) as never;
@@ -136,27 +140,35 @@ async function signIn(username: string, password: string) {
 let admin: ReturnType<typeof client>;
 let anna: ReturnType<typeof client>;
 
+type View = {
+  encryptionAvailable: boolean;
+  providers: { id: number; name: string; baseUrl: string; hasKey: boolean; keyUnreadable: boolean }[];
+  models: { id: number; providerId: number; model: string }[];
+};
+type TestResult = { results: { provider: string; model: string; ok: boolean; reply?: string; error?: string }[] };
+
 test("first boot copies ASSISTANT_* into the admin's settings, key encrypted", async () => {
   admin = await signIn("yamen", "admin-password");
-  const view = (await admin("GET", "/api/assistant/settings")).json();
-  assert.deepEqual(view, {
-    encryptionAvailable: true,
-    configured: true,
-    baseUrl: "https://ai.example.com/v1",
-    model: "legacy-model",
-    hasKey: true,
-    keyUnreadable: false,
-  });
+  const view = (await admin("GET", "/api/assistant/settings")).json() as View;
+  assert.equal(view.encryptionAvailable, true);
+  assert.equal(view.providers.length, 1);
+  assert.deepEqual(
+    { ...view.providers[0], id: 0 },
+    { id: 0, name: "My endpoint", baseUrl: "https://ai.example.com/v1", hasKey: true, keyUnreadable: false },
+  );
+  assert.deepEqual(view.models.map((m) => [m.providerId, m.model]), [[view.providers[0]!.id, "legacy-model"]]);
   const { db, schema } = await import("../db/client");
-  const row = db.select().from(schema.aiSettings).get()!;
+  const row = db.select().from(schema.aiProviders).get()!;
   assert.ok(row.apiKeyEnc && !row.apiKeyEnc.includes(LEGACY_KEY), "stored encrypted");
 
   // The tutor works with it, sending the decrypted key upstream.
-  const res = await admin("POST", "/api/assistant/test");
-  assert.deepEqual(res.json(), { ok: true, reply: "OK" });
+  const res = (await admin("POST", "/api/assistant/test")).json() as TestResult;
+  assert.deepEqual(res.results.map((r) => [r.provider, r.model, r.ok, r.reply]), [
+    ["My endpoint", "legacy-model", true, "OK"],
+  ]);
   assert.equal(calls.at(-1)!.url, "https://ai.example.com/v1/chat/completions");
   assert.equal(calls.at(-1)!.auth, `Bearer ${LEGACY_KEY}`);
-  assert.equal(calls.at(-1)!.body.model, "legacy-model");
+  assert.equal(calls.at(-1)!.body!.model, "legacy-model");
 });
 
 test("the key never comes back from any endpoint", async () => {
@@ -184,29 +196,146 @@ test("another user has no AI until they set up their own", async () => {
   assert.equal(calls.length, before, "nothing was sent upstream");
 });
 
-test("saving settings: guard errors are explained, key handling is write-only", async () => {
-  const put = (body: object) => anna("PUT", "/api/assistant/settings", body);
-  assert.match((await put({ baseUrl: "http://ai.example.org/v1", model: "m" })).json().error, /https/);
-  assert.match((await put({ baseUrl: "https://192.168.50.240/v1", model: "m" })).json().error, /private/);
-  assert.match((await put({ baseUrl: "https://localhost/v1", model: "m" })).json().error, /private/);
+const providerIds = async (c: ReturnType<typeof client>) =>
+  Object.fromEntries(
+    ((await c("GET", "/api/assistant/settings")).json() as View).providers.map((p) => [p.name, p.id]),
+  );
 
-  const saved = (await put({ baseUrl: "https://ai.example.org/v1/", model: "anna-model", apiKey: "sk-anna" })).json();
-  assert.equal(saved.baseUrl, "https://ai.example.org/v1");
-  assert.equal(saved.hasKey, true);
-  assert.equal(saved.configured, true);
+test("providers: guard errors are explained, keys are write-only", async () => {
+  const post = (body: object) => anna("POST", "/api/assistant/providers", body);
+  assert.match((await post({ name: "x", baseUrl: "http://ai.example.org/v1" })).json().error, /https/);
+  assert.match((await post({ name: "x", baseUrl: "https://192.168.50.240/v1" })).json().error, /private/);
 
-  // Omitting apiKey keeps it; null removes it.
-  assert.equal((await put({ baseUrl: "https://ai.example.org/v1", model: "anna-2" })).json().hasKey, true);
-  await anna("POST", "/api/assistant/test");
-  assert.equal(calls.at(-1)!.auth, "Bearer sk-anna", "anna's own key");
-  assert.equal(calls.at(-1)!.body.model, "anna-2");
-  assert.equal((await put({ baseUrl: "https://ai.example.org/v1", model: "anna-2", apiKey: null })).json().hasKey, false);
-  await anna("POST", "/api/assistant/test");
-  assert.equal(calls.at(-1)!.auth, null, "no key sent once removed");
+  let view = (await post({ name: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1/", apiKey: "sk-or-anna" })).json() as View;
+  const or = view.providers.find((p) => p.name === "OpenRouter")!;
+  assert.equal(or.baseUrl, "https://openrouter.ai/api/v1");
+  assert.equal(or.hasKey, true);
+  assert.ok(!JSON.stringify(view).includes("sk-or-anna"));
 
-  // yamen's settings are untouched by anna's.
-  await admin("POST", "/api/assistant/test");
-  assert.equal(calls.at(-1)!.auth, `Bearer ${LEGACY_KEY}`);
+  // Updating without a key keeps it; null removes it; a new one replaces it.
+  const put = (body: object) => anna("PUT", `/api/assistant/providers/${or.id}`, body);
+  assert.equal(((await put({ name: "OpenRouter", baseUrl: or.baseUrl })).json() as View).providers[0]!.hasKey, true);
+  assert.equal(((await put({ name: "OpenRouter", baseUrl: or.baseUrl, apiKey: null })).json() as View).providers[0]!.hasKey, false);
+  view = (await put({ name: "OpenRouter", baseUrl: or.baseUrl, apiKey: "sk-or-anna" })).json() as View;
+  assert.equal(view.providers[0]!.hasKey, true);
+
+  // Not anyone else's: admin's provider can't be changed, listed or used by anna.
+  const adminProvider = (await providerIds(admin))["My endpoint"];
+  assert.equal((await anna("PUT", `/api/assistant/providers/${adminProvider}`, { name: "x", baseUrl: or.baseUrl })).statusCode, 404);
+  assert.equal((await anna("GET", `/api/assistant/providers/${adminProvider}/models`)).statusCode, 404);
+  assert.equal((await anna("PUT", "/api/assistant/models", { models: [{ providerId: adminProvider, model: "m" }] })).statusCode, 400);
+  await anna("DELETE", `/api/assistant/providers/${adminProvider}`);
+  assert.equal((await providerIds(admin))["My endpoint"], adminProvider, "still there");
+});
+
+test("model list: OpenRouter pages are followed, names and prices per 1M tokens", async () => {
+  provider = (call) => {
+    if (call.url === "https://openrouter.ai/api/v1/models") {
+      return Response.json({
+        data: [
+          { id: "openai/gpt-4o-mini", name: "OpenAI: GPT-4o-mini", context_length: 128000,
+            pricing: { prompt: "0.00000015", completion: "0.0000006" } },
+        ],
+        links: { next: "/api/v1/models?offset=1&limit=1" },
+      });
+    }
+    if (call.url === "https://openrouter.ai/api/v1/models?offset=1&limit=1") {
+      return Response.json({ data: [{ id: "anthropic/claude-x", name: "Claude X", context_length: 200000, pricing: { prompt: "0.000003", completion: "0.000015" } }], links: { next: null } });
+    }
+    return new Response("not found", { status: 404 });
+  };
+  const id = (await providerIds(anna))["OpenRouter"];
+  const res = await anna("GET", `/api/assistant/providers/${id}/models`);
+  assert.equal(res.statusCode, 200, res.body);
+  assert.deepEqual(res.json(), [
+    { id: "anthropic/claude-x", name: "Claude X", contextLength: 200000, promptPrice: 3, completionPrice: 15 },
+    { id: "openai/gpt-4o-mini", name: "OpenAI: GPT-4o-mini", contextLength: 128000, promptPrice: 0.15, completionPrice: 0.6 },
+  ]);
+  assert.equal(calls.at(-1)!.auth, "Bearer sk-or-anna");
+
+  // A plain OpenAI-style list (ids only) works too; a provider without one says so.
+  provider = () => Response.json({ object: "list", data: [{ id: "llama3.1" }] });
+  assert.deepEqual((await anna("GET", `/api/assistant/providers/${id}/models`)).json(), [
+    { id: "llama3.1", name: null, contextLength: null, promptPrice: null, completionPrice: null },
+  ]);
+  provider = () => new Response("<html>", { status: 200 });
+  assert.match((await anna("GET", `/api/assistant/providers/${id}/models`)).json().error, /doesn't offer a model list/);
+  provider = () => sse(["O", "K"]);
+});
+
+test("fallback: try A, then B — before the answer starts, never mid-answer", async () => {
+  await anna("POST", "/api/assistant/providers", { name: "Backup", baseUrl: "https://backup.example.net/v1", apiKey: "sk-backup" });
+  const ids = await providerIds(anna);
+  const view = (await anna("PUT", "/api/assistant/models", {
+    models: [
+      { providerId: ids["OpenRouter"], model: "anthropic/claude-x" },
+      { providerId: ids["Backup"], model: "backup-model" },
+    ],
+  })).json() as View;
+  assert.deepEqual(view.models.map((m) => m.model), ["anthropic/claude-x", "backup-model"]);
+  assert.deepEqual((await anna("GET", "/api/assistant/status")).json(), { enabled: true, model: "anthropic/claude-x" });
+
+  const hosts = () => calls.slice(-2).map((c) => new URL(c.url).host);
+  // A is down (503) → B answers.
+  provider = (c) => (c.url.includes("openrouter.ai") ? new Response("down", { status: 503 }) : sse(["Haus"]));
+  let res = await anna("POST", "/api/assistant/cleanup-notes", { text: "notes" });
+  assert.equal(res.statusCode, 200, res.body);
+  assert.deepEqual(res.json(), { text: "Haus" });
+  assert.deepEqual(hosts(), ["openrouter.ai", "backup.example.net"]);
+  assert.equal(calls.at(-1)!.auth, "Bearer sk-backup");
+  assert.equal(calls.at(-1)!.body!.model, "backup-model");
+
+  // A wrong key (401) or a network error also falls through.
+  provider = (c) => (c.url.includes("openrouter.ai") ? new Response("no", { status: 401 }) : sse(["ok"]));
+  assert.equal((await anna("POST", "/api/assistant/cleanup-notes", { text: "n" })).statusCode, 200);
+  provider = (c) => {
+    if (c.url.includes("openrouter.ai")) throw new Error("connect ETIMEDOUT");
+    return sse(["ok"]);
+  };
+  assert.equal((await anna("POST", "/api/assistant/cleanup-notes", { text: "n" })).statusCode, 200);
+
+  // Streaming: falls back before the first token…
+  provider = (c) => (c.url.includes("openrouter.ai") ? new Response("down", { status: 500 }) : sse(["Der ", "Dativ"]));
+  res = await anna("POST", "/api/assistant/ask", { task: "highlight", selection: "dem Kind" });
+  assert.match(res.body, /"token":"Der "/);
+  assert.doesNotMatch(res.body, /"error"/);
+
+  // …but once A has started answering, a later failure isn't retried on B.
+  provider = (c) => {
+    if (!c.url.includes("openrouter.ai")) return sse(["B!"]);
+    const enc = new TextEncoder();
+    // Delivers the first chunk, then the connection drops on the next read.
+    let sent = false;
+    const body = new ReadableStream({
+      pull(ctrl) {
+        if (sent) return ctrl.error(new Error("connection reset"));
+        sent = true;
+        ctrl.enqueue(enc.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "Halb" } }] })}\n\n`));
+      },
+    });
+    return new Response(body, { status: 200 });
+  };
+  const before = calls.length;
+  res = await anna("POST", "/api/assistant/ask", { task: "highlight", selection: "dem Kind" });
+  assert.match(res.body, /"token":"Halb"/);
+  assert.match(res.body, /"error":"The AI request failed\."/);
+  assert.doesNotMatch(res.body, /B!/);
+  assert.equal(calls.length - before, 1, "B was not called");
+
+  // All fail → the first model's error.
+  provider = (c) => new Response("x", { status: c.url.includes("openrouter.ai") ? 503 : 429 });
+  res = await anna("POST", "/api/assistant/cleanup-notes", { text: "n" });
+  assert.equal(res.statusCode, 502);
+  assert.equal(res.json().error, "The AI provider answered 503.");
+
+  // Test connection checks each model on its own.
+  provider = (c) => (c.url.includes("openrouter.ai") ? new Response("x", { status: 402 }) : sse(["OK"]));
+  const test = (await anna("POST", "/api/assistant/test")).json() as TestResult;
+  assert.deepEqual(test.results.map((r) => [r.provider, r.ok, r.error ?? r.reply]), [
+    ["OpenRouter", false, "The AI provider answered 402."],
+    ["Backup", true, "OK"],
+  ]);
+  provider = () => sse(["O", "K"]);
 });
 
 test("provider errors: status shown, upstream body and internals never leaked", async () => {
@@ -222,7 +351,7 @@ test("provider errors: status shown, upstream body and internals never leaked", 
     });
   };
   res = await admin("POST", "/api/assistant/test");
-  assert.match(res.json().error, /isn't allowed: it isn't a public address/);
+  assert.match(res.json().results[0].error, /isn't allowed: it isn't a public address/);
   assert.ok(!res.body.includes("resolves to"), "doesn't echo DNS results");
 
   provider = () => {
@@ -233,7 +362,7 @@ test("provider errors: status shown, upstream body and internals never leaked", 
 
   provider = () => sse(["x".repeat(3 * 1024 * 1024)]);
   res = await admin("POST", "/api/assistant/test");
-  assert.equal(res.json().error, "The AI response was too large.");
+  assert.equal(res.json().results[0].error, "The AI response was too large.");
   provider = () => sse(["O", "K"]);
 });
 
@@ -246,11 +375,11 @@ test("grading: open-ended items tell the AI the answers are only examples", asyn
   };
   let res = await admin("POST", "/api/assistant/grade", { ...body, open: true });
   assert.deepEqual(res.json(), { correct: true, feedback: "Fits the task." });
-  let user = JSON.stringify(calls.at(-1)!.body.messages);
+  let user = JSON.stringify(calls.at(-1)!.body!.messages);
   assert.match(user, /Example answers \(open-ended/);
 
   res = await admin("POST", "/api/assistant/grade", body);
-  user = JSON.stringify(calls.at(-1)!.body.messages);
+  user = JSON.stringify(calls.at(-1)!.body!.messages);
   assert.match(user, /Reference answer\(s\)/);
   assert.doesNotMatch(user, /Example answers \(open-ended/);
   provider = () => sse(["O", "K"]);
@@ -271,22 +400,27 @@ test("streaming tutor relays tokens and reports errors safely", async () => {
   provider = () => sse(["O", "K"]);
 });
 
-test("a key that can't be decrypted any more disables AI until re-entered", async () => {
+test("a key that can't be decrypted any more: flagged, and that provider is skipped", async () => {
   const { db, schema } = await import("../db/client");
   const { eq } = await import("drizzle-orm");
-  const { findUserByUsername } = await import("../auth/users");
-  const annaId = findUserByUsername("anna")!.id;
-  await anna("PUT", "/api/assistant/settings", {
-    baseUrl: "https://ai.example.org/v1", model: "m", apiKey: "sk-anna",
-  });
-  // Simulates ENCRYPTION_KEY having changed.
-  db.update(schema.aiSettings)
+  const ids = await providerIds(anna);
+  // Simulates ENCRYPTION_KEY having changed for the OpenRouter key.
+  db.update(schema.aiProviders)
     .set({ apiKeyEnc: "v1.AAAA.AAAA.AAAA" })
-    .where(eq(schema.aiSettings.userId, annaId))
+    .where(eq(schema.aiProviders.id, ids["OpenRouter"]!))
     .run();
-  const view = (await anna("GET", "/api/assistant/settings")).json();
-  assert.equal(view.keyUnreadable, true);
-  assert.equal(view.configured, false);
+  const view = (await anna("GET", "/api/assistant/settings")).json() as View;
+  assert.equal(view.providers.find((p) => p.name === "OpenRouter")!.keyUnreadable, true);
+  // The backup model still works.
+  assert.deepEqual((await anna("GET", "/api/assistant/status")).json(), { enabled: true, model: "backup-model" });
+});
+
+test("deleting a provider removes its models; turning off removes everything", async () => {
+  const ids = await providerIds(anna);
+  let view = (await anna("DELETE", `/api/assistant/providers/${ids["OpenRouter"]}`)).json() as View;
+  assert.deepEqual(view.models.map((m) => m.model), ["backup-model"]);
+  view = (await anna("DELETE", "/api/assistant/settings")).json() as View;
+  assert.deepEqual([view.providers, view.models], [[], []]);
   assert.equal((await anna("GET", "/api/assistant/status")).json().enabled, false);
 });
 
@@ -294,5 +428,6 @@ test("the env seed runs once: removed settings don't come back on restart", asyn
   await admin("DELETE", "/api/assistant/settings");
   const { seedAdminAiFromEnv } = await import("./config");
   seedAdminAiFromEnv(app.log);
-  assert.equal((await admin("GET", "/api/assistant/settings")).json().configured, false);
+  const view = (await admin("GET", "/api/assistant/settings")).json() as View;
+  assert.equal(view.providers.length, 0);
 });

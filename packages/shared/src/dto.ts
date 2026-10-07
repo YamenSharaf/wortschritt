@@ -101,27 +101,74 @@ export const updateUserBody = z.object({
 });
 export const adminSetPasswordBody = z.object({ password: newPassword });
 
-/** A user's AI tutor settings as shown in the app (never includes the key). */
-export const aiSettingsView = z.object({
-  /** ENCRYPTION_KEY is set, so keys can be stored. */
-  encryptionAvailable: z.boolean(),
-  /** Set up and usable. */
-  configured: z.boolean(),
+/** One of a user's AI providers as shown in the app (never includes the key). */
+export const aiProviderView = z.object({
+  id: z.number(),
+  name: z.string(),
   baseUrl: z.string(),
-  model: z.string(),
   hasKey: z.boolean(),
   /** A key is stored but can't be decrypted (ENCRYPTION_KEY changed): re-enter it. */
   keyUnreadable: z.boolean(),
 });
+export type AiProviderView = z.infer<typeof aiProviderView>;
+
+/** One entry of the ordered model list (tried in order, falling back). */
+export const aiModelEntry = z.object({
+  id: z.number(),
+  providerId: z.number(),
+  model: z.string(),
+});
+export type AiModelEntry = z.infer<typeof aiModelEntry>;
+
+export const aiSettingsView = z.object({
+  /** ENCRYPTION_KEY is set, so keys can be stored. */
+  encryptionAvailable: z.boolean(),
+  providers: z.array(aiProviderView),
+  /** In fallback order. */
+  models: z.array(aiModelEntry),
+});
 export type AiSettingsView = z.infer<typeof aiSettingsView>;
 
-export const saveAiSettingsBody = z.object({
+export const saveAiProviderBody = z.object({
+  name: z.string().trim().min(1).max(60),
   baseUrl: z.string().trim().min(1).max(500),
-  model: z.string().trim().min(1).max(200),
   /** New key; null removes the stored key; omitted keeps it. */
   apiKey: z.string().trim().min(1).max(1000).nullable().optional(),
 });
-export type SaveAiSettingsBody = z.infer<typeof saveAiSettingsBody>;
+export type SaveAiProviderBody = z.infer<typeof saveAiProviderBody>;
+
+export const MAX_AI_MODELS = 10;
+export const saveAiModelsBody = z.object({
+  models: z
+    .array(z.object({ providerId: z.number().int(), model: z.string().trim().min(1).max(200) }))
+    .max(MAX_AI_MODELS),
+});
+export type SaveAiModelsBody = z.infer<typeof saveAiModelsBody>;
+
+/** A model offered by a provider's model list. Prices are USD per 1M tokens. */
+export const aiModelOption = z.object({
+  id: z.string(),
+  name: z.string().nullable(),
+  contextLength: z.number().nullable(),
+  promptPrice: z.number().nullable(),
+  completionPrice: z.number().nullable(),
+});
+export type AiModelOption = z.infer<typeof aiModelOption>;
+
+export const aiTestResult = z.object({
+  results: z.array(
+    z.object({
+      id: z.number(),
+      provider: z.string(),
+      model: z.string(),
+      ok: z.boolean(),
+      reply: z.string().optional(),
+      error: z.string().optional(),
+      ms: z.number(),
+    }),
+  ),
+});
+export type AiTestResult = z.infer<typeof aiTestResult>;
 
 export const authUser = z.object({
   username: z.string(),

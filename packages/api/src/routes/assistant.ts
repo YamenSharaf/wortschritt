@@ -1,12 +1,15 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyBaseLogger, FastifyInstance, FastifyReply } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import {
+  aiModelOption,
   aiSettingsView,
+  aiTestResult,
   exerciseItem,
   exerciseSet,
   MAX_GENERATE_COUNT,
-  saveAiSettingsBody,
+  saveAiModelsBody,
+  saveAiProviderBody,
   wordLookup,
   wordQueryBody,
   type ExerciseItem,
@@ -20,12 +23,22 @@ import {
   buildNotesCleanup,
   buildWordMessages,
 } from "../assistant/prompts";
-import { aiErrorMessage, collectCompletion, streamCompletion } from "../assistant/client";
 import {
-  deleteAiSettings,
-  getAiConfig,
+  aiErrorMessage,
+  collectCompletion,
+  collectFromOne,
+  listModels,
+  streamCompletion,
+  type OnFallback,
+} from "../assistant/client";
+import {
+  deleteAiProvider,
+  deleteAllAiSettings,
+  getAiChain,
   getAiSettingsView,
-  saveAiSettings,
+  getProviderConfig,
+  saveAiModels,
+  saveAiProvider,
 } from "../assistant/config";
 import { EgressError } from "../assistant/egress";
 import { getSettings } from "../services/settings";
@@ -156,6 +169,15 @@ function extractJsonObject(content: string): unknown | null {
 
 const NOT_SET_UP = "Set up your AI tutor under Settings → AI tutor first.";
 
+/** Log when a model in the user's list fails and the next one is tried. */
+const logFallback =
+  (log: FastifyBaseLogger): OnFallback =>
+  (failed, error) =>
+    log.warn(
+      { provider: failed.provider, model: failed.model, error: error.publicMessage },
+      "AI model failed, trying the next one",
+    );
+
 export async function assistantRoutes(app: FastifyInstance) {
   const r = app.withTypeProvider<ZodTypeProvider>();
 
@@ -172,12 +194,12 @@ export async function assistantRoutes(app: FastifyInstance) {
       },
     },
     async (req) => {
-      const ai = getAiConfig(req.user!.id);
-      return { enabled: ai !== null, model: ai?.model ?? "" };
+      const ai = getAiChain(req.user!.id);
+      return { enabled: ai !== null, model: ai?.[0]?.model ?? "" };
     },
   );
 
-  // The signed-in user's AI tutor settings (never returns the key).
+  // The signed-in user's AI providers and model order (never returns keys).
   r.get(
     "/api/assistant/settings",
     {
@@ -187,31 +209,7 @@ export async function assistantRoutes(app: FastifyInstance) {
     async (req) => getAiSettingsView(req.user!.id),
   );
 
-  r.put(
-    "/api/assistant/settings",
-    {
-      preHandler: requireAuth,
-      schema: {
-        tags: ["assistant"],
-        body: saveAiSettingsBody,
-        response: { 200: aiSettingsView, 400: z.object({ error: z.string() }) },
-      },
-    },
-    async (req, reply) => {
-      if (req.body.apiKey && !getAiSettingsView(req.user!.id).encryptionAvailable) {
-        return reply.code(400).send({
-          error: "This server can't store API keys yet (the admin needs to set ENCRYPTION_KEY).",
-        });
-      }
-      try {
-        return saveAiSettings(req.user!.id, req.body);
-      } catch (err) {
-        if (err instanceof EgressError) return reply.code(400).send({ error: err.message });
-        throw err;
-      }
-    },
-  );
-
+  // Turn the tutor off: remove every provider and model.
   r.delete(
     "/api/assistant/settings",
     {
@@ -219,12 +217,123 @@ export async function assistantRoutes(app: FastifyInstance) {
       schema: { tags: ["assistant"], response: { 200: aiSettingsView } },
     },
     async (req) => {
-      deleteAiSettings(req.user!.id);
+      deleteAllAiSettings(req.user!.id);
       return getAiSettingsView(req.user!.id);
     },
   );
 
-  // "Test connection": one tiny completion against the saved settings.
+  const providerResponses = {
+    200: aiSettingsView,
+    400: z.object({ error: z.string() }),
+    404: z.object({ error: z.string() }),
+  };
+  const idParams = z.object({ id: z.coerce.number().int().positive() });
+
+  /** Shared by create and update: key storage needs ENCRYPTION_KEY; URL rules. */
+  async function storeProvider(
+    req: { user: { id: number } | null; body: z.infer<typeof saveAiProviderBody> },
+    reply: FastifyReply,
+    id?: number,
+  ) {
+    const userId = req.user!.id;
+    if (req.body.apiKey && !getAiSettingsView(userId).encryptionAvailable) {
+      return reply.code(400).send({
+        error: "This server can't store API keys yet (the admin needs to set ENCRYPTION_KEY).",
+      });
+    }
+    try {
+      if (!saveAiProvider(userId, req.body, id)) {
+        return reply.code(404).send({ error: "no such provider" });
+      }
+    } catch (err) {
+      if (err instanceof EgressError) return reply.code(400).send({ error: err.message });
+      throw err;
+    }
+    return getAiSettingsView(userId);
+  }
+
+  r.post(
+    "/api/assistant/providers",
+    {
+      preHandler: requireAuth,
+      schema: { tags: ["assistant"], body: saveAiProviderBody, response: providerResponses },
+    },
+    async (req, reply) => storeProvider(req, reply),
+  );
+
+  r.put(
+    "/api/assistant/providers/:id",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["assistant"],
+        params: idParams,
+        body: saveAiProviderBody,
+        response: providerResponses,
+      },
+    },
+    async (req, reply) => storeProvider(req, reply, req.params.id),
+  );
+
+  r.delete(
+    "/api/assistant/providers/:id",
+    {
+      preHandler: requireAuth,
+      schema: { tags: ["assistant"], params: idParams, response: { 200: aiSettingsView } },
+    },
+    async (req) => {
+      deleteAiProvider(req.user!.id, req.params.id);
+      return getAiSettingsView(req.user!.id);
+    },
+  );
+
+  // The provider's model list, for the picker.
+  r.get(
+    "/api/assistant/providers/:id/models",
+    {
+      preHandler: requireAuth,
+      config: { rateLimit: { max: 10, timeWindow: "1 minute", keyGenerator: clientIp } },
+      schema: {
+        tags: ["assistant"],
+        params: idParams,
+        response: {
+          200: z.array(aiModelOption),
+          404: z.object({ error: z.string() }),
+          502: z.object({ error: z.string() }),
+        },
+      },
+    },
+    async (req, reply) => {
+      const p = getProviderConfig(req.user!.id, req.params.id);
+      if (!p) return reply.code(404).send({ error: "no such provider" });
+      try {
+        return await listModels(p);
+      } catch (err) {
+        return reply.code(502).send({ error: aiErrorMessage(err, req.log, "list models") });
+      }
+    },
+  );
+
+  // Replace the ordered model list (the fallback order).
+  r.put(
+    "/api/assistant/models",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["assistant"],
+        body: saveAiModelsBody,
+        response: { 200: aiSettingsView, 400: z.object({ error: z.string() }) },
+      },
+    },
+    async (req, reply) => {
+      if (!saveAiModels(req.user!.id, req.body)) {
+        return reply.code(400).send({ error: "unknown provider" });
+      }
+      return getAiSettingsView(req.user!.id);
+    },
+  );
+
+  // "Test connection": one tiny completion per model entry, each on its own.
   r.post(
     "/api/assistant/test",
     {
@@ -232,26 +341,34 @@ export async function assistantRoutes(app: FastifyInstance) {
       config: { rateLimit: { max: 10, timeWindow: "1 minute", keyGenerator: clientIp } },
       schema: {
         tags: ["assistant"],
-        response: {
-          200: z.object({ ok: z.literal(true), reply: z.string() }),
-          502: z.object({ error: z.string() }),
-          503: z.object({ error: z.string() }),
-        },
+        response: { 200: aiTestResult, 503: z.object({ error: z.string() }) },
       },
     },
     async (req, reply) => {
-      const ai = getAiConfig(req.user!.id);
-      if (!ai) return reply.code(503).send({ error: NOT_SET_UP });
-      try {
-        const text = await collectCompletion(
-          ai,
-          [{ role: "user", content: "Reply with just the word: OK" }],
-          { temperature: 0, maxTokens: 5 },
-        );
-        return { ok: true as const, reply: text.trim().slice(0, 100) };
-      } catch (err) {
-        return reply.code(502).send({ error: aiErrorMessage(err, req.log, "test") });
-      }
+      const chain = getAiChain(req.user!.id);
+      if (!chain) return reply.code(503).send({ error: NOT_SET_UP });
+      const results = await Promise.all(
+        chain.map(async (cfg) => {
+          const started = Date.now();
+          const base = { id: cfg.entryId, provider: cfg.provider, model: cfg.model };
+          try {
+            const text = await collectFromOne(
+              cfg,
+              [{ role: "user", content: "Reply with just the word: OK" }],
+              { temperature: 0, maxTokens: 5 },
+            );
+            return { ...base, ok: true, reply: text.trim().slice(0, 100), ms: Date.now() - started };
+          } catch (err) {
+            return {
+              ...base,
+              ok: false,
+              error: aiErrorMessage(err, req.log, "test"),
+              ms: Date.now() - started,
+            };
+          }
+        }),
+      );
+      return { results };
     },
   );
 
@@ -272,7 +389,7 @@ export async function assistantRoutes(app: FastifyInstance) {
       },
     },
     async (req, reply) => {
-      const ai = getAiConfig(req.user!.id);
+      const ai = getAiChain(req.user!.id);
       if (!ai) return reply.code(503).send({ error: NOT_SET_UP });
       const { prompt, expected, response, context, open } = req.body;
       const system =
@@ -298,7 +415,7 @@ export async function assistantRoutes(app: FastifyInstance) {
             { role: "system", content: system },
             { role: "user", content: user },
           ],
-          { temperature: 0, maxTokens: 256 },
+          { temperature: 0, maxTokens: 256, onFallback: logFallback(req.log) },
         );
         return parseVerdict(content);
       } catch (err) {
@@ -326,7 +443,7 @@ export async function assistantRoutes(app: FastifyInstance) {
       },
     },
     async (req, reply) => {
-      const ai = getAiConfig(req.user!.id);
+      const ai = getAiChain(req.user!.id);
       if (!ai) return reply.code(503).send({ error: NOT_SET_UP });
       const { word, context, meaning, count } = req.body;
       const { system, user } = buildWordMessages({ word, context, meaning, count });
@@ -337,7 +454,7 @@ export async function assistantRoutes(app: FastifyInstance) {
             { role: "system", content: system },
             { role: "user", content: user },
           ],
-          { temperature: 0.4, maxTokens: 900 },
+          { temperature: 0.4, maxTokens: 900, onFallback: logFallback(req.log) },
         );
         const obj = extractJsonObject(content);
         const parsed = obj ? wordLookup.safeParse(obj) : null;
@@ -374,7 +491,7 @@ export async function assistantRoutes(app: FastifyInstance) {
       },
     },
     async (req, reply) => {
-      const ai = getAiConfig(req.user!.id);
+      const ai = getAiChain(req.user!.id);
       if (!ai) return reply.code(503).send({ error: NOT_SET_UP });
       const { system, user } = buildNotesCleanup({
         level: getSettings(req.user!.id).level,
@@ -387,7 +504,7 @@ export async function assistantRoutes(app: FastifyInstance) {
             { role: "system", content: system },
             { role: "user", content: user },
           ],
-          { temperature: 0.2, maxTokens: 4096 },
+          { temperature: 0.2, maxTokens: 4096, onFallback: logFallback(req.log) },
         );
         // Strip an accidental ```markdown fence if the model added one anyway.
         let text = content.trim();
@@ -425,7 +542,7 @@ export async function assistantRoutes(app: FastifyInstance) {
       },
     },
     async (req, reply) => {
-      const ai = getAiConfig(req.user!.id);
+      const ai = getAiChain(req.user!.id);
       if (!ai) return reply.code(503).send({ error: NOT_SET_UP });
       const { count, set } = req.body;
       const { system, user } = buildGenerateMessages({
@@ -447,7 +564,7 @@ export async function assistantRoutes(app: FastifyInstance) {
             { role: "system", content: system },
             { role: "user", content: user },
           ],
-          { temperature: 0.8, maxTokens: Math.min(8192, 1024 + count * 500) },
+          { temperature: 0.8, maxTokens: Math.min(8192, 1024 + count * 500), onFallback: logFallback(req.log) },
         );
         const match = content.match(/\{[\s\S]*\}/);
         let rawItems: unknown[] = [];
@@ -483,7 +600,7 @@ export async function assistantRoutes(app: FastifyInstance) {
     "/api/assistant/ask",
     { preHandler: requireAuth, schema: { tags: ["assistant"], body: askBody } },
     async (req, reply) => {
-      const ai = getAiConfig(req.user!.id);
+      const ai = getAiChain(req.user!.id);
       if (!ai) return reply.code(503).send({ error: NOT_SET_UP });
 
       const { task, selection, question, context, item, response, text, history } =
@@ -540,6 +657,7 @@ export async function assistantRoutes(app: FastifyInstance) {
           temperature: 0.3,
           maxTokens: 1024,
           signal: controller.signal,
+          onFallback: logFallback(req.log),
         })) {
           send({ token });
         }

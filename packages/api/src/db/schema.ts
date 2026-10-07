@@ -172,13 +172,23 @@ export const appSettings = sqliteTable("app_settings", {
   value: text("value").notNull(),
 });
 
-/** Per-user AI tutor endpoint; the key is encrypted (assistant/secrets.ts). */
-export const aiSettings = sqliteTable("ai_settings", {
-  userId: integer("user_id").primaryKey(),
+/** A user's AI providers (OpenAI-compatible endpoints); key encrypted. */
+export const aiProviders = sqliteTable("ai_providers", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  name: text("name").notNull(),
   baseUrl: text("base_url").notNull(),
-  model: text("model").notNull(),
   apiKeyEnc: text("api_key_enc"),
-  updatedAt: integer("updated_at")
+  createdAt: integer("created_at")
     .notNull()
     .default(sql`(unixepoch())`),
+});
+
+/** A user's ordered model list: tried in `position` order (fallback). */
+export const aiModels = sqliteTable("ai_models", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  providerId: integer("provider_id").notNull(),
+  model: text("model").notNull(),
+  position: integer("position").notNull(),
 });

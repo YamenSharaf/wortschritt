@@ -1,6 +1,8 @@
 import type {
   AdminUser,
+  AiModelOption,
   AiSettingsView,
+  AiTestResult,
   AuthUserDto,
   Cheatsheet,
   DictEntry,
@@ -91,16 +93,33 @@ export const api = {
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
 
-  // AI tutor settings (per user; the key is write-only)
+  // AI tutor settings (per user; keys are write-only)
   aiSettings: () => req<AiSettingsView>("/api/assistant/settings"),
-  saveAiSettings: (body: { baseUrl: string; model: string; apiKey?: string | null }) =>
-    req<AiSettingsView>("/api/assistant/settings", {
+  addAiProvider: (body: { name: string; baseUrl: string; apiKey?: string | null }) =>
+    req<AiSettingsView>("/api/assistant/providers", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  updateAiProvider: (
+    id: number,
+    body: { name: string; baseUrl: string; apiKey?: string | null },
+  ) =>
+    req<AiSettingsView>(`/api/assistant/providers/${id}`, {
       method: "PUT",
       body: JSON.stringify(body),
     }),
+  deleteAiProvider: (id: number) =>
+    req<AiSettingsView>(`/api/assistant/providers/${id}`, { method: "DELETE" }),
+  aiProviderModels: (id: number) =>
+    req<AiModelOption[]>(`/api/assistant/providers/${id}/models`),
+  saveAiModels: (models: { providerId: number; model: string }[]) =>
+    req<AiSettingsView>("/api/assistant/models", {
+      method: "PUT",
+      body: JSON.stringify({ models }),
+    }),
   deleteAiSettings: () =>
     req<AiSettingsView>("/api/assistant/settings", { method: "DELETE" }),
-  testAi: () => req<{ ok: true; reply: string }>("/api/assistant/test", { method: "POST" }),
+  testAi: () => req<AiTestResult>("/api/assistant/test", { method: "POST" }),
 
   // admin
   adminUsers: () => req<AdminUser[]>("/api/admin/users"),

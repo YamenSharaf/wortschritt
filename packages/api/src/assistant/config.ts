@@ -1,73 +1,144 @@
-import { eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import type { FastifyBaseLogger } from "fastify";
-import type { AiSettingsView, SaveAiSettingsBody } from "@mdb/shared";
+import type {
+  AiSettingsView,
+  SaveAiModelsBody,
+  SaveAiProviderBody,
+} from "@mdb/shared";
 import { db, schema } from "../db/client";
 import { env, hasLegacyAssistantEnv } from "../env";
 import { checkAiUrl } from "./egress";
 import { decryptSecret, encryptSecret, isEncryptionAvailable } from "./secrets";
 
-/** A user's usable AI endpoint (key decrypted), for server-side calls only. */
+/**
+ * Each user has AI providers (an OpenAI-compatible base URL + one encrypted
+ * key) and an ordered list of provider + model entries. Requests try the
+ * entries in order (see client.ts), so "try A, then B" is just the order.
+ */
+
+/** One usable entry, key decrypted — for server-side calls only. */
 export interface AiConfig {
+  entryId: number;
+  provider: string;
   baseUrl: string;
   model: string;
   apiKey: string | null;
 }
 
-function row(userId: number) {
-  return db.select().from(schema.aiSettings).where(eq(schema.aiSettings.userId, userId)).get();
-}
-
-/** The user's AI config, or null if they haven't set one up (or its key can't
- *  be decrypted any more — then they need to re-enter it). */
-export function getAiConfig(userId: number): AiConfig | null {
-  const r = row(userId);
-  if (!r) return null;
-  let apiKey: string | null = null;
-  if (r.apiKeyEnc) {
-    apiKey = decryptSecret(r.apiKeyEnc);
-    if (apiKey === null) return null;
+/** The user's entries in order, or null when none is usable. Entries whose
+ *  key can't be decrypted any more are skipped. */
+export function getAiChain(userId: number): AiConfig[] | null {
+  const rows = db
+    .select({
+      entryId: schema.aiModels.id,
+      model: schema.aiModels.model,
+      provider: schema.aiProviders.name,
+      baseUrl: schema.aiProviders.baseUrl,
+      apiKeyEnc: schema.aiProviders.apiKeyEnc,
+    })
+    .from(schema.aiModels)
+    .innerJoin(schema.aiProviders, eq(schema.aiProviders.id, schema.aiModels.providerId))
+    .where(eq(schema.aiModels.userId, userId))
+    .orderBy(asc(schema.aiModels.position))
+    .all();
+  const chain: AiConfig[] = [];
+  for (const r of rows) {
+    const apiKey = r.apiKeyEnc ? decryptSecret(r.apiKeyEnc) : null;
+    if (r.apiKeyEnc && apiKey === null) continue;
+    chain.push({ entryId: r.entryId, provider: r.provider, baseUrl: r.baseUrl, model: r.model, apiKey });
   }
-  return { baseUrl: r.baseUrl, model: r.model, apiKey };
+  return chain.length ? chain : null;
 }
 
-/** What the settings page shows — never the key itself. */
+/** What the settings page shows — never a key. */
 export function getAiSettingsView(userId: number): AiSettingsView {
-  const r = row(userId);
-  const keyUnreadable = Boolean(r?.apiKeyEnc && decryptSecret(r.apiKeyEnc) === null);
-  return {
-    encryptionAvailable: isEncryptionAvailable,
-    configured: Boolean(r) && !keyUnreadable,
-    baseUrl: r?.baseUrl ?? "",
-    model: r?.model ?? "",
-    hasKey: Boolean(r?.apiKeyEnc),
-    keyUnreadable,
-  };
+  const providers = db
+    .select()
+    .from(schema.aiProviders)
+    .where(eq(schema.aiProviders.userId, userId))
+    .orderBy(asc(schema.aiProviders.id))
+    .all()
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      baseUrl: p.baseUrl,
+      hasKey: Boolean(p.apiKeyEnc),
+      keyUnreadable: Boolean(p.apiKeyEnc && decryptSecret(p.apiKeyEnc) === null),
+    }));
+  const models = db
+    .select({
+      id: schema.aiModels.id,
+      providerId: schema.aiModels.providerId,
+      model: schema.aiModels.model,
+    })
+    .from(schema.aiModels)
+    .where(eq(schema.aiModels.userId, userId))
+    .orderBy(asc(schema.aiModels.position))
+    .all();
+  return { encryptionAvailable: isEncryptionAvailable, providers, models };
+}
+
+function ownProvider(userId: number, id: number) {
+  return db
+    .select()
+    .from(schema.aiProviders)
+    .where(and(eq(schema.aiProviders.id, id), eq(schema.aiProviders.userId, userId)))
+    .get();
+}
+
+/** The provider with its key decrypted (for listing models), if it's the user's. */
+export function getProviderConfig(userId: number, id: number) {
+  const p = ownProvider(userId, id);
+  if (!p) return null;
+  const apiKey = p.apiKeyEnc ? decryptSecret(p.apiKeyEnc) : null;
+  return { name: p.name, baseUrl: p.baseUrl, apiKey, keyUnreadable: Boolean(p.apiKeyEnc) && apiKey === null };
 }
 
 /**
- * Save the user's endpoint. `apiKey`: a string replaces the stored key, null
- * removes it, undefined keeps it. Throws EgressError for a disallowed URL.
+ * Create (id undefined) or update a provider. `apiKey`: a string replaces the
+ * stored key, null removes it, undefined keeps it. Returns false if `id`
+ * isn't the user's. Throws EgressError for a disallowed URL.
  */
-export function saveAiSettings(userId: number, body: SaveAiSettingsBody): AiSettingsView {
+export function saveAiProvider(userId: number, body: SaveAiProviderBody, id?: number): boolean {
   const baseUrl = checkAiUrl(body.baseUrl);
-  const existing = row(userId);
+  const existing = id === undefined ? undefined : ownProvider(userId, id);
+  if (id !== undefined && !existing) return false;
   let apiKeyEnc = existing?.apiKeyEnc ?? null;
   if (body.apiKey === null) apiKeyEnc = null;
-  else if (typeof body.apiKey === "string") apiKeyEnc = encryptSecret(body.apiKey.trim());
-
-  const values = { baseUrl, model: body.model.trim(), apiKeyEnc };
-  db.insert(schema.aiSettings)
-    .values({ userId, ...values })
-    .onConflictDoUpdate({
-      target: schema.aiSettings.userId,
-      set: { ...values, updatedAt: Math.floor(Date.now() / 1000) },
-    })
-    .run();
-  return getAiSettingsView(userId);
+  else if (typeof body.apiKey === "string") apiKeyEnc = encryptSecret(body.apiKey);
+  const values = { name: body.name, baseUrl, apiKeyEnc };
+  if (existing) {
+    db.update(schema.aiProviders).set(values).where(eq(schema.aiProviders.id, existing.id)).run();
+  } else {
+    db.insert(schema.aiProviders).values({ userId, ...values }).run();
+  }
+  return true;
 }
 
-export function deleteAiSettings(userId: number): void {
-  db.delete(schema.aiSettings).where(eq(schema.aiSettings.userId, userId)).run();
+/** Removes the provider and its model entries. */
+export function deleteAiProvider(userId: number, id: number): void {
+  db.delete(schema.aiProviders)
+    .where(and(eq(schema.aiProviders.id, id), eq(schema.aiProviders.userId, userId)))
+    .run();
+}
+
+/** Replace the ordered model list. Returns false if a provider isn't the user's. */
+export function saveAiModels(userId: number, body: SaveAiModelsBody): boolean {
+  if (!body.models.every((m) => ownProvider(userId, m.providerId))) return false;
+  db.transaction((tx) => {
+    tx.delete(schema.aiModels).where(eq(schema.aiModels.userId, userId)).run();
+    body.models.forEach((m, position) => {
+      tx.insert(schema.aiModels)
+        .values({ userId, providerId: m.providerId, model: m.model, position })
+        .run();
+    });
+  });
+  return true;
+}
+
+/** Turn the tutor off: remove all providers and models. */
+export function deleteAllAiSettings(userId: number): void {
+  db.delete(schema.aiProviders).where(eq(schema.aiProviders.userId, userId)).run();
 }
 
 const SEEDED_KEY = "ai_env_seeded";
@@ -97,7 +168,12 @@ export function seedAdminAiFromEnv(log: FastifyBaseLogger): void {
     .get();
   if (!admin) return;
 
-  if (!row(admin.id)) {
+  const hasAny = db
+    .select({ id: schema.aiProviders.id })
+    .from(schema.aiProviders)
+    .where(eq(schema.aiProviders.userId, admin.id))
+    .get();
+  if (!hasAny) {
     let baseUrl = env.ASSISTANT_BASE_URL.replace(/\/$/, "");
     try {
       baseUrl = checkAiUrl(baseUrl);
@@ -105,13 +181,18 @@ export function seedAdminAiFromEnv(log: FastifyBaseLogger): void {
       // Keep it so the admin sees and fixes it in Settings → AI tutor.
       log.warn({ baseUrl, reason: (err as Error).message }, "seeded AI URL isn't allowed");
     }
-    db.insert(schema.aiSettings)
+    const provider = db
+      .insert(schema.aiProviders)
       .values({
         userId: admin.id,
+        name: "My endpoint",
         baseUrl,
-        model: env.ASSISTANT_MODEL,
         apiKeyEnc: env.ASSISTANT_API_KEY ? encryptSecret(env.ASSISTANT_API_KEY) : null,
       })
+      .returning({ id: schema.aiProviders.id })
+      .get();
+    db.insert(schema.aiModels)
+      .values({ userId: admin.id, providerId: provider.id, model: env.ASSISTANT_MODEL, position: 0 })
       .run();
     log.info({ username: admin.username }, "copied ASSISTANT_* env into the admin's AI settings");
   }

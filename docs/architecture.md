@@ -120,9 +120,15 @@ model answers). This is what makes free-completion sets (e.g.
 SSE; `/grade` and `/generate` return JSON), add a client call in
 `packages/web/src/lib/api.ts`, and a button. That's the whole pattern.
 
-**Per-user endpoints.** Each user sets their own **OpenAI-compatible** endpoint,
-model and key under Settings → AI tutor (`ai_settings` table,
-`assistant/config.ts`); without one, their tutor UI stays hidden. Keys are
+**Per-user providers and fallback.** Each user adds **OpenAI-compatible**
+providers (base URL + one key; presets for OpenRouter and OpenAI) and an ordered
+list of provider + model entries under Settings → AI tutor (`ai_providers` /
+`ai_models`, `assistant/config.ts`); without one, their tutor UI stays hidden.
+Every request tries the entries in order (`streamCompletion` in
+`assistant/client.ts`): if one fails before any text arrives, the next is tried
+and the fallback is logged; once text has started there is no switch. "Load
+models" reads the provider's `GET /models` (OpenRouter's names, prices and
+pagination included). Keys are
 encrypted at rest with AES-256-GCM under a key derived from `ENCRYPTION_KEY`
 (`assistant/secrets.ts`), are write-only in the API and never reach the browser.
 On first boot the legacy `ASSISTANT_*` env config is copied once into the first
