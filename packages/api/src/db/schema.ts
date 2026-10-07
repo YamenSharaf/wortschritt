@@ -18,6 +18,10 @@ export const attempts = sqliteTable("attempts", {
   setId: text("set_id").notNull(),
   itemId: text("item_id").notNull(),
   correct: integer("correct", { mode: "boolean" }).notNull(),
+  /** What the learner typed or chose (null on rows before v8). */
+  response: text("response"),
+  /** auto | ai | self | ungraded — see `answerGrading`. */
+  grading: text("grading", { enum: ["auto", "ai", "self", "ungraded"] }).notNull().default("auto"),
   answeredAt: integer("answered_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -112,6 +116,17 @@ export const vocabStats = sqliteTable("vocab_stats", {
   lastResult: integer("last_result"),
   lastStudiedAt: integer("last_studied_at"),
 }, (t) => [primaryKey({ columns: [t.userId, t.word] })]);
+
+/** One row per flashcard answer (the tally above is the running total). */
+export const vocabReviews = sqliteTable("vocab_reviews", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  word: text("word").notNull(),
+  known: integer("known", { mode: "boolean" }).notNull(),
+  reviewedAt: integer("reviewed_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
 
 /** Free-form, categorized learning notes (Markdown), auto-saved. */
 export const notes = sqliteTable("notes", {

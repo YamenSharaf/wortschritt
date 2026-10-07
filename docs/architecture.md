@@ -24,12 +24,24 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
 - Content: `content/*.json` (git) **+** `imported_content` (SQLite, via the
   Import screen) → validated by `@mdb/shared` schemas in
   `packages/api/src/content/loader.ts` → served by `routes/content.ts`.
-- Progress: `attempts` (one row per answered item) → aggregated in
-  `services/progress.ts`. Completed runs, resumable in-progress positions and
+- Progress: `attempts` (one row per answered item, with the response and how
+  it was graded: `auto`, `ai`, `self` for flashcards, or `ungraded` for an open
+  answer nobody could judge — those count for the daily goal, not accuracy) →
+  aggregated in `services/progress.ts`. Completed runs, resumable in-progress positions and
   cheat-sheet views live in `exercise_runs`, `exercise_progress` and
   `sheet_views` (`services/activity.ts`, `routes/activity.ts`).
+- History (`services/history.ts`, `routes/history.ts`, MCP `get_mistakes` /
+  `get_activity` / `get_set_history`): read from those logs plus `vocab`,
+  `vocab_reviews` and `notes`. Mistakes are grouped per item, "resolved" once
+  the latest graded attempt is correct, and come with the item as it is in the
+  current content (null if it's gone). Notes and sheet views keep only their
+  latest edit / view.
+- Days ("answered today", the activity timeline) are counted in the
+  server-wide time zone (`services/timezone.ts`; admin → Settings → Users,
+  stored in `app_settings`; default `TZ` or UTC).
 - Vocab & flashcards: `vocab`, `vocab_groups`, `vocab_group_members`,
-  `vocab_stats` (`services/vocab.ts`). Grammatical forms come from the offline
+  `vocab_stats` (running tally), `vocab_reviews` (one row per flashcard
+  answer) (`services/vocab.ts`). Grammatical forms come from the offline
   dictionary at read time; the AI fills the rest (e.g. the Perfekt auxiliary)
   into `vocab.forms`.
 - Notes: `notes` table (`services/notes.ts`), Markdown, auto-saved.

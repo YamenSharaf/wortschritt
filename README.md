@@ -186,13 +186,14 @@ user (a `user_id` column, deleted together with the user); content is shared.
 | `oauth_clients`, `oauth_codes`, `oauth_grants` | MCP sign-ins: registered apps, one-time codes, granted access (SHA-256 only) |
 | `app_settings` | instance-wide settings, e.g. when self-registration closes |
 | `settings` | per user: display name, CEFR level, daily goal, theme, AI grading on/off, "generate more" batch size |
-| `attempts` | one row per answered item (the event log progress is derived from) |
+| `attempts` | one row per answered item: right/wrong, what was answered, how it was graded (the log progress and history are derived from) |
 | `exercise_runs` | one row per completed pass through an exercise set |
 | `exercise_progress` | resumable position + answers for an unfinished set |
 | `sheet_views` | last-viewed time per cheat sheet |
 | `vocab` | saved words with cached translation, examples and AI-filled forms |
 | `vocab_groups` / `vocab_group_members` | named word groups (many-to-many) |
 | `vocab_stats` | flashcard know/don't-know tally per word |
+| `vocab_reviews` | one row per flashcard answer |
 | `notes` | Markdown notes |
 | `ai_providers` / `ai_models` | per user: AI providers (encrypted keys) and the model fallback order |
 | `imported_content` | shared exercises and cheat sheets added via the Import screen, with who imported them |
@@ -250,7 +251,8 @@ a learner does:
 | Library (shared) | `list_exercise_sets`, `get_exercise_set`, `list_cheatsheets`, `get_cheatsheet`, `get_authoring_guide`, `validate_content`, `save_exercise_set`, `save_cheatsheet`, `delete_content` |
 | Vocabulary (private) | `list_vocab`, `get_vocab`, `save_vocab`, `delete_vocab`, `list_vocab_groups`, `create_vocab_group`, `delete_vocab_group`, `add_words_to_group`, `remove_word_from_group` |
 | Notes (private) | `list_notes`, `get_note`, `create_note`, `update_note`, `delete_note` |
-| Other | `get_progress`, `whoami` |
+| History (private) | `get_progress`, `get_mistakes`, `get_activity`, `get_set_history` |
+| Other | `whoami` |
 
 Agents get the content format the app enforces: the server's instructions point
 them to `get_authoring_guide` (the same guide as Import's "Copy LLM prompt"),
@@ -266,7 +268,7 @@ Auth        POST /api/auth/login | /api/auth/logout | /api/auth/password
             POST /api/auth/register      (only while registration is open)
 Admin       GET  /api/admin/users        PATCH|DELETE /api/admin/users/:id
             POST /api/admin/users/:id/password
-            GET|PUT /api/admin/registration
+            GET|PUT /api/admin/registration   GET|PUT /api/admin/timezone
 Public      GET  /api/config  /api/health  /api/docs
 MCP         POST /mcp            (OAuth or API token; see above)
 OAuth       GET  /.well-known/oauth-protected-resource[/mcp]  /.well-known/oauth-authorization-server
@@ -278,6 +280,7 @@ Progress    POST /api/attempts                          GET /api/progress
             POST /api/runs        GET /api/runs[/:setId]
             GET|PUT|DELETE /api/exercise-progress/:setId
             POST /api/sheet-views GET /api/sheet-views
+History     GET  /api/history/mistakes  /api/history/activity  /api/history/sets/:setId
 Settings    GET|PUT /api/settings
 Vocab       GET|POST /api/vocab    GET|DELETE /api/vocab/:word
             POST|DELETE /api/vocab/:word/study

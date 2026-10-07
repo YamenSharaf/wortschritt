@@ -4,6 +4,7 @@ import {
   isCanonical,
   isOpenAnswer,
   modelAnswer,
+  type AnswerGrading,
   type ExerciseItem,
   type TextAnswer,
 } from "@mdb/shared";
@@ -25,7 +26,7 @@ const answerInputProps = {
 type Props = {
   item: ExerciseItem;
   /** Called exactly once when the learner resolves the item. */
-  onAnswered: (correct: boolean, response?: string) => void;
+  onAnswered: (correct: boolean, response?: string, grading?: AnswerGrading) => void;
   /** Whether to consult the AI tutor when local grading misses. */
   llmGrading?: boolean;
 };
@@ -106,7 +107,12 @@ function Explanation({ text }: { text?: string }) {
 
 /** `ungraded`: an open answer nobody could judge (no AI tutor) — no verdict,
  *  just the possible answers. */
-type FreeTextResult = { correct: boolean; feedback?: string; ungraded?: boolean };
+type FreeTextResult = {
+  correct: boolean;
+  feedback?: string;
+  ungraded?: boolean;
+  grading: AnswerGrading;
+};
 
 /**
  * Grade a free-text answer: local first, then the tutor on a miss (if enabled).
@@ -118,7 +124,7 @@ async function checkFreeText(
   answer: TextAnswer,
   opts: { llmGrading?: boolean; prompt?: string; context?: string },
 ): Promise<FreeTextResult> {
-  if (gradeText(input, answer)) return { correct: true };
+  if (gradeText(input, answer)) return { correct: true, grading: "auto" };
   const open = isOpenAnswer(answer);
   if (opts.llmGrading) {
     try {
@@ -129,12 +135,14 @@ async function checkFreeText(
         context: opts.context,
         open,
       });
-      return { correct: v.correct, feedback: v.feedback || undefined };
+      return { correct: v.correct, feedback: v.feedback || undefined, grading: "ai" };
     } catch {
       /* fall back below */
     }
   }
-  return open ? { correct: true, ungraded: true } : { correct: false };
+  return open
+    ? { correct: true, ungraded: true, grading: "ungraded" }
+    : { correct: false, grading: "auto" };
 }
 
 /** Marks an open-ended task, so a learner knows their own wording counts. */
@@ -156,7 +164,7 @@ function MultipleChoice({
   onAnswered,
 }: {
   item: Extract<ExerciseItem, { type: "multiple_choice" }>;
-  onAnswered: (c: boolean, response?: string) => void;
+  onAnswered: Props["onAnswered"];
 }) {
   const [picked, setPicked] = useState<number | null>(null);
   const done = picked !== null;
@@ -212,7 +220,7 @@ function Cloze({
   onAnswered,
 }: {
   item: Extract<ExerciseItem, { type: "cloze" }>;
-  onAnswered: (c: boolean, response?: string) => void;
+  onAnswered: Props["onAnswered"];
 }) {
   const segments = useMemo<Segment[]>(() => {
     const out: Segment[] = [];
@@ -315,7 +323,7 @@ function Flashcard({
   onAnswered,
 }: {
   item: Extract<ExerciseItem, { type: "flashcard" }>;
-  onAnswered: (c: boolean, response?: string) => void;
+  onAnswered: Props["onAnswered"];
 }) {
   const [flipped, setFlipped] = useState(false);
   const [rated, setRated] = useState(false);
@@ -340,7 +348,7 @@ function Flashcard({
             type="button"
             onClick={() => {
               setRated(true);
-              onAnswered(false);
+              onAnswered(false, "Didn't know", "self");
             }}
             className="rounded-lg border border-red-400 px-4 py-2 text-red-600"
           >
@@ -350,7 +358,7 @@ function Flashcard({
             type="button"
             onClick={() => {
               setRated(true);
-              onAnswered(true);
+              onAnswered(true, "Knew it", "self");
             }}
             className="rounded-lg border border-green-400 px-4 py-2 text-green-600"
           >
@@ -421,7 +429,7 @@ function SentenceBuild({
   llmGrading,
 }: {
   item: Extract<ExerciseItem, { type: "sentence_build" }>;
-  onAnswered: (c: boolean, response?: string) => void;
+  onAnswered: Props["onAnswered"];
   llmGrading?: boolean;
 }) {
   const [text, setText] = useState("");
@@ -444,7 +452,7 @@ function SentenceBuild({
     });
     setBusy(false);
     setResult(r);
-    onAnswered(r.correct, built);
+    onAnswered(r.correct, built, r.grading);
   }
 
   return (
@@ -531,7 +539,7 @@ function Transform({
   llmGrading,
 }: {
   item: Extract<ExerciseItem, { type: "transform" }>;
-  onAnswered: (c: boolean, response?: string) => void;
+  onAnswered: Props["onAnswered"];
   llmGrading?: boolean;
 }) {
   const [text, setText] = useState("");
@@ -557,7 +565,7 @@ function Transform({
     });
     setBusy(false);
     setResult(r);
-    onAnswered(r.correct, text);
+    onAnswered(r.correct, text, r.grading);
   }
 
   return (
@@ -611,7 +619,7 @@ function TrueFalse({
   onAnswered,
 }: {
   item: Extract<ExerciseItem, { type: "true_false" }>;
-  onAnswered: (c: boolean, response?: string) => void;
+  onAnswered: Props["onAnswered"];
 }) {
   const [picked, setPicked] = useState<boolean | null>(null);
   const done = picked !== null;
@@ -676,7 +684,7 @@ function ConjugationTable({
   onAnswered,
 }: {
   item: Extract<ExerciseItem, { type: "conjugation_table" }>;
-  onAnswered: (c: boolean, response?: string) => void;
+  onAnswered: Props["onAnswered"];
 }) {
   // values[colIndex][rowIndex]
   const [values, setValues] = useState<Record<string, string>>({});
@@ -699,7 +707,11 @@ function ConjugationTable({
       }),
     );
     setDone(true);
-    onAnswered(all);
+    // "ich: gehe / ging; du: …" — what was typed, row by row.
+    const typed = item.rows
+      .map((row, r) => `${row}: ${item.columns.map((_, c) => values[key(c, r)] ?? "").join(" / ")}`)
+      .join("; ");
+    onAnswered(all, typed);
   }
 
   return (

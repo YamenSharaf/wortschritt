@@ -274,3 +274,20 @@ test("v4 → v5: a saved AI endpoint becomes provider 1 with model entry 1", () 
   assert.deepEqual(db.pragma("foreign_key_check"), []);
   db.close();
 });
+
+test("v7 → v8: attempts keep their rows, with no response and auto grading", () => {
+  const db = legacyDb(dbPath);
+  runMigrations(db, dbPath, migrations.slice(0, 7));
+  runMigrations(db, dbPath);
+
+  const rows = db.prepare("SELECT item_id, correct, response, grading FROM attempts ORDER BY id").all();
+  assert.deepEqual(rows, [
+    { item_id: "p1", correct: 1, response: null, grading: "auto" },
+    { item_id: "p2", correct: 0, response: null, grading: "auto" },
+  ]);
+  const owner = (db.prepare("SELECT id FROM users").get() as { id: number }).id;
+  db.prepare("INSERT INTO vocab_reviews (user_id, word, known) VALUES (?, 'haus', 1)").run(owner);
+  db.exec("DELETE FROM users");
+  assert.equal((db.prepare("SELECT COUNT(*) AS n FROM vocab_reviews").get() as { n: number }).n, 0, "cascades");
+  db.close();
+});

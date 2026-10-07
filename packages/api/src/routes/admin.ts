@@ -5,6 +5,7 @@ import {
   adminSetPasswordBody,
   adminUser,
   registrationStatus as registrationStatusDto,
+  timezoneSetting,
   setRegistrationBody,
   updateUserBody,
 } from "@mdb/shared";
@@ -18,6 +19,7 @@ import {
   updateUser,
 } from "../auth/users";
 import { registrationStatus, setRegistrationOpen } from "../services/registration";
+import { getTimezone, isValidTimezone, setTimezone } from "../services/timezone";
 
 const error = z.object({ error: z.string() });
 const ok = z.object({ ok: z.literal(true) });
@@ -126,5 +128,30 @@ export async function adminRoutes(app: FastifyInstance) {
       },
     },
     async (req) => setRegistrationOpen(req.body.open),
+  );
+
+  // The server-wide time zone days are counted in.
+  r.get(
+    "/api/admin/timezone",
+    { ...base, schema: { tags: ["admin"], response: { 200: timezoneSetting } } },
+    async () => ({ timezone: getTimezone() }),
+  );
+
+  r.put(
+    "/api/admin/timezone",
+    {
+      ...base,
+      schema: {
+        tags: ["admin"],
+        body: timezoneSetting,
+        response: { 200: timezoneSetting, 400: z.object({ error: z.string() }) },
+      },
+    },
+    async (req, reply) => {
+      if (!isValidTimezone(req.body.timezone)) {
+        return reply.code(400).send({ error: `unknown time zone "${req.body.timezone}"` });
+      }
+      return { timezone: setTimezone(req.body.timezone) };
+    },
   );
 }
