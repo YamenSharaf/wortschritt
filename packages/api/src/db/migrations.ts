@@ -463,6 +463,26 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 8,
+    // History: what was answered and how it was judged (older rows: NULL /
+    // 'auto'), and a log of flashcard reviews next to the per-word tally.
+    name: "history",
+    up(db) {
+      addColumn(db, "attempts", "response", "TEXT");
+      addColumn(db, "attempts", "grading", "TEXT NOT NULL DEFAULT 'auto'");
+      db.exec(`
+        CREATE TABLE vocab_reviews (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          word TEXT NOT NULL,
+          known INTEGER NOT NULL,
+          reviewed_at INTEGER NOT NULL DEFAULT (unixepoch())
+        );
+        CREATE INDEX idx_vocab_reviews_user_time ON vocab_reviews(user_id, reviewed_at);
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

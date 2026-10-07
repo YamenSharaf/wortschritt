@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   generateCounts,
+  type AnswerGrading,
   type ExerciseItem,
   type ExerciseProgress,
   type ExerciseRun,
@@ -174,7 +175,7 @@ function Runner({
       .catch(() => {});
   }
 
-  function handleAnswered(correct: boolean, response?: string) {
+  function handleAnswered(correct: boolean, response?: string, grading: AnswerGrading = "auto") {
     if (answered) return;
     answeredAt.current = performance.now();
     setAnswered(true);
@@ -185,7 +186,9 @@ function Runner({
     setResults(nextResults);
     setResponses(nextResponses);
     // Fire-and-forget; a failed save shouldn't block practice.
-    void api.recordAttempt(setId, item.id, correct).catch(() => {});
+    void api
+      .recordAttempt({ setId, itemId: item.id, correct, response, grading })
+      .catch(() => {});
     saveProgress(index, nextResults, nextResponses);
   }
 

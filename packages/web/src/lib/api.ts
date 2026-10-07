@@ -1,5 +1,6 @@
 import type {
   AdminUser,
+  AttemptBody,
   ApiTokenView,
   ImportedItem,
   OAuthGrantView,
@@ -147,6 +148,14 @@ export const api = {
   deleteOAuthGrant: (id: number) =>
     req<OAuthGrantView[]>(`/api/oauth/grants/${id}`, { method: "DELETE" }),
 
+  // admin: server time zone
+  timezone: () => req<{ timezone: string }>("/api/admin/timezone"),
+  setTimezone: (timezone: string) =>
+    req<{ timezone: string }>("/api/admin/timezone", {
+      method: "PUT",
+      body: JSON.stringify({ timezone }),
+    }),
+
   // imported (shared-library) content
   imports: () => req<ImportedItem[]>("/api/imports"),
   deleteImport: (id: string) =>
@@ -181,10 +190,10 @@ export const api = {
 
   // progress
   progress: () => req<ProgressSummary>("/api/progress"),
-  recordAttempt: (setId: string, itemId: string, correct: boolean) =>
+  recordAttempt: (body: AttemptBody) =>
     req<{ ok: true }>("/api/attempts", {
       method: "POST",
-      body: JSON.stringify({ setId, itemId, correct }),
+      body: JSON.stringify(body),
     }),
 
   // activity (per-run history + sheet views)

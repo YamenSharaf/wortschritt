@@ -2,16 +2,26 @@ import { and, eq, sql } from "drizzle-orm";
 import type { AttemptBody, ProgressSummary } from "@mdb/shared";
 import { db, schema } from "../db/client";
 import { getSettings } from "./settings";
+import { getTimezone, startOfDay } from "./timezone";
 
 export function recordAttempt(userId: number, a: AttemptBody): void {
   db.insert(schema.attempts)
-    .values({ userId, setId: a.setId, itemId: a.itemId, correct: a.correct })
+    .values({
+      userId,
+      setId: a.setId,
+      itemId: a.itemId,
+      correct: a.correct,
+      response: a.response ?? null,
+      grading: a.grading,
+    })
     .run();
 }
 
 export function getProgressSummary(userId: number): ProgressSummary {
   const mine = eq(schema.attempts.userId, userId);
-  const startOfToday = Math.floor(new Date().setHours(0, 0, 0, 0) / 1000);
+  const startOfToday = startOfDay(Math.floor(Date.now() / 1000), getTimezone());
+  // Ungraded open answers count as practice today, not towards accuracy.
+  const graded = and(mine, sql`${schema.attempts.grading} != 'ungraded'`);
 
   const totals = db
     .select({
@@ -19,7 +29,7 @@ export function getProgressSummary(userId: number): ProgressSummary {
       correct: sql<number>`sum(case when ${schema.attempts.correct} then 1 else 0 end)`,
     })
     .from(schema.attempts)
-    .where(mine)
+    .where(graded)
     .get();
 
   const today = db
@@ -35,7 +45,7 @@ export function getProgressSummary(userId: number): ProgressSummary {
       correct: sql<number>`sum(case when ${schema.attempts.correct} then 1 else 0 end)`,
     })
     .from(schema.attempts)
-    .where(mine)
+    .where(graded)
     .groupBy(schema.attempts.setId)
     .all();
 

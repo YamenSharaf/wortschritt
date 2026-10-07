@@ -112,8 +112,9 @@ test("initialize: instructions and every tool, with annotations", async () => {
   const names = tools.map((t) => t.name).sort();
   assert.deepEqual(names, [
     "add_words_to_group", "create_note", "create_vocab_group", "delete_content", "delete_note",
-    "delete_vocab", "delete_vocab_group", "get_authoring_guide", "get_cheatsheet", "get_exercise_set",
-    "get_note", "get_progress", "get_vocab", "list_cheatsheets", "list_exercise_sets", "list_notes",
+    "delete_vocab", "delete_vocab_group", "get_activity", "get_authoring_guide", "get_cheatsheet",
+    "get_exercise_set", "get_mistakes", "get_note", "get_progress", "get_set_history", "get_vocab",
+    "list_cheatsheets", "list_exercise_sets", "list_notes",
     "list_vocab", "list_vocab_groups", "remove_word_from_group", "save_cheatsheet", "save_exercise_set",
     "save_vocab", "update_note", "validate_content", "whoami",
   ]);
@@ -246,8 +247,25 @@ test("notes: CRUD, private to the user", async () => {
   assert.deepEqual(await anna.ok("list_notes"), []);
 });
 
-test("progress", async () => {
+test("progress and history", async () => {
   const p = await anna.ok("get_progress");
   assert.equal(p.totalAnswered, 0);
   assert.deepEqual(p.recentRuns, []);
+
+  // Anna gets an item wrong in the web app…
+  const set = await anna.ok("get_exercise_set", { id: "als-oder-wenn" });
+  const item = set.items[0];
+  const cookie = await login("anna", "anna-password");
+  await app.inject({
+    method: "POST", url: "/api/attempts", headers: { cookie, "cf-connecting-ip": `198.51.100.${++ip}` },
+    payload: { setId: set.id, itemId: item.id, correct: false, response: "wenn" },
+  });
+  // …and an agent sees it, with the item to build practice from.
+  const [m] = await anna.ok("get_mistakes");
+  assert.equal(m.itemId, item.id);
+  assert.deepEqual(m.responses, ["wenn"]);
+  assert.deepEqual(m.item, item);
+  assert.deepEqual(await admin.ok("get_mistakes"), [], "private");
+  assert.equal((await anna.ok("get_set_history", { set_id: set.id })).items[0].lastResponse, "wenn");
+  assert.equal((await anna.ok("get_activity")).days[0].answered, 1);
 });

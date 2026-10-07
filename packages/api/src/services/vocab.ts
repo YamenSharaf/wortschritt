@@ -117,6 +117,7 @@ export function getVocab(userId: number, word: string): VocabEntry | null {
 /** Record one flashcard grade for a word; increments the running tally. */
 export function recordStudy(userId: number, word: string, known: boolean): VocabStat {
   const w = key(word);
+  db.insert(schema.vocabReviews).values({ userId, word: w, known }).run();
   db.insert(schema.vocabStats)
     .values({
       userId,
@@ -196,6 +197,9 @@ export function removeVocab(userId: number, word: string): void {
     )
     .run();
   db.delete(schema.vocabStats).where(statKey(userId, word)).run();
+  db.delete(schema.vocabReviews)
+    .where(and(eq(schema.vocabReviews.userId, userId), eq(schema.vocabReviews.word, key(word))))
+    .run();
 }
 
 // --- groups ----------------------------------------------------------------

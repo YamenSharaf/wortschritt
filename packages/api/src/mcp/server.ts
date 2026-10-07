@@ -13,6 +13,7 @@ import {
 import type { AuthUser } from "../auth/users";
 import { builtInIds, loadCheatsheets, loadExerciseSets } from "../content/loader";
 import { latestRunsPerSet } from "../services/activity";
+import { getActivity, getMistakes, getSetHistory } from "../services/history";
 import { deleteImport, listImports, saveImport } from "../services/library";
 import { createNote, getNote, listNotes, removeNote, updateNote } from "../services/notes";
 import { getProgressSummary } from "../services/progress";
@@ -44,7 +45,9 @@ import {
 export const INSTRUCTIONS = `mit-dem-baby is a German-learning app. You act as one signed-in user.
 
 - Shared library (every user sees it): exercise sets and cheat sheets. Some are built in (read-only); the rest were imported by users. You can replace or delete only items you imported — an admin can delete anyone's.
-- Private to this user: vocabulary (with groups), notes and practice progress.
+- Private to this user: vocabulary (with groups), notes and practice progress and history.
+
+Targeted practice: get_mistakes returns the items this user still gets wrong, with what they answered and the item itself — a good basis for a new exercise set on the same weak points.
 
 Writing content: call get_authoring_guide first and follow it exactly — the app validates every set and sheet against its schema and rejects anything malformed. Use validate_content for a dry run, check list_exercise_sets / list_cheatsheets so you don't reuse an id, then save with save_exercise_set or save_cheatsheet. Everything the learner reads is simple German at the set's level.`;
 
@@ -476,6 +479,58 @@ export function createMcpServer(user: AuthUser): McpServer {
       annotations: READ,
     },
     async () => json({ ...getProgressSummary(user.id), recentRuns: latestRunsPerSet(user.id, 20) }),
+  );
+
+  tool(
+    "get_mistakes",
+    {
+      title: "Mistakes",
+      description:
+        "Exercise items this user got wrong, newest first: the item (prompt, accepted answers, explanation), their recent wrong answers, how often, and whether they've since got it right (resolved). By default only unresolved ones. Open answers nobody could grade aren't counted.",
+      inputSchema: {
+        set_id: z.string().min(1).optional().describe("Only this exercise set"),
+        days: z.number().int().min(1).max(3650).optional().describe("Only mistakes from the last N days"),
+        include_resolved: z.boolean().default(false).describe("Also items answered correctly since"),
+        limit: z.number().int().min(1).max(200).default(50),
+      },
+      annotations: READ,
+    },
+    async ({ set_id, days, include_resolved, limit }) =>
+      json(
+        getMistakes(user.id, {
+          setId: set_id,
+          since: days ? Math.floor(Date.now() / 1000) - days * 86400 : undefined,
+          includeResolved: include_resolved,
+          limit,
+        }),
+      ),
+  );
+
+  tool(
+    "get_activity",
+    {
+      title: "Activity timeline",
+      description:
+        "What this user did between two dates (default: the last 7 days; at most 92): per day answers, correct answers, words added and flashcards reviewed, plus events (finished exercise runs, words added, notes created or last edited, sheets last viewed). Dates are YYYY-MM-DD in the server's time zone.",
+      inputSchema: {
+        from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      },
+      annotations: READ,
+    },
+    async ({ from, to }) => json(getActivity(user.id, { from, to })),
+  );
+
+  tool(
+    "get_set_history",
+    {
+      title: "History of one exercise set",
+      description:
+        "Every finished run of one exercise set (score and per-item results, newest first), and per item: attempts, correct answers, the last result and the last answer given.",
+      inputSchema: { set_id: z.string().min(1) },
+      annotations: READ,
+    },
+    async ({ set_id }) => json(getSetHistory(user.id, set_id)),
   );
 
   return server;

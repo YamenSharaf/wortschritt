@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { MIN_PASSWORD_LENGTH, type AdminUser, type RegistrationStatus } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -58,6 +58,8 @@ export function UsersAdmin() {
         </button>
       </section>
 
+      <TimezoneSetting />
+
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Users</h2>
         {error && <p className="text-sm text-red-600">{error}</p>}
@@ -68,6 +70,77 @@ export function UsersAdmin() {
         </ul>
       </section>
     </div>
+  );
+}
+
+/** Every IANA zone the browser knows, plus UTC. */
+function allTimezones(): string[] {
+  const intl = Intl as unknown as { supportedValuesOf?: (key: string) => string[] };
+  const zones = intl.supportedValuesOf?.("timeZone") ?? [];
+  return zones.includes("UTC") ? zones : ["UTC", ...zones];
+}
+
+/** The server-wide time zone: when "today" starts, and the days in history. */
+function TimezoneSetting() {
+  const [timezone, setTimezone] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const zones = useMemo(allTimezones, []);
+  const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  useEffect(() => {
+    api
+      .timezone()
+      .then((r) => setTimezone(r.timezone))
+      .catch(() => setError("Couldn't load the time zone."));
+  }, []);
+
+  async function change(tz: string) {
+    setError(null);
+    setSaved(false);
+    try {
+      setTimezone((await api.setTimezone(tz)).timezone);
+      setSaved(true);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Couldn't save the time zone.");
+    }
+  }
+
+  return (
+    <section className="space-y-2">
+      <h2 className="text-lg font-semibold">Time zone</h2>
+      <p className="text-sm text-slate-500">
+        For everyone on this server: when a new day starts for the daily goal, and how practice
+        history is grouped by day.
+      </p>
+      {timezone && (
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={zones.includes(timezone) ? timezone : ""}
+            onChange={(e) => void change(e.target.value)}
+            className="input max-w-xs"
+          >
+            {!zones.includes(timezone) && <option value="">{timezone}</option>}
+            {zones.map((z) => (
+              <option key={z} value={z}>
+                {z.replace(/_/g, " ")}
+              </option>
+            ))}
+          </select>
+          {timezone !== browserZone && zones.includes(browserZone) && (
+            <button
+              type="button"
+              onClick={() => void change(browserZone)}
+              className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium dark:border-slate-700"
+            >
+              Use mine ({browserZone.replace(/_/g, " ")})
+            </button>
+          )}
+          {saved && <span className="text-sm text-green-600">Saved ✓</span>}
+        </div>
+      )}
+      {error && <p className="text-sm text-red-600">{error}</p>}
+    </section>
   );
 }
 

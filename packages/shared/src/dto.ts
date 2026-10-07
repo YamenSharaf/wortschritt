@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { cefrLevel, cheatsheet, exerciseSet } from "./exercises";
+import { cefrLevel, cheatsheet, exerciseItem, exerciseSet } from "./exercises";
 
 /** Choices offered for "generate N more" (in increments of 5). */
 export const generateCounts = [5, 10, 15, 20] as const;
@@ -84,6 +84,10 @@ export const registrationStatus = z.object({
 });
 export type RegistrationStatus = z.infer<typeof registrationStatus>;
 export const setRegistrationBody = z.object({ open: z.boolean() });
+
+/** The server-wide time zone (IANA name) that "today" and days are counted in. */
+export const timezoneSetting = z.object({ timezone: z.string().min(1).max(64) });
+export type TimezoneSetting = z.infer<typeof timezoneSetting>;
 
 export const adminUser = z.object({
   id: z.number(),
@@ -207,10 +211,21 @@ export const meResponse = z.object({
 });
 
 /** Record the result of answering one item. */
+/**
+ * How an answer was judged: `auto` by the app's own checks, `ai` by the
+ * learner's AI tutor, `self` by the learner (flashcards), `ungraded` = an open
+ * answer nobody could judge (doesn't count towards accuracy).
+ */
+export const answerGrading = z.enum(["auto", "ai", "self", "ungraded"]);
+export type AnswerGrading = z.infer<typeof answerGrading>;
+
 export const attemptBody = z.object({
   setId: z.string().min(1),
   itemId: z.string().min(1),
   correct: z.boolean(),
+  /** What the learner typed or chose. */
+  response: z.string().max(2000).optional(),
+  grading: answerGrading.default("auto"),
 });
 export type AttemptBody = z.infer<typeof attemptBody>;
 
@@ -480,3 +495,65 @@ export const oauthGrantView = z.object({
   lastUsedAt: z.number().int().nullable(),
 });
 export type OAuthGrantView = z.infer<typeof oauthGrantView>;
+
+// --- history ---------------------------------------------------------------
+
+/** An item the learner got wrong, with what they answered. */
+export const mistake = z.object({
+  setId: z.string(),
+  setTitle: z.string().nullable(),
+  itemId: z.string(),
+  /** The item as it is now (null if it was removed from the set). */
+  item: exerciseItem.nullable(),
+  wrongCount: z.number().int(),
+  lastWrongAt: z.number().int(),
+  /** Their most recent wrong answers, newest first (up to 3). */
+  responses: z.array(z.string()),
+  /** The latest attempt at this item was correct. */
+  resolved: z.boolean(),
+});
+export type Mistake = z.infer<typeof mistake>;
+
+export const activityEvent = z.object({
+  at: z.number().int(),
+  kind: z.enum(["run", "word_added", "note_created", "note_edited", "sheet_viewed"]),
+  /** Set, word, note or sheet id. */
+  ref: z.string(),
+  title: z.string(),
+  /** For runs: "8/10". */
+  detail: z.string().optional(),
+});
+export type ActivityEvent = z.infer<typeof activityEvent>;
+
+export const activityDay = z.object({
+  /** YYYY-MM-DD in the server time zone. */
+  date: z.string(),
+  answered: z.number().int(),
+  correct: z.number().int(),
+  wordsAdded: z.number().int(),
+  wordsReviewed: z.number().int(),
+});
+export type ActivityDay = z.infer<typeof activityDay>;
+
+export const activityView = z.object({
+  timezone: z.string(),
+  days: z.array(activityDay),
+  events: z.array(activityEvent),
+});
+export type ActivityView = z.infer<typeof activityView>;
+
+export const setHistory = z.object({
+  setId: z.string(),
+  setTitle: z.string().nullable(),
+  runs: z.array(exerciseRun.extend({ id: z.number().int() })),
+  items: z.array(
+    z.object({
+      itemId: z.string(),
+      attempts: z.number().int(),
+      correct: z.number().int(),
+      lastResult: z.boolean().nullable(),
+      lastResponse: z.string().nullable(),
+    }),
+  ),
+});
+export type SetHistory = z.infer<typeof setHistory>;
