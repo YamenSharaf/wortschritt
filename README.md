@@ -1,4 +1,6 @@
-# mit dem baby 🍼
+# Wortschritt
+
+<img src="brand/wortschritt-icon-rounded.svg" alt="" width="96" />
 
 A self-hosted German learning app for a few people. Cheat sheets (non-interactive
 reference) + exercises (interactive drills), with a clean separation between

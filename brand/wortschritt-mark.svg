@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="106 112 300 300">
+<style>.a{stop-color:#2B6CB0}.b{stop-color:#5AA9F5}@media (prefers-color-scheme:dark){.a{stop-color:#4C8FD6}.b{stop-color:#9CCBFF}}</style>
+<defs><linearGradient id="steps" gradientUnits="userSpaceOnUse" x1="124" y1="404" x2="388" y2="184"><stop offset="0" class="a"/><stop offset="1" class="b"/></linearGradient><linearGradient id="dots" gradientUnits="userSpaceOnUse" x1="140" y1="320" x2="372" y2="120"><stop offset="0" stop-color="#FFD95A"/><stop offset="0.5" stop-color="#FF8A65"/><stop offset="1" stop-color="#F0508C"/></linearGradient></defs>
+<path fill="url(#steps)" d="M124 404 L124 324 L212 324 L212 254 L300 254 L300 184 L388 184 L388 404 Z"/>
+<g fill="url(#dots)"><circle cx="168" cy="288" r="27"/><circle cx="256" cy="218" r="27"/><circle cx="344" cy="148" r="27"/></g>
+</svg>
