@@ -123,7 +123,7 @@ function Section({
           </button>
         )}
       </div>
-      <TapToTranslate className="md font-content text-sm">
+      <TapToTranslate className="md font-content text-sm" lang="de">
         <Markdown options={mdOptions}>{body}</Markdown>
       </TapToTranslate>
       {(busy || text || error) && (
