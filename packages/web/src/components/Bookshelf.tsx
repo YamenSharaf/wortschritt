@@ -1,10 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { SeriesSummary } from "@mdb/shared";
 import { Cover } from "./Cover";
 
 /**
- * The learner's books: face-out covers on wooden shelves, or a list. The
+ * The learner's books: a grid of covers, or a list. The
  * choice is remembered on this device.
  */
 type View = "covers" | "list";
@@ -18,22 +18,8 @@ function loadView(): View {
   }
 }
 
-const GAP = 12;
-const PAD = 12;
-
 export function Bookshelf({ books }: { books: SeriesSummary[] }) {
   const [view, setView] = useState<View>(loadView);
-  const ref = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(0);
-
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    setWidth(el.clientWidth);
-    const ro = new ResizeObserver(() => setWidth(el.clientWidth));
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
   useEffect(() => {
     try {
       localStorage.setItem(VIEW_KEY, view);
@@ -41,9 +27,6 @@ export function Bookshelf({ books }: { books: SeriesSummary[] }) {
       /* private mode: just not remembered */
     }
   }, [view]);
-
-  const inner = Math.max(0, width - PAD * 2);
-  const rows = width && view === "covers" ? coverRows(books, inner) : [];
 
   return (
     <section className="mb-6">
@@ -63,48 +46,21 @@ export function Bookshelf({ books }: { books: SeriesSummary[] }) {
           ))}
         </div>
       </div>
-      <div ref={ref} className={view === "covers" ? "space-y-6" : "grid gap-3 sm:grid-cols-2"}>
-        {view === "covers"
-          ? rows.map((row, i) => (
-              <Shelf key={i}>
-                {row.items.map((b) => (
-                  <FaceOut key={b.id} book={b} width={row.bookWidth} />
-                ))}
-              </Shelf>
-            ))
-          : books.map((b) => <ListItem key={b.id} book={b} />)}
-      </div>
+      {view === "covers" ? (
+        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5">
+          {books.map((b) => (
+            <FaceOut key={b.id} book={b} />
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {books.map((b) => (
+            <ListItem key={b.id} book={b} />
+          ))}
+        </div>
+      )}
     </section>
   );
-}
-
-/** A plank with books standing on it. */
-function Shelf({ children }: { children: ReactNode }) {
-  return (
-    <div>
-      <div className="flex items-end gap-3 px-3" style={{ minHeight: 40 }}>
-        {children}
-      </div>
-      <div
-        className="relative h-3.5 rounded-sm"
-        style={{
-          background: "linear-gradient(#c08a5a, #9a6a40 55%, #7d5332)",
-          boxShadow: "0 8px 12px -6px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.25)",
-        }}
-        aria-hidden
-      />
-    </div>
-  );
-}
-
-type CoverRow = { items: SeriesSummary[]; bookWidth: number };
-
-function coverRows(books: SeriesSummary[], inner: number): CoverRow[] {
-  const perRow = Math.max(2, Math.min(6, Math.floor((inner + GAP) / (100 + GAP))));
-  const bookWidth = Math.min(160, (inner - GAP * (perRow - 1)) / perRow);
-  const rows: CoverRow[] = [];
-  for (let i = 0; i < books.length; i += perRow) rows.push({ items: books.slice(i, i + perRow), bookWidth });
-  return rows;
 }
 
 const label = (b: SeriesSummary) =>
@@ -129,9 +85,9 @@ function Marker({ book }: { book: SeriesSummary }) {
   );
 }
 
-function FaceOut({ book, width }: { book: SeriesSummary; width: number }) {
+function FaceOut({ book }: { book: SeriesSummary }) {
   return (
-    <Link to={`/series/${book.id}`} aria-label={label(book)} title={label(book)} className="group relative shrink-0" style={{ width }}>
+    <Link to={`/series/${book.id}`} aria-label={label(book)} title={label(book)} className="group relative block min-w-0">
       <Marker book={book} />
       <div className="relative transition-transform duration-200 group-hover:-translate-y-1">
         <Cover
@@ -139,18 +95,7 @@ function FaceOut({ book, width }: { book: SeriesSummary; width: number }) {
           id={book.id}
           version={book.cover}
           fallbackKey={`${book.title}-${book.subtitle ?? ""}-${book.level}`}
-          className="block w-full !rounded-none !rounded-r-[3px] shadow-[2px_3px_6px_rgba(0,0,0,.35)]"
-        />
-        {/* The spine's crease and the page edge, for a bit of depth. */}
-        <span
-          className="pointer-events-none absolute inset-y-0 left-0 w-[8%]"
-          style={{ background: "linear-gradient(90deg, rgba(0,0,0,.35), rgba(255,255,255,.18) 45%, rgba(0,0,0,.08) 70%, transparent)" }}
-          aria-hidden
-        />
-        <span
-          className="pointer-events-none absolute -right-[3px] bottom-[3px] top-[3px] w-[3px] rounded-r-sm"
-          style={{ background: "repeating-linear-gradient(#f8f3e6 0 1px, #ddd3bd 1px 2px)" }}
-          aria-hidden
+          className="block w-full !rounded-[3px] !ring-0 !shadow-[0_2px_10px_rgba(0,0,0,.14)] transition-shadow group-hover:!shadow-[0_6px_18px_rgba(0,0,0,.2)]"
         />
       </div>
     </Link>
