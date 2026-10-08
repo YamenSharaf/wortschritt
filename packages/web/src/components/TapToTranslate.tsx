@@ -10,9 +10,12 @@ import { wordAtPoint } from "../lib/wordAtPoint";
 export function TapToTranslate({
   children,
   className,
+  lang,
 }: {
   children: ReactNode;
   className?: string;
+  /** Language of the content, e.g. "de". */
+  lang?: string;
 }) {
   const { canTap, openWord } = useVocab();
 
@@ -28,7 +31,7 @@ export function TapToTranslate({
   }
 
   return (
-    <div className={className} onClick={onClick}>
+    <div className={className} lang={lang} onClick={onClick}>
       {children}
     </div>
   );

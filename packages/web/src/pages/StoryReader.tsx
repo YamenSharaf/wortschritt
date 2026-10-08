@@ -354,7 +354,7 @@ export function StoryReader() {
         </p>
       )}
 
-      <article className="reader rounded-2xl px-5 py-8 sm:px-10" data-theme={reader.theme}>
+      <article className="reader rounded-2xl px-5 py-8 sm:px-10" data-theme={reader.theme} lang="de">
         <div
           className="mx-auto"
           style={{
@@ -366,8 +366,8 @@ export function StoryReader() {
         >
           <header className="mb-6">
             <h1 className="text-[1.6em] font-semibold leading-tight">{story.title}</h1>
-            {story.subtitle && <p className="reader-muted mt-1 text-[0.8em]">{story.subtitle}</p>}
-            <p className="reader-muted mt-2 font-sans text-xs">
+            {story.subtitle && <p className="reader-muted mt-1 text-[0.8em]" lang="en">{story.subtitle}</p>}
+            <p className="reader-muted mt-2 font-sans text-xs" lang="en">
               {story.level} · {minutes(wordTotal)} min · {wordTotal} words
               {view.readAt ? " · read ✓" : ""}
             </p>
@@ -419,7 +419,7 @@ export function StoryReader() {
             </div>
           </TapToTranslate>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3 border-t pt-5 font-sans text-sm reader-rule">
+          <div className="mt-8 flex flex-wrap items-center gap-3 border-t pt-5 font-sans text-sm reader-rule" lang="en">
             {view.readAt ? (
               <>
                 <span className="text-green-600 dark:text-green-400">You've read this ✓</span>
@@ -460,12 +460,12 @@ export function StoryReader() {
 function Glossary({ entries }: { entries: Story["glossary"] }) {
   return (
     <details className="reader-rule mb-6 rounded-xl border px-4 py-2 font-sans text-sm">
-      <summary className="cursor-pointer select-none py-1 font-medium">Glossary ({entries.length})</summary>
+      <summary className="cursor-pointer select-none py-1 font-medium" lang="en">Glossary ({entries.length})</summary>
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 pb-2 pt-1">
         {entries.map((g) => (
           <div key={g.term} className="contents">
             <dt className="font-semibold">{g.term}</dt>
-            <dd className="reader-muted">{g.meaning}</dd>
+            <dd className="reader-muted" lang="en">{g.meaning}</dd>
           </div>
         ))}
       </dl>
@@ -649,6 +649,7 @@ function TranslatedBlock({
       <span
         data-translation
         data-no-tap
+        lang="en"
         role={hidden ? "button" : undefined}
         tabIndex={hidden ? 0 : undefined}
         aria-label={hidden ? "Show the English" : undefined}
