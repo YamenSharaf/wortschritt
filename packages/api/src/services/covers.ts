@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { Resvg } from "@resvg/resvg-js";
-import { fallbackCover } from "@mdb/shared";
+import { fallbackCover, type Series } from "@mdb/shared";
 import { db, schema } from "../db/client";
 
 /**
@@ -62,11 +62,12 @@ export function coverFor(
     .get();
   if (!row) return null;
   if (row.cover) return { svg: row.cover, generated: false };
-  return {
-    svg: fallbackCover({ seed: id, title: row.data.title, subtitle: row.data.subtitle, level: row.data.level }),
-    generated: true,
-  };
+  return { svg: seriesFallbackCover(id, row.data), generated: true };
 }
+
+/** The cover a series without art gets. */
+export const seriesFallbackCover = (id: string, s: Series) =>
+  fallbackCover({ seed: id, title: s.title, subtitle: s.subtitle, level: s.level });
 
 const GENERIC: Record<string, string> = {
   serif: "DejaVu Serif",

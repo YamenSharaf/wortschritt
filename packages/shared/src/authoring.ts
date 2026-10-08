@@ -256,24 +256,40 @@ Chapter rules: each chapter is readable in one sitting (about 300–700 words at
 
 /** How to draw cover art (for agents: get_authoring_guide kind "cover"). */
 export function buildCoverGuide(): string {
-  return `Cover art for a story, a chapter or a series is one small SVG, set with set_cover (kind "story" for a story or a chapter — a chapter's id is "<series id>-01" — or "series" for the book). Without one, the app shows a plain generated cover with the title.
+  return `Cover art for a story, a chapter or a series is one SVG illustration, set with set_cover (kind "story" for a story or a chapter — a chapter's id is "<series id>-01" — or "series" for the book). Without one, the app shows a simple generated cover. The book stands face-out on the learner's bookshelf, so make it look like a real, appealing paperback.
 
-Style: minimal black-and-white art, like a modern paperback — one strong image (an object, a silhouette, a place from the story), lots of white space, at most a few shapes. Black (#111) on white (#fff), with greys only for depth. Use the book's title in the art for a series (and a chapter's title, or "Kapitel N", for a chapter), in German, set large and clean.
+Style: a warm hand-drawn comic illustration, like a newspaper comic strip or a children's book — thick, slightly wobbly black ink outlines (stroke "#1d1a17", width 4–6, round joins and caps), flat colours with a watercolour feel, a limited palette of 4–6 colours that fits the story's mood, and paper grain over everything. One clear scene that makes you curious about the story: the main character(s), a key object, a recognisable place. Give characters personality with simple means: a pose, a big expression, a funny detail. Leave a calm area for the title.
+- Series cover: the book's title in large lettering (the main word or two very big), plus the level ("A1") in a small badge. Chapter cover: the chapter's title and "Kapitel N", showing that chapter's key moment; keep the book's palette and characters so the chapters look like one set.
+- Spine colour: add data-spine="#rrggbb" to the <svg> with the book's main colour (used for its spine on the shelf).
 
 Rules (the app checks them and rejects anything else):
-- One <svg xmlns="http://www.w3.org/2000/svg" viewBox="${COVER_VIEWBOX}" width="600" height="900">…</svg> — portrait 2:3. Start with a white <rect width="600" height="900" fill="#fff"/>.
-- Elements: svg, g, defs, path, rect, circle, ellipse, line, polyline, polygon, text, tspan, title, desc, linearGradient, radialGradient, stop, clipPath, mask, pattern, use, symbol. No <style>, <image>, <script>, <foreignObject>, links or animation.
-- Presentation attributes only (fill, stroke, stroke-width, font-size, …); href and url() may only point inside the SVG ("#id"). No event attributes.
-- Fonts: font-family "serif" or "sans-serif" only (other fonts won't be there when the cover is rendered for an EPUB). Keep text inside the canvas with at least 40px margin; wrap long titles yourself into several <text> lines.
-- At most ${COVER_MAX_BYTES / 1000} kB; a good cover is usually 1–5 kB.
+- One <svg xmlns="http://www.w3.org/2000/svg" viewBox="${COVER_VIEWBOX}" width="600" height="900">…</svg> — portrait 2:3.
+- Elements: svg, g, defs, path, rect, circle, ellipse, line, polyline, polygon, text, tspan, title, desc, linearGradient, radialGradient, stop, clipPath, mask, pattern, use, symbol, and filters (filter, feTurbulence, feDisplacementMap, feGaussianBlur, feColorMatrix, feComposite, feBlend, feOffset, feFlood, feMerge, feMorphology, feComponentTransfer, feDropShadow, lighting). No <style>, <image>, feImage, <script>, <foreignObject>, links or animation.
+- Presentation attributes only (fill, stroke, stroke-width, font-size, filter, opacity, …); href and url() may only point inside the SVG ("#id"). No event attributes.
+- Fonts: font-family "serif" or "sans-serif" only (other fonts won't be there when the cover is rendered for an EPUB). Keep text at least 40px from the edges; wrap long titles into several <text> lines yourself.
+- Filters displace edges inward: draw filtered backgrounds 30px beyond the canvas (e.g. x="-30" y="-30" width="660") so no blank strips show.
+- At most ${COVER_MAX_BYTES / 1000} kB; a rich cover is usually 5–15 kB.
 
-Example (a series cover):
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="${COVER_VIEWBOX}" width="600" height="900">
-<rect width="600" height="900" fill="#fff"/>
-<circle cx="300" cy="330" r="150" fill="none" stroke="#111" stroke-width="4"/>
-<path d="M210 420 L300 230 L390 420 Z" fill="#111"/>
-<text x="300" y="640" text-anchor="middle" font-family="serif" font-size="54" font-weight="bold" fill="#111">Der Weg</text>
-<text x="300" y="700" text-anchor="middle" font-family="serif" font-size="54" font-weight="bold" fill="#111">nach Hause</text>
-<text x="300" y="840" text-anchor="middle" font-family="sans-serif" font-size="20" letter-spacing="3" fill="#111">A2</text>
-</svg>`;
+Useful filters (put them in <defs>):
+<filter id="ink" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3.5" xChannelSelector="R" yChannelSelector="G"/></filter>  — hand-drawn wobble for outlined groups and lettering.
+<filter id="wash" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="8" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G"/></filter>  — soft watercolour edges for sky, water, big colour areas.
+<filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="5" result="g"/><feColorMatrix in="g" type="matrix" values="0 0 0 0 0.35  0 0 0 0 0.28  0 0 0 0 0.2  0 0 0 0.16 0"/></filter>  — as the last element: <rect width="600" height="900" filter="url(#grain)"/>.
+
+Example (shortened; a series cover):
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="${COVER_VIEWBOX}" width="600" height="900" data-spine="#3f8f4a">
+<defs><filter id="ink" …/><filter id="wash" …/><filter id="grain" …/>
+<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7e3b5"/><stop offset="1" stop-color="#f1b77e"/></linearGradient></defs>
+<rect width="600" height="900" fill="#f4ead5"/>
+<rect x="-30" y="-30" width="660" height="630" fill="url(#sky)" filter="url(#wash)"/>
+<g filter="url(#ink)" stroke="#1d1a17" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+  <circle cx="175" cy="745" r="82" fill="none"/><circle cx="430" cy="745" r="82" fill="none"/>
+  <path d="M175 745 L270 640 L395 640 L430 745 M270 640 L300 745 L175 745 M300 745 L395 640" fill="none" stroke="#3f8f4a" stroke-width="11"/>
+  …
+</g>
+<g filter="url(#ink)"><text x="300" y="150" text-anchor="middle" font-family="serif" font-size="112" font-weight="bold" fill="#1d1a17">Pablo</text>
+<text x="300" y="212" text-anchor="middle" font-family="serif" font-size="38" font-style="italic" fill="#1d1a17">und die Karte von</text></g>
+<rect width="600" height="900" filter="url(#grain)"/>
+</svg>
+
+set_cover reports every rule a cover breaks; fix them and call it again.`;
 }
