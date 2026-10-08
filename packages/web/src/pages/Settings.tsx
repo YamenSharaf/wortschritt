@@ -208,7 +208,13 @@ function Preferences() {
   );
 }
 
-/** Choose the pronunciation voice (device TTS or a downloaded Piper voice). */
+const PROVIDER_LABEL = {
+  azure: "Natural voices (Azure)",
+  edge: "Natural voices (Edge, unofficial)",
+  piper: "Piper voices (this server)",
+} as const;
+
+/** Choose the voice: the device's own, or a server voice (Azure, Edge or Piper). */
 function PronunciationSetting({
   value,
   onChange,
@@ -257,11 +263,22 @@ function PronunciationSetting({
       >
         <option value="">Device voice (this browser)</option>
         {available &&
-          TTS_VOICE_CATALOG.filter((v) => installed.includes(v.id)).map((v) => (
-            <option key={v.id} value={v.id}>
-              {v.label}
-            </option>
-          ))}
+          (["azure", "edge", "piper"] as const).map((provider) => {
+            const list = (status.status === "ready" ? status.data.voices : []).filter(
+              (v) => v.provider === provider && installed.includes(v.id),
+            );
+            if (!list.length) return null;
+            return (
+              <optgroup key={provider} label={PROVIDER_LABEL[provider]}>
+                {list.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.label.replace(/ · (Azure|Edge)$/, "")}
+                  </option>
+                ))}
+              </optgroup>
+            );
+          })}
+        {value && !installed.includes(value) && <option value={value}>{value} (not available now)</option>}
       </select>
 
       {value === "" && <DeviceVoicePicker />}
@@ -276,8 +293,8 @@ function PronunciationSetting({
         </button>
         {!available && (
           <p className="text-xs text-slate-400">
-            Higher-quality German voices need the optional Piper TTS sidecar
-            (set <code>TTS_URL</code>).
+            Natural German voices can be set up by the admin (Settings → Users → Read-aloud
+            voices), or with the optional Piper TTS sidecar (<code>TTS_URL</code>).
           </p>
         )}
         {/* Downloads write to the server for everyone: admin only. */}

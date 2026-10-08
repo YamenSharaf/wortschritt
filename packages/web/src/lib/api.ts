@@ -1,5 +1,6 @@
 import type {
   AdminUser,
+  TtsAdminSettings,
   AttemptBody,
   ApiTokenView,
   ImportedItem,
@@ -231,6 +232,11 @@ export const api = {
   adminDeleteUser: (id: number) =>
     req<{ ok: true }>(`/api/admin/users/${id}`, { method: "DELETE" }),
   adminRegistration: () => req<RegistrationStatus>("/api/admin/registration"),
+  adminTts: () => req<TtsAdminSettings>("/api/admin/tts"),
+  adminSetTts: (body: { azure?: { region: string; key?: string } | null; edge?: boolean }) =>
+    req<TtsAdminSettings>("/api/admin/tts", { method: "PUT", body: JSON.stringify(body) }),
+  adminTestTts: (voice: string) =>
+    req<{ ok: true; bytes: number }>("/api/admin/tts/test", { method: "POST", body: JSON.stringify({ voice }) }),
   adminSetRegistration: (open: boolean) =>
     req<RegistrationStatus>("/api/admin/registration", {
       method: "PUT",

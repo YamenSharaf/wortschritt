@@ -4,37 +4,43 @@ import { dirname, join, resolve } from "node:path";
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { TTS_VOICE_CATALOG, TTS_VOICE_IDS, ttsStatus } from "@mdb/shared";
+import { TTS_VOICE_CATALOG, TTS_VOICE_IDS, ttsAdminBody, ttsAdminSettings as ttsAdminDto, ttsStatus, ttsTestBody } from "@mdb/shared";
 import { requireAdmin, requireAuth } from "../auth/session";
-import { env, isTtsEnabled } from "../env";
+import { env } from "../env";
+import {
+  piperBase as base,
+  piperVoices as installedVoices,
+  synthesize,
+  TtsConfigError,
+  ttsAdminSettings,
+  TtsUnavailable,
+  updateTtsSettings,
+  usableVoices,
+} from "../tts/providers";
 
-const base = env.TTS_URL ? env.TTS_URL.replace(/\/$/, "") : null;
 // Cache synthesized clips on the app's own data volume (no sharing needed).
 const cacheDir = join(dirname(resolve(env.DATABASE_PATH)), "tts-cache");
 
-/** Ask Piper which voices it has (GET /voices → { "<id>": {config}, … }). */
-async function installedVoices(): Promise<string[]> {
-  if (!base) return [];
-  try {
-    const res = await fetch(`${base}/voices`);
-    if (!res.ok) return [];
-    const json = (await res.json()) as unknown;
-    if (Array.isArray(json)) {
-      return json
-        .map((v) =>
-          typeof v === "string" ? v : ((v as { key?: string })?.key ?? ""),
-        )
-        .filter(Boolean);
-    }
-    if (json && typeof json === "object") return Object.keys(json);
-    return [];
-  } catch {
-    return [];
+/** A cached clip for this voice and text, or a fresh one (then cached). */
+async function clip(text: string, voice: string): Promise<{ audio: Buffer; type: string }> {
+  const key = createHash("sha256").update(`${voice}\n${text}`).digest("hex");
+  for (const [ext, type] of [["wav", "audio/wav"], ["mp3", "audio/mpeg"]] as const) {
+    const file = join(cacheDir, `${key}.${ext}`);
+    if (existsSync(file)) return { audio: readFileSync(file), type };
   }
+  const out = await synthesize(text, voice);
+  try {
+    if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
+    writeFileSync(join(cacheDir, `${key}.${out.ext}`), out.audio);
+  } catch {
+    /* caching is best-effort */
+  }
+  return out;
 }
 
 export async function ttsRoutes(app: FastifyInstance) {
   const r = app.withTypeProvider<ZodTypeProvider>();
+  const failure = z.object({ error: z.string() });
 
   r.get(
     "/api/tts/status",
@@ -42,15 +48,19 @@ export async function ttsRoutes(app: FastifyInstance) {
       preHandler: requireAuth,
       schema: { tags: ["tts"], response: { 200: ttsStatus } },
     },
-    async () => ({
-      available: isTtsEnabled,
-      installed: await installedVoices(),
-      catalog: TTS_VOICE_CATALOG.map((v) => ({ id: v.id, label: v.label })),
-    }),
+    async () => {
+      const voices = await usableVoices();
+      return {
+        available: voices.length > 0,
+        installed: voices.map((v) => v.id),
+        catalog: TTS_VOICE_CATALOG.map((v) => ({ id: v.id, label: v.label })),
+        voices,
+      };
+    },
   );
 
   // Synthesize (or serve a cached clip). GET so an <audio> element can play it
-  // directly; the session cookie authenticates the request.
+  // directly; the session cookie (or the app's bearer token) authenticates it.
   r.get(
     "/api/tts",
     {
@@ -59,48 +69,55 @@ export async function ttsRoutes(app: FastifyInstance) {
         tags: ["tts"],
         querystring: z.object({
           text: z.string().min(1).max(500),
-          voice: z.string().min(1),
+          voice: z.string().min(1).max(100),
         }),
       },
     },
     async (req, reply) => {
-      if (!base) return reply.code(503).send({ error: "tts not configured" });
       const { text, voice } = req.query;
-
-      const key = createHash("sha256").update(`${voice}\n${text}`).digest("hex");
-      const file = join(cacheDir, `${key}.wav`);
-      if (existsSync(file)) {
-        return reply
-          .type("audio/wav")
-          .header("cache-control", "public, max-age=31536000, immutable")
-          .send(readFileSync(file));
-      }
-
       try {
-        const upstream = await fetch(`${base}/synthesize`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ text, voice }),
-        });
-        if (!upstream.ok) {
-          const detail = await upstream.text().catch(() => "");
-          app.log.error({ status: upstream.status, detail }, "tts upstream error");
-          return reply.code(502).send({ error: "synthesis failed" });
-        }
-        const buf = Buffer.from(await upstream.arrayBuffer());
-        try {
-          if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
-          writeFileSync(file, buf);
-        } catch {
-          /* caching is best-effort */
-        }
-        return reply
-          .type("audio/wav")
-          .header("cache-control", "public, max-age=31536000, immutable")
-          .send(buf);
+        const { audio, type } = await clip(text, voice);
+        return reply.type(type).header("cache-control", "public, max-age=31536000, immutable").send(audio);
       } catch (err) {
-        app.log.error(err, "tts request failed");
+        if (err instanceof TtsUnavailable) return reply.code(503).send({ error: err.message });
+        app.log.error(err, "tts synthesis failed");
         return reply.code(502).send({ error: "synthesis failed" });
+      }
+    },
+  );
+
+  // Read-aloud providers (admin): Azure key + region, Edge on/off.
+  r.get(
+    "/api/admin/tts",
+    { preHandler: requireAdmin, schema: { tags: ["admin"], response: { 200: ttsAdminDto } } },
+    async () => ttsAdminSettings(),
+  );
+  r.put(
+    "/api/admin/tts",
+    { preHandler: requireAdmin, schema: { tags: ["admin"], body: ttsAdminBody, response: { 200: ttsAdminDto, 400: failure } } },
+    async (req, reply) => {
+      try {
+        updateTtsSettings(req.body);
+      } catch (err) {
+        if (err instanceof TtsConfigError) return reply.code(400).send({ error: err.message });
+        throw err;
+      }
+      return ttsAdminSettings();
+    },
+  );
+  // Try a voice end to end (uncached), reporting the provider's error.
+  r.post(
+    "/api/admin/tts/test",
+    {
+      preHandler: requireAdmin,
+      schema: { tags: ["admin"], body: ttsTestBody, response: { 200: z.object({ ok: z.literal(true), bytes: z.number() }), 400: failure } },
+    },
+    async (req, reply) => {
+      try {
+        const { audio } = await synthesize("Guten Tag! Ich lerne Deutsch.", req.body.voice);
+        return { ok: true as const, bytes: audio.length };
+      } catch (err) {
+        return reply.code(400).send({ error: err instanceof Error ? err.message : "failed" });
       }
     },
   );
