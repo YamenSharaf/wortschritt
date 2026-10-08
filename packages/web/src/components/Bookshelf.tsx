@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { SeriesSummary } from "@mdb/shared";
 import { Cover } from "./Cover";
+import { TabPills } from "./TabPills";
 
 /**
  * The learner's books: a grid of covers, or a list. The
@@ -32,19 +33,16 @@ export function Bookshelf({ books }: { books: SeriesSummary[] }) {
     <section className="mb-6">
       <div className="mb-2 flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Books</h2>
-        <div className="flex rounded-lg border border-slate-300 p-0.5 text-xs dark:border-slate-700" role="group" aria-label="Shelf view">
-          {(["covers", "list"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setView(v)}
-              aria-pressed={view === v}
-              className={`rounded-md px-2.5 py-1 capitalize ${view === v ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900" : "text-slate-500"}`}
-            >
-              {v}
-            </button>
-          ))}
-        </div>
+        <TabPills
+          size="sm"
+          label="Shelf view"
+          value={view}
+          onChange={setView}
+          options={[
+            { value: "covers", label: "Covers" },
+            { value: "list", label: "List" },
+          ]}
+        />
       </div>
       {view === "covers" ? (
         <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5">

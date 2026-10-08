@@ -49,6 +49,14 @@ html {
   --shadow-card: 0 1px 2px #0f14200d, 0 2px 8px #0f142008;
   --shadow-card-hover: 0 2px 4px #0f142010, 0 8px 24px #0f14200f;
   --shadow-pop: 0 12px 32px #0f14201f, 0 2px 6px #0f142012;
+  /* Floating header bar and tab pills (Raycast-style lit surfaces). */
+  --bar-from: #ffffffbf;
+  --bar-to: #ffffffe6;
+  --bar-highlight: #ffffff;
+  --tabs-track: #eef1f6;
+  --tabs-active-from: #ffffff;
+  --tabs-active-to: #f3f5f9;
+  --tabs-active-border: #d9dee7;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -79,6 +87,13 @@ html {
     --shadow-card: inset 0 1px 0 #ffffff0f, 0 1px 2px #00000066;
     --shadow-card-hover: inset 0 1px 0 #ffffff17, 0 8px 24px #00000080;
     --shadow-pop: inset 0 1px 0 #ffffff17, 0 16px 40px #000000a6;
+    --bar-from: #121520bf;
+    --bar-to: #0c0e13e6;
+    --bar-highlight: #ffffff26;
+    --tabs-track: #0f1218;
+    --tabs-active-from: #4b5262;
+    --tabs-active-to: #1a1d25;
+    --tabs-active-border: #ffffff1a;
   }
 }
 
@@ -92,6 +107,49 @@ body {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
+
+/* Floating header bar: a rounded, translucent card inset from the page edges. */
+.ws-bar {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: linear-gradient(137deg, var(--bar-from) 4.87%, var(--bar-to) 75.88%);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 1px var(--bar-highlight), var(--shadow-card);
+}
+
+/* Tab pills: a rounded track; the active pill is lit from above. */
+.ws-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--tabs-track);
+  box-shadow: inset 0 1px 0 var(--highlight);
+}
+.ws-tab {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  color: var(--ink-muted);
+  transition: color 150ms ease-out, background 150ms ease-out;
+}
+.ws-tab:hover { color: var(--ink); }
+.ws-tab[aria-pressed="true"],
+.ws-tab[aria-selected="true"] {
+  color: var(--ink);
+  background: radial-gradient(51.07% 92.4% at 51% 7.61%, var(--tabs-active-from) 0%, var(--tabs-active-to) 100%) padding-box;
+  border-color: var(--tabs-active-border);
+  box-shadow: var(--shadow-card);
+}
+.ws-tabs--sm .ws-tab { padding: 3px 11px; font-size: 13px; line-height: 18px; }
 
 /* Answer feedback animations */
 @keyframes mdb-correct {

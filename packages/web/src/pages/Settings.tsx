@@ -19,6 +19,7 @@ import {
   speak,
 } from "../lib/tts";
 import { ImportPage } from "./Import";
+import { TabPills } from "../components/TabPills";
 import { AiSettings } from "./AiSettings";
 import { UsersAdmin } from "./UsersAdmin";
 
@@ -27,33 +28,18 @@ export function SettingsPage() {
   const [tab, setTab] = useState<"preferences" | "account" | "ai" | "users" | "import">(
     "preferences",
   );
-  const tabBtn = (active: boolean) =>
-    `rounded-lg px-3 py-1.5 text-sm font-medium ${
-      active
-        ? "bg-accent text-accent-foreground"
-        : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-    }`;
+  const tabs = [
+    { value: "preferences", label: "Preferences" },
+    { value: "account", label: "Account" },
+    { value: "ai", label: "AI tutor" },
+    ...(user?.role === "admin" ? [{ value: "users", label: "Users" } as const] : []),
+    { value: "import", label: "Import content" },
+  ] as const;
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold">Settings</h1>
-      <div className="mb-6 inline-flex flex-wrap gap-1 rounded-xl border border-slate-200 p-1 dark:border-slate-800">
-        <button type="button" className={tabBtn(tab === "preferences")} onClick={() => setTab("preferences")}>
-          Preferences
-        </button>
-        <button type="button" className={tabBtn(tab === "account")} onClick={() => setTab("account")}>
-          Account
-        </button>
-        <button type="button" className={tabBtn(tab === "ai")} onClick={() => setTab("ai")}>
-          AI tutor
-        </button>
-        {user?.role === "admin" && (
-          <button type="button" className={tabBtn(tab === "users")} onClick={() => setTab("users")}>
-            Users
-          </button>
-        )}
-        <button type="button" className={tabBtn(tab === "import")} onClick={() => setTab("import")}>
-          Import content
-        </button>
+      <h1 className="mb-4 text-[28px] font-semibold leading-[34px] tracking-[-0.02em]">Settings</h1>
+      <div className="-mx-1 mb-6 overflow-x-auto px-1 pb-1">
+        <TabPills label="Settings sections" value={tab} onChange={setTab} options={tabs} />
       </div>
       {tab === "preferences" && <Preferences />}
       {tab === "account" && <Account />}
