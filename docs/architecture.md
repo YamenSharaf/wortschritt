@@ -81,16 +81,18 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   and heading ids dropped). The book id is derived from the learner and
   item, so re-exports replace the book on a device. Output was checked with
   W3C EPUBCheck 5.1 (0 errors/warnings); tests check the container rules.
-- Covers (`@mdb/shared` cover.ts, `services/covers.ts`, `routes/covers.ts`):
-  an SVG per story/chapter or series, in a `cover` column (not in the
-  content JSON, so re-saving a text keeps it). `checkCoverSvg` allowlists
+- Covers (`@mdb/shared` cover.ts, `services/covers.ts`, `routes/covers.ts`, `components/Bookshelf.tsx`):
+  an SVG illustration per story/chapter or series, in a `cover` column (not in the
+  content JSON, so re-saving a text keeps it). `checkCoverSvg` allowlists filters plus
   shapes, text and gradients (no scripts, styles, images, links or outside
   `href`/`url()`); covers are served from `GET …/:id/cover.svg` with a
   sandboxing CSP and shown as `<img>`. Without art, `fallbackCover` draws one
   from the title. Set via `PUT …/:id/cover` or MCP `set_cover`
   (`get_authoring_guide` kind "cover"). EPUBs get the cover as a PNG
   (resvg; generic font families are mapped to the DejaVu fonts the Docker
-  image installs) plus drawn chapter art at each chapter's start.
+  image installs) plus drawn chapter art at each chapter's start. On the
+  Stories page books stand on shelves, face-out or as spines; a spine's
+  colour is the cover's `data-spine` or its most used colour (`coverColor`).
 - Story translations (`services/storyTranslations.ts`): English lines per
   paragraph, one per sentence as `splitSentences` (`@mdb/shared` reading.ts,
   shared with the reader) cuts it, or one line for the whole paragraph when

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import type { SeriesSummary, StorySummary } from "@mdb/shared";
+import type { StorySummary } from "@mdb/shared";
+import { Bookshelf } from "../components/Bookshelf";
 import { Cover } from "../components/Cover";
 import { SearchBox } from "../components/SearchBox";
 import { api } from "../lib/api";
@@ -60,16 +61,7 @@ export function StoriesPage() {
       )}
       {stories.status === "loading" && <p className="text-slate-500">Loading…</p>}
       {stories.status === "error" && <p className="text-red-600">Couldn't load your stories.</p>}
-      {filteredBooks.length > 0 && (
-        <section className="mb-6">
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Books</h2>
-          <div className="grid grid-cols-3 gap-x-4 gap-y-5 sm:grid-cols-4 md:grid-cols-5">
-            {filteredBooks.map((b) => (
-              <BookCard key={b.id} book={b} />
-            ))}
-          </div>
-        </section>
-      )}
+      {filteredBooks.length > 0 && <Bookshelf books={filteredBooks} />}
       {filteredBooks.length > 0 && list.length > 0 && (
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Stories</h2>
       )}
@@ -126,38 +118,5 @@ export function StoriesPage() {
         })}
       </div>
     </div>
-  );
-}
-
-/** A book on the shelf: its cover, title and how far you've read. */
-function BookCard({ book }: { book: SeriesSummary }) {
-  const done = book.read === book.total && book.total > 0;
-  return (
-    <Link to={`/series/${book.id}`} className="group block min-w-0">
-      <div className="relative">
-        <Cover
-          kind="series"
-          id={book.id}
-          version={book.cover}
-          fallbackKey={`${book.title}-${book.subtitle ?? ""}-${book.level}`}
-          className="w-full transition group-hover:-translate-y-0.5 group-hover:shadow-md"
-        />
-        {done && (
-          <span className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-green-600 text-xs text-white shadow" aria-label="Read">
-            ✓
-          </span>
-        )}
-      </div>
-      {book.progress > 0.01 && !done && (
-        <div className="mt-1.5 h-0.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-          <div className="h-full bg-accent" style={{ width: `${Math.round(book.progress * 100)}%` }} />
-        </div>
-      )}
-      <div className="mt-1.5 line-clamp-2 text-sm font-medium leading-snug">{book.title}</div>
-      <div className="text-xs text-slate-500">
-        {book.level} ·{" "}
-        {book.written === book.total ? `${book.total} chapters` : `${book.written}/${book.total} chapters`}
-      </div>
-    </Link>
   );
 }
