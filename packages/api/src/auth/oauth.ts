@@ -14,11 +14,16 @@ import type { AuthUser } from "./users";
  * - clients: Dynamic Client Registration, or a Client ID Metadata Document
  *   (the client_id is an https URL, fetched through the egress guard);
  * - authorization code + PKCE (S256 only), exact redirect_uri match;
- * - access tokens (1 h) only work on /mcp; refresh tokens (30 days, sliding)
- *   rotate on every use. Codes and tokens are stored as SHA-256 only.
+ * - two resources, one scope each: "mcp" (resource <origin>/mcp, the MCP
+ *   endpoint) and "app" (resource <origin>/api, the REST API, for the
+ *   native app). A token only works on the resource it was issued for;
+ * - access tokens last 1 h; refresh tokens (30 days, sliding) rotate on
+ *   every use. Codes and tokens are stored as SHA-256 only.
  */
 
 export const SCOPE = "mcp";
+/** The native app's scope: the REST API. */
+export const APP_SCOPE = "app";
 const CODE_TTL_S = 10 * 60;
 export const ACCESS_TTL_S = 60 * 60;
 const REFRESH_TTL_S = 30 * 24 * 60 * 60;
@@ -52,6 +57,7 @@ export function publicOrigin(req: FastifyRequest): string {
 }
 
 export const resourceUrl = (origin: string) => `${origin}/mcp`;
+export const apiResourceUrl = (origin: string) => `${origin}/api`;
 export const resourceMetadataUrl = (origin: string) => `${origin}/.well-known/oauth-protected-resource/mcp`;
 
 export function protectedResourceMetadata(origin: string) {
@@ -64,6 +70,17 @@ export function protectedResourceMetadata(origin: string) {
   };
 }
 
+/** The REST API as a protected resource (for the native app). */
+export function apiProtectedResourceMetadata(origin: string) {
+  return {
+    resource: apiResourceUrl(origin),
+    authorization_servers: [origin],
+    scopes_supported: [APP_SCOPE],
+    bearer_methods_supported: ["header"],
+    resource_name: env.APP_NAME,
+  };
+}
+
 export function authorizationServerMetadata(origin: string) {
   return {
     issuer: origin,
@@ -71,7 +88,7 @@ export function authorizationServerMetadata(origin: string) {
     token_endpoint: `${origin}/oauth/token`,
     registration_endpoint: `${origin}/oauth/register`,
     revocation_endpoint: `${origin}/oauth/revoke`,
-    scopes_supported: [SCOPE],
+    scopes_supported: [SCOPE, APP_SCOPE],
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code", "refresh_token"],
     code_challenge_methods_supported: ["S256"],
@@ -86,7 +103,16 @@ export function authorizationServerMetadata(origin: string) {
 
 type Client = typeof schema.oauthClients.$inferSelect;
 
-/** https anywhere, or http on loopback (native/CLI clients); no fragments. */
+/**
+ * A native app's private-use URI scheme (RFC 8252 §7.1): reverse-DNS, so it
+ * contains a dot (e.g. "app.mitdembaby:/oauth/callback").
+ */
+const PRIVATE_SCHEME = /^[a-z][a-z0-9+-]*(\.[a-z0-9+-]+)+:$/;
+
+/**
+ * https anywhere, http on loopback (CLI clients), or a native app's
+ * private-use scheme; no fragments.
+ */
 function validRedirectUri(raw: unknown): raw is string {
   if (typeof raw !== "string" || raw.length > 500) return false;
   let url: URL;
@@ -97,6 +123,7 @@ function validRedirectUri(raw: unknown): raw is string {
   }
   if (url.hash) return false;
   if (url.protocol === "https:") return true;
+  if (PRIVATE_SCHEME.test(url.protocol)) return true;
   return url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
 }
 
@@ -123,7 +150,7 @@ export function registerClient(body: unknown) {
   if (!Array.isArray(uris) || uris.length === 0 || uris.length > 10 || !uris.every(validRedirectUri)) {
     throw new OAuthError(
       "invalid_redirect_uri",
-      "redirect_uris must be 1-10 https URLs (or http on localhost), without fragments",
+      "redirect_uris must be 1-10 https URLs (or http on localhost, or a reverse-DNS app scheme), without fragments",
     );
   }
   const grantTypes = (meta.grant_types as unknown[] | undefined) ?? ["authorization_code"];
@@ -247,6 +274,7 @@ type ValidRequest = {
   state: string | undefined;
   codeChallenge: string;
   resource: string;
+  scope: string;
 };
 
 /**
@@ -273,16 +301,20 @@ export async function checkAuthorizeRequest(
     return back("invalid_request", "a PKCE code_challenge is required");
   }
   if (p.code_challenge_method !== "S256") return back("invalid_request", "code_challenge_method must be S256");
-  if (p.scope && p.scope.split(" ").some((s) => s && s !== SCOPE)) {
-    return back("invalid_scope", `the only scope is "${SCOPE}"`);
+  // One scope per grant: "mcp" (the default) or "app"; the resource follows it.
+  const scopes = (p.scope ?? "").split(" ").filter(Boolean);
+  const wanted = p.resource?.replace(/\/$/, "");
+  const scope = scopes[0] ?? (wanted === apiResourceUrl(origin) ? APP_SCOPE : SCOPE);
+  if (scopes.length > 1 || (scope !== SCOPE && scope !== APP_SCOPE)) {
+    return back("invalid_scope", `the scope is "${SCOPE}" or "${APP_SCOPE}"`);
   }
-  const resource = resourceUrl(origin);
-  if (p.resource && p.resource.replace(/\/$/, "") !== resource) {
+  const resource = scope === APP_SCOPE ? apiResourceUrl(origin) : resourceUrl(origin);
+  if (wanted && wanted !== resource) {
     return back("invalid_target", `resource must be ${resource}`);
   }
   return {
     ok: true,
-    request: { client, redirectUri, state: p.state, codeChallenge: p.code_challenge, resource },
+    request: { client, redirectUri, state: p.state, codeChallenge: p.code_challenge, resource, scope },
   };
 }
 
@@ -322,7 +354,7 @@ export function decide(request: ValidRequest, user: AuthUser, approve: boolean, 
       redirectUri: request.redirectUri,
       codeChallenge: request.codeChallenge,
       resource: request.resource,
-      scope: SCOPE,
+      scope: request.scope,
       expiresAt: now() + CODE_TTL_S,
     })
     .run();
@@ -357,7 +389,7 @@ export function authenticateClient(body: Record<string, string>, authorization: 
   return client;
 }
 
-function issue(grantId: number) {
+function issue(grantId: number, scope: string) {
   const access = ACCESS_PREFIX + random();
   const refresh = REFRESH_PREFIX + random();
   db.update(schema.oauthGrants)
@@ -374,11 +406,11 @@ function issue(grantId: number) {
     token_type: "Bearer",
     expires_in: ACCESS_TTL_S,
     refresh_token: refresh,
-    scope: SCOPE,
+    scope,
   };
 }
 
-export function exchangeCode(client: Client, body: Record<string, string>, origin: string) {
+export function exchangeCode(client: Client, body: Record<string, string>) {
   const { code, code_verifier: verifier, redirect_uri: redirectUri, resource } = body;
   if (!code || !verifier) throw new OAuthError("invalid_request", "code and code_verifier are required");
   const row = db.select().from(schema.oauthCodes).where(eq(schema.oauthCodes.codeHash, hash(code))).get();
@@ -393,8 +425,8 @@ export function exchangeCode(client: Client, body: Record<string, string>, origi
   if (createHash("sha256").update(verifier).digest("base64url") !== row.codeChallenge) {
     throw new OAuthError("invalid_grant", "PKCE verification failed");
   }
-  if (resource && resource.replace(/\/$/, "") !== resourceUrl(origin)) {
-    throw new OAuthError("invalid_target", `resource must be ${resourceUrl(origin)}`);
+  if (resource && resource.replace(/\/$/, "") !== row.resource) {
+    throw new OAuthError("invalid_target", `resource must be ${row.resource}`);
   }
   const res = db
     .insert(schema.oauthGrants)
@@ -410,14 +442,20 @@ export function exchangeCode(client: Client, body: Record<string, string>, origi
       refreshExpiresAt: 0,
     })
     .run();
-  return issue(Number(res.lastInsertRowid));
+  return issue(Number(res.lastInsertRowid), row.scope);
 }
 
 export function refresh(client: Client, body: Record<string, string>) {
   const token = body.refresh_token;
   if (!token) throw new OAuthError("invalid_request", "refresh_token is required");
   const grant = db
-    .select({ id: schema.oauthGrants.id, clientId: schema.oauthGrants.clientId, exp: schema.oauthGrants.refreshExpiresAt, disabled: schema.users.disabled })
+    .select({
+      id: schema.oauthGrants.id,
+      clientId: schema.oauthGrants.clientId,
+      scope: schema.oauthGrants.scope,
+      exp: schema.oauthGrants.refreshExpiresAt,
+      disabled: schema.users.disabled,
+    })
     .from(schema.oauthGrants)
     .innerJoin(schema.users, eq(schema.users.id, schema.oauthGrants.userId))
     .where(eq(schema.oauthGrants.refreshHash, hash(token)))
@@ -425,7 +463,7 @@ export function refresh(client: Client, body: Record<string, string>) {
   if (!grant || grant.clientId !== client.clientId || grant.exp < now() || grant.disabled) {
     throw new OAuthError("invalid_grant", "the refresh token is invalid or expired");
   }
-  return issue(grant.id);
+  return issue(grant.id, grant.scope);
 }
 
 /** RFC 7009: revoke the grant behind an access or refresh token. Always "succeeds". */
@@ -446,8 +484,8 @@ export function revoke(client: Client, token: string | undefined): void {
 
 export const looksLikeAccessToken = (s: string) => s.startsWith(ACCESS_PREFIX);
 
-/** The active user behind an access token for this resource, or null. */
-export function userFromAccessToken(token: string, origin: string): AuthUser | null {
+/** The active user behind an access token for this resource (URL), or null. */
+export function userFromAccessToken(token: string, resource: string): AuthUser | null {
   const row = db
     .select({
       grantId: schema.oauthGrants.id,
@@ -463,7 +501,7 @@ export function userFromAccessToken(token: string, origin: string): AuthUser | n
     .innerJoin(schema.users, eq(schema.users.id, schema.oauthGrants.userId))
     .where(eq(schema.oauthGrants.accessHash, hash(token)))
     .get();
-  if (!row || row.exp < now() || row.disabled || row.resource !== resourceUrl(origin)) return null;
+  if (!row || row.exp < now() || row.disabled || row.resource !== resource) return null;
   if (!row.lastUsedAt || now() - row.lastUsedAt > 60) {
     db.update(schema.oauthGrants).set({ lastUsedAt: now() }).where(eq(schema.oauthGrants.id, row.grantId)).run();
   }

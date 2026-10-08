@@ -826,3 +826,13 @@ export const saveChapterBody = z.object({
   overwrite: z.boolean().default(false),
 });
 
+
+// --- native app ---------------------------------------------------------------
+
+/** GET /api/version: the API's version and the oldest app version it serves. */
+export const apiVersion = z.object({
+  api: z.number().int(),
+  minClient: z.number().int(),
+  appName: z.string(),
+});
+export type ApiVersion = z.infer<typeof apiVersion>;

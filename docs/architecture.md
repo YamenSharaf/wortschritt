@@ -171,12 +171,22 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   SPA page (`pages/OAuthConsent.tsx`): sign-in (`/login?next=`), then
   Allow/Deny via `/api/oauth/authorize` (session only), which re-validates the
   request and returns the redirect. Codes: 10 min, single use, PKCE S256, exact
-  redirect_uri. Tokens: `mdbo_at_…` (1 h, only valid on `/mcp` — `authenticate()`
-  doesn't know them) and `mdbo_rt_…` (30 days, rotated on each refresh); one
+  redirect_uri. Two scopes, one resource each: `mcp` (resource `/mcp`, the
+  default) and `app` (resource `/api`, for the native app; its redirect is a
+  reverse-DNS private-use scheme such as `app.mitdembaby:/oauth/callback`,
+  RFC 8252). Tokens: `mdbo_at_…` (1 h, valid only on their resource — an
+  `app` token works with `authenticate()` on the REST API, an `mcp` one only
+  on `/mcp`) and `mdbo_rt_…` (30 days, rotated on each refresh); one
   `oauth_grants` row per approval, which Settings → Connected apps lists and
   deletes. Disabling or deleting the user ends access. The issuer is
   `PUBLIC_URL` or the request's forwarded origin. All responses send
   `X-Frame-Options: DENY` so the consent page can't be framed.
+- Native app (`routes/native.ts`, registered on the root instance): CORS on
+  `/api/*` for the app's built-in origins (`APP_ORIGINS`, default
+  `capacitor://localhost`, `https://localhost`, `http://localhost`), bearer
+  tokens only (never `allow-credentials`); public `GET /api/version`
+  (`{ api, minClient, appName }`) for the app's compatibility check. See
+  issue #2 for the app itself.
 - Brute-force protection: password routes are limited per client IP
   (`@fastify/rate-limit`, 10/min, keyed on `CF-Connecting-IP` when present) and
   per username (10 failures / 15 min lock that name, `auth/loginGuard.ts`).
