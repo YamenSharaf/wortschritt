@@ -5,6 +5,8 @@ import { api, askAssistant } from "../lib/api";
 import { TapToTranslate } from "../components/TapToTranslate";
 import { TutorMarkdown } from "../components/TutorMarkdown";
 import { useAsync } from "../lib/useAsync";
+import { ChevronLeftIcon, LanguagesIcon } from "../components/icons";
+import { btn } from "../components/ui";
 
 const mdOptions = {
   forceBlock: true,
@@ -40,19 +42,20 @@ export function CheatsheetView() {
 
   return (
     <div>
-      <Link to="/cheatsheets" className="text-sm text-slate-500 hover:underline">
-        ← Cheat sheets
+      <Link to="/cheatsheets" className="inline-flex items-center gap-1 text-sm font-medium text-ink-muted hover:text-ink">
+        <ChevronLeftIcon className="h-4 w-4" />
+        Cheat sheets
       </Link>
-      {sheet.status === "loading" && <p className="mt-4 text-slate-500">Loading…</p>}
+      {sheet.status === "loading" && <p className="mt-4 text-ink-muted">Loading…</p>}
       {sheet.status === "error" && (
-        <p className="mt-4 text-red-600">Not found.</p>
+        <p className="mt-4 text-danger">Not found.</p>
       )}
       {sheet.status === "ready" && (
         <article className="mt-3 space-y-6">
           <div>
-            <h1 className="text-2xl font-bold">{sheet.data.title}</h1>
+            <h1 className="text-[28px] font-semibold leading-[34px] tracking-[-0.02em]">{sheet.data.title}</h1>
             {sheet.data.subtitle && (
-              <p className="text-sm text-slate-500">{sheet.data.subtitle}</p>
+              <p className="text-sm text-ink-muted">{sheet.data.subtitle}</p>
             )}
           </div>
           {sheet.data.sections.map((sec, i) => (
@@ -110,16 +113,17 @@ function Section({
   }
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <section className="rounded-card border border-line bg-surface p-4 ">
       <div className="mb-2 flex items-start justify-between gap-2">
-        <h2 className="text-lg font-semibold">{heading}</h2>
+        <h2 className="text-xl font-semibold tracking-[-0.01em]">{heading}</h2>
         {canTranslate && (
           <button
             type="button"
             onClick={translate}
-            className="shrink-0 rounded-full border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700"
+            className={`${btn.secondary} ${btn.sm} shrink-0`}
           >
-            {text !== null ? "Hide" : "🌐 Translate"}
+            {text === null && <LanguagesIcon className="h-4 w-4" />}
+            {text !== null ? "Hide" : "Translate"}
           </button>
         )}
       </div>
@@ -127,9 +131,9 @@ function Section({
         <Markdown options={mdOptions}>{body}</Markdown>
       </TapToTranslate>
       {(busy || text || error) && (
-        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950">
+        <div className="mt-3 rounded-control border border-line bg-surface-sunken p-3 ">
           {error ? (
-            <span className="text-sm text-red-600">{error}</span>
+            <span className="text-sm text-danger">{error}</span>
           ) : (
             <TutorMarkdown text={text ?? ""} busy={busy} />
           )}

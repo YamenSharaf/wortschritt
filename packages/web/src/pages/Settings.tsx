@@ -22,6 +22,8 @@ import { ImportPage } from "./Import";
 import { TabPills } from "../components/TabPills";
 import { AiSettings } from "./AiSettings";
 import { UsersAdmin } from "./UsersAdmin";
+import { SpeakerIcon } from "../components/icons";
+import { btn } from "../components/ui";
 
 export function SettingsPage() {
   const { user } = useAuth();
@@ -59,7 +61,7 @@ function Preferences() {
     if (loaded.status === "ready") setForm(loaded.data);
   }, [loaded.status]);
 
-  if (!form) return <p className="text-slate-500">Loading…</p>;
+  if (!form) return <p className="text-ink-muted">Loading…</p>;
 
   async function save() {
     if (!form) return;
@@ -118,7 +120,7 @@ function Preferences() {
             ))}
           </select>
         </Field>
-        <p className="-mt-2 text-xs text-slate-400">
+        <p className="-mt-2 text-xs text-ink-subtle">
           The default count for “Generate more” after finishing an exercise. You
           can still change it there each time.
         </p>
@@ -139,18 +141,18 @@ function Preferences() {
             Let the AI tutor grade written answers
           </span>
         </label>
-        <p className="-mt-2 text-xs text-slate-400">
+        <p className="-mt-2 text-xs text-ink-subtle">
           Only used when your AI tutor is set up (the AI tutor tab). Falls back to exact matching
           otherwise.
         </p>
         <button
           type="button"
           onClick={save}
-          className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground"
+          className={`${btn.primary}`}
         >
           Save
         </button>
-        {saved && <span className="ml-3 text-sm text-green-600">Saved ✓</span>}
+        {saved && <span className="ml-3 text-sm text-success">Saved</span>}
       </div>
     </div>
   );
@@ -216,12 +218,13 @@ function PronunciationSetting({
         <button
           type="button"
           onClick={() => speak("Guten Tag! Ich lerne Deutsch mit dem Baby.")}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:border-slate-500 dark:border-slate-700"
+          className="rounded-control border border-line-control px-3 py-1.5 text-sm hover:border-line-strong "
         >
-          🔊 Test
+          <SpeakerIcon className="h-4 w-4" />
+          Test
         </button>
         {!available && (
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-ink-subtle">
             Natural German voices can be set up by the admin (Settings → Users → Read-aloud
             voices).
           </p>
@@ -244,7 +247,7 @@ function DeviceVoicePicker() {
 
   return (
     <div className="mt-2">
-      <span className="mb-1 block text-xs font-medium text-slate-400">
+      <span className="mb-1 block text-xs font-medium text-ink-subtle">
         Voice on this device
       </span>
       <select
@@ -263,7 +266,7 @@ function DeviceVoicePicker() {
           </option>
         ))}
       </select>
-      <p className="mt-1 text-xs text-slate-400">
+      <p className="mt-1 text-xs text-ink-subtle">
         Remembered on this device only.
       </p>
     </div>
@@ -304,12 +307,12 @@ function Account() {
 
   return (
     <div className="max-w-md space-y-6">
-      <p className="text-sm text-slate-500">
-        Signed in as <span className="font-medium text-slate-800 dark:text-slate-100">{user?.username}</span>
+      <p className="text-sm text-ink-muted">
+        Signed in as <span className="font-medium text-ink ">{user?.username}</span>
         {user?.role === "admin" && " (admin)"}
       </p>
       <form onSubmit={changePassword} className="space-y-4">
-        <h2 className="text-lg font-semibold">Change password</h2>
+        <h2 className="text-xl font-semibold tracking-[-0.01em]">Change password</h2>
         <Field label="Current password">
           <input
             type="password"
@@ -341,12 +344,12 @@ function Account() {
         <button
           type="submit"
           disabled={busy || !current || next.length < MIN_PASSWORD_LENGTH}
-          className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground disabled:opacity-50"
+          className={`${btn.primary}`}
         >
           {busy ? "…" : "Change password"}
         </button>
         {message && (
-          <p className={`text-sm ${message.ok ? "text-green-600" : "text-red-600"}`}>{message.text}</p>
+          <p className={`text-sm ${message.ok ? "text-success" : "text-danger"}`}>{message.text}</p>
         )}
       </form>
       <ConnectedApps />
@@ -365,27 +368,27 @@ function ConnectedApps() {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold">Connected apps</h2>
-      <p className="text-sm text-slate-500">
+      <h2 className="text-xl font-semibold tracking-[-0.01em]">Connected apps</h2>
+      <p className="text-sm text-ink-muted">
         To connect an AI agent like Claude, add a custom connector with the URL{" "}
         <code className="break-all">{`${window.location.origin}/mcp`}</code>. It will ask you to
         sign in here and allow access.
       </p>
-      {grants && grants.length === 0 && <p className="text-sm text-slate-400">No apps connected.</p>}
+      {grants && grants.length === 0 && <p className="text-sm text-ink-subtle">No apps connected.</p>}
       {grants && grants.length > 0 && (
-        <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200 text-sm dark:divide-slate-800 dark:border-slate-800">
+        <ul className="divide-y divide-[var(--border)] rounded-card border border-line text-sm ">
           {grants.map((g) => (
             <li key={g.id} className="flex items-center gap-2 p-3">
               <div className="min-w-0 flex-1">
                 <p className="font-medium">{g.clientName}</p>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-ink-subtle">
                   connected {timeAgo(g.createdAt)} ·{" "}
                   {g.lastUsedAt ? `last used ${timeAgo(g.lastUsedAt)}` : "never used"}
                 </p>
               </div>
               <button
                 type="button"
-                className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-red-600 dark:border-slate-700"
+                className="rounded-control border border-line-control px-2.5 py-1 text-xs font-medium text-danger "
                 onClick={async () => {
                   if (window.confirm(`Disconnect "${g.clientName}"? It loses access right away.`)) {
                     setGrants(await api.deleteOAuthGrant(g.id));
@@ -430,8 +433,8 @@ function ApiTokens() {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-lg font-semibold">API tokens</h2>
-      <p className="text-sm text-slate-500">
+      <h2 className="text-xl font-semibold tracking-[-0.01em]">API tokens</h2>
+      <p className="text-sm text-ink-muted">
         For scripts and integrations: send <code>Authorization: Bearer &lt;token&gt;</code>. A
         token can do everything you can, except manage tokens or change your password. API docs:{" "}
         <a href="/api/docs" className="underline" target="_blank" rel="noreferrer">
@@ -439,40 +442,40 @@ function ApiTokens() {
         </a>
         .
       </p>
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-ink-muted">
         MCP connectors that take a header instead of signing in: URL{" "}
         <code className="break-all">{`${window.location.origin}/mcp`}</code> with{" "}
         <code>Authorization: Bearer &lt;token&gt;</code>.
       </p>
       {created && (
-        <div className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950">
+        <div className="rounded-control bg-warning-soft p-3 text-sm ">
           <p className="mb-2 font-medium">Copy it now — it won't be shown again:</p>
-          <code className="block break-all rounded bg-white p-2 text-xs dark:bg-slate-900">{created}</code>
+          <code className="block break-all rounded bg-surface p-2 text-xs ">{created}</code>
           <button
             type="button"
-            className="mt-2 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium dark:border-slate-700"
+            className={`${btn.secondary} ${btn.sm} mt-2`}
             onClick={() => {
               void navigator.clipboard.writeText(created);
               setCopied(true);
             }}
           >
-            {copied ? "Copied ✓" : "Copy"}
+            {copied ? "Copied" : "Copy"}
           </button>
         </div>
       )}
       {tokens && tokens.length > 0 && (
-        <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200 text-sm dark:divide-slate-800 dark:border-slate-800">
+        <ul className="divide-y divide-[var(--border)] rounded-card border border-line text-sm ">
           {tokens.map((t) => (
             <li key={t.id} className="flex items-center gap-2 p-3">
               <div className="min-w-0 flex-1">
                 <p className="font-medium">{t.name}</p>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-ink-subtle">
                   {t.prefix}… · {t.lastUsedAt ? `last used ${timeAgo(t.lastUsedAt)}` : "never used"}
                 </p>
               </div>
               <button
                 type="button"
-                className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-red-600 dark:border-slate-700"
+                className="rounded-control border border-line-control px-2.5 py-1 text-xs font-medium text-danger "
                 onClick={async () => {
                   if (window.confirm(`Revoke "${t.name}"? Anything using it stops working.`)) {
                     setTokens(await api.deleteApiToken(t.id));
@@ -495,12 +498,12 @@ function ApiTokens() {
         <button
           type="submit"
           disabled={!name.trim()}
-          className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
+          className={`${btn.primary} shrink-0`}
         >
           Create token
         </button>
       </form>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </section>
   );
 }

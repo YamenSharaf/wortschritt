@@ -7,11 +7,11 @@ import {
   type AiTestResult,
 } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
+import { CrossIcon, PlusIcon } from "../components/icons";
+import { btn } from "../components/ui";
 
-const smallBtn =
-  "rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700";
-const primaryBtn =
-  "rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50";
+const smallBtn = `${btn.secondary} ${btn.sm} `;
+const primaryBtn = btn.primary;
 
 const PRESETS = [
   { name: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1" },
@@ -45,7 +45,7 @@ export function AiSettings() {
     }
   }
 
-  if (!view) return <p className="text-slate-500">{error ?? "Loading…"}</p>;
+  if (!view) return <p className="text-ink-muted">{error ?? "Loading…"}</p>;
 
   const providerName = (id: number) => view.providers.find((p) => p.id === id)?.name ?? "?";
   const order = view.models.map((m) => ({ providerId: m.providerId, model: m.model }));
@@ -53,19 +53,19 @@ export function AiSettings() {
 
   return (
     <div className="max-w-xl space-y-8">
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-ink-muted">
         The tutor uses your own AI provider (any OpenAI-compatible API). Models are tried in
         order: if one fails, the next one answers. Keys are stored encrypted and never shown again.
       </p>
       {!view.encryptionAvailable && (
-        <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+        <p className="rounded-control bg-warning-soft p-3 text-sm text-warning ">
           This server can't store API keys yet: the admin needs to set <code>ENCRYPTION_KEY</code>.
         </p>
       )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Providers</h2>
+        <h2 className="text-xl font-semibold tracking-[-0.01em]">Providers</h2>
         {view.providers.map((p) => (
           <ProviderRow key={p.id} provider={p} view={view} apply={apply} />
         ))}
@@ -73,18 +73,18 @@ export function AiSettings() {
           view={view}
           onSubmit={(body) => apply(() => api.addAiProvider(body))}
           submitLabel="Add provider"
-          collapsedLabel={view.providers.length ? "+ Add another provider" : "+ Add a provider"}
+          collapsedLabel={view.providers.length ? "Add another provider" : "Add a provider"}
         />
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Models, in order</h2>
+        <h2 className="text-xl font-semibold tracking-[-0.01em]">Models, in order</h2>
         {view.models.length === 0 ? (
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-ink-muted">
             {view.providers.length ? "Add a model to turn the tutor on." : "Add a provider first."}
           </p>
         ) : (
-          <ol className="divide-y divide-slate-200 rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+          <ol className="divide-y divide-[var(--border)] rounded-card border border-line ">
             {view.models.map((m, i) => {
               const result = test?.results.find((r) => r.id === m.id);
               const move = (to: number) => {
@@ -95,13 +95,13 @@ export function AiSettings() {
               };
               return (
                 <li key={m.id} className="flex flex-wrap items-center gap-2 p-3">
-                  <span className="w-5 text-sm text-slate-400">{i + 1}.</span>
+                  <span className="w-5 text-sm text-ink-subtle">{i + 1}.</span>
                   <span className="min-w-0 flex-1 break-all text-sm">
                     <span className="font-medium">{m.model}</span>
-                    <span className="text-slate-400"> · {providerName(m.providerId)}</span>
+                    <span className="text-ink-subtle"> · {providerName(m.providerId)}</span>
                     {result && (
-                      <span className={`block text-xs ${result.ok ? "text-green-600" : "text-red-600"}`}>
-                        {result.ok ? `✓ replied in ${(result.ms / 1000).toFixed(1)} s` : `✗ ${result.error}`}
+                      <span className={`block text-xs ${result.ok ? "text-success" : "text-danger"}`}>
+                        {result.ok ? `Replied in ${(result.ms / 1000).toFixed(1)} s` : result.error}
                       </span>
                     )}
                   </span>
@@ -123,7 +123,7 @@ export function AiSettings() {
                     onClick={() => void saveOrder(order.filter((_, j) => j !== i))}
                     aria-label="Remove"
                   >
-                    ✕
+                    <CrossIcon className="h-4 w-4" />
                   </button>
                 </li>
               );
@@ -162,7 +162,7 @@ export function AiSettings() {
         {(view.providers.length > 0 || view.models.length > 0) && (
           <button
             type="button"
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm text-red-600 dark:border-slate-700"
+            className="rounded-control border border-line-control px-4 py-2 text-sm text-danger "
             onClick={() => {
               if (window.confirm("Turn the AI tutor off and remove all providers and models?")) {
                 void apply(() => api.deleteAiSettings());
@@ -203,14 +203,14 @@ function ProviderRow({
     );
   }
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 p-3 text-sm dark:border-slate-800">
+    <div className="flex flex-wrap items-center gap-2 rounded-card border border-line p-3 text-sm ">
       <div className="min-w-0 flex-1">
         <p className="font-medium">{provider.name}</p>
-        <p className="break-all text-xs text-slate-400">{provider.baseUrl}</p>
+        <p className="break-all text-xs text-ink-subtle">{provider.baseUrl}</p>
         {provider.keyUnreadable ? (
-          <p className="text-xs text-amber-600">Saved key can't be read any more — enter it again.</p>
+          <p className="text-xs text-warning">Saved key can't be read any more — enter it again.</p>
         ) : (
-          <p className="text-xs text-slate-400">{provider.hasKey ? "Key saved" : "No key"}</p>
+          <p className="text-xs text-ink-subtle">{provider.hasKey ? "Key saved" : "No key"}</p>
         )}
       </div>
       <button type="button" className={smallBtn} onClick={() => setEditing(true)}>
@@ -218,7 +218,7 @@ function ProviderRow({
       </button>
       <button
         type="button"
-        className={`${smallBtn} text-red-600`}
+        className={`${smallBtn} text-danger`}
         onClick={() => {
           if (window.confirm(`Remove ${provider.name} and its models?`)) {
             void apply(() => api.deleteAiProvider(provider.id));
@@ -256,6 +256,7 @@ function ProviderForm({
   if (!open) {
     return (
       <button type="button" className={smallBtn} onClick={() => setOpen(true)}>
+        <PlusIcon className="h-4 w-4" />
         {collapsedLabel}
       </button>
     );
@@ -281,7 +282,7 @@ function ProviderForm({
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
+    <form onSubmit={submit} className="space-y-3 rounded-card border border-line p-3 ">
       {!initial && (
         <div className="flex flex-wrap gap-2">
           {PRESETS.map((p) => (
@@ -324,7 +325,7 @@ function ProviderForm({
         className="input"
       />
       {initial?.hasKey && (
-        <label className="flex items-center gap-2 text-xs text-slate-500">
+        <label className="flex items-center gap-2 text-xs text-ink-muted">
           <input type="checkbox" checked={removeKey} onChange={(e) => setRemoveKey(e.target.checked)} />
           Remove the saved key
         </label>
@@ -335,7 +336,7 @@ function ProviderForm({
         </button>
         <button
           type="button"
-          className="px-3 text-sm text-slate-500"
+          className="px-3 text-sm text-ink-muted"
           onClick={() => (onCancel ? onCancel() : setOpen(false))}
         >
           Cancel
@@ -391,7 +392,7 @@ function AddModel({
   }
 
   return (
-    <div className="space-y-2 rounded-xl border border-dashed border-slate-300 p-3 dark:border-slate-700">
+    <div className="space-y-2 rounded-card border border-dashed border-line-control p-3 ">
       <div className="flex flex-wrap gap-2">
         <select
           value={providerId}
@@ -408,7 +409,7 @@ function AddModel({
           {loading ? "Loading…" : options ? `${options.length} models loaded` : "Load models"}
         </button>
       </div>
-      {loadError && <p className="text-xs text-red-600">{loadError} You can still type a model name.</p>}
+      {loadError && <p className="text-xs text-danger">{loadError} You can still type a model name.</p>}
       <form
         className="flex gap-2"
         onSubmit={(e) => {
@@ -429,16 +430,16 @@ function AddModel({
         </button>
       </form>
       {options && matches.length > 0 && (
-        <ul className="max-h-64 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200 text-sm dark:divide-slate-800 dark:border-slate-800">
+        <ul className="max-h-64 divide-y divide-[var(--border)] overflow-y-auto rounded-control border border-line text-sm ">
           {matches.map((o) => (
             <li key={o.id}>
               <button
                 type="button"
-                className="w-full px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800"
+                className="w-full px-3 py-2 text-left hover:bg-surface-sunken "
                 onClick={() => void add(o.id)}
               >
                 <span className="block break-all font-medium">{o.name ?? o.id}</span>
-                <span className="block break-all text-xs text-slate-400">
+                <span className="block break-all text-xs text-ink-subtle">
                   {o.name ? o.id : ""}
                   {o.promptPrice !== null &&
                     ` · ${price(o.promptPrice)} in / ${price(o.completionPrice)} out per 1M tokens`}

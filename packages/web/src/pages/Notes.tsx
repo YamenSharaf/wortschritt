@@ -5,6 +5,9 @@ import { SearchBox } from "../components/SearchBox";
 import { api } from "../lib/api";
 import { timeAgo } from "../lib/time";
 import { useAsync } from "../lib/useAsync";
+import { PlusIcon } from "../components/icons";
+import { Pill, btn, cardLink } from "../components/ui";
+import { SectionIcon } from "../components/SectionIcon";
 
 /** A short, plain-text preview of a Markdown note body. */
 function snippet(body: string): string {
@@ -59,24 +62,25 @@ export function NotesPage() {
   const chip = (active: boolean) =>
     `rounded-full border px-3 py-1 text-xs font-medium ${
       active
-        ? "border-accent bg-accent text-accent-foreground"
-        : "border-slate-300 text-slate-600 hover:border-slate-400 dark:border-slate-700 dark:text-slate-300"
+        ? "border-transparent bg-brand-soft text-brand-ink"
+        : "border-line-control text-ink-muted hover:border-line-strong "
     }`;
 
   return (
     <div>
       <div className="mb-1 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Notes</h1>
+        <h1 className="text-[28px] font-semibold leading-[34px] tracking-[-0.02em]">Notes</h1>
         <button
           type="button"
           onClick={newNote}
           disabled={creating}
-          className="shrink-0 rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
+          className={`${btn.primary} ${btn.sm} shrink-0`}
         >
-          {creating ? "…" : "＋ New note"}
+          {!creating && <PlusIcon className="h-4 w-4" />}
+          {creating ? "…" : "New note"}
         </button>
       </div>
-      <p className="mb-4 text-sm text-slate-500">
+      <p className="mb-4 text-sm text-ink-muted">
         Jot down anything as you learn. Notes support Markdown and save
         automatically.
       </p>
@@ -109,14 +113,14 @@ export function NotesPage() {
         </div>
       )}
 
-      {notes.status === "loading" && <p className="text-slate-500">Loading…</p>}
+      {notes.status === "loading" && <p className="text-ink-muted">Loading…</p>}
       {notes.status === "ready" && list.length === 0 && (
-        <p className="mt-4 rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700">
-          No notes yet. Tap “＋ New note” to start writing.
+        <p className="mt-4 rounded-card border border-dashed border-line-control p-6 text-center text-sm text-ink-muted">
+          No notes yet. Tap “New note” to start writing.
         </p>
       )}
       {notes.status === "ready" && list.length > 0 && filtered.length === 0 && (
-        <p className="text-slate-500">No notes match.</p>
+        <p className="text-ink-muted">No notes match.</p>
       )}
 
       {filtered.length > 0 && (
@@ -133,26 +137,22 @@ export function NotesPage() {
 function NoteCard({ note }: { note: Note }) {
   const preview = snippet(note.body);
   return (
-    <Link
-      to={`/notes/${note.id}`}
-      className="flex flex-col rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900"
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 font-medium">
-          {note.title.trim() || "Untitled"}
+    <Link to={`/notes/${note.id}`} className={`${cardLink} flex items-start gap-3`}>
+      <SectionIcon section="notes" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="min-w-0 font-semibold leading-6 tracking-[-0.005em]">{note.title.trim() || "Untitled"}</h2>
+          <span className="shrink-0 text-xs text-ink-subtle">{timeAgo(note.updatedAt)}</span>
         </div>
-        <span className="shrink-0 text-xs text-slate-400">
-          {timeAgo(note.updatedAt)}
-        </span>
+        <p className="mt-1 line-clamp-3 text-sm text-ink-muted">
+          {preview || <span className="italic text-ink-subtle">Empty note</span>}
+        </p>
+        {note.category.trim() && (
+          <div className="mt-3">
+            <Pill>{note.category.trim()}</Pill>
+          </div>
+        )}
       </div>
-      {note.category.trim() && (
-        <div className="mt-1 text-xs uppercase tracking-wide text-slate-500">
-          {note.category.trim()}
-        </div>
-      )}
-      <p className="mt-2 line-clamp-3 text-sm text-slate-500">
-        {preview || <span className="italic text-slate-400">Empty note</span>}
-      </p>
     </Link>
   );
 }

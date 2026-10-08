@@ -9,17 +9,7 @@ import {
   type ExerciseSet,
 } from "@mdb/shared";
 import { ExerciseItemView } from "../components/ExerciseItemView";
-import {
-  CheckIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  CrossIcon,
-  LanguagesIcon,
-  LightbulbIcon,
-  ArrowUpIcon,
-  RetryIcon,
-  SparklesIcon,
-} from "../components/icons";
+import { ArrowUpIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CrossIcon, LanguagesIcon, LightbulbIcon, RetryIcon, SparklesIcon } from "../components/icons";
 import { btn, card } from "../components/ui";
 import { TapToTranslate } from "../components/TapToTranslate";
 import { TutorMarkdown } from "../components/TutorMarkdown";
@@ -39,13 +29,14 @@ export function ExercisePlayer() {
   const progress = useAsync(() => api.exerciseProgress(id!).catch(() => null), [id]);
 
   if (set.status === "loading" || progress.status === "loading")
-    return <p className="text-slate-500">Loading…</p>;
+    return <p className="text-ink-muted">Loading…</p>;
   if (set.status === "error")
     return (
       <div>
-        <p className="text-red-600">Exercise not found.</p>
+        <p className="text-danger">Exercise not found.</p>
         <Link to="/exercises" className="text-sm underline">
-          ← Exercises
+          <ChevronLeftIcon className="h-4 w-4" />
+          Exercises
         </Link>
       </div>
     );

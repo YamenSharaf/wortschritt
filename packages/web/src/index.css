@@ -259,7 +259,7 @@ body {
 
   /* Rendered markdown (cheat sheets). Low-specificity :where() so utilities win. */
   .md :where(h1) {
-    @apply mb-2 mt-4 text-lg font-bold;
+    @apply mb-2 mt-5 text-lg font-semibold tracking-[-0.01em];
   }
   .md :where(h2) {
     @apply mb-2 mt-4 text-base font-semibold;
@@ -277,22 +277,22 @@ body {
     @apply my-1;
   }
   .md :where(a) {
-    @apply text-blue-600 underline dark:text-blue-400;
+    @apply text-brand-ink underline underline-offset-2;
   }
   .md :where(strong) {
     @apply font-semibold;
   }
   .md :where(code) {
-    @apply rounded bg-slate-100 px-1 py-0.5 text-[0.85em] dark:bg-slate-800;
+    @apply rounded-[5px] bg-surface-sunken px-1 py-0.5 font-mono text-[0.85em];
   }
   .md :where(table) {
     @apply my-2 w-full border-collapse text-sm;
   }
   .md :where(th) {
-    @apply border border-slate-300 bg-slate-100 px-2 py-1 text-left font-semibold dark:border-slate-700 dark:bg-slate-800;
+    @apply border border-line bg-surface-sunken px-2.5 py-1.5 text-left font-semibold;
   }
   .md :where(td) {
-    @apply whitespace-nowrap border border-slate-300 px-2 py-1 dark:border-slate-700;
+    @apply whitespace-nowrap border border-line px-2.5 py-1.5;
   }
   .md :where(> :first-child) {
     @apply mt-0;

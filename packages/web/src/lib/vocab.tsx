@@ -600,10 +600,10 @@ function WordPanel({
                       type="button"
                       onClick={() => void toggleGroup(g.id, !member)}
                       className={`rounded-full border px-2.5 py-1 text-xs ${
- member
- ? "border-transparent bg-brand-soft text-brand-ink"
- : "border-line-control text-ink-muted hover:border-line-strong"
- }`}
+                        member
+                          ? "border-transparent bg-brand-soft text-brand-ink"
+                          : "border-line-control text-ink-muted hover:border-line-strong"
+                      }`}
                     >
                       {member && <CheckIcon className="mr-0.5 inline h-3 w-3" />}
                       {g.name}

@@ -56,7 +56,7 @@ export function App() {
 
   if (loading) {
     return (
-      <div className="grid min-h-screen place-items-center text-slate-500">
+      <div className="grid min-h-screen place-items-center text-ink-muted">
         Loading…
       </div>
     );

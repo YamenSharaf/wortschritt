@@ -4,6 +4,7 @@ import type { OAuthRequestView } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { AppTitle } from "../components/AppTitle";
+import { btn } from "../components/ui";
 
 /**
  * The OAuth consent screen (`/oauth/authorize`): an MCP client such as Claude
@@ -28,7 +29,7 @@ export function OAuthConsent() {
       .catch((e) => setError(e instanceof ApiError ? e.message : "This sign-in link doesn't work."));
   }, [authenticated, location.search]);
 
-  if (loading) return <div className="grid min-h-screen place-items-center text-slate-500">Loading…</div>;
+  if (loading) return <div className="grid min-h-screen place-items-center text-ink-muted">Loading…</div>;
   if (!authenticated) {
     return <Navigate to={`/login?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   }
@@ -47,29 +48,29 @@ export function OAuthConsent() {
 
   return (
     <div className="grid min-h-screen place-items-center px-4">
-      <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="w-full max-w-sm rounded-card border border-line bg-surface p-6 shadow-sm ">
         <h1 className="mb-4 text-xl font-bold">
           <AppTitle />
         </h1>
         {error && (
           <>
             <p className="mb-2 font-medium">Can't connect this app</p>
-            <p className="text-sm text-red-600">{error}</p>
+            <p className="text-sm text-danger">{error}</p>
           </>
         )}
-        {!error && !view && <p className="text-slate-500">Loading…</p>}
+        {!error && !view && <p className="text-ink-muted">Loading…</p>}
         {!error && view && (
           <>
             <p className="mb-4">
               <strong>{view.client.name}</strong> wants to access your account{" "}
               <strong>{view.username}</strong>.
             </p>
-            <p className="mb-2 text-sm text-slate-500">It will be able to do everything you can:</p>
-            <ul className="mb-4 list-disc space-y-1 pl-5 text-sm text-slate-500">
+            <p className="mb-2 text-sm text-ink-muted">It will be able to do everything you can:</p>
+            <ul className="mb-4 list-disc space-y-1 pl-5 text-sm text-ink-muted">
               <li>read and change your vocabulary, notes and progress</li>
               <li>add exercises and cheat sheets, and edit or delete the ones you added</li>
             </ul>
-            <p className="mb-6 text-sm text-slate-500">
+            <p className="mb-6 text-sm text-ink-muted">
               You'll be sent back to <strong>{view.client.redirectHost}</strong>. Only allow apps you
               set up yourself. You can disconnect it any time in Settings.
             </p>
@@ -78,7 +79,7 @@ export function OAuthConsent() {
                 type="button"
                 disabled={busy}
                 onClick={() => decide(false)}
-                className="flex-1 rounded-lg border border-slate-300 px-4 py-2 font-medium disabled:opacity-50 dark:border-slate-700"
+                className="flex-1 rounded-control border border-line-control px-4 py-2 font-medium disabled:opacity-50 "
               >
                 Deny
               </button>
@@ -86,7 +87,7 @@ export function OAuthConsent() {
                 type="button"
                 disabled={busy}
                 onClick={() => decide(true)}
-                className="flex-1 rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground disabled:opacity-50"
+                className={`${btn.primary} flex-1`}
               >
                 Allow
               </button>
@@ -94,7 +95,7 @@ export function OAuthConsent() {
             <button
               type="button"
               onClick={() => void logout()}
-              className="mt-3 w-full text-center text-sm text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              className="mt-3 w-full text-center text-sm text-ink-muted hover:text-ink "
             >
               Not {view.username}? Sign out
             </button>

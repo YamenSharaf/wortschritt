@@ -5,6 +5,8 @@ import type { Cheatsheet } from "@mdb/shared";
 import { TapToTranslate } from "../components/TapToTranslate";
 import { api } from "../lib/api";
 import { useAsync } from "../lib/useAsync";
+import { ChevronLeftIcon, SheetsIcon, SparklesIcon } from "../components/icons";
+import { btn } from "../components/ui";
 
 const mdOptions = {
   forceBlock: true,
@@ -191,15 +193,16 @@ export function NoteEditor() {
   }
 
   if (loaded.status === "loading") {
-    return <p className="text-slate-500">Loading…</p>;
+    return <p className="text-ink-muted">Loading…</p>;
   }
   if (loaded.status === "error" || (loaded.status === "ready" && !loaded.data)) {
     return (
       <div>
-        <Link to="/notes" className="text-sm text-slate-500 hover:underline">
-          ← Notes
+        <Link to="/notes" className="inline-flex items-center gap-1 text-sm font-medium text-ink-muted hover:text-ink">
+          <ChevronLeftIcon className="h-4 w-4" />
+          Notes
         </Link>
-        <p className="mt-4 text-red-600">Note not found.</p>
+        <p className="mt-4 text-danger">Note not found.</p>
       </div>
     );
   }
@@ -207,8 +210,9 @@ export function NoteEditor() {
   return (
     <div>
       <div className="flex items-center justify-between gap-3">
-        <Link to="/notes" className="text-sm text-slate-500 hover:underline">
-          ← Notes
+        <Link to="/notes" className="inline-flex items-center gap-1 text-sm font-medium text-ink-muted hover:text-ink">
+          <ChevronLeftIcon className="h-4 w-4" />
+          Notes
         </Link>
         <SaveIndicator state={saveState} />
       </div>
@@ -217,7 +221,7 @@ export function NoteEditor() {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Title"
-        className="mt-3 w-full border-0 bg-transparent p-0 text-2xl font-bold outline-none placeholder:text-slate-300 dark:placeholder:text-slate-600"
+        className="mt-3 w-full border-0 bg-transparent p-0 text-2xl font-bold outline-none placeholder:text-ink-subtle "
       />
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -226,7 +230,7 @@ export function NoteEditor() {
           onChange={(e) => setCategory(e.target.value)}
           placeholder="Category (optional)"
           list="note-categories"
-          className="rounded-lg border border-slate-300 bg-transparent px-3 py-1 text-sm outline-none focus:border-accent dark:border-slate-700"
+          className="rounded-control border border-line-control bg-transparent px-3 py-1 text-sm outline-none focus:border-focus "
         />
         <datalist id="note-categories">
           {categories.map((c) => (
@@ -236,7 +240,7 @@ export function NoteEditor() {
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <div className="inline-flex gap-1 rounded-xl border border-slate-200 p-1 dark:border-slate-800">
+        <div className="inline-flex gap-1 rounded-card border border-line p-1 ">
           <TabBtn active={mode === "write"} onClick={() => setMode("write")}>
             Write
           </TabBtn>
@@ -244,7 +248,7 @@ export function NoteEditor() {
             Preview
           </TabBtn>
         </div>
-        <div className="inline-flex items-center gap-0.5 rounded-xl border border-slate-200 p-1 dark:border-slate-800">
+        <div className="inline-flex items-center gap-0.5 rounded-card border border-line p-1 ">
           <FontBtn
             label="Smaller text"
             disabled={fontSize <= MIN_FONT}
@@ -271,7 +275,7 @@ export function NoteEditor() {
                 setUndoBody(null);
                 setMode("write");
               }}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:border-slate-500 dark:border-slate-700"
+              className="rounded-control border border-line-control px-3 py-1.5 text-sm hover:border-line-strong "
             >
               ↶ Undo cleanup
             </button>
@@ -280,23 +284,25 @@ export function NoteEditor() {
             type="button"
             onClick={cleanUp}
             disabled={aiBusy || !body.trim()}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+            className={`${btn.secondary} ${btn.sm}`}
           >
-            {aiBusy ? "Cleaning…" : "✨ Clean up"}
+            {!aiBusy && <SparklesIcon className="h-4 w-4" />}
+            {aiBusy ? "Cleaning…" : "Clean up"}
           </button>
           <button
             type="button"
             onClick={saveAsCheatsheet}
             disabled={savingSheet || !body.trim()}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+            className={`${btn.secondary} ${btn.sm}`}
           >
-            {savingSheet ? "Saving…" : "📄 Save as cheat sheet"}
+            {!savingSheet && <SheetsIcon className="h-4 w-4" />}
+            {savingSheet ? "Saving…" : "Save as cheat sheet"}
           </button>
         </div>
       </div>
 
       {aiError && (
-        <p className="mt-2 rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-xs text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+        <p className="mt-2 rounded-control border border-transparent bg-danger-soft px-3 py-1.5 text-xs text-danger ">
           {aiError}
         </p>
       )}
@@ -310,19 +316,19 @@ export function NoteEditor() {
             placeholder={
               "Write your notes here. Markdown works:\n\n# Heading\n- point one\n- **bold** and `code`\n\n| der | die | das |\n| --- | --- | --- |"
             }
-            className="min-h-[60vh] w-full resize-y rounded-xl border border-slate-200 bg-white p-4 font-note leading-relaxed outline-none focus:border-accent dark:border-slate-800 dark:bg-slate-900"
+            className="min-h-[60vh] w-full resize-y rounded-card border border-line bg-surface p-4 font-note leading-relaxed outline-none focus:border-focus "
           />
         ) : (
           <div
             style={{ fontSize }}
-            className="min-h-[60vh] rounded-xl border border-slate-200 p-4 dark:border-slate-800"
+            className="min-h-[60vh] rounded-card border border-line p-4 "
           >
             {body.trim() ? (
               <TapToTranslate className="md font-note leading-relaxed">
                 <Markdown options={mdOptions}>{body}</Markdown>
               </TapToTranslate>
             ) : (
-              <p className="italic text-slate-400">Nothing to preview yet.</p>
+              <p className="italic text-ink-subtle">Nothing to preview yet.</p>
             )}
           </div>
         )}
@@ -332,7 +338,7 @@ export function NoteEditor() {
         <button
           type="button"
           onClick={del}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-red-600 hover:border-red-400 dark:border-slate-700"
+          className="rounded-control border border-line-control px-3 py-1.5 text-sm font-medium text-danger hover:border-danger "
         >
           Delete note
         </button>
@@ -354,10 +360,10 @@ function TabBtn({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-lg px-3 py-1.5 text-sm font-medium ${
+      className={`rounded-control px-3 py-1.5 text-sm font-medium ${
         active
-          ? "bg-accent text-accent-foreground"
-          : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+          ? "bg-surface-raised text-ink shadow-card"
+          : "text-ink-muted hover:text-ink"
       }`}
     >
       {children}
@@ -383,7 +389,7 @@ function FontBtn({
       title={label}
       disabled={disabled}
       onClick={onClick}
-      className="flex h-7 items-center gap-0.5 rounded-lg px-2 text-slate-500 hover:bg-slate-100 disabled:opacity-40 dark:hover:bg-slate-800"
+      className="flex h-7 items-center gap-0.5 rounded-control px-2 text-ink-muted hover:bg-surface-sunken disabled:opacity-40 "
     >
       {children}
     </button>
@@ -393,9 +399,9 @@ function FontBtn({
 function SaveIndicator({ state }: { state: SaveState }) {
   const map: Record<SaveState, { text: string; cls: string }> = {
     idle: { text: "", cls: "" },
-    saving: { text: "Saving…", cls: "text-slate-400" },
-    saved: { text: "Saved ✓", cls: "text-green-600" },
-    error: { text: "Save failed", cls: "text-red-600" },
+    saving: { text: "Saving…", cls: "text-ink-subtle" },
+    saved: { text: "Saved", cls: "text-success" },
+    error: { text: "Save failed", cls: "text-danger" },
   };
   const { text, cls } = map[state];
   if (!text) return null;
