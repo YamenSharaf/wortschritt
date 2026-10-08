@@ -105,7 +105,7 @@ type Client = typeof schema.oauthClients.$inferSelect;
 
 /**
  * A native app's private-use URI scheme (RFC 8252 §7.1): reverse-DNS, so it
- * contains a dot (e.g. "app.mitdembaby:/oauth/callback").
+ * contains a dot (e.g. "eu.yamen.wortschritt:/oauth/callback").
  */
 const PRIVATE_SCHEME = /^[a-z][a-z0-9+-]*(\.[a-z0-9+-]+)+:$/;
 
