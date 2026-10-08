@@ -278,3 +278,29 @@ body {
     opacity: 0.4;
   }
 }
+
+/* Full-screen reader: the bar takes the page colour; pages are CSS columns. */
+.reader-bar {
+  background: rgb(var(--r-bg) / 0.96);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 1px 0 rgb(var(--r-rule));
+}
+.reader-flow {
+  column-fill: auto;
+  transition: transform 0.25s ease;
+}
+.reader-flow .reader-text :where(p) {
+  orphans: 2;
+  widows: 2;
+}
+.reader-flow .reader-text :where(h1, h2, h3, header) {
+  break-after: avoid;
+}
+.reader.fixed {
+  box-shadow: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reader-flow {
+    transition: none;
+  }
+}

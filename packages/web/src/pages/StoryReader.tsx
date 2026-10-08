@@ -4,7 +4,7 @@ import "@fontsource/literata/600.css";
 import "@fontsource/atkinson-hyperlegible/400.css";
 import "@fontsource/atkinson-hyperlegible/400-italic.css";
 import "@fontsource/atkinson-hyperlegible/700.css";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Markdown from "markdown-to-jsx";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
@@ -32,6 +32,8 @@ const FONTS: Record<ReaderSettings["font"], { label: string; family: string }> =
 };
 const LINE_HEIGHTS: Record<ReaderSettings["lineHeight"], number> = { compact: 1.5, normal: 1.75, relaxed: 2 };
 const WIDTHS: Record<ReaderSettings["width"], string> = { narrow: "32rem", medium: "38rem", wide: "46rem" };
+/** The same widths in px, for the page columns. */
+const WIDTH_PX: Record<ReaderSettings["width"], number> = { narrow: 512, medium: 608, wide: 736 };
 const THEMES: { id: ReaderSettings["theme"]; label: string; swatch: string }[] = [
   { id: "auto", label: "Auto", swatch: "linear-gradient(135deg,#fff 50%,#11141a 50%)" },
   { id: "light", label: "Light", swatch: "#ffffff" },
@@ -69,7 +71,6 @@ function StoryReaderView() {
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [reader, setReader] = useState<ReaderSettings>(() => readerSettingsSchema.parse({}));
-  const [panel, setPanel] = useState(false);
   const [llmGrading, setLlmGrading] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
   /** English lines per paragraph index (null = not translated yet). */
@@ -82,6 +83,29 @@ function StoryReaderView() {
   const articleRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<(HTMLDivElement | null)[]>([]);
   const { words: savedWords } = useVocab();
+
+  // --- layout state: pages (CSS columns in a clipped box) or scroll.
+  const paged = reader.layout === "pages";
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const areaRef = useRef<HTMLDivElement>(null);
+  const flowRef = useRef<HTMLDivElement>(null);
+  const [page, setPage] = useState(0);
+  const [pageCount, setPageCount] = useState(1);
+  const [colWidth, setColWidth] = useState(0);
+  const [blockPages, setBlockPages] = useState<number[]>([]);
+  /** The page each paragraph ends on (it may continue onto the next). */
+  const blockEnds = useRef<number[]>([]);
+  /** Set when a re-flow moves the page: it mustn't move the anchor too. */
+  const reflowing = useRef(false);
+  /** The top bar and page counter (hidden while reading). */
+  const [chrome, setChrome] = useState(true);
+  const [sheet, setSheet] = useState<"settings" | "glossary" | null>(null);
+  const pageRef = useRef(0);
+  pageRef.current = page;
+  const countRef = useRef(1);
+  countRef.current = pageCount;
+  const blockPagesRef = useRef<number[]>([]);
+  blockPagesRef.current = blockPages;
 
   useEffect(() => {
     api
@@ -117,40 +141,51 @@ function StoryReaderView() {
   const queued = useRef(new Set<number>());
   const flushTimer = useRef<number>();
   const inFlight = useRef(new Set<number>());
+  const linesRef = useRef(lines);
+  linesRef.current = lines;
+  const requestLines = useCallback(
+    (indices: number[]) => {
+      if (!story || !aiEnabled || translateError) return;
+      for (const i of indices) {
+        if (linesRef.current[i] === null && !inFlight.current.has(i)) queued.current.add(i);
+      }
+      window.clearTimeout(flushTimer.current);
+      flushTimer.current = window.setTimeout(() => {
+        const batch = [...queued.current].filter((i) => !inFlight.current.has(i)).slice(0, 4);
+        queued.current.clear();
+        if (!batch.length) return;
+        batch.forEach((i) => inFlight.current.add(i));
+        setTranslating(new Set(inFlight.current));
+        api
+          .translateStory(story.id, batch)
+          .then((t) => setLines(Object.fromEntries(t.paragraphs.map((p) => [p.index, p.lines]))))
+          .catch((e) => setTranslateError(e instanceof Error ? e.message : "Couldn't translate."))
+          .finally(() => {
+            batch.forEach((i) => inFlight.current.delete(i));
+            setTranslating(new Set(inFlight.current));
+          });
+      }, 250);
+    },
+    [story, aiEnabled, translateError],
+  );
+  // Scroll: paragraphs as they come into view.
   useEffect(() => {
-    if (!story || !translationsOn || !aiEnabled || translateError) return;
-    const flush = () => {
-      const batch = [...queued.current].filter((i) => !inFlight.current.has(i)).slice(0, 4);
-      queued.current.clear();
-      if (!batch.length) return;
-      batch.forEach((i) => inFlight.current.add(i));
-      setTranslating(new Set(inFlight.current));
-      api
-        .translateStory(story.id, batch)
-        .then((t) => setLines(Object.fromEntries(t.paragraphs.map((p) => [p.index, p.lines]))))
-        .catch((e) => setTranslateError(e instanceof Error ? e.message : "Couldn't translate."))
-        .finally(() => {
-          batch.forEach((i) => inFlight.current.delete(i));
-          setTranslating(new Set(inFlight.current));
-        });
-    };
+    if (!translationsOn || paged) return;
     const observer = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          const i = Number((e.target as HTMLElement).dataset.index);
-          if (e.isIntersecting && lines[i] === null && !inFlight.current.has(i)) queued.current.add(i);
-        }
-        window.clearTimeout(flushTimer.current);
-        flushTimer.current = window.setTimeout(flush, 250);
-      },
-      { rootMargin: "200px 0px" },
+      (entries) =>
+        requestLines(entries.filter((e) => e.isIntersecting).map((e) => Number((e.target as HTMLElement).dataset.index))),
+      { root: scrollerRef.current, rootMargin: "200px 0px" },
     );
     blockRefs.current.forEach((el) => el && observer.observe(el));
-    return () => {
-      observer.disconnect();
-      window.clearTimeout(flushTimer.current);
-    };
-  }, [story, translationsOn, aiEnabled, lines, translateError]);
+    return () => observer.disconnect();
+  }, [translationsOn, paged, requestLines, lines]);
+  // Pages: what's on this page and the next.
+  useEffect(() => {
+    if (!translationsOn || !paged || !blockPages.length) return;
+    requestLines(
+      blockPages.flatMap((start, i) => (start <= page + 1 && (blockPages[i + 1] ?? pageCount) >= page ? [i] : [])),
+    );
+  }, [translationsOn, paged, page, pageCount, blockPages, requestLines, lines]);
 
   // Base forms of the story's words, so "ging" is underlined when "gehen" is saved.
   useEffect(() => {
@@ -215,27 +250,120 @@ function StoryReaderView() {
     return () => reg.delete("saved-vocab");
   }, [reader.highlightVocab, savedWords, lemmas, blocks, reader.font, reader.size, reader.translations, lines]);
 
-  // --- reading position: restored once, then saved as you scroll.
+  // --- reading position and layout ---------------------------------------
+  // `anchor` is the first paragraph on screen: a re-flow (font, size, window,
+  // translations) or switching pages ↔ scroll keeps you on it.
+  const anchor = useRef(0);
   const progress = useRef(0);
   const savedProgress = useRef(0);
   const restored = useRef(false);
-  const measure = useCallback(() => {
-    const el = articleRef.current;
-    if (!el) return 0;
-    const rect = el.getBoundingClientRect();
-    const seen = window.innerHeight - rect.top;
-    return Math.min(1, Math.max(0, seen / rect.height));
-  }, []);
-  useEffect(() => {
-    if (!view || restored.current || !articleRef.current) return;
-    restored.current = true;
-    progress.current = savedProgress.current = view.progress;
-    if (view.progress > 0.05 && view.progress < 0.97 && !view.readAt) {
-      const el = articleRef.current;
-      const top = el.getBoundingClientRect().top + window.scrollY;
-      window.scrollTo({ top: top + view.progress * el.offsetHeight - window.innerHeight });
+  const GAP = 48;
+  const step = colWidth + GAP;
+
+  /** Pages: measure the column flow — page count, and where each paragraph starts. */
+  const relayout = useCallback(() => {
+    const area = areaRef.current;
+    const flow = flowRef.current;
+    if (!paged || !area || !flow || !view) return;
+    const width = Math.max(200, Math.min(WIDTH_PX[reader.width], area.clientWidth - 40));
+    flow.style.width = `${width}px`;
+    flow.style.height = `${area.clientHeight}px`;
+    flow.style.columnWidth = `${width}px`;
+    flow.style.columnGap = `${GAP}px`;
+    const s = width + GAP;
+    const base = flow.getBoundingClientRect().left;
+    const pageOf = (r: DOMRect | undefined) => (r ? Math.max(0, Math.floor((r.left - base + 1) / s)) : 0);
+    const starts = blockRefs.current.map((el) => pageOf(el?.getClientRects()[0]));
+    blockEnds.current = blockRefs.current.map((el) => {
+      const rects = el?.getClientRects();
+      return rects?.length ? pageOf(rects[rects.length - 1]) : 0;
+    });
+    const count = Math.max(1, Math.ceil((flow.scrollWidth + GAP) / s));
+    const wasEnd = restored.current && pageRef.current >= countRef.current;
+    setColWidth(width);
+    setPageCount(count);
+    setBlockPages(starts);
+    reflowing.current = restored.current;
+    if (!restored.current) {
+      restored.current = true;
+      progress.current = savedProgress.current = view.progress;
+      const p = view.progress;
+      setPage(p > 0.02 && p < 0.98 && !view.readAt ? Math.min(count - 1, Math.floor(p * count)) : 0);
+    } else {
+      setPage(wasEnd ? count : Math.min(count - 1, starts[anchor.current] ?? 0));
     }
-  }, [view]);
+  }, [paged, reader.width, view]);
+
+  useLayoutEffect(() => {
+    relayout();
+  }, [relayout, blocks, reader.font, reader.size, reader.lineHeight, reader.translations, lines, revealed]);
+  useEffect(() => {
+    const area = areaRef.current;
+    if (!paged || !area) return;
+    const ro = new ResizeObserver(() => relayout());
+    ro.observe(area);
+    // Web fonts arrive after the first layout and change the text's size.
+    void document.fonts?.ready.then(() => relayout());
+    return () => ro.disconnect();
+  }, [paged, relayout]);
+
+  // Pages: the anchor follows the pages you turn (not re-flows); so does progress.
+  useEffect(() => {
+    if (!paged || !blockPages.length) return;
+    if (reflowing.current) reflowing.current = false;
+    else if (page < pageCount) anchor.current = firstOnPage(blockEnds.current, page);
+    progress.current = Math.max(progress.current, Math.min(1, (page + 1) / pageCount));
+  }, [paged, page, pageCount, blockPages]);
+
+  const turn = useCallback((delta: number) => {
+    setPage((p) => Math.max(0, Math.min(countRef.current, p + delta)));
+    setChrome(false);
+    setSheet(null);
+  }, []);
+
+  // Scroll: restore / keep the anchor, track progress, hide the bars going down.
+  const scrollTo = useCallback((i: number) => {
+    const sc = scrollerRef.current;
+    const el = blockRefs.current[i];
+    if (sc && el) sc.scrollTop = Math.max(0, el.offsetTop - 64);
+  }, []);
+  useLayoutEffect(() => {
+    if (paged || !view || !scrollerRef.current || !articleRef.current) return;
+    if (!restored.current) {
+      restored.current = true;
+      progress.current = savedProgress.current = view.progress;
+      const sc = scrollerRef.current;
+      const el = articleRef.current;
+      if (view.progress > 0.05 && view.progress < 0.97 && !view.readAt) {
+        sc.scrollTop = el.offsetTop + view.progress * el.offsetHeight - sc.clientHeight;
+      }
+    } else {
+      scrollTo(anchor.current);
+    }
+  }, [paged, view, scrollTo]);
+  useEffect(() => {
+    const sc = scrollerRef.current;
+    if (paged || !sc) return;
+    let last = sc.scrollTop;
+    const onScroll = () => {
+      const el = articleRef.current;
+      if (el) {
+        const seen = sc.scrollTop + sc.clientHeight - el.offsetTop;
+        progress.current = Math.max(progress.current, Math.min(1, Math.max(0, seen / el.offsetHeight)));
+      }
+      const i = blockRefs.current.findIndex((b) => b && b.offsetTop + b.offsetHeight > sc.scrollTop + 64);
+      if (i >= 0) anchor.current = i;
+      const d = sc.scrollTop - last;
+      if (Math.abs(d) > 8) {
+        setChrome(d < 0 || sc.scrollTop < 40);
+        last = sc.scrollTop;
+      }
+    };
+    sc.addEventListener("scroll", onScroll, { passive: true });
+    return () => sc.removeEventListener("scroll", onScroll);
+  }, [paged, view]);
+
+  // Save progress every couple of seconds, and on leaving.
   useEffect(() => {
     if (!view) return;
     const save = () => {
@@ -243,19 +371,59 @@ function StoryReaderView() {
       savedProgress.current = progress.current;
       api.storyProgress(view.story.id, Math.round(progress.current * 1000) / 1000).catch(() => {});
     };
-    const onScroll = () => {
-      progress.current = Math.max(progress.current, measure());
-    };
     const timer = window.setInterval(save, 2000);
-    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      window.removeEventListener("scroll", onScroll);
       window.clearInterval(timer);
       save();
     };
-  }, [view, measure]);
+  }, [view]);
 
-  // --- read aloud.
+  // Keyboard: arrows / space / page keys turn pages; Escape closes a sheet.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t.closest("input,textarea,select,[contenteditable]")) return;
+      if (e.key === "Escape") setSheet(null);
+      if (!paged) return;
+      if (["ArrowRight", "PageDown", " "].includes(e.key)) {
+        e.preventDefault();
+        turn(1);
+      } else if (["ArrowLeft", "PageUp"].includes(e.key)) {
+        e.preventDefault();
+        turn(-1);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [paged, turn]);
+
+  // Swipes (touch/pen) turn pages; the click that ends a swipe is swallowed.
+  const swipe = useRef<{ x: number; y: number } | null>(null);
+  const swiped = useRef(false);
+
+  // The reader owns the screen while it's open.
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
+  // Full screen (hides the browser's bars too, where supported).
+  const canFullscreen = typeof document !== "undefined" && Boolean(document.fullscreenEnabled);
+  const [fullscreen, setFullscreen] = useState(() => Boolean(document.fullscreenElement));
+  useEffect(() => {
+    const on = () => setFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", on);
+    return () => document.removeEventListener("fullscreenchange", on);
+  }, []);
+  function toggleFullscreen() {
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+    else void document.documentElement.requestFullscreen().catch(() => {});
+  }
+
+  // --- read aloud: follows along by turning pages / scrolling.
   function readFrom(start: number) {
     const texts = blockRefs.current.slice(start).map(germanText);
     speakSequence(texts, {
@@ -263,9 +431,14 @@ function StoryReaderView() {
       onIndex: (i) => {
         const idx = start + i;
         setSpeaking(idx);
+        if (paged) {
+          const p = blockPagesRef.current[idx];
+          if (p !== undefined && p !== pageRef.current) setPage(p);
+          return;
+        }
+        const sc = scrollerRef.current;
         const el = blockRefs.current[idx];
-        const r = el?.getBoundingClientRect();
-        if (el && r && (r.top < 80 || r.bottom > window.innerHeight - 96)) {
+        if (sc && el && (el.offsetTop < sc.scrollTop + 64 || el.offsetTop + el.offsetHeight > sc.scrollTop + sc.clientHeight - 48)) {
           el.scrollIntoView({ behavior: "smooth", block: "center" });
         }
       },
@@ -273,8 +446,7 @@ function StoryReaderView() {
     });
   }
   function playFromView() {
-    const first = blockRefs.current.findIndex((el) => el && el.getBoundingClientRect().bottom > 80);
-    readFrom(Math.max(0, first));
+    readFrom(anchor.current);
   }
   function stop() {
     stopSpeaking();
@@ -287,7 +459,6 @@ function StoryReaderView() {
     if (!view?.series?.next) return;
     if (!view.readAt) await markRead(true).catch(() => {});
     navigate(`/stories/${view.series.next}`);
-    window.scrollTo({ top: 0 });
   }
 
   async function markRead(read: boolean) {
@@ -296,209 +467,340 @@ function StoryReaderView() {
     setView({ ...view, readAt: read ? Math.floor(Date.now() / 1000) : null });
   }
 
-  if (error) {
+  if (error || !view || !story) {
     return (
-      <div>
-        <Link to="/stories" className="text-sm text-slate-500 hover:underline">
-          ← Stories
-        </Link>
-        <p className="mt-4 text-red-600">{error}</p>
+      <div className="reader fixed inset-0 z-40 grid place-items-center p-6 text-center" data-theme={reader.theme}>
+        {error ? (
+          <div>
+            <p className="mb-3">{error}</p>
+            <Link to="/stories" className="underline">
+              ← Stories
+            </Link>
+          </div>
+        ) : (
+          <p className="reader-muted">Loading…</p>
+        )}
       </div>
     );
   }
-  if (!view || !story) return <p className="text-slate-500">Loading…</p>;
 
   const book = view.series;
   const canSpeak = ttsSupported();
-  const toolBtn =
-    "rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm hover:border-slate-500 dark:border-slate-700";
+  const atEnd = paged && page >= pageCount;
+  const iconBtn =
+    "grid h-9 min-w-9 place-items-center rounded-lg px-2 text-sm hover:bg-black/5 dark:hover:bg-white/10";
+  const typography: React.CSSProperties = {
+    fontFamily: FONTS[reader.font].family,
+    fontSize: `${reader.size}px`,
+    lineHeight: LINE_HEIGHTS[reader.lineHeight],
+  };
 
-  return (
-    <div>
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <Link
-          to={book ? `/series/${book.id}` : "/stories"}
-          className="mr-auto min-w-0 truncate text-sm text-slate-500 hover:underline"
-        >
-          ← {book ? book.title : "Stories"}
-        </Link>
-        {canSpeak &&
-          (speaking === null ? (
-            <button type="button" onClick={playFromView} className={toolBtn} title="Read aloud from here">
-              ▶ Listen
-            </button>
-          ) : (
-            <button type="button" onClick={stop} className={toolBtn}>
-              ■ Stop
-            </button>
-          ))}
-        {(aiEnabled || hasAnyLines) && (
-          <button
-            type="button"
-            onClick={() => {
-              setTranslateError(null);
-              changeReader({
-                translations: reader.translations === "off" ? "peek" : reader.translations === "peek" ? "always" : "off",
-              });
-            }}
-            className={`${toolBtn} ${translationsOn ? "bg-slate-100 dark:bg-slate-800" : ""}`}
-            title="English line by line: off → peek (tap to reveal) → always"
-          >
-            EN{reader.translations === "peek" ? " · peek" : reader.translations === "always" ? " · on" : ""}
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => setPanel((p) => !p)}
-          className={`${toolBtn} ${panel ? "bg-slate-100 dark:bg-slate-800" : ""}`}
-          aria-expanded={panel}
-          title="Text settings"
-        >
-          Aa
-        </button>
-        <Link to={`/stories/${story.id}/edit`} className={toolBtn}>
-          Edit
-        </Link>
-      </div>
-
-      {panel && (
-        <ReaderPanel value={reader} onChange={changeReader} canSpeak={canSpeak} canTranslate={aiEnabled || hasAnyLines} />
-      )}
-      {translationsOn && translateError && (
-        <p className="mb-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">
-          {translateError}{" "}
-          <button type="button" className="underline" onClick={() => setTranslateError(null)}>
-            Try again
-          </button>
-        </p>
-      )}
-
-      <article className="reader rounded-2xl px-5 py-8 sm:px-10" data-theme={reader.theme} lang="de">
-        <div
-          className="mx-auto"
-          style={{
-            maxWidth: WIDTHS[reader.width],
-            fontFamily: FONTS[reader.font].family,
-            fontSize: `${reader.size}px`,
-            lineHeight: LINE_HEIGHTS[reader.lineHeight],
-          }}
-        >
-          <header className="mb-6">
-            {book && (
-              <p className="reader-muted mb-1 font-sans text-xs uppercase tracking-wide" lang="en">
-                Chapter {book.chapter} of {book.total}
-              </p>
-            )}
-            <h1 className="text-[1.6em] font-semibold leading-tight">{story.title}</h1>
-            {story.subtitle && <p className="reader-muted mt-1 text-[0.8em]" lang="en">{story.subtitle}</p>}
-            <p className="reader-muted mt-2 font-sans text-xs" lang="en">
-              {story.level} · {minutes(wordTotal)} min · {wordTotal} words
-              {view.readAt ? " · read ✓" : ""}
+  const text = (
+    <TapToTranslate onMiss={() => setChrome((c) => !c)}>
+      <div ref={articleRef} className="reader-text">
+        <header className="mb-[1.2em]">
+          {book && (
+            <p className="reader-muted mb-1 font-sans text-xs uppercase tracking-wide" lang="en">
+              Chapter {book.chapter} of {book.total}
             </p>
-          </header>
-
-          {story.glossary.length > 0 && <Glossary entries={story.glossary} />}
-
-          <TapToTranslate>
-            <div ref={articleRef} className="reader-text">
-              {blocks.map((b, i) => (
-                <div
-                  key={i}
-                  ref={(el) => {
-                    blockRefs.current[i] = el;
-                  }}
-                  data-index={i}
-                  className={`reader-block group relative ${speaking === i ? "is-speaking" : ""}`}
-                >
-                  {canSpeak && (
-                    <button
-                      type="button"
-                      data-no-tap
-                      onClick={() => readFrom(i)}
-                      aria-label="Read aloud from this paragraph"
-                      title="Read aloud from here"
-                      className="reader-muted absolute -left-9 top-0.5 hidden h-7 w-7 place-items-center rounded-lg opacity-0 transition group-hover:opacity-100 focus:opacity-100 md:grid"
-                    >
-                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                        <path d="M11 5 6 9H3v6h3l5 4V5Z" strokeLinejoin="round" />
-                        <path d="M15.5 8.5a5 5 0 0 1 0 7" strokeLinecap="round" />
-                      </svg>
-                    </button>
-                  )}
-                  {translationsOn ? (
-                    <TranslatedBlock
-                      block={b}
-                      lines={lines[i] ?? null}
-                      loading={translating.has(i)}
-                      peek={reader.translations === "peek"}
-                      revealed={revealed}
-                      onReveal={(k) => setRevealed((r) => new Set(r).add(k))}
-                      blockKey={i}
-                    />
-                  ) : (
-                    <Markdown options={{ forceBlock: true }}>{b}</Markdown>
-                  )}
-                </div>
-              ))}
-            </div>
-          </TapToTranslate>
-
-          <div className="mt-8 flex flex-wrap items-center gap-3 border-t pt-5 font-sans text-sm reader-rule" lang="en">
-            {view.readAt ? (
-              <>
-                <span className="text-green-600 dark:text-green-400">You've read this ✓</span>
-                <button type="button" onClick={() => void markRead(false)} className="reader-muted underline">
-                  Mark as unread
-                </button>
-              </>
-            ) : (
+          )}
+          <h1 className="text-[1.45em] font-semibold leading-tight">{story.title}</h1>
+          <p className="reader-muted mt-1 font-sans text-xs" lang="en">
+            {story.subtitle ? `${story.subtitle} · ` : ""}
+            {story.level} · {minutes(wordTotal)} min
+            {view.readAt ? " · read ✓" : ""}
+          </p>
+        </header>
+        {blocks.map((b, i) => (
+          <div
+            key={i}
+            ref={(el) => {
+              blockRefs.current[i] = el;
+            }}
+            data-index={i}
+            className={`reader-block group relative ${speaking === i ? "is-speaking" : ""}`}
+          >
+            {canSpeak && !paged && (
               <button
                 type="button"
-                onClick={() => void markRead(true)}
-                className={
-                  book?.next
-                    ? "reader-muted underline"
-                    : "rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground"
-                }
+                data-no-tap
+                onClick={() => readFrom(i)}
+                aria-label="Read aloud from this paragraph"
+                title="Read aloud from here"
+                className="reader-muted absolute -left-9 top-0.5 hidden h-7 w-7 place-items-center rounded-lg opacity-0 transition group-hover:opacity-100 focus:opacity-100 md:grid"
               >
-                Finished reading
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                  <path d="M11 5 6 9H3v6h3l5 4V5Z" strokeLinejoin="round" />
+                  <path d="M15.5 8.5a5 5 0 0 1 0 7" strokeLinecap="round" />
+                </svg>
               </button>
             )}
-            {book && (
-              <span className="ml-auto flex items-center gap-3">
-                {book.prev && (
-                  <Link to={`/stories/${book.prev}`} className="reader-muted underline">
-                    ← Previous
-                  </Link>
-                )}
-                {book.next ? (
-                  <button
-                    type="button"
-                    onClick={() => void nextChapter()}
-                    className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground"
-                  >
-                    Next chapter →
-                  </button>
-                ) : (
-                  <Link to={`/series/${book.id}`} className="reader-muted underline">
-                    {book.chapter < book.total ? "More chapters coming" : "Back to the book"}
-                  </Link>
-                )}
-              </span>
+            {translationsOn ? (
+              <TranslatedBlock
+                block={b}
+                lines={lines[i] ?? null}
+                loading={translating.has(i)}
+                peek={reader.translations === "peek"}
+                revealed={revealed}
+                onReveal={(k) => setRevealed((r) => new Set(r).add(k))}
+                blockKey={i}
+              />
+            ) : (
+              <Markdown options={{ forceBlock: true }}>{b}</Markdown>
             )}
           </div>
-        </div>
-      </article>
+        ))}
+      </div>
+    </TapToTranslate>
+  );
 
+  const ending = (
+    <div className="font-sans text-sm" lang="en">
+      <div className="reader-rule flex flex-wrap items-center gap-3 border-t pt-5">
+        {view.readAt ? (
+          <>
+            <span className="text-green-600 dark:text-green-400">You've read this ✓</span>
+            <button type="button" onClick={() => void markRead(false)} className="reader-muted underline">
+              Mark as unread
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => void markRead(true)}
+            className={book?.next ? "reader-muted underline" : "rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground"}
+          >
+            Finished reading
+          </button>
+        )}
+        {book && (
+          <span className="ml-auto flex items-center gap-3">
+            {book.prev && (
+              <Link to={`/stories/${book.prev}`} className="reader-muted underline">
+                ← Previous
+              </Link>
+            )}
+            {book.next ? (
+              <button
+                type="button"
+                onClick={() => void nextChapter()}
+                className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground"
+              >
+                Next chapter →
+              </button>
+            ) : (
+              <Link to={`/series/${book.id}`} className="reader-muted underline">
+                {book.chapter < book.total ? "More chapters coming" : "Back to the book"}
+              </Link>
+            )}
+          </span>
+        )}
+      </div>
       {story.questions.length > 0 && (
         <StoryQuiz story={story} llmGrading={llmGrading} onFinished={() => !view.readAt && void markRead(true)} />
       )}
+    </div>
+  );
+
+  return (
+    <div className="reader fixed inset-0 z-40 overflow-hidden" data-theme={reader.theme} lang="de">
+      {/* Top bar: hides while reading; a tap on the page (not a word) brings it back. */}
+      <div
+        className={`reader-bar absolute inset-x-0 top-0 z-20 transition-transform duration-200 ${
+          chrome || sheet ? "" : "-translate-y-full"
+        }`}
+        lang="en"
+      >
+        <div className="mx-auto flex h-12 max-w-4xl items-center gap-1 px-2">
+          <Link
+            to={book ? `/series/${book.id}` : "/stories"}
+            className="reader-muted mr-auto flex min-w-0 items-center gap-1 rounded-lg px-2 py-1.5 text-sm hover:bg-black/5 dark:hover:bg-white/10"
+          >
+            <span aria-hidden>←</span>
+            <span className="truncate">{book ? book.title : "Stories"}</span>
+          </Link>
+          {canSpeak &&
+            (speaking === null ? (
+              <button type="button" onClick={playFromView} className={iconBtn} title="Read aloud from here" aria-label="Read aloud">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                  <path d="M11 5 6 9H3v6h3l5 4V5Z" strokeLinejoin="round" />
+                  <path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8 8 0 0 1 0 12" strokeLinecap="round" />
+                </svg>
+              </button>
+            ) : (
+              <button type="button" onClick={stop} className={iconBtn} aria-label="Stop reading aloud">
+                ■
+              </button>
+            ))}
+          {(aiEnabled || hasAnyLines) && (
+            <button
+              type="button"
+              onClick={() => {
+                setTranslateError(null);
+                changeReader({
+                  translations: reader.translations === "off" ? "peek" : reader.translations === "peek" ? "always" : "off",
+                });
+              }}
+              className={`${iconBtn} font-medium ${translationsOn ? "bg-black/5 dark:bg-white/10" : ""}`}
+              title="English line by line: off → peek (tap to reveal) → always"
+            >
+              EN{reader.translations === "peek" ? "·peek" : reader.translations === "always" ? "·on" : ""}
+            </button>
+          )}
+          {story.glossary.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setSheet((s) => (s === "glossary" ? null : "glossary"))}
+              className={`${iconBtn} ${sheet === "glossary" ? "bg-black/5 dark:bg-white/10" : ""}`}
+              aria-label="Glossary"
+              title="Glossary"
+            >
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5Z" strokeLinejoin="round" />
+                <path d="M8 7h7M8 11h5" strokeLinecap="round" />
+              </svg>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setSheet((s) => (s === "settings" ? null : "settings"))}
+            className={`${iconBtn} font-serif text-base ${sheet === "settings" ? "bg-black/5 dark:bg-white/10" : ""}`}
+            aria-expanded={sheet === "settings"}
+            aria-label="Text settings"
+            title="Text settings"
+          >
+            Aa
+          </button>
+          {canFullscreen && (
+            <button
+              type="button"
+              onClick={toggleFullscreen}
+              className={iconBtn}
+              aria-label={fullscreen ? "Exit full screen" : "Full screen"}
+              title={fullscreen ? "Exit full screen" : "Full screen"}
+            >
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                {fullscreen ? (
+                  <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" strokeLinecap="round" strokeLinejoin="round" />
+                ) : (
+                  <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" strokeLinecap="round" strokeLinejoin="round" />
+                )}
+              </svg>
+            </button>
+          )}
+        </div>
+        {sheet && (
+          <div className="mx-auto max-h-[70dvh] max-w-md overflow-y-auto px-3 pb-3">
+            {sheet === "settings" ? (
+              <>
+                <ReaderPanel value={reader} onChange={changeReader} canSpeak={canSpeak} canTranslate={aiEnabled || hasAnyLines} />
+                <Link to={`/stories/${story.id}/edit`} className="reader-muted text-sm underline">
+                  Edit this story
+                </Link>
+              </>
+            ) : (
+              <Glossary entries={story.glossary} />
+            )}
+          </div>
+        )}
+        {translationsOn && translateError && (
+          <p className="mx-auto mb-2 max-w-md rounded-lg bg-amber-50 p-2 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+            {translateError}{" "}
+            <button type="button" className="underline" onClick={() => setTranslateError(null)}>
+              Try again
+            </button>
+          </p>
+        )}
+      </div>
+
+      {paged ? (
+        <div
+          ref={areaRef}
+          className="absolute inset-x-0 bottom-10 top-14 flex justify-center"
+          onPointerDown={(e) => {
+            if (e.pointerType !== "mouse") swipe.current = { x: e.clientX, y: e.clientY };
+          }}
+          onPointerUp={(e) => {
+            const s = swipe.current;
+            swipe.current = null;
+            if (!s) return;
+            const dx = e.clientX - s.x;
+            const dy = e.clientY - s.y;
+            if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+              swiped.current = true;
+              turn(dx < 0 ? 1 : -1);
+              window.setTimeout(() => (swiped.current = false), 80);
+            }
+          }}
+          onClickCapture={(e) => {
+            if (swiped.current) {
+              e.stopPropagation();
+              e.preventDefault();
+            }
+          }}
+        >
+          <div className="h-full overflow-hidden" style={{ width: colWidth || "100%", visibility: atEnd ? "hidden" : undefined }}>
+            <div
+              ref={flowRef}
+              className="reader-flow"
+              style={{ ...typography, transform: `translateX(${-Math.min(page, pageCount - 1) * step}px)` }}
+            >
+              {text}
+            </div>
+          </div>
+          {atEnd && (
+            <div className="absolute inset-0 overflow-y-auto px-5">
+              <div className="mx-auto pb-8 pt-2" style={{ maxWidth: WIDTH_PX[reader.width] }}>
+                <p className="reader-muted mb-4 text-center font-sans text-sm" lang="en">
+                  — End of {book ? `chapter ${book.chapter}` : "the story"} —
+                </p>
+                {ending}
+              </div>
+            </div>
+          )}
+          {/* Page-turn strips at the edges (words in the middle stay tappable). */}
+          {page > 0 && (
+            <button
+              type="button"
+              aria-label="Previous page"
+              onClick={() => turn(-1)}
+              className="absolute inset-y-0 left-0 z-10 w-[15%] cursor-w-resize"
+            />
+          )}
+          {!atEnd && (
+            <button
+              type="button"
+              aria-label="Next page"
+              onClick={() => turn(1)}
+              className="absolute inset-y-0 right-0 z-10 w-[15%] cursor-e-resize"
+            />
+          )}
+        </div>
+      ) : (
+        <div ref={scrollerRef} className="absolute inset-0 overflow-y-auto px-5 pb-16 pt-16">
+          <div className="mx-auto" style={{ ...typography, maxWidth: WIDTHS[reader.width] }}>
+            {text}
+            <div className="mt-8">{ending}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Where you are: page counter (pages) or a thin progress line (scroll). */}
+      {paged ? (
+        <div className="reader-muted pointer-events-none absolute inset-x-0 bottom-0 flex h-10 items-center justify-center gap-3 font-sans text-xs" lang="en">
+          <span className="tabular-nums">{atEnd ? "End" : `${page + 1} / ${pageCount}`}</span>
+          <span className="h-0.5 w-24 overflow-hidden rounded-full" style={{ background: "rgb(var(--r-rule))" }}>
+            <span className="block h-full bg-accent" style={{ width: `${Math.round((Math.min(page + 1, pageCount) / pageCount) * 100)}%` }} />
+          </span>
+        </div>
+      ) : null}
 
       {speaking !== null && (
         <button
           type="button"
           onClick={stop}
-          className="fixed bottom-20 right-4 z-40 rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow-lg md:bottom-6"
+          className="absolute bottom-12 right-4 z-30 rounded-full bg-accent px-4 py-2 font-sans text-sm font-medium text-accent-foreground shadow-lg"
+          lang="en"
         >
           ■ Stop reading
         </button>
@@ -507,19 +809,29 @@ function StoryReaderView() {
   );
 }
 
+/** The paragraph at the top of page `p`: the first one that ends on it or later. */
+function firstOnPage(ends: number[], p: number): number {
+  const i = ends.findIndex((end) => end >= p);
+  return i < 0 ? Math.max(0, ends.length - 1) : i;
+}
+
 function Glossary({ entries }: { entries: Story["glossary"] }) {
   return (
-    <details className="reader-rule mb-6 rounded-xl border px-4 py-2 font-sans text-sm">
-      <summary className="cursor-pointer select-none py-1 font-medium" lang="en">Glossary ({entries.length})</summary>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 pb-2 pt-1">
+    <div className="reader-rule rounded-xl border px-4 py-3 font-sans text-sm" style={{ background: "rgb(var(--r-bg))" }}>
+      <p className="mb-2 font-medium" lang="en">
+        Glossary
+      </p>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
         {entries.map((g) => (
           <div key={g.term} className="contents">
             <dt className="font-semibold">{g.term}</dt>
-            <dd className="reader-muted" lang="en">{g.meaning}</dd>
+            <dd className="reader-muted" lang="en">
+              {g.meaning}
+            </dd>
           </div>
         ))}
       </dl>
-    </details>
+    </div>
   );
 }
 
@@ -565,6 +877,17 @@ function ReaderPanel({
   const label = "text-sm text-slate-500";
   return (
     <div className="mb-3 space-y-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+      <div className={row}>
+        <span className={label}>Layout</span>
+        <Segmented
+          value={value.layout}
+          options={[
+            { id: "pages", label: "Pages" },
+            { id: "scroll", label: "Scroll" },
+          ]}
+          onChange={(layout) => onChange({ layout })}
+        />
+      </div>
       <div className={row}>
         <span className={label}>Font</span>
         <Segmented

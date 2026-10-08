@@ -40,8 +40,9 @@ client can codegen a typed client against it.
   [Wiktionary](https://en.wiktionary.org) (CC BY-SA, via
   [freedictionaryapi.com](https://freedictionaryapi.com); cached;
   `DICTIONARY_API_URL=off` to stay offline).
-- **Stories** — private reading texts with a customizable reader (fonts, size,
-  spacing, width, sepia/dark, read-aloud, saved words underlined) and
+- **Stories** — private reading texts in a full-screen reader that turns pages
+  like a book (or scrolls), with fonts, size, spacing, width, sepia/dark,
+  read-aloud, saved words underlined and an optional true full screen, and
   comprehension questions, plus English line by line (off, blurred until
   tapped, or always shown). Generate one from a sentence with your AI tutor,
   optionally keeping your recent mistakes, the words you're learning and
