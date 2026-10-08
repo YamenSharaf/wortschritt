@@ -117,6 +117,7 @@ export async function ttsRoutes(app: FastifyInstance) {
         const { audio } = await synthesize("Guten Tag! Ich lerne Deutsch.", req.body.voice);
         return { ok: true as const, bytes: audio.length };
       } catch (err) {
+        app.log.warn({ err, voice: req.body.voice }, "tts test failed");
         return reply.code(400).send({ error: err instanceof Error ? err.message : "failed" });
       }
     },
