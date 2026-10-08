@@ -148,9 +148,13 @@ export function App() {
         <div className="mx-auto flex max-w-4xl items-center gap-2 px-4 py-2.5">
           <NavLink
             to="/"
-            className="min-w-0 shrink truncate text-base font-bold"
+            className="flex min-w-0 shrink items-center gap-2 text-base font-bold"
           >
-            {appName} {appEmoji}
+            <img src="/favicon.svg" alt="" className="h-6 w-6 shrink-0" />
+            <span className="truncate">
+              {appName}
+              {appEmoji && ` ${appEmoji}`}
+            </span>
           </NavLink>
           <nav className="ml-3 hidden flex-1 gap-1 text-sm md:flex">
             {navItems.map(({ to, label, end }) => (

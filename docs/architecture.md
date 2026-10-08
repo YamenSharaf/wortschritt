@@ -301,7 +301,7 @@ go to the server log. Never call `fetch` on a user-supplied URL directly.
 | `ADMIN_USERNAME` | username of that admin account | admin |
 | `SESSION_SECRET` | cookie signing key (required, ≥8) | — |
 | `PORT` / `DATABASE_PATH` / `CONTENT_DIR` | runtime paths | 3000 / ./data/app.db / ./content |
-| `APP_NAME` / `APP_EMOJI` | branding + favicon | mit dem baby / 🍼 |
+| `APP_NAME` / `APP_EMOJI` | name in the header/title + optional emoji after it (the icon is `brand/`) | Wortschritt / none |
 | `ENCRYPTION_KEY` | encrypts users' saved AI keys (≥32 chars, e.g. `openssl rand -base64 32`; keep a copy — if it changes, saved keys must be re-entered) | unset → AI keys can't be saved |
 | `ASSISTANT_BASE_URL` / `ASSISTANT_API_KEY` / `ASSISTANT_MODEL` | legacy single-user AI config; copied once into the admin's AI settings, then unused | OpenAI defaults |
 
