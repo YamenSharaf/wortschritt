@@ -57,6 +57,11 @@ html {
   --tabs-active-from: #ffffff;
   --tabs-active-to: #f3f5f9;
   --tabs-active-border: #d9dee7;
+  --dock-from: #ffffffb8;
+  --dock-to: #f6f7fa99;
+  --dock-border: #ffffffcc;
+  --dock-highlight: #ffffff;
+  --dock-shadow: #0f142021;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -94,6 +99,11 @@ html {
     --tabs-active-from: #4b5262;
     --tabs-active-to: #1a1d25;
     --tabs-active-border: #ffffff1a;
+    --dock-from: #1a1e28b3;
+    --dock-to: #0f121899;
+    --dock-border: #ffffff1f;
+    --dock-highlight: #ffffff1f;
+    --dock-shadow: #00000080;
   }
 }
 
@@ -116,6 +126,16 @@ body {
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   box-shadow: inset 0 1px 1px var(--bar-highlight), var(--shadow-card);
+}
+
+/* Mobile dock: a floating pill of very subtle glass over the page. */
+.ws-dock {
+  border-radius: 999px;
+  border: 1px solid var(--dock-border);
+  background: linear-gradient(180deg, var(--dock-from), var(--dock-to));
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+  box-shadow: inset 0 1px 0 var(--dock-highlight), 0 10px 30px var(--dock-shadow), 0 1px 3px var(--dock-shadow);
 }
 
 /* Tab pills: a rounded track; the active pill is lit from above. */
