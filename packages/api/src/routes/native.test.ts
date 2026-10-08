@@ -21,7 +21,7 @@ Object.assign(process.env, {
 });
 
 const ORIGIN = "https://deutsch.example.com";
-const REDIRECT = "app.mitdembaby:/oauth/callback";
+const REDIRECT = "eu.yamen.wortschritt:/oauth/callback";
 const APP_ORIGIN = "capacitor://localhost";
 
 let app: FastifyInstance;
@@ -61,7 +61,7 @@ async function signInApp(cookie: string, clientId: string, extra: Record<string,
   const res = await send({ method: "POST", url: "/api/oauth/authorize", headers: { cookie }, payload: { params, approve: true } });
   assert.equal(res.statusCode, 200, res.body);
   const redirect = new URL(res.json().redirect as string);
-  assert.equal(redirect.protocol, "app.mitdembaby:");
+  assert.equal(redirect.protocol, "eu.yamen.wortschritt:");
   const code = redirect.searchParams.get("code")!;
   const tok = await form("/oauth/token", { grant_type: "authorization_code", code, code_verifier: verifier, client_id: clientId, redirect_uri: REDIRECT });
   assert.equal(tok.statusCode, 200, tok.body);
@@ -92,7 +92,7 @@ test("CORS: the app's origin may call /api with a bearer token; others and cooki
 });
 
 test("registration accepts a reverse-DNS app scheme, not other schemes", async () => {
-  for (const bad of ["javascript:alert(1)", "myapp:/cb", "data:text/html,x", "app.mitdembaby:/cb#frag"]) {
+  for (const bad of ["javascript:alert(1)", "myapp:/cb", "data:text/html,x", "eu.yamen.wortschritt:/cb#frag"]) {
     const res = await send({ method: "POST", url: "/oauth/register", payload: { redirect_uris: [bad], token_endpoint_auth_method: "none" } });
     assert.equal(res.statusCode, 400, bad);
   }

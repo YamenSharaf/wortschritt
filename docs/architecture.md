@@ -178,7 +178,7 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   request and returns the redirect. Codes: 10 min, single use, PKCE S256, exact
   redirect_uri. Two scopes, one resource each: `mcp` (resource `/mcp`, the
   default) and `app` (resource `/api`, for the native app; its redirect is a
-  reverse-DNS private-use scheme such as `app.mitdembaby:/oauth/callback`,
+  reverse-DNS private-use scheme such as `eu.yamen.wortschritt:/oauth/callback`,
   RFC 8252). Tokens: `mdbo_at_…` (1 h, valid only on their resource — an
   `app` token works with `authenticate()` on the REST API, an `mcp` one only
   on `/mcp`) and `mdbo_rt_…` (30 days, rotated on each refresh); one
