@@ -1,5 +1,6 @@
-import { and, desc, eq, sql } from "drizzle-orm";
-import { story as storySchema, type ExerciseItem, type Story, type StorySummary, type StoryView } from "@mdb/shared";
+import { createHash } from "node:crypto";
+import { and, desc, eq, notInArray, sql } from "drizzle-orm";
+import { storyParagraphs, story as storySchema, type ExerciseItem, type Story, type StorySummary, type StoryView } from "@mdb/shared";
 import { db, schema } from "../db/client";
 
 /**
@@ -7,6 +8,23 @@ import { db, schema } from "../db/client";
  * validated against `story` on the way in, and re-parsed on the way out so
  * fields added later get their defaults.
  */
+
+/** Key of a paragraph's stored translation (changes when its text does). */
+export const paragraphHash = (block: string) => createHash("sha256").update(block).digest("hex").slice(0, 32);
+
+/** Drop translations of paragraphs an edit removed or changed. */
+function pruneTranslations(userId: number, id: string, body: string): void {
+  const keep = storyParagraphs(body).map(paragraphHash);
+  db.delete(schema.storyTranslations)
+    .where(
+      and(
+        eq(schema.storyTranslations.userId, userId),
+        eq(schema.storyTranslations.storyId, id),
+        keep.length ? notInArray(schema.storyTranslations.paragraphHash, keep) : undefined,
+      ),
+    )
+    .run();
+}
 
 const key = (userId: number, id: string) => and(eq(schema.stories.userId, userId), eq(schema.stories.id, id));
 const now = () => Math.floor(Date.now() / 1000);
@@ -68,6 +86,7 @@ export function saveStory(
   if (exists && !overwrite) {
     return { ok: false, error: `you already have a story "${story.id}"; choose another id or pass overwrite: true` };
   }
+  if (exists) pruneTranslations(userId, story.id, story.body);
   db.insert(schema.stories)
     .values({ userId, id: story.id, data: story })
     .onConflictDoUpdate({
@@ -80,6 +99,7 @@ export function saveStory(
 
 /** Replace an existing story's content (keeps its reading progress). */
 export function updateStory(userId: number, id: string, story: Story): StoryView | null {
+  pruneTranslations(userId, id, story.body);
   const res = db
     .update(schema.stories)
     .set({ data: story, updatedAt: now() })

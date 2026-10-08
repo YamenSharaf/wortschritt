@@ -29,6 +29,7 @@ import type {
   Story,
   StoryContext,
   StoryContextOptions,
+  StoryTranslations,
   StorySummary,
   StoryView,
   TtsStatus,
@@ -182,6 +183,13 @@ export const api = {
     }),
   wordDetails: (word: string) =>
     req<WordDetails | null>(`/api/dict/${encodeURIComponent(word)}/details`),
+  storyTranslations: (id: string) =>
+    req<StoryTranslations>(`/api/stories/${encodeURIComponent(id)}/translations`),
+  translateStory: (id: string, paragraphs: number[]) =>
+    req<StoryTranslations>(`/api/stories/${encodeURIComponent(id)}/translations`, {
+      method: "POST",
+      body: JSON.stringify({ paragraphs }),
+    }),
   storyContext: (o: StoryContextOptions) =>
     req<StoryContext>(
       `/api/story-context?mistakes=${o.mistakes}&vocab=${o.vocab}&topics=${o.topics}`,
@@ -264,8 +272,9 @@ export const api = {
 
   // settings
   settings: () => req<Settings>("/api/settings"),
-  saveSettings: (s: Settings) =>
-    req<Settings>("/api/settings", { method: "PUT", body: JSON.stringify(s) }),
+  /** `keepalive` lets the save finish while the page is closing. */
+  saveSettings: (s: Settings, opts: { keepalive?: boolean } = {}) =>
+    req<Settings>("/api/settings", { method: "PUT", body: JSON.stringify(s), keepalive: opts.keepalive }),
 
   // import
   import: (body: ImportBody) =>

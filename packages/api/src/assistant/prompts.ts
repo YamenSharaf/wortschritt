@@ -233,3 +233,15 @@ export function buildStoryMessages(ctx: {
 export function buildStoryRepair(problems: string[]): string {
   return `That JSON has these problems:\n${problems.map((p) => `- ${p}`).join("\n")}\n\nReturn the complete corrected JSON only.`;
 }
+
+/** English for story sentences, one line per sentence, same structure back. */
+export function buildSentenceTranslation(ctx: { level: string; paragraphs: string[][] }): {
+  system: string;
+  user: string;
+} {
+  const system =
+    `You translate German sentences from a ${ctx.level} graded reader into natural, accurate English for a learner. ` +
+    "Translate each sentence on its own line: keep close to the German so the learner can match the two, but write correct, idiomatic English. Keep names as they are. " +
+    'You get {"paragraphs":[["Satz", …], …]}; reply ONLY with {"paragraphs":[["Sentence", …], …]} — exactly the same number of paragraphs and, in each, exactly one English string per German sentence, in order. No prose, no code fences.';
+  return { system, user: JSON.stringify({ paragraphs: ctx.paragraphs }) };
+}

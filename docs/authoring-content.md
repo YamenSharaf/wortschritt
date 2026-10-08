@@ -182,6 +182,9 @@ via the MCP tool `save_story`). Not files in `content/` — they live in the
 - `questions`: comprehension questions as exercise items (same rules: unique
   ids, valid `answerIndex`, …). Answers are recorded in history under the set
   id `story:<id>`.
+- Line-by-line English isn't part of the story JSON: the reader translates
+  on demand, or an agent adds it after saving with `save_story_translations`
+  (one English line per sentence; `get_story` shows how the text is split).
 - The full prompt with a valid example is `buildStoryPrompt()` in
   `packages/shared/src/authoring.ts` (the editor's "Copy LLM prompt", and
   `get_authoring_guide` with kind `story`).

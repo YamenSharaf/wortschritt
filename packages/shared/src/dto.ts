@@ -18,6 +18,8 @@ export const readerSettings = z.object({
   highlightVocab: z.boolean().default(true),
   /** Read-aloud speed (1 = normal). */
   speechRate: z.number().min(0.6).max(1.4).default(0.95),
+  /** English under each sentence: hidden, blurred until tapped, or shown. */
+  translations: z.enum(["off", "peek", "always"]).default("off"),
 });
 export type ReaderSettings = z.infer<typeof readerSettings>;
 
@@ -703,3 +705,29 @@ export const generateStoryBody = z.object({
   context: storyContextOptions.default({}),
 });
 export type GenerateStoryBody = z.infer<typeof generateStoryBody>;
+
+// --- story translations (line by line) ---------------------------------------
+
+/** One paragraph's German sentences and their English lines (null = not yet). */
+export const storyTranslationParagraph = z.object({
+  index: z.number().int(),
+  /** Plain-text German sentences, as the reader splits them. */
+  sentences: z.array(z.string()),
+  /** One English line per sentence — or a single line for the whole
+   *  paragraph when the sentences couldn't be matched one to one. */
+  lines: z.array(z.string()).nullable(),
+});
+export const storyTranslations = z.object({ paragraphs: z.array(storyTranslationParagraph) });
+export type StoryTranslations = z.infer<typeof storyTranslations>;
+
+/** Translate these paragraphs (by index) that aren't translated yet. */
+export const translateStoryBody = z.object({
+  paragraphs: z.array(z.number().int().min(0)).min(1).max(6),
+});
+
+/** Provide translations yourself (e.g. an agent): lines per paragraph. */
+export const saveStoryTranslationsBody = z.object({
+  paragraphs: z
+    .array(z.object({ index: z.number().int().min(0), lines: z.array(z.string().min(1).max(1000)).min(1) }))
+    .min(1),
+});

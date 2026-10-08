@@ -518,6 +518,25 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 11,
+    // Line-by-line English for story paragraphs, keyed by a hash of the
+    // paragraph's text (editing a paragraph makes it untranslated again).
+    name: "story-translations",
+    up(db) {
+      db.exec(`
+        CREATE TABLE story_translations (
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          story_id TEXT NOT NULL,
+          paragraph_hash TEXT NOT NULL,
+          lines TEXT NOT NULL,
+          created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+          PRIMARY KEY (user_id, story_id, paragraph_hash),
+          FOREIGN KEY (user_id, story_id) REFERENCES stories(user_id, id) ON DELETE CASCADE
+        );
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;
