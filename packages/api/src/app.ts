@@ -33,6 +33,7 @@ import { notesRoutes } from "./routes/notes";
 import { progressRoutes } from "./routes/progress";
 import { seriesRoutes } from "./routes/series";
 import { coverRoutes } from "./routes/covers";
+import { nativeRoutes } from "./routes/native";
 import { settingsRoutes } from "./routes/settings";
 import { storyRoutes } from "./routes/stories";
 import { ttsRoutes } from "./routes/tts";
@@ -99,6 +100,8 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   app.get("/api/health", async () => ({ status: "ok" }));
 
+  // On the root instance (not a plugin), so its CORS hook covers every /api route.
+  await nativeRoutes(app);
   await app.register(configRoutes);
   await app.register(authRoutes);
   await app.register(adminRoutes);

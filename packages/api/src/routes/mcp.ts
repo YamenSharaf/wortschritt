@@ -1,7 +1,7 @@
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { clientIp } from "../auth/loginGuard";
-import { looksLikeAccessToken, publicOrigin, resourceMetadataUrl, userFromAccessToken } from "../auth/oauth";
+import { looksLikeAccessToken, publicOrigin, resourceMetadataUrl, resourceUrl, userFromAccessToken } from "../auth/oauth";
 import { authenticate } from "../auth/session";
 import { createMcpServer } from "../mcp/server";
 
@@ -14,8 +14,10 @@ import { createMcpServer } from "../mcp/server";
 const requireToken: preHandlerHookHandler = async (req, reply) => {
   const origin = publicOrigin(req);
   const m = /^Bearer\s+(\S+)$/i.exec(req.headers.authorization ?? "");
-  const oauthUser = m && looksLikeAccessToken(m[1]!) ? userFromAccessToken(m[1]!, origin) : null;
-  const auth = oauthUser ? { user: oauthUser, via: "token" as const } : authenticate(req);
+  // An OAuth token counts only if it was issued for MCP (not the app's API).
+  const isOAuth = Boolean(m && looksLikeAccessToken(m[1]!));
+  const oauthUser = isOAuth ? userFromAccessToken(m![1]!, resourceUrl(origin)) : null;
+  const auth = isOAuth ? (oauthUser ? { user: oauthUser, via: "token" as const } : null) : authenticate(req);
   if (!auth || auth.via !== "token") {
     const invalid = req.headers.authorization ? ', error="invalid_token"' : "";
     return reply

@@ -5,6 +5,7 @@ import { oauthDecisionBody, oauthGrantView, oauthRequestView } from "@mdb/shared
 import { clientIp } from "../auth/loginGuard";
 import {
   authenticateClient,
+  apiProtectedResourceMetadata,
   authorizationServerMetadata,
   checkAuthorizeRequest,
   consentView,
@@ -45,6 +46,7 @@ export async function oauthRoutes(app: FastifyInstance) {
   const publicPaths = new Set([
     "/.well-known/oauth-protected-resource",
     "/.well-known/oauth-protected-resource/mcp",
+    "/.well-known/oauth-protected-resource/api",
     "/.well-known/oauth-authorization-server",
     "/oauth/register",
     "/oauth/token",
@@ -68,6 +70,9 @@ export async function oauthRoutes(app: FastifyInstance) {
   for (const url of ["/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/mcp"]) {
     app.get(url, { schema: { hide: true } }, async (req) => protectedResourceMetadata(publicOrigin(req)));
   }
+  app.get("/.well-known/oauth-protected-resource/api", { schema: { hide: true } }, async (req) =>
+    apiProtectedResourceMetadata(publicOrigin(req)),
+  );
   app.get("/.well-known/oauth-authorization-server", { schema: { hide: true } }, async (req) =>
     authorizationServerMetadata(publicOrigin(req)),
   );
@@ -99,7 +104,7 @@ export async function oauthRoutes(app: FastifyInstance) {
       try {
         const client = authenticateClient(body, req.headers.authorization);
         let tokens;
-        if (body.grant_type === "authorization_code") tokens = exchangeCode(client, body, publicOrigin(req));
+        if (body.grant_type === "authorization_code") tokens = exchangeCode(client, body);
         else if (body.grant_type === "refresh_token") tokens = refresh(client, body);
         else throw new OAuthError("unsupported_grant_type", "grant_type must be authorization_code or refresh_token");
         return reply.header("cache-control", "no-store").header("pragma", "no-cache").send(tokens);

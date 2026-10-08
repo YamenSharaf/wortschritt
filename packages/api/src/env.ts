@@ -45,6 +45,10 @@ const envSchema = z.object({
   ASSISTANT_API_KEY: optionalEnv(z.string().default("")),
   ASSISTANT_MODEL: optionalEnv(z.string().min(1).default("gpt-4o-mini")),
 
+  // Origins of the native app's built-in pages, allowed to call /api with a
+  // bearer token (CORS; never with cookies). Comma-separated.
+  APP_ORIGINS: optionalEnv(z.string().default("capacitor://localhost,https://localhost,http://localhost")),
+
   // Optional Piper TTS sidecar (base URL, e.g. http://piper:5000). Unset =
   // pronunciation falls back to the browser's built-in speech synthesis.
   TTS_URL: optionalEnv(z.string().url().optional()),

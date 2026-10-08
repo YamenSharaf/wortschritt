@@ -7,6 +7,7 @@ import type {
 } from "fastify";
 import { db, schema } from "../db/client";
 import { isProd } from "../env";
+import { apiResourceUrl, looksLikeAccessToken, publicOrigin, userFromAccessToken } from "./oauth";
 import { looksLikeApiToken, userFromToken } from "./tokens";
 import type { AuthUser } from "./users";
 
@@ -116,7 +117,16 @@ export function authenticate(
   const header = req.headers.authorization;
   if (header !== undefined) {
     const m = /^Bearer\s+(\S+)$/i.exec(header);
-    const user = m && looksLikeApiToken(m[1]!) ? userFromToken(m[1]!) : null;
+    const token = m?.[1];
+    // An API token, or an OAuth access token issued for the REST API (the
+    // native app's "app" scope; MCP tokens don't work here).
+    const user = !token
+      ? null
+      : looksLikeApiToken(token)
+        ? userFromToken(token)
+        : looksLikeAccessToken(token)
+          ? userFromAccessToken(token, apiResourceUrl(publicOrigin(req)))
+          : null;
     return user ? { user, via: "token" } : null;
   }
   const user = getSessionUser(req);
