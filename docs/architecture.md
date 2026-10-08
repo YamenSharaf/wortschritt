@@ -48,7 +48,13 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
 - Stories: `stories` table (`services/stories.ts`, `routes/stories.ts`),
   private per user; `data` is a validated `story` (Markdown body, glossary,
   questions as exercise items — `checkItems` gives them the exercise-set
-  checks). Reader: `pages/StoryReader.tsx`. Its settings are
+  checks). Reader: `pages/StoryReader.tsx`, full screen (App drops its
+  header and tab bar on `/stories/:id`). `reader.layout` "pages" lays the
+  text out in CSS columns inside a clipped box and translates it per page
+  (edge taps, swipes, arrow keys; the questions follow on an end page);
+  "scroll" uses the reader's own scroll container. Both keep an anchor (the
+  paragraph at the top of the screen) across re-flows and mode switches;
+  progress is the furthest page / scroll position. Its settings are
   `settings.reader` (per account). Paragraphs (blank-line blocks) are the
   read-aloud units (`speakSequence` in `lib/tts.ts`). Saved words are
   underlined with the CSS Custom Highlight API (no DOM changes), matching base

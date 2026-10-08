@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Navigate, NavLink, Outlet } from "react-router-dom";
+import { Navigate, NavLink, Outlet, useMatch } from "react-router-dom";
 import { ThemePicker } from "./components/ThemePicker";
 import { api } from "./lib/api";
 import { useAuth } from "./lib/auth";
@@ -91,6 +91,13 @@ export function App() {
   const { authenticated, loading, logout } = useAuth();
   const { setTheme, hasStored } = useTheme();
   const { appName, appEmoji } = useConfig();
+  // The story reader takes the whole screen (no header or tab bar).
+  const storyMatch = useMatch("/stories/:id");
+  const immersive = Boolean(storyMatch && !["new", "generate"].includes(storyMatch.params.id ?? ""));
+  // Full screen belongs to the reader: leave it when leaving the reader.
+  useEffect(() => {
+    if (!immersive && document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+  }, [immersive]);
 
   // On a device with no saved theme yet, inherit the account default once.
   useEffect(() => {
@@ -124,6 +131,14 @@ export function App() {
   }
   if (!authenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (immersive) {
+    return (
+      <VocabProvider>
+        <Outlet />
+      </VocabProvider>
+    );
   }
 
   return (

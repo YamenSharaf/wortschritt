@@ -20,6 +20,8 @@ export const readerSettings = z.object({
   speechRate: z.number().min(0.6).max(1.4).default(0.95),
   /** English under each sentence: hidden, blurred until tapped, or shown. */
   translations: z.enum(["off", "peek", "always"]).default("off"),
+  /** Turn pages like a book, or scroll. */
+  layout: z.enum(["pages", "scroll"]).default("pages"),
 });
 export type ReaderSettings = z.infer<typeof readerSettings>;
 
