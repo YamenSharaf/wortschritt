@@ -114,10 +114,10 @@ test("initialize: instructions and every tool, with annotations", async () => {
   const names = tools.map((t) => t.name).sort();
   assert.deepEqual(names, [
     "add_words_to_group", "create_note", "create_vocab_group", "delete_content", "delete_note",
-    "delete_story", "delete_vocab", "delete_vocab_group", "get_activity", "get_authoring_guide",
-    "get_cheatsheet", "get_exercise_set", "get_mistakes", "get_note", "get_progress", "get_set_history",
-    "get_story", "get_story_context", "get_vocab", "list_cheatsheets", "list_exercise_sets", "list_notes", "list_stories",
-    "list_vocab", "list_vocab_groups", "lookup_word", "remove_word_from_group", "save_cheatsheet", "save_exercise_set",
+    "delete_series", "delete_story", "delete_vocab", "delete_vocab_group", "get_activity", "get_authoring_guide",
+    "get_cheatsheet", "get_exercise_set", "get_mistakes", "get_note", "get_progress", "get_series", "get_set_history",
+    "get_story", "get_story_context", "get_vocab", "list_cheatsheets", "list_exercise_sets", "list_notes", "list_series", "list_stories",
+    "list_vocab", "list_vocab_groups", "lookup_word", "remove_word_from_group", "save_chapter", "save_cheatsheet", "save_exercise_set", "save_series",
     "save_story", "save_story_translations", "save_vocab", "update_note", "validate_content", "whoami",
   ]);
   const save = tools.find((t) => t.name === "save_exercise_set")!;
@@ -291,6 +291,42 @@ test("stories: guide, validate, save, read back, private, delete", async () => {
 
   const ctx = await anna.ok("get_story_context", {});
   assert.deepEqual(Object.keys(ctx).sort(), ["level", "mistakes", "topics", "words"]);
+});
+
+test("series: the orchestrator workflow — guide, bible, chapters out of order, continuity", async () => {
+  const { EXAMPLE_SERIES, EXAMPLE_STORY } = await import("@mdb/shared");
+  const r = await anna.client.callTool({ name: "get_authoring_guide", arguments: { kind: "series" } });
+  const guide = (r.content as { text: string }[])[0]!.text;
+  assert.match(guide, /save_chapter/);
+  assert.match(guide, /"bible"/);
+  assert.match(guide, /"questions"/, "includes the story format");
+
+  assert.equal((await anna.ok("validate_content", { kind: "series", data: { ...EXAMPLE_SERIES, outline: "x" } })).valid, false);
+  assert.deepEqual(await anna.ok("save_series", { series: EXAMPLE_SERIES }), { saved: EXAMPLE_SERIES.id, replaced: false, chapters_planned: 3 });
+
+  // A sub-agent writes chapter 2 before chapter 1.
+  const two = await anna.ok("save_chapter", {
+    series_id: EXAMPLE_SERIES.id, chapter: 2, story: { ...EXAMPLE_STORY, title: "Der erste Arbeitstag" }, summary: "Lena findet einen alten Brief.",
+  });
+  assert.deepEqual(two, { saved: `${EXAMPLE_SERIES.id}-02`, chapter: 2, of: 3, replaced: false });
+  let s = await anna.ok("get_series", { id: EXAMPLE_SERIES.id });
+  assert.equal(s.nextChapter, 1);
+  assert.equal(s.latestEnding.chapter, 2);
+  assert.match(s.latestEnding.text, /glücklich/);
+  assert.match(s.series.bible, /Figuren/);
+
+  await anna.ok("save_chapter", {
+    series_id: EXAMPLE_SERIES.id, chapter: 1, story: { ...EXAMPLE_STORY, title: "Der Umzug" }, summary: "Lena zieht ein und trifft Mia.",
+  });
+  s = await anna.ok("get_series", { id: EXAMPLE_SERIES.id });
+  assert.equal(s.nextChapter, 3);
+  assert.deepEqual(s.chapters.map((c: { summary: string | null }) => c.summary), [
+    "Lena zieht ein und trifft Mia.", "Lena findet einen alten Brief.", null,
+  ]);
+  assert.match(await anna.err("save_chapter", { series_id: EXAMPLE_SERIES.id, chapter: 1, story: EXAMPLE_STORY, summary: "x" }), /overwrite: true/);
+  assert.equal((await anna.ok("list_series"))[0].written, 2);
+  assert.match(await admin.err("get_series", { id: EXAMPLE_SERIES.id }), /No series/);
+  assert.deepEqual(await anna.ok("delete_series", { id: EXAMPLE_SERIES.id }), { deleted: EXAMPLE_SERIES.id });
 });
 
 test("progress and history", async () => {

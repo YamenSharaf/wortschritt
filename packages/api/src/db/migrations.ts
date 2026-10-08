@@ -537,6 +537,33 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 12,
+    // Series: books whose chapters are stories. The series row holds the
+    // story bible and outline; a chapter is a story with series_id, its
+    // number and a continuity summary. (Deleting a series deletes its
+    // chapters — done in the service, as SQLite can't add a composite FK.)
+    name: "series",
+    up(db) {
+      db.exec(`
+        CREATE TABLE series (
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          id TEXT NOT NULL,
+          data TEXT NOT NULL,
+          created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+          updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+          PRIMARY KEY (user_id, id)
+        );
+      `);
+      addColumn(db, "stories", "series_id", "TEXT");
+      addColumn(db, "stories", "chapter", "INTEGER");
+      addColumn(db, "stories", "summary", "TEXT");
+      db.exec(`
+        CREATE UNIQUE INDEX ux_stories_series_chapter ON stories(user_id, series_id, chapter)
+          WHERE series_id IS NOT NULL;
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

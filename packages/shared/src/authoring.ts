@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import type { cheatsheet, exerciseItem, exerciseSet, story } from "./exercises";
+import type { cheatsheet, exerciseItem, exerciseSet, series, story } from "./exercises";
 
 /**
  * ---------------------------------------------------------------------------
@@ -206,4 +206,48 @@ ${itemFormatGuide({ withIds: true })}
 Output ONLY the JSON, with no explanation and no code fences.
 
 Topic, level and length: <describe the story, e.g. "a trip to the bakery, A2, about 300 words">`;
+}
+
+export const EXAMPLE_SERIES: z.input<typeof series> = {
+  schemaVersion: 1,
+  id: "lena-in-hamburg",
+  title: "Lena in Hamburg",
+  subtitle: "Lena in Hamburg",
+  level: "A2",
+  description: "Lena zieht für ein Praktikum nach Hamburg. Sie findet neue Freunde – und ein altes Geheimnis.",
+  tags: ["alltag", "freundschaft"],
+  bible:
+    "## Figuren\n- **Lena Brandt** (24), aus Freiburg, neugierig, etwas chaotisch; Praktikum bei einem Verlag.\n- **Mia Kowalski** (25), Lenas Nachbarin, Fahrradkurierin, direkt und lustig.\n- **Herr Petersen** (70), Vermieter, kennt jede Geschichte im Haus.\n\n## Ort und Zeit\nHamburg-Altona, Herbst. Lenas Wohnung: 3. Stock, Blick auf den Hafen.\n\n## Stil\nErzählt im Präteritum, Dialoge im Präsens. Kurze Sätze. Ein bisschen Humor.\n\n## Wiederkehrender Wortschatz\nder Hafen, das Praktikum, die Nachbarin, sich verlaufen, umziehen",
+  outline: [
+    { title: "Der Umzug", plan: "Lena kommt mit zu viel Gepäck an, verläuft sich, trifft Mia im Treppenhaus." },
+    { title: "Der erste Arbeitstag", plan: "Chaos im Verlag; Lena findet in einem alten Manuskript einen Brief mit ihrer Adresse." },
+    { title: "Herr Petersen erzählt", plan: "Der Vermieter erzählt von der Frau, die 1975 in Lenas Wohnung lebte." },
+  ],
+};
+
+/**
+ * How to write a series (a book in chapters) — for agents, which may split
+ * the work across sub-agents. Chapters are stories, so the story format and
+ * its item rules apply to each.
+ */
+export function buildSeriesGuide(): string {
+  return `A series is a book for a German learner: an ordered list of chapters, each a full story (same format as a story: Markdown body, glossary, comprehension questions). The series holds what keeps the chapters consistent.
+
+The series object — a complete, valid example:
+${JSON.stringify(EXAMPLE_SERIES, null, 2)}
+
+Series fields:
+- "id": a short slug (lowercase letters, digits, hyphens; at most 60 characters), unique among the learner's series. Chapter ids are derived from it.
+- "title" in German; "subtitle" (optional) a short English gloss; "description": 1–3 German sentences at the level, shown to the learner.
+- "level": the level of the first chapter. Later chapters may rise gently (each chapter has its own "level").
+- "bible" (Markdown, for writers only, never shown to the learner): characters (name, age, traits, how they speak), setting, narrative tense and style rules, and recurring vocabulary to bring back in later chapters.
+- "outline": one entry per planned chapter, {"title", "plan"}. Its length is the book's planned size; it may grow later.
+
+Workflow:
+1. Write the bible and outline, then save_series.
+2. For each chapter, call get_series first: it returns the bible, the outline, every written chapter's summary, and the end of the latest chapter. Write the chapter from that (it does not need to read earlier chapters in full).
+3. save_chapter with the series id, the chapter number (1-based), the story, and a summary: 2–4 German or English sentences of what happens, who appears, and anything later chapters must stay consistent with (names, places, open questions). Summaries are how later chapters stay consistent — keep them precise.
+4. Chapters may be written in any order (e.g. in parallel from a detailed outline); check continuity afterwards by reading the summaries and fixing chapters with save_chapter and overwrite: true.
+
+Chapter rules: each chapter is readable in one sitting (about 300–700 words at A2–B1), continues the story, reuses the bible's recurring vocabulary naturally, and has its own glossary and 3–5 comprehension questions. The chapter's story "id" is set automatically; its "title" is the chapter title.`;
 }

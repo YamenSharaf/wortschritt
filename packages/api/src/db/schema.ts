@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import type { Settings, Story, WordDetails } from "@mdb/shared";
+import type { Series, Settings, Story, WordDetails } from "@mdb/shared";
 
 /** Per-user settings blob (one row per user). */
 export const settings = sqliteTable("settings", {
@@ -272,6 +272,10 @@ export const stories = sqliteTable("stories", {
   /** How far they've scrolled, 0–1. */
   progress: real("progress").notNull().default(0),
   readAt: integer("read_at"),
+  /** Set for a chapter of a series (with its 1-based number and summary). */
+  seriesId: text("series_id"),
+  chapter: integer("chapter"),
+  summary: text("summary"),
   createdAt: integer("created_at")
     .notNull()
     .default(sql`(unixepoch())`),
@@ -299,3 +303,16 @@ export const storyTranslations = sqliteTable("story_translations", {
     .notNull()
     .default(sql`(unixepoch())`),
 }, (t) => [primaryKey({ columns: [t.userId, t.storyId, t.paragraphHash] })]);
+
+/** A learner's series (books). `data` is a validated `series`. */
+export const series = sqliteTable("series", {
+  userId: integer("user_id").notNull(),
+  id: text("id").notNull(),
+  data: text("data", { mode: "json" }).$type<Series>().notNull(),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+}, (t) => [primaryKey({ columns: [t.userId, t.id] })]);

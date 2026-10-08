@@ -45,7 +45,10 @@ client can codegen a typed client against it.
   comprehension questions, plus English line by line (off, blurred until
   tapped, or always shown). Generate one from a sentence with your AI tutor,
   optionally keeping your recent mistakes, the words you're learning and
-  recent topics in mind.
+  recent topics in mind. **Books** (series) group stories as chapters, with
+  book-level progress, "Continue reading" and "Next chapter"; they're written
+  by AI agents over MCP (a story bible, an outline, and per-chapter summaries
+  keep sub-agents consistent).
 - **AI tutor (optional)** — explain a highlighted passage, hints, "why was I
   wrong", translations, chat, AI grading of free-text answers, "generate more"
   items, vocab lookups, and tidying rough notes into clean Markdown. Each user
@@ -207,6 +210,7 @@ user (a `user_id` column, deleted together with the user); content is shared.
 | `notes` | Markdown notes |
 | `stories` | private reading texts (validated JSON) with reading progress |
 | `dict_cache` | online dictionary (Wiktionary) lookups, shared |
+| `series` | books: metadata, story bible and outline (chapters are `stories` rows with `series_id`, `chapter`, `summary`) |
 | `story_translations` | English lines per story paragraph (per user, keyed by the paragraph's text) |
 | `ai_providers` / `ai_models` | per user: AI providers (encrypted keys) and the model fallback order |
 | `imported_content` | shared exercises and cheat sheets added via the Import screen, with who imported them |
@@ -264,6 +268,7 @@ a learner does:
 | Library (shared) | `list_exercise_sets`, `get_exercise_set`, `list_cheatsheets`, `get_cheatsheet`, `get_authoring_guide`, `validate_content`, `save_exercise_set`, `save_cheatsheet`, `delete_content` |
 | Vocabulary (private) | `list_vocab`, `get_vocab`, `save_vocab`, `delete_vocab`, `list_vocab_groups`, `create_vocab_group`, `delete_vocab_group`, `add_words_to_group`, `remove_word_from_group` |
 | Notes (private) | `list_notes`, `get_note`, `create_note`, `update_note`, `delete_note` |
+| Books (private) | `list_series`, `get_series` (bible, outline, chapter summaries, end of the latest chapter), `save_series`, `save_chapter`, `delete_series` |
 | Stories (private) | `list_stories`, `get_story`, `save_story`, `delete_story`, `get_story_context`, `save_story_translations` (+ `validate_content` / `get_authoring_guide` with kind `story`) |
 | History (private) | `get_progress`, `get_mistakes`, `get_activity`, `get_set_history` |
 | Other | `lookup_word`, `whoami` |
@@ -305,6 +310,7 @@ Notes       GET|POST /api/notes    GET|PUT|DELETE /api/notes/:id
 Stories     GET|POST /api/stories  GET|PUT|DELETE /api/stories/:id
             PUT /api/stories/:id/progress   GET /api/story-context
             GET|POST|PUT /api/stories/:id/translations  (read / translate with AI / provide)
+Series      GET|POST /api/series   GET|DELETE /api/series/:id   PUT /api/series/:id/chapters/:n
             POST /api/stories/generate (SSE: progress, then the new story's id)
 Dictionary  GET /api/dict/status   GET /api/dict/:word[/details]   POST /api/dict/lemmas
 TTS         GET /api/tts/status    GET /api/tts    POST /api/tts/download
