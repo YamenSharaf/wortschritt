@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { SeriesView } from "@mdb/shared";
+import { Cover } from "../components/Cover";
 import { api } from "../lib/api";
 
 /** A book: what it's about, how far you are, and its chapters. */
@@ -45,9 +46,13 @@ export function SeriesPage() {
       </Link>
 
       <header className="flex gap-4">
-        <div className="grid h-28 w-20 shrink-0 place-items-center rounded-lg bg-accent text-3xl text-accent-foreground shadow" aria-hidden>
-          📖
-        </div>
+        <Cover
+          kind="series"
+          id={view.id}
+          version={view.cover}
+          fallbackKey={`${view.title}-${view.subtitle ?? ""}-${view.level}`}
+          className="w-28 shrink-0 sm:w-36"
+        />
         <div className="min-w-0">
           <h1 className="text-2xl font-bold leading-tight">{view.title}</h1>
           {view.subtitle && <p className="text-sm text-slate-400">{view.subtitle}</p>}
@@ -91,6 +96,11 @@ export function SeriesPage() {
           const body = (
             <div className="flex items-center gap-3 p-3">
               <span className="w-6 shrink-0 text-right text-sm tabular-nums text-slate-400">{c.chapter}</span>
+              {c.storyId ? (
+                <Cover kind="story" id={c.storyId} version={c.cover} fallbackKey={`${c.title}-${c.level}`} className="w-9 shrink-0" />
+              ) : (
+                <span className="aspect-[2/3] w-9 shrink-0 rounded-sm border border-dashed border-slate-300 dark:border-slate-700" aria-hidden />
+              )}
               <div className="min-w-0 flex-1">
                 <div className={`truncate ${c.storyId ? "font-medium" : "text-slate-400"}`} lang="de">
                   {c.title}

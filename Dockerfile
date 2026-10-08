@@ -22,6 +22,11 @@ FROM node:22-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 
+# Fonts for rendering cover art (SVG → PNG for EPUB covers).
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends fonts-dejavu-core \
+  && rm -rf /var/lib/apt/lists/*
+
 # Bake pnpm into the image so the container needs no network on first run.
 RUN corepack enable && corepack prepare pnpm@9.12.0 --activate
 

@@ -12,6 +12,7 @@ import {
   type StoryView,
 } from "@mdb/shared";
 import { db, schema } from "../db/client";
+import { coverVersion } from "./covers";
 import { getStory, pruneTranslations, wordCount } from "./stories";
 
 /**
@@ -55,6 +56,7 @@ function chaptersOf(s: Series, rows: ReturnType<typeof chapterRows>): SeriesChap
         progress: row.progress,
         readAt: row.readAt,
         summary: row.summary,
+        cover: coverVersion(row.cover),
       });
     } else {
       out.push({
@@ -66,13 +68,14 @@ function chaptersOf(s: Series, rows: ReturnType<typeof chapterRows>): SeriesChap
         progress: 0,
         readAt: null,
         summary: null,
+        cover: null,
       });
     }
   }
   return out;
 }
 
-function summarize(id: string, s: Series, chapters: SeriesChapter[], updatedAt: number): SeriesSummary {
+function summarize(id: string, s: Series, chapters: SeriesChapter[], updatedAt: number, cover: string | null): SeriesSummary {
   const written = chapters.filter((c) => c.storyId);
   const total = Math.max(chapters.length, 1);
   const done = written.reduce((sum, c) => sum + (c.readAt ? 1 : Math.min(c.progress, 1)), 0);
@@ -89,6 +92,7 @@ function summarize(id: string, s: Series, chapters: SeriesChapter[], updatedAt: 
     read: written.filter((c) => c.readAt).length,
     progress: Math.min(1, done / total),
     continueId: next?.storyId ?? null,
+    cover: coverVersion(cover),
     updatedAt,
   };
 }
@@ -105,7 +109,7 @@ export function listSeries(userId: number): SeriesSummary[] {
       if (!s) return [];
       const rows = chapterRows(userId, row.id);
       const lastChange = Math.max(row.updatedAt, ...rows.map((r) => r.updatedAt));
-      return [summarize(row.id, s, chaptersOf(s, rows), lastChange)];
+      return [summarize(row.id, s, chaptersOf(s, rows), lastChange, row.cover)];
     });
 }
 
@@ -116,7 +120,7 @@ export function getSeriesView(userId: number, id: string): SeriesView | null {
   const rows = chapterRows(userId, id);
   const chapters = chaptersOf(s, rows);
   const lastChange = Math.max(row.updatedAt, ...rows.map((r) => r.updatedAt));
-  return { ...summarize(id, s, chapters, lastChange), series: s, chapters };
+  return { ...summarize(id, s, chapters, lastChange, row.cover), series: s, chapters };
 }
 
 /**

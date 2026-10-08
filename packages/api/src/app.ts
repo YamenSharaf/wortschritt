@@ -32,6 +32,7 @@ import { oauthRoutes } from "./routes/oauth";
 import { notesRoutes } from "./routes/notes";
 import { progressRoutes } from "./routes/progress";
 import { seriesRoutes } from "./routes/series";
+import { coverRoutes } from "./routes/covers";
 import { settingsRoutes } from "./routes/settings";
 import { storyRoutes } from "./routes/stories";
 import { ttsRoutes } from "./routes/tts";
@@ -72,7 +73,9 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Nothing here is meant to be framed (the OAuth consent page in particular).
   app.addHook("onSend", async (_req, reply) => {
     reply.header("x-frame-options", "DENY");
-    reply.header("content-security-policy", "frame-ancestors 'none'");
+    // A route may set a stricter policy (cover images do); keep it, adding framing.
+    const csp = reply.getHeader("content-security-policy");
+    reply.header("content-security-policy", csp ? `${String(csp)}; frame-ancestors 'none'` : "frame-ancestors 'none'");
   });
 
   await app.register(swagger, {
@@ -110,6 +113,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(notesRoutes);
   await app.register(storyRoutes);
   await app.register(seriesRoutes);
+  await app.register(coverRoutes);
   await app.register(dictRoutes);
   await app.register(assistantRoutes);
   await app.register(mcpRoutes);

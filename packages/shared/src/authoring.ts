@@ -1,5 +1,6 @@
 import type { z } from "zod";
 import type { cheatsheet, exerciseItem, exerciseSet, series, story } from "./exercises";
+import { COVER_MAX_BYTES, COVER_VIEWBOX } from "./cover";
 
 /**
  * ---------------------------------------------------------------------------
@@ -248,6 +249,31 @@ Workflow:
 2. For each chapter, call get_series first: it returns the bible, the outline, every written chapter's summary, and the end of the latest chapter. Write the chapter from that (it does not need to read earlier chapters in full).
 3. save_chapter with the series id, the chapter number (1-based), the story, and a summary: 2–4 German or English sentences of what happens, who appears, and anything later chapters must stay consistent with (names, places, open questions). Summaries are how later chapters stay consistent — keep them precise.
 4. Chapters may be written in any order (e.g. in parallel from a detailed outline); check continuity afterwards by reading the summaries and fixing chapters with save_chapter and overwrite: true.
+5. Optionally give the book and its chapters cover art with set_cover (get_authoring_guide kind "cover").
 
 Chapter rules: each chapter is readable in one sitting (about 300–700 words at A2–B1), continues the story, reuses the bible's recurring vocabulary naturally, and has its own glossary and 3–5 comprehension questions. The chapter's story "id" is set automatically; its "title" is the chapter title.`;
+}
+
+/** How to draw cover art (for agents: get_authoring_guide kind "cover"). */
+export function buildCoverGuide(): string {
+  return `Cover art for a story, a chapter or a series is one small SVG, set with set_cover (kind "story" for a story or a chapter — a chapter's id is "<series id>-01" — or "series" for the book). Without one, the app shows a plain generated cover with the title.
+
+Style: minimal black-and-white art, like a modern paperback — one strong image (an object, a silhouette, a place from the story), lots of white space, at most a few shapes. Black (#111) on white (#fff), with greys only for depth. Use the book's title in the art for a series (and a chapter's title, or "Kapitel N", for a chapter), in German, set large and clean.
+
+Rules (the app checks them and rejects anything else):
+- One <svg xmlns="http://www.w3.org/2000/svg" viewBox="${COVER_VIEWBOX}" width="600" height="900">…</svg> — portrait 2:3. Start with a white <rect width="600" height="900" fill="#fff"/>.
+- Elements: svg, g, defs, path, rect, circle, ellipse, line, polyline, polygon, text, tspan, title, desc, linearGradient, radialGradient, stop, clipPath, mask, pattern, use, symbol. No <style>, <image>, <script>, <foreignObject>, links or animation.
+- Presentation attributes only (fill, stroke, stroke-width, font-size, …); href and url() may only point inside the SVG ("#id"). No event attributes.
+- Fonts: font-family "serif" or "sans-serif" only (other fonts won't be there when the cover is rendered for an EPUB). Keep text inside the canvas with at least 40px margin; wrap long titles yourself into several <text> lines.
+- At most ${COVER_MAX_BYTES / 1000} kB; a good cover is usually 1–5 kB.
+
+Example (a series cover):
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="${COVER_VIEWBOX}" width="600" height="900">
+<rect width="600" height="900" fill="#fff"/>
+<circle cx="300" cy="330" r="150" fill="none" stroke="#111" stroke-width="4"/>
+<path d="M210 420 L300 230 L390 420 Z" fill="#111"/>
+<text x="300" y="640" text-anchor="middle" font-family="serif" font-size="54" font-weight="bold" fill="#111">Der Weg</text>
+<text x="300" y="700" text-anchor="middle" font-family="serif" font-size="54" font-weight="bold" fill="#111">nach Hause</text>
+<text x="300" y="840" text-anchor="middle" font-family="sans-serif" font-size="20" letter-spacing="3" fill="#111">A2</text>
+</svg>`;
 }
