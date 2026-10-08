@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { cefrLevel, cheatsheet, exerciseItem, exerciseSet, story } from "./exercises";
+import { cefrLevel, cheatsheet, exerciseItem, exerciseSet, series as seriesSchema, story } from "./exercises";
 
 /** Choices offered for "generate N more" (in increments of 5). */
 export const generateCounts = [5, 10, 15, 20] as const;
@@ -582,8 +582,23 @@ export type SetHistory = z.infer<typeof setHistory>;
 /** Exercise-history id of a story's questions (attempts and runs). */
 export const storySetId = (id: string) => `story:${id}`;
 
+/** A story's place in its book (null for a standalone story). */
+export const storySeriesInfo = z.object({
+  id: z.string(),
+  title: z.string(),
+  chapter: z.number().int(),
+  /** Chapters planned (outline) or written, whichever is more. */
+  total: z.number().int(),
+  prev: z.string().nullable(),
+  next: z.string().nullable(),
+});
+export type StorySeriesInfo = z.infer<typeof storySeriesInfo>;
+
 export const storySummary = z.object({
   id: z.string(),
+  /** Set when the story is a chapter of a series. */
+  seriesId: z.string().nullable().default(null),
+  chapter: z.number().int().nullable().default(null),
   title: z.string(),
   subtitle: z.string().optional(),
   level: cefrLevel,
@@ -600,6 +615,8 @@ export type StorySummary = z.infer<typeof storySummary>;
 
 export const storyView = z.object({
   story,
+  /** The book this story is a chapter of. */
+  series: storySeriesInfo.nullable().default(null),
   progress: z.number(),
   readAt: z.number().int().nullable(),
   createdAt: z.number().int(),
@@ -730,4 +747,57 @@ export const saveStoryTranslationsBody = z.object({
   paragraphs: z
     .array(z.object({ index: z.number().int().min(0), lines: z.array(z.string().min(1).max(1000)).min(1) }))
     .min(1),
+});
+
+// --- series (books in chapters) ----------------------------------------------
+
+
+export const seriesChapter = z.object({
+  chapter: z.number().int(),
+  /** The chapter's story id, or null when only planned (outline). */
+  storyId: z.string().nullable(),
+  title: z.string(),
+  level: cefrLevel.nullable(),
+  words: z.number().int(),
+  progress: z.number(),
+  readAt: z.number().int().nullable(),
+  /** Continuity summary (for writers). */
+  summary: z.string().nullable(),
+});
+export type SeriesChapter = z.infer<typeof seriesChapter>;
+
+export const seriesSummary = z.object({
+  id: z.string(),
+  title: z.string(),
+  subtitle: z.string().optional(),
+  level: cefrLevel,
+  description: z.string(),
+  written: z.number().int(),
+  total: z.number().int(),
+  read: z.number().int(),
+  /** Share of the book read, 0–1 (finished chapters count fully). */
+  progress: z.number(),
+  /** Where "Continue reading" goes (null when nothing is written yet). */
+  continueId: z.string().nullable(),
+  updatedAt: z.number().int(),
+});
+export type SeriesSummary = z.infer<typeof seriesSummary>;
+
+export const seriesView = seriesSummary.extend({
+  series: seriesSchema,
+  chapters: z.array(seriesChapter),
+});
+export type SeriesView = z.infer<typeof seriesView>;
+
+export const saveSeriesBody = z.object({
+  series: seriesSchema,
+  /** Replace the series with the same id (its chapters stay). */
+  overwrite: z.boolean().default(false),
+});
+
+export const saveChapterBody = z.object({
+  story,
+  /** What happens, for later chapters' continuity (2–4 sentences). */
+  summary: z.string().min(1).max(1500),
+  overwrite: z.boolean().default(false),
 });

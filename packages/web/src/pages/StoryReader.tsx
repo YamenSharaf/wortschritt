@@ -6,7 +6,7 @@ import "@fontsource/atkinson-hyperlegible/400-italic.css";
 import "@fontsource/atkinson-hyperlegible/700.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Markdown from "markdown-to-jsx";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   readerSettings as readerSettingsSchema,
   splitSentences,
@@ -57,7 +57,13 @@ const highlights = (): HighlightRegistry | null =>
     ? ((CSS as unknown as { highlights: HighlightRegistry }).highlights)
     : null;
 
+/** One reader instance per story, so moving to the next chapter starts fresh. */
 export function StoryReader() {
+  const { id = "" } = useParams();
+  return <StoryReaderView key={id} />;
+}
+
+function StoryReaderView() {
   const { id = "" } = useParams();
   const [view, setView] = useState<StoryView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -275,6 +281,15 @@ export function StoryReader() {
     setSpeaking(null);
   }
 
+  const navigate = useNavigate();
+  /** "Next chapter": finishing this one counts as having read it. */
+  async function nextChapter() {
+    if (!view?.series?.next) return;
+    if (!view.readAt) await markRead(true).catch(() => {});
+    navigate(`/stories/${view.series.next}`);
+    window.scrollTo({ top: 0 });
+  }
+
   async function markRead(read: boolean) {
     if (!view) return;
     await api.storyProgress(view.story.id, read ? 1 : progress.current, read);
@@ -293,6 +308,7 @@ export function StoryReader() {
   }
   if (!view || !story) return <p className="text-slate-500">Loading…</p>;
 
+  const book = view.series;
   const canSpeak = ttsSupported();
   const toolBtn =
     "rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm hover:border-slate-500 dark:border-slate-700";
@@ -300,8 +316,11 @@ export function StoryReader() {
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <Link to="/stories" className="mr-auto text-sm text-slate-500 hover:underline">
-          ← Stories
+        <Link
+          to={book ? `/series/${book.id}` : "/stories"}
+          className="mr-auto min-w-0 truncate text-sm text-slate-500 hover:underline"
+        >
+          ← {book ? book.title : "Stories"}
         </Link>
         {canSpeak &&
           (speaking === null ? (
@@ -365,6 +384,11 @@ export function StoryReader() {
           }}
         >
           <header className="mb-6">
+            {book && (
+              <p className="reader-muted mb-1 font-sans text-xs uppercase tracking-wide" lang="en">
+                Chapter {book.chapter} of {book.total}
+              </p>
+            )}
             <h1 className="text-[1.6em] font-semibold leading-tight">{story.title}</h1>
             {story.subtitle && <p className="reader-muted mt-1 text-[0.8em]" lang="en">{story.subtitle}</p>}
             <p className="reader-muted mt-2 font-sans text-xs" lang="en">
@@ -431,10 +455,36 @@ export function StoryReader() {
               <button
                 type="button"
                 onClick={() => void markRead(true)}
-                className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground"
+                className={
+                  book?.next
+                    ? "reader-muted underline"
+                    : "rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground"
+                }
               >
                 Finished reading
               </button>
+            )}
+            {book && (
+              <span className="ml-auto flex items-center gap-3">
+                {book.prev && (
+                  <Link to={`/stories/${book.prev}`} className="reader-muted underline">
+                    ← Previous
+                  </Link>
+                )}
+                {book.next ? (
+                  <button
+                    type="button"
+                    onClick={() => void nextChapter()}
+                    className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground"
+                  >
+                    Next chapter →
+                  </button>
+                ) : (
+                  <Link to={`/series/${book.id}`} className="reader-muted underline">
+                    {book.chapter < book.total ? "More chapters coming" : "Back to the book"}
+                  </Link>
+                )}
+              </span>
             )}
           </div>
         </div>

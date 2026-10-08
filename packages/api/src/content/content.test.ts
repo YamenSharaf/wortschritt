@@ -8,6 +8,7 @@ import {
   cheatsheet,
   EXAMPLE_CHEATSHEET,
   EXAMPLE_ITEMS,
+  EXAMPLE_SERIES,
   EXAMPLE_SET,
   EXAMPLE_STORY,
   EXERCISE_TYPES,
@@ -16,6 +17,7 @@ import {
   gradeText,
   isOpenAnswer,
   itemFormatGuide,
+  series,
   splitSentences,
   story,
 } from "@mdb/shared";
@@ -99,6 +101,7 @@ test("the guide has one valid example per item type", () => {
   assert.deepEqual(issues(exerciseSet.safeParse(EXAMPLE_SET)), []);
   assert.deepEqual(issues(cheatsheet.safeParse(EXAMPLE_CHEATSHEET)), []);
   assert.deepEqual(issues(story.safeParse(EXAMPLE_STORY)), []);
+  assert.deepEqual(issues(series.safeParse(EXAMPLE_SERIES)), []);
 });
 
 test("no example value is filler a model could copy verbatim", () => {

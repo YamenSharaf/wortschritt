@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import type { StorySummary } from "@mdb/shared";
+import type { SeriesSummary, StorySummary } from "@mdb/shared";
 import { SearchBox } from "../components/SearchBox";
 import { api } from "../lib/api";
 import { useAsync } from "../lib/useAsync";
@@ -17,15 +17,21 @@ function status(s: StorySummary): { label: string; tone: string } | null {
 /** The learner's own stories (private). */
 export function StoriesPage() {
   const stories = useAsync(() => api.stories(), []);
+  const books = useAsync(() => api.seriesList(), []);
   const [q, setQ] = useState("");
-  const list = stories.status === "ready" ? stories.data : [];
+  // Chapters are reached through their book, not listed on their own.
+  const list = stories.status === "ready" ? stories.data.filter((s) => !s.seriesId) : [];
+  const bookList = books.status === "ready" ? books.data : [];
+  const n = q.trim().toLowerCase();
   const filtered = useMemo(() => {
-    const n = q.trim().toLowerCase();
     if (!n) return list;
     return list.filter((s) =>
       [s.title, s.subtitle, s.level, ...s.tags].some((v) => (v ?? "").toLowerCase().includes(n)),
     );
-  }, [list, q]);
+  }, [list, n]);
+  const filteredBooks = n
+    ? bookList.filter((b) => [b.title, b.subtitle, b.description].some((v) => (v ?? "").toLowerCase().includes(n)))
+    : bookList;
 
   return (
     <div>
@@ -46,14 +52,27 @@ export function StoriesPage() {
           </Link>
         </div>
       </div>
-      {list.length > 3 && (
+      {list.length + bookList.length > 3 && (
         <div className="mb-3">
           <SearchBox value={q} onChange={setQ} placeholder="Search stories…" />
         </div>
       )}
       {stories.status === "loading" && <p className="text-slate-500">Loading…</p>}
       {stories.status === "error" && <p className="text-red-600">Couldn't load your stories.</p>}
-      {stories.status === "ready" && list.length === 0 && (
+      {filteredBooks.length > 0 && (
+        <section className="mb-6">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Books</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {filteredBooks.map((b) => (
+              <BookCard key={b.id} book={b} />
+            ))}
+          </div>
+        </section>
+      )}
+      {filteredBooks.length > 0 && list.length > 0 && (
+        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Stories</h2>
+      )}
+      {stories.status === "ready" && list.length === 0 && bookList.length === 0 && (
         <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-slate-500 dark:border-slate-700">
           <p className="mb-1 font-medium text-slate-700 dark:text-slate-200">No stories yet</p>
           <p className="text-sm">
@@ -69,7 +88,7 @@ export function StoriesPage() {
           </p>
         </div>
       )}
-      {stories.status === "ready" && filtered.length === 0 && list.length > 0 && (
+      {stories.status === "ready" && filtered.length === 0 && filteredBooks.length === 0 && list.length + bookList.length > 0 && (
         <p className="text-slate-500">No stories match.</p>
       )}
       <div className="grid gap-3 sm:grid-cols-2">
@@ -105,5 +124,44 @@ export function StoriesPage() {
         })}
       </div>
     </div>
+  );
+}
+
+function BookCard({ book }: { book: SeriesSummary }) {
+  return (
+    <Link
+      to={`/series/${book.id}`}
+      className="relative flex gap-3 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900"
+    >
+      <div className="grid h-16 w-12 shrink-0 place-items-center rounded-md bg-accent text-lg text-accent-foreground shadow-sm" aria-hidden>
+        📖
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="font-medium">{book.title}</div>
+            {book.subtitle && <div className="text-xs text-slate-400">{book.subtitle}</div>}
+          </div>
+          <span className="shrink-0 rounded-full border border-slate-300 px-2 py-0.5 text-xs text-slate-500 dark:border-slate-700">
+            {book.level}
+          </span>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-x-3 text-xs text-slate-500">
+          <span>
+            {book.written === book.total ? `${book.total} chapters` : `${book.written} of ${book.total} chapters written`}
+          </span>
+          {book.read > 0 && (
+            <span className={book.read === book.total ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"}>
+              {book.read === book.total ? "Read ✓" : `${Math.round(book.progress * 100)}% read`}
+            </span>
+          )}
+        </div>
+      </div>
+      {book.progress > 0.01 && book.read < book.total && (
+        <div className="absolute inset-x-0 bottom-0 h-0.5 bg-slate-100 dark:bg-slate-800">
+          <div className="h-full bg-accent" style={{ width: `${Math.round(book.progress * 100)}%` }} />
+        </div>
+      )}
+    </Link>
   );
 }

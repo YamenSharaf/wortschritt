@@ -23,6 +23,7 @@ import { Login } from "./pages/Login";
 import { NoteEditor } from "./pages/NoteEditor";
 import { NotesPage } from "./pages/Notes";
 import { OAuthConsent } from "./pages/OAuthConsent";
+import { SeriesPage } from "./pages/SeriesPage";
 import { SettingsPage } from "./pages/Settings";
 import { StoriesPage } from "./pages/Stories";
 import { StoryEditor } from "./pages/StoryEditor";
@@ -43,6 +44,7 @@ const router = createBrowserRouter([
       { path: "exercises", element: <Exercises /> },
       { path: "exercises/:id", element: <ExercisePlayer /> },
       { path: "stories", element: <StoriesPage /> },
+      { path: "series/:id", element: <SeriesPage /> },
       { path: "stories/new", element: <StoryEditor /> },
       { path: "stories/generate", element: <StoryGenerate /> },
       { path: "stories/:id", element: <StoryReader /> },

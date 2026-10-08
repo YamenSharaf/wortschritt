@@ -3,6 +3,7 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import {
   buildImportPrompt,
+  buildSeriesGuide,
   buildStoryPrompt,
   cheatsheet,
   createNoteBody,
@@ -10,6 +11,7 @@ import {
   importBody,
   saveNoteBody,
   saveVocabBody,
+  series as seriesSchema,
   story as storySchema,
 } from "@mdb/shared";
 import type { AuthUser } from "../auth/users";
@@ -23,6 +25,7 @@ import { getProgressSummary } from "../services/progress";
 import { wordDetails } from "../services/wiktionary";
 import { deleteStory, getStory, listStories, saveStory } from "../services/stories";
 import { buildStoryContext } from "../services/storyGen";
+import { deleteSeries, getSeriesForWriting, listSeries, saveChapter, saveSeries } from "../services/series";
 import { getStoryTranslations, saveStoryTranslations } from "../services/storyTranslations";
 import {
   addWordToGroup,
@@ -52,11 +55,11 @@ import {
 export const INSTRUCTIONS = `mit-dem-baby is a German-learning app. You act as one signed-in user.
 
 - Shared library (every user sees it): exercise sets and cheat sheets. Some are built in (read-only); the rest were imported by users. You can replace or delete only items you imported — an admin can delete anyone's.
-- Private to this user: stories (reading texts with comprehension questions), vocabulary (with groups), notes, and practice progress and history.
+- Private to this user: stories (reading texts with comprehension questions) and series (books whose chapters are stories; get_authoring_guide kind "series" explains how to write one, also split across sub-agents), vocabulary (with groups), notes, and practice progress and history.
 
 Targeted practice: get_mistakes returns the items this user still gets wrong, with what they answered and the item itself — a good basis for a new exercise set on the same weak points.
 
-Writing content (exercise sets, cheat sheets, stories): call get_authoring_guide first and follow it exactly — the app validates every set and sheet against its schema and rejects anything malformed. Use validate_content for a dry run, check list_exercise_sets / list_cheatsheets so you don't reuse an id, then save with save_exercise_set or save_cheatsheet. Everything the learner reads is simple German at the set's level.`;
+Writing content (exercise sets, cheat sheets, stories, series): call get_authoring_guide first and follow it exactly — the app validates every set and sheet against its schema and rejects anything malformed. Use validate_content for a dry run, check list_exercise_sets / list_cheatsheets so you don't reuse an id, then save with save_exercise_set or save_cheatsheet. Everything the learner reads is simple German at the set's level.`;
 
 const json = (value: unknown): CallToolResult => ({
   content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
@@ -75,7 +78,14 @@ function formatIssues(error: z.ZodError): string[] {
   return error.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`);
 }
 
-function guide(kind: "exercise" | "cheatsheet" | "story"): string {
+function guide(kind: "exercise" | "cheatsheet" | "story" | "series"): string {
+  if (kind === "series") {
+    return `${buildSeriesGuide()}
+
+Each chapter is a story — its format and item rules:
+
+${guide("story")}`;
+  }
   // The Import page's prompt, minus its chat-only ending ("output only JSON",
   // the topic placeholder): here the JSON goes into a tool argument.
   const body = (kind === "story" ? buildStoryPrompt() : buildImportPrompt(kind))
@@ -125,8 +135,8 @@ export function createMcpServer(user: AuthUser): McpServer {
     {
       title: "Content format guide",
       description:
-        "The exact JSON format for exercise sets, cheat sheets or stories: a complete valid example, every item type, and the rules the app checks. Read it before creating or editing content.",
-      inputSchema: { kind: z.enum(["exercise", "cheatsheet", "story"]) },
+        "The exact JSON format for exercise sets, cheat sheets, stories or series (books in chapters, with the workflow for writing them, also across sub-agents): a complete valid example, every item type, and the rules the app checks. Read it before creating or editing content.",
+      inputSchema: { kind: z.enum(["exercise", "cheatsheet", "story", "series"]) },
       annotations: READ,
     },
     async ({ kind }) => ({ content: [{ type: "text", text: guide(kind) }] }),
@@ -223,12 +233,22 @@ export function createMcpServer(user: AuthUser): McpServer {
       description:
         "Check an exercise set, cheat sheet or story against the app's schema without saving it. Returns every problem with its path (e.g. items.3.answer.accept), and whether saving its id would be allowed.",
       inputSchema: {
-        kind: z.enum(["exercise", "cheatsheet", "story"]),
-        data: z.unknown().describe("The exercise set, cheat sheet or story object"),
+        kind: z.enum(["exercise", "cheatsheet", "story", "series"]),
+        data: z.unknown().describe("The exercise set, cheat sheet, story or series object"),
       },
       annotations: READ,
     },
     async ({ kind, data }) => {
+      if (kind === "series") {
+        const r = seriesSchema.safeParse(data);
+        if (!r.success) return json({ valid: false, errors: formatIssues(r.error) });
+        const taken = listSeries(user.id).some((x) => x.id === r.data.id);
+        return json({
+          valid: true,
+          id: r.data.id,
+          id_status: taken ? `you already have a series "${r.data.id}"; saving needs overwrite: true` : `"${r.data.id}" is free`,
+        });
+      }
       if (kind === "story") {
         const r = storySchema.safeParse(data);
         if (!r.success) return json({ valid: false, errors: formatIssues(r.error) });
@@ -430,6 +450,86 @@ export function createMcpServer(user: AuthUser): McpServer {
       if (!offline && !details) return fail(`"${word}" wasn't found.`);
       return json({ offline, details });
     },
+  );
+
+  // --- series (books in chapters, private) -------------------------------------
+  tool(
+    "list_series",
+    {
+      title: "List series",
+      description: "This user's series (books in chapters): chapters written and planned, chapters read, and how much of the book they've read.",
+      annotations: READ,
+    },
+    async () => json(listSeries(user.id)),
+  );
+
+  tool(
+    "get_series",
+    {
+      title: "Get a series (for writing the next chapter)",
+      description:
+        "Everything needed to write a chapter consistently: the series (story bible, outline), every chapter with its continuity summary and whether it's written, the next unwritten chapter number, and the end of the latest written chapter. Call this before each save_chapter (each sub-agent should call it itself).",
+      inputSchema: { id: z.string().min(1) },
+      annotations: READ,
+    },
+    async ({ id }) => {
+      const s = getSeriesForWriting(user.id, id);
+      return s ? json(s) : fail(`No series "${id}". Use list_series.`);
+    },
+  );
+
+  tool(
+    "save_series",
+    {
+      title: "Save a series",
+      description:
+        "Create a series (book) for this user: metadata, story bible and chapter outline. Read get_authoring_guide kind \"series\" first. With overwrite: true, replaces the series' bible/outline/metadata (e.g. to add chapters to the outline); its chapters stay.",
+      inputSchema: {
+        series: seriesSchema,
+        overwrite: z.boolean().default(false).describe("Replace the user's series with the same id"),
+      },
+      annotations: WRITE,
+    },
+    async ({ series, overwrite }) => {
+      const res = saveSeries(user.id, series, { overwrite });
+      return res.ok
+        ? json({ saved: series.id, replaced: res.replaced, chapters_planned: series.outline.length })
+        : fail(res.error);
+    },
+  );
+
+  tool(
+    "save_chapter",
+    {
+      title: "Save a chapter",
+      description:
+        "Save chapter `chapter` (1-based) of a series: a story in the story format (its id is set automatically) plus a continuity summary — what happens, who appears, what later chapters must stay consistent with. Chapters may be saved in any order. Fails if the chapter exists unless overwrite is true (reading progress is kept).",
+      inputSchema: {
+        series_id: z.string().min(1),
+        chapter: z.number().int().min(1).max(200),
+        story: storySchema,
+        summary: z.string().min(1).max(1500).describe("2–4 sentences for later chapters' continuity"),
+        overwrite: z.boolean().default(false),
+      },
+      annotations: WRITE,
+    },
+    async ({ series_id, chapter, story, summary, overwrite }) => {
+      const res = saveChapter(user.id, series_id, chapter, story, summary, { overwrite });
+      if (!res.ok) return fail(res.status === 404 ? `No series "${series_id}". Use list_series or save_series.` : res.error);
+      const info = res.view.series!;
+      return json({ saved: res.view.story.id, chapter, of: info.total, replaced: res.replaced });
+    },
+  );
+
+  tool(
+    "delete_series",
+    {
+      title: "Delete a series",
+      description: "Delete one of this user's series and all its chapters. Past answers to chapter questions stay in their history.",
+      inputSchema: { id: z.string().min(1) },
+      annotations: DELETE,
+    },
+    async ({ id }) => (deleteSeries(user.id, id) ? json({ deleted: id }) : fail(`No series "${id}". Use list_series.`)),
   );
 
   // --- vocabulary (private) --------------------------------------------------

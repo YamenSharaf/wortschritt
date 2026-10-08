@@ -25,6 +25,8 @@ import type {
   SaveExerciseProgressBody,
   SaveVocabBody,
   Settings,
+  SeriesSummary,
+  SeriesView,
   SheetView,
   Story,
   StoryContext,
@@ -183,6 +185,10 @@ export const api = {
     }),
   wordDetails: (word: string) =>
     req<WordDetails | null>(`/api/dict/${encodeURIComponent(word)}/details`),
+  seriesList: () => req<SeriesSummary[]>("/api/series"),
+  series: (id: string) => req<SeriesView>(`/api/series/${encodeURIComponent(id)}`),
+  deleteSeries: (id: string) =>
+    req<{ ok: true }>(`/api/series/${encodeURIComponent(id)}`, { method: "DELETE" }),
   storyTranslations: (id: string) =>
     req<StoryTranslations>(`/api/stories/${encodeURIComponent(id)}/translations`),
   translateStory: (id: string, paragraphs: number[]) =>

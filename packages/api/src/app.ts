@@ -31,6 +31,7 @@ import { mcpRoutes } from "./routes/mcp";
 import { oauthRoutes } from "./routes/oauth";
 import { notesRoutes } from "./routes/notes";
 import { progressRoutes } from "./routes/progress";
+import { seriesRoutes } from "./routes/series";
 import { settingsRoutes } from "./routes/settings";
 import { storyRoutes } from "./routes/stories";
 import { ttsRoutes } from "./routes/tts";
@@ -108,6 +109,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(importRoutes);
   await app.register(notesRoutes);
   await app.register(storyRoutes);
+  await app.register(seriesRoutes);
   await app.register(dictRoutes);
   await app.register(assistantRoutes);
   await app.register(mcpRoutes);

@@ -316,3 +316,45 @@ export const story = z
   })
   .superRefine((s, ctx) => checkItems(s.questions, ctx, ["questions"]));
 export type Story = z.infer<typeof story>;
+
+/**
+ * ---------------------------------------------------------------------------
+ * SERIES  (a book: chapters are stories, private like them)
+ * ---------------------------------------------------------------------------
+ */
+export const seriesOutlineEntry = z.object({
+  title: z.string().min(1).max(200),
+  /** What happens in this chapter (for the writer). */
+  plan: z.string().max(2000).default(""),
+});
+
+export const series = z.object({
+  schemaVersion: z.literal(1).default(1),
+  /** URL slug, unique per learner (also the prefix of its chapters' ids). */
+  id: z
+    .string()
+    .min(1)
+    .max(60)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "id must be a lowercase slug, e.g. dino-in-berlin"),
+  title: z.string().min(1).max(200),
+  /** Optional short English gloss of the (German) title. */
+  subtitle: z.string().max(200).optional(),
+  /** Level of the first chapter (chapters may rise from there). */
+  level: cefrLevel,
+  /** Shown to the learner: what the book is about (German, at the level). */
+  description: z.string().max(2000).default(""),
+  tags: z.array(z.string()).default([]),
+  /**
+   * The story bible, for whoever writes the chapters (not shown in the
+   * reader): characters, setting, tone, style rules, recurring vocabulary.
+   * Markdown.
+   */
+  bible: z.string().max(20_000).default(""),
+  /** The plan, one entry per chapter; its length is the book's planned size. */
+  outline: z.array(seriesOutlineEntry).max(100).default([]),
+});
+export type Series = z.infer<typeof series>;
+
+/** A chapter's story id: "<series id>-01". */
+export const chapterStoryId = (seriesId: string, chapter: number) =>
+  `${seriesId}-${String(chapter).padStart(2, "0")}`;

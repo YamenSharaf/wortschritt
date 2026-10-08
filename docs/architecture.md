@@ -54,6 +54,18 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   underlined with the CSS Custom Highlight API (no DOM changes), matching base
   forms via `POST /api/dict/lemmas`. Question answers are attempts/runs with
   set id `story:<id>`, so history and `get_mistakes` include them.
+- Series (`services/series.ts`, `routes/series.ts`, `pages/SeriesPage.tsx`):
+  a book is a `series` row (validated `series`: metadata, Markdown story
+  bible, outline) and its chapters are ordinary stories with `series_id`,
+  `chapter` and a continuity `summary` (unique per series and number), so
+  the reader, translations, questions and history work per chapter. Chapter
+  ids are derived (`chapterStoryId`: "<series>-01"); chapters may be saved
+  in any order and gaps show as planned (outline) chapters. Deleting a
+  series deletes its chapters in the service (SQLite can't add the composite
+  FK). Book progress counts finished chapters fully and others by scroll
+  position. Writing is for agents only (MCP `get_series` returns the
+  continuity bundle; `get_authoring_guide` kind "series" explains the
+  workflow); the web UI reads.
 - Story translations (`services/storyTranslations.ts`): English lines per
   paragraph, one per sentence as `splitSentences` (`@mdb/shared` reading.ts,
   shared with the reader) cuts it, or one line for the whole paragraph when

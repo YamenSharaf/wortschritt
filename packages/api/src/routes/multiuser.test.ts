@@ -230,6 +230,21 @@ test("stories are private: another user can't read, change or delete them", asyn
   assert.equal((await anna("GET", `/api/stories/${id}`)).json().story.title, "Annas Version");
 });
 
+test("series are private: another user can't read, extend or delete them", async () => {
+  const { EXAMPLE_SERIES, EXAMPLE_STORY } = await import("@mdb/shared");
+  const sid = EXAMPLE_SERIES.id;
+  assert.equal((await admin("POST", "/api/series", { series: EXAMPLE_SERIES })).statusCode, 200);
+  const chapter = { story: EXAMPLE_STORY, summary: "Lena kommt an." };
+  assert.equal((await admin("PUT", `/api/series/${sid}/chapters/1`, chapter)).statusCode, 200);
+
+  assert.deepEqual((await anna("GET", "/api/series")).json(), []);
+  assert.equal((await anna("GET", `/api/series/${sid}`)).statusCode, 404);
+  assert.equal((await anna("GET", `/api/stories/${sid}-01`)).statusCode, 404);
+  assert.equal((await anna("PUT", `/api/series/${sid}/chapters/2`, chapter)).statusCode, 404);
+  assert.equal((await anna("DELETE", `/api/series/${sid}`)).statusCode, 404);
+  assert.equal((await admin("GET", `/api/series/${sid}`)).json().written, 1);
+});
+
 test("shared library: imports are visible to all, editable only by their owner", async () => {
   assert.equal((await anna("POST", "/api/import", exerciseSet("anna-set"))).statusCode, 200);
   const benSees = (await ben("GET", "/api/exercises")).json() as { id: string }[];

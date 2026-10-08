@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { and, desc, eq, notInArray, sql } from "drizzle-orm";
-import { storyParagraphs, story as storySchema, type ExerciseItem, type Story, type StorySummary, type StoryView } from "@mdb/shared";
+import { and, asc, desc, eq, notInArray, sql } from "drizzle-orm";
+import { storyParagraphs, story as storySchema, type ExerciseItem, type Story, type StorySeriesInfo, type StorySummary, type StoryView } from "@mdb/shared";
 import { db, schema } from "../db/client";
 
 /**
@@ -13,7 +13,7 @@ import { db, schema } from "../db/client";
 export const paragraphHash = (block: string) => createHash("sha256").update(block).digest("hex").slice(0, 32);
 
 /** Drop translations of paragraphs an edit removed or changed. */
-function pruneTranslations(userId: number, id: string, body: string): void {
+export function pruneTranslations(userId: number, id: string, body: string): void {
   const keep = storyParagraphs(body).map(paragraphHash);
   db.delete(schema.storyTranslations)
     .where(
@@ -54,6 +54,8 @@ export function listStories(userId: number): StorySummary[] {
     if (!s) continue;
     out.push({
       id: s.id,
+      seriesId: row.seriesId,
+      chapter: row.chapter,
       title: s.title,
       subtitle: s.subtitle,
       level: s.level,
@@ -73,7 +75,39 @@ export function getStory(userId: number, id: string): StoryView | null {
   const row = db.select().from(schema.stories).where(key(userId, id)).get();
   const s = row && parse(row.data);
   if (!row || !s) return null;
-  return { story: s, progress: row.progress, readAt: row.readAt, createdAt: row.createdAt, updatedAt: row.updatedAt };
+  return {
+    story: s,
+    series: row.seriesId && row.chapter ? seriesInfo(userId, row.seriesId, row.chapter) : null,
+    progress: row.progress,
+    readAt: row.readAt,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+/** A chapter's place in its book: title, number, size, neighbours. */
+function seriesInfo(userId: number, seriesId: string, chapter: number): StorySeriesInfo | null {
+  const row = db
+    .select({ data: schema.series.data })
+    .from(schema.series)
+    .where(and(eq(schema.series.userId, userId), eq(schema.series.id, seriesId)))
+    .get();
+  if (!row) return null;
+  const siblings = db
+    .select({ id: schema.stories.id, chapter: schema.stories.chapter })
+    .from(schema.stories)
+    .where(and(eq(schema.stories.userId, userId), eq(schema.stories.seriesId, seriesId)))
+    .orderBy(asc(schema.stories.chapter))
+    .all();
+  const numbers = siblings.map((c) => c.chapter ?? 0);
+  return {
+    id: seriesId,
+    title: row.data.title,
+    chapter,
+    total: Math.max(row.data.outline?.length ?? 0, ...numbers),
+    prev: [...siblings].reverse().find((c) => (c.chapter ?? 0) < chapter)?.id ?? null,
+    next: siblings.find((c) => (c.chapter ?? 0) > chapter)?.id ?? null,
+  };
 }
 
 /** Create a story; with `overwrite`, replace one with the same id. */
