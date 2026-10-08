@@ -29,6 +29,7 @@ const FONTS: Record<ReaderSettings["font"], { label: string; family: string }> =
   serif: { label: "Serif", family: '"Literata", Georgia, "Times New Roman", serif' },
   sans: { label: "Sans", family: '"Lato", ui-sans-serif, system-ui, sans-serif' },
   readable: { label: "Readable", family: '"Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif' },
+  libron: { label: "Libron", family: '"Libron", "Literata", Georgia, serif' },
 };
 const LINE_HEIGHTS: Record<ReaderSettings["lineHeight"], number> = { compact: 1.5, normal: 1.75, relaxed: 2 };
 const WIDTHS: Record<ReaderSettings["width"], string> = { narrow: "32rem", medium: "38rem", wide: "46rem" };

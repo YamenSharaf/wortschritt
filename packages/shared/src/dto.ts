@@ -23,7 +23,7 @@ export const MAX_GENERATE_COUNT = 20;
 
 /** How stories are displayed (Settings → per account, changed in the reader). */
 export const readerSettings = z.object({
-  font: z.enum(["serif", "sans", "readable"]).default("serif"),
+  font: z.enum(["serif", "sans", "readable", "libron"]).default("serif"),
   /** Text size in px. */
   size: z.number().int().min(14).max(30).default(19),
   lineHeight: z.enum(["compact", "normal", "relaxed"]).default("normal"),
