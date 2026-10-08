@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   generateCounts,
@@ -16,6 +16,7 @@ import {
   CrossIcon,
   LanguagesIcon,
   LightbulbIcon,
+  ArrowUpIcon,
   RetryIcon,
   SparklesIcon,
 } from "../components/icons";
@@ -583,7 +584,7 @@ function QuestionNav({
 
 const msgOf = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const chipCls =
-  "inline-flex h-8 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-xs font-medium text-ink-muted transition-colors hover:border-line-strong hover:text-ink";
+  "inline-flex h-8 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-xs font-medium text-ink-muted transition-colors hover:border-line-strong hover:text-ink aria-pressed:border-transparent aria-pressed:bg-brand-soft aria-pressed:text-brand-ink";
 
 type OneShot = { kind: "hint" | "translate"; text: string; busy: boolean; error?: string };
 type Chat = { msgs: ChatTurn[]; input: string; busy: boolean; error?: string };
@@ -676,77 +677,101 @@ function TutorHelp({
       .finally(() => setChat((s) => (s ? { ...s, busy: false } : s)));
   }
 
+  const title = chat ? "Why it was wrong" : shot?.kind === "hint" ? "Hint" : "Translation";
+  const close = () => {
+    abortRef.current?.abort();
+    setShot(null);
+    setChat(null);
+  };
+
   return (
-    <div className="mt-3">
+    <div className="mt-4">
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => runShot("hint")} className={chipCls}>
+        <button type="button" onClick={() => runShot("hint")} className={chipCls} aria-pressed={shot?.kind === "hint"}>
           <LightbulbIcon className="h-3.5 w-3.5" />
           Hint
         </button>
-        <button type="button" onClick={() => runShot("translate")} className={chipCls}>
+        <button type="button" onClick={() => runShot("translate")} className={chipCls} aria-pressed={shot?.kind === "translate"}>
           <LanguagesIcon className="h-3.5 w-3.5" />
           Translate
         </button>
         {showWhyWrong && (
-          <button type="button" onClick={startWhyWrong} className={chipCls}>
+          <button type="button" onClick={startWhyWrong} className={chipCls} aria-pressed={chat !== null}>
+            <SparklesIcon className="h-3.5 w-3.5" />
             Why was I wrong?
           </button>
         )}
       </div>
 
-      {shot && (
-        <div className="mt-2 rounded-card border border-line bg-surface-raised p-4 shadow-card">
-          {shot.error ? (
-            <span className="text-sm text-danger">{shot.error}</span>
-          ) : (
-            <TutorMarkdown text={shot.text} busy={shot.busy} />
-          )}
-        </div>
-      )}
-
-      {chat && (
-        <div className="mt-2 flex flex-col gap-2 rounded-card border border-line bg-surface-raised p-4 shadow-card">
-          {chat.msgs.map((m, i) =>
-            m.role === "assistant" ? (
-              <TutorMarkdown
-                key={i}
-                text={m.content}
-                busy={chat.busy && i === chat.msgs.length - 1}
-              />
-            ) : (
-              <div
-                key={i}
-                className="max-w-[85%] self-end rounded-control bg-brand-soft px-3 py-1.5 text-sm text-ink"
-              >
-                {m.content}
-              </div>
-            ),
-          )}
-          {chat.error && <p className="text-sm text-danger">{chat.error}</p>}
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              sendFollowup();
-            }}
-            className="flex gap-2 pt-1"
-          >
-            <input
-              value={chat.input}
-              onChange={(e) =>
-                setChat((s) => (s ? { ...s, input: e.target.value } : s))
-              }
-              placeholder="Ask a follow-up…"
-              className="input min-w-0 flex-1 py-1.5 text-sm"
-            />
+      {(shot || chat) && (
+        <section
+          aria-label={`Tutor: ${title}`}
+          className="mt-3 overflow-hidden rounded-card border border-line bg-surface-raised shadow-card"
+        >
+          <header className="flex items-center gap-2 border-b border-line px-4 py-2.5">
+            <span className="ws-glass-icon grid h-6 w-6 place-items-center rounded-full" style={{ "--tint": "var(--brand)" } as CSSProperties}>
+              <SparklesIcon className="h-3.5 w-3.5" />
+            </span>
+            <span className="text-sm font-semibold">Tutor</span>
+            <span className="text-sm text-ink-subtle">· {title}</span>
             <button
-              type="submit"
-              disabled={chat.busy || !chat.input.trim()}
-              className={`${btn.primary} ${btn.sm} shrink-0`}
+              type="button"
+              onClick={close}
+              aria-label="Close tutor"
+              className="ml-auto grid h-7 w-7 place-items-center rounded-chip text-ink-subtle hover:bg-surface-sunken hover:text-ink"
             >
-              Send
+              <CrossIcon className="h-4 w-4" />
             </button>
-          </form>
-        </div>
+          </header>
+
+          {shot && (
+            <div className="px-4 py-3">
+              {shot.error ? <p className="text-sm text-danger">{shot.error}</p> : <TutorMarkdown text={shot.text} busy={shot.busy} />}
+            </div>
+          )}
+
+          {chat && (
+            <>
+              <div className="flex max-h-[26rem] flex-col gap-3 overflow-y-auto px-4 py-3">
+                {chat.msgs.map((m, i) =>
+                  m.role === "assistant" ? (
+                    <TutorMarkdown key={i} text={m.content} busy={chat.busy && i === chat.msgs.length - 1} />
+                  ) : (
+                    <div key={i} className="max-w-[85%] self-end rounded-2xl rounded-br-md bg-brand-soft px-3.5 py-2 text-sm text-ink">
+                      {m.content}
+                    </div>
+                  ),
+                )}
+                {chat.error && <p className="text-sm text-danger">{chat.error}</p>}
+              </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  sendFollowup();
+                }}
+                className="border-t border-line p-2"
+              >
+                <div className="flex items-center gap-2 rounded-full border border-line-control bg-surface-sunken py-1 pl-4 pr-1 transition-colors focus-within:border-focus focus-within:bg-surface">
+                  <input
+                    value={chat.input}
+                    onChange={(e) => setChat((s) => (s ? { ...s, input: e.target.value } : s))}
+                    placeholder="Ask a follow-up…"
+                    aria-label="Ask the tutor a follow-up question"
+                    className="min-w-0 flex-1 bg-transparent py-1.5 text-sm text-ink outline-none placeholder:text-ink-subtle"
+                  />
+                  <button
+                    type="submit"
+                    disabled={chat.busy || !chat.input.trim()}
+                    aria-label="Send"
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand text-brand-on disabled:opacity-40"
+                  >
+                    <ArrowUpIcon className="h-4 w-4" />
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
+        </section>
       )}
     </div>
   );

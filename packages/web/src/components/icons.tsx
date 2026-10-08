@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  ArrowUp,
   BookOpen,
   Check,
   ChevronLeft,
@@ -58,3 +59,4 @@ export const SparklesIcon = wrap(Sparkles);
 export const LightbulbIcon = wrap(Lightbulb);
 export const LanguagesIcon = wrap(Languages);
 export const QuoteIcon = wrap(Quote);
+export const ArrowUpIcon = wrap(ArrowUp);
