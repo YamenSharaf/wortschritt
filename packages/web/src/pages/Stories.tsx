@@ -3,16 +3,19 @@ import { Link } from "react-router-dom";
 import type { StorySummary } from "@mdb/shared";
 import { Bookshelf } from "../components/Bookshelf";
 import { Cover } from "../components/Cover";
+import { CheckIcon, PenLineIcon, SparklesIcon } from "../components/icons";
 import { SearchBox } from "../components/SearchBox";
+import { SectionIcon } from "../components/SectionIcon";
+import { Muted, PageHeader, Pill, btn, cardLink } from "../components/ui";
 import { api } from "../lib/api";
 import { useAsync } from "../lib/useAsync";
 
 /** Reading time at a learner's pace (~120 words a minute). */
 const minutes = (words: number) => Math.max(1, Math.round(words / 120));
 
-function status(s: StorySummary): { label: string; tone: string } | null {
-  if (s.readAt) return { label: "Read ✓", tone: "text-green-600 dark:text-green-400" };
-  if (s.progress > 0.02) return { label: `${Math.round(s.progress * 100)}% read`, tone: "text-amber-600 dark:text-amber-400" };
+function status(s: StorySummary): { label: string; tone: "success" | "brand" } | null {
+  if (s.readAt) return { label: "Read", tone: "success" };
+  if (s.progress > 0.02) return { label: `${Math.round(s.progress * 100)}% read`, tone: "brand" };
   return null;
 }
 
@@ -37,44 +40,46 @@ export function StoriesPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Stories</h1>
-        <div className="flex gap-2">
-          <Link
-            to="/stories/new"
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium dark:border-slate-700"
-          >
-            Write
-          </Link>
-          <Link
-            to="/stories/generate"
-            className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground"
-          >
-            ✨ Generate
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Stories"
+        subtitle="Books and short stories at your level, with tap-to-define and read-aloud."
+        actions={
+          <>
+            <Link to="/stories/new" className={btn.secondary}>
+              <PenLineIcon className="h-4 w-4" />
+              Write
+            </Link>
+            <Link to="/stories/generate" className={btn.primary}>
+              <SparklesIcon className="h-4 w-4" />
+              Generate
+            </Link>
+          </>
+        }
+      />
       {list.length + bookList.length > 3 && (
-        <div className="mb-3">
+        <div className="mb-6">
           <SearchBox value={q} onChange={setQ} placeholder="Search stories…" />
         </div>
       )}
-      {stories.status === "loading" && <p className="text-slate-500">Loading…</p>}
-      {stories.status === "error" && <p className="text-red-600">Couldn't load your stories.</p>}
+      {stories.status === "loading" && <Muted>Loading…</Muted>}
+      {stories.status === "error" && <p className="text-danger">Couldn't load your stories.</p>}
       {filteredBooks.length > 0 && <Bookshelf books={filteredBooks} />}
       {filteredBooks.length > 0 && list.length > 0 && (
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Stories</h2>
+        <h2 className="mb-3 mt-10 text-xl font-semibold tracking-[-0.01em]">Short stories</h2>
       )}
       {stories.status === "ready" && list.length === 0 && bookList.length === 0 && (
-        <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-slate-500 dark:border-slate-700">
-          <p className="mb-1 font-medium text-slate-700 dark:text-slate-200">No stories yet</p>
+        <div className="rounded-card border border-dashed border-line-control p-8 text-center text-ink-muted">
+          <div className="mb-3 flex justify-center">
+            <SectionIcon section="stories" size="lg" />
+          </div>
+          <p className="mb-1 font-semibold text-ink">No stories yet</p>
           <p className="text-sm">
-            <Link to="/stories/generate" className="underline">
+            <Link to="/stories/generate" className="text-brand-ink underline underline-offset-2">
               Generate one
             </Link>{" "}
-            from a short description — tailored to your level, your mistakes and the words you're
-            learning — or{" "}
-            <Link to="/stories/new" className="underline">
+            from a short description, tailored to your level, your mistakes and the words you're
+            learning, or{" "}
+            <Link to="/stories/new" className="text-brand-ink underline underline-offset-2">
               write or paste your own
             </Link>
             . Stories are private to you.
@@ -82,35 +87,32 @@ export function StoriesPage() {
         </div>
       )}
       {stories.status === "ready" && filtered.length === 0 && filteredBooks.length === 0 && list.length + bookList.length > 0 && (
-        <p className="text-slate-500">No stories match.</p>
+        <Muted>No stories match.</Muted>
       )}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2">
         {filtered.map((s) => {
           const st = status(s);
           return (
-            <Link
-              key={s.id}
-              to={`/stories/${s.id}`}
-              className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <Cover kind="story" id={s.id} version={s.cover} fallbackKey={`${s.title}-${s.level}`} className="w-10 shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium">{s.title}</div>
-                  {s.subtitle && <div className="text-xs text-slate-400">{s.subtitle}</div>}
+            <Link key={s.id} to={`/stories/${s.id}`} className={`${cardLink} relative flex gap-4 overflow-hidden !p-4`}>
+              <Cover kind="story" id={s.id} version={s.cover} fallbackKey={`${s.title}-${s.level}`} className="w-14 shrink-0" />
+              <div className="flex min-w-0 flex-1 flex-col">
+                <h3 className="font-semibold leading-6 tracking-[-0.005em]" lang="de">{s.title}</h3>
+                {s.subtitle && <p className="text-sm text-ink-muted">{s.subtitle}</p>}
+                <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-3">
+                  <Pill>{s.level}</Pill>
+                  <Pill>{minutes(s.words)} min</Pill>
+                  {s.questions > 0 && <Pill>{s.questions} {s.questions === 1 ? "question" : "questions"}</Pill>}
+                  {st && (
+                    <Pill tone={st.tone}>
+                      {st.tone === "success" && <CheckIcon className="h-3 w-3" />}
+                      {st.label}
+                    </Pill>
+                  )}
                 </div>
-                <span className="shrink-0 rounded-full border border-slate-300 px-2 py-0.5 text-xs text-slate-500 dark:border-slate-700">
-                  {s.level}
-                </span>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-x-3 text-xs text-slate-500">
-                <span>{minutes(s.words)} min</span>
-                {s.questions > 0 && <span>{s.questions} questions</span>}
-                {st && <span className={st.tone}>{st.label}</span>}
               </div>
               {!s.readAt && s.progress > 0.02 && (
-                <div className="absolute inset-x-0 bottom-0 h-0.5 bg-slate-100 dark:bg-slate-800">
-                  <div className="h-full bg-accent" style={{ width: `${Math.round(s.progress * 100)}%` }} />
+                <div className="absolute inset-x-0 bottom-0 h-[3px] bg-surface-sunken">
+                  <div className="h-full bg-brand" style={{ width: `${Math.round(s.progress * 100)}%` }} />
                 </div>
               )}
             </Link>

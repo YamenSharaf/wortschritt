@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { SeriesSummary } from "@mdb/shared";
 import { Cover } from "./Cover";
+import { CheckIcon } from "./icons";
 import { TabPills } from "./TabPills";
+import { Pill, cardLink } from "./ui";
 
 /**
  * The learner's books: a grid of covers, or a list. The
@@ -31,8 +33,8 @@ export function Bookshelf({ books }: { books: SeriesSummary[] }) {
 
   return (
     <section className="mb-6">
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Books</h2>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-xl font-semibold tracking-[-0.01em]">Books</h2>
         <TabPills
           size="sm"
           label="Shelf view"
@@ -68,15 +70,15 @@ const label = (b: SeriesSummary) =>
 function Marker({ book }: { book: SeriesSummary }) {
   if (book.read === book.total && book.total > 0) {
     return (
-      <span className="absolute -right-1.5 -top-1.5 z-10 grid h-5 w-5 place-items-center rounded-full bg-green-600 text-[10px] text-white shadow" aria-hidden>
-        ✓
+      <span className="absolute -right-1.5 -top-1.5 z-10 grid h-6 w-6 place-items-center rounded-full border-2 border-[var(--bg)] bg-success text-[var(--surface)] shadow-card" aria-hidden>
+        <CheckIcon className="h-3.5 w-3.5" />
       </span>
     );
   }
   if (book.progress <= 0.01) return null;
   return (
     <span
-      className="absolute -top-2 right-3 z-10 h-7 w-2.5 bg-accent shadow-sm"
+      className="absolute -top-2 right-3 z-10 h-7 w-2.5 bg-[linear-gradient(180deg,var(--reward-2),var(--reward-3))] shadow-card"
       style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%)" }}
       aria-hidden
     />
@@ -87,13 +89,13 @@ function FaceOut({ book }: { book: SeriesSummary }) {
   return (
     <Link to={`/series/${book.id}`} aria-label={label(book)} title={label(book)} className="group relative block min-w-0">
       <Marker book={book} />
-      <div className="relative transition-transform duration-200 group-hover:-translate-y-1">
+      <div className="relative transition-transform duration-200 group-hover:-translate-y-1 motion-reduce:group-hover:translate-y-0">
         <Cover
           kind="series"
           id={book.id}
           version={book.cover}
           fallbackKey={`${book.title}-${book.subtitle ?? ""}-${book.level}`}
-          className="block w-full !rounded-[3px] !ring-0 !shadow-[0_2px_10px_rgba(0,0,0,.14)] transition-shadow group-hover:!shadow-[0_6px_18px_rgba(0,0,0,.2)]"
+          className="block w-full !rounded-[6px] !ring-1 !ring-[var(--border)] !shadow-[0_2px_10px_rgba(0,0,0,.14)] transition-shadow group-hover:!shadow-[0_10px_24px_rgba(0,0,0,.22)]"
         />
       </div>
     </Link>
@@ -105,7 +107,7 @@ function ListItem({ book }: { book: SeriesSummary }) {
   return (
     <Link
       to={`/series/${book.id}`}
-      className="relative flex gap-3 overflow-hidden rounded-xl border border-slate-200 bg-white p-3 hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900"
+      className={`${cardLink} relative flex gap-4 overflow-hidden !p-4`}
     >
       <Cover
         kind="series"
@@ -117,27 +119,26 @@ function ListItem({ book }: { book: SeriesSummary }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <div className="font-medium" lang="de">
+            <h3 className="font-semibold leading-6 tracking-[-0.005em]" lang="de">
               {book.title}
-            </div>
-            {book.subtitle && <div className="text-xs text-slate-400">{book.subtitle}</div>}
+            </h3>
+            {book.subtitle && <p className="text-sm text-ink-muted">{book.subtitle}</p>}
           </div>
-          <span className="shrink-0 rounded-full border border-slate-300 px-2 py-0.5 text-xs text-slate-500 dark:border-slate-700">
-            {book.level}
-          </span>
         </div>
-        <div className="mt-2 flex flex-wrap gap-x-3 text-xs text-slate-500">
-          <span>{book.written === book.total ? `${book.total} chapters` : `${book.written} of ${book.total} chapters written`}</span>
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <Pill>{book.level}</Pill>
+          <Pill>{book.written === book.total ? `${book.total} chapters` : `${book.written} of ${book.total} written`}</Pill>
           {book.read > 0 && (
-            <span className={done ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"}>
-              {done ? "Read ✓" : `${Math.round(book.progress * 100)}% read`}
-            </span>
+            <Pill tone={done ? "success" : "brand"}>
+              {done && <CheckIcon className="h-3 w-3" />}
+              {done ? "Read" : `${Math.round(book.progress * 100)}% read`}
+            </Pill>
           )}
         </div>
       </div>
       {book.progress > 0.01 && !done && (
-        <div className="absolute inset-x-0 bottom-0 h-0.5 bg-slate-100 dark:bg-slate-800">
-          <div className="h-full bg-accent" style={{ width: `${Math.round(book.progress * 100)}%` }} />
+        <div className="absolute inset-x-0 bottom-0 h-[3px] bg-surface-sunken">
+          <div className="h-full bg-brand" style={{ width: `${Math.round(book.progress * 100)}%` }} />
         </div>
       )}
     </Link>
