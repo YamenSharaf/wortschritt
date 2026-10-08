@@ -21,7 +21,7 @@ const PRESETS = [
 
 const errorText = (err: unknown) => (err instanceof ApiError ? err.message : "Something went wrong.");
 
-/** Settings → AI tutor: the user's providers and the order models are tried in. */
+/** Settings → Connections → AI tutor: the user's providers and the order models are tried in. */
 export function AiSettings() {
   const [view, setView] = useState<AiSettingsView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export function AiSettings() {
   const saveOrder = (next: typeof order) => apply(() => api.saveAiModels(next));
 
   return (
-    <div className="max-w-xl space-y-8">
+    <div className="space-y-6">
       <p className="text-sm text-ink-muted">
         The tutor uses your own AI provider (any OpenAI-compatible API). Models are tried in
         order: if one fails, the next one answers. Keys are stored encrypted and never shown again.
@@ -65,7 +65,7 @@ export function AiSettings() {
       {error && <p className="text-sm text-danger">{error}</p>}
 
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold tracking-[-0.01em]">Providers</h2>
+        <h3 className="font-semibold">Providers</h3>
         {view.providers.map((p) => (
           <ProviderRow key={p.id} provider={p} view={view} apply={apply} />
         ))}
@@ -78,7 +78,7 @@ export function AiSettings() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-semibold tracking-[-0.01em]">Models, in order</h2>
+        <h3 className="font-semibold">Models, in order</h3>
         {view.models.length === 0 ? (
           <p className="text-sm text-ink-muted">
             {view.providers.length ? "Add a model to turn the tutor on." : "Add a provider first."}

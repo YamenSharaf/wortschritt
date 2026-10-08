@@ -7,14 +7,15 @@ export const APP_GUIDE = `# Wortschritt — how the app works
 
 A small self-hosted app for learning German, used by a few people (one admin). You act as one signed-in user: what you change is what they see in the app. Everything the learner reads is German at their level (whoami / get_progress); explanations to them are in English.
 
-## Areas (web app nav: Home · Sheets · Practice · Stories · Vocab · Notes · Settings)
+## Areas (web app nav: Home · Practice · Sheets · Stories · Vocab · Notes; settings in the account menu at the top right)
 - Home: today's answers vs. their daily goal, totals and accuracy, recent practice, recently viewed sheets, recent notes.
 - Sheets (shared): grammar cheat sheets in Markdown.
 - Practice (shared): exercise sets — multiple choice, cloze, flashcard, sentence building, transform, true/false, conjugation tables. Answers are graded in the app (forgiving: case, punctuation, ä→a are ignored unless an item says "exact"); open answers can be graded by the learner's AI tutor if they enabled it. Every answer is recorded. AI helpers in the player: hint, translate the task, "why was I wrong?", and "generate more" items at the end.
 - Stories (private): reading texts with a glossary and comprehension questions at the end, and Books (series of chapters) shown as a grid of covers or a list. The reader has pages or scroll, tap-a-word dictionary popup (save to vocab from there), English line by line (off / peek / always), read-aloud, text settings, and EPUB download. Stories can also be generated in the app from a short prompt (Stories → Generate) or written by hand.
 - Vocab (private): saved words (by base form) with groups, and flashcards (all words or a group, DE↔EN, "know / don't know"). There is no spaced-repetition schedule: each word keeps known/missed counts and its last result.
 - Notes (private): Markdown notes with free-form categories; "Clean up" tidies a note with AI.
-- Settings: level, daily goal, theme, voice; AI tutor (each user brings their own OpenAI-compatible provider); connected apps and API tokens; for the admin: users, registration, server time zone. Import: paste JSON content (the same format as get_authoring_guide).
+- Settings (account menu): Learning (level, daily goal, batch size, voice), Account (display name, password), Connections (AI tutor: each user brings their own OpenAI-compatible provider; connected apps; API tokens). Administration (admin only): users and registration; server time zone and read-aloud voices.
+- Import (button on Practice and Cheat sheets): paste JSON content (the same format as get_authoring_guide).
 
 ## Shared vs. private
 Exercise sets and cheat sheets are a shared library: built-in ones are read-only; imported ones can be replaced or deleted only by whoever imported them (an admin can delete any). Stories, books, covers, vocab, notes and progress belong to this user alone.

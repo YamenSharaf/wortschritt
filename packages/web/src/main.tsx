@@ -10,6 +10,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { App } from "./App";
+import { AdminPage } from "./pages/Admin";
 import "./index.css";
 import { AuthProvider } from "./lib/auth";
 import { Cheatsheets } from "./pages/Cheatsheets";
@@ -54,6 +55,9 @@ const router = createBrowserRouter([
       { path: "notes", element: <NotesPage /> },
       { path: "notes/:id", element: <NoteEditor /> },
       { path: "settings", element: <SettingsPage /> },
+      { path: "settings/:tab", element: <SettingsPage /> },
+      { path: "admin", element: <AdminPage /> },
+      { path: "admin/:tab", element: <AdminPage /> },
       { path: "import", element: <ImportPage /> },
     ],
   },

@@ -166,6 +166,28 @@ body {
   }
 }
 
+/* Account menu: a sheet from the bottom on phones, a dropdown on wide screens. */
+.ws-sheet {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-pop);
+  animation: ws-sheet-in 200ms ease-out;
+}
+.ws-scrim {
+  background: rgb(8 10 16 / 0.32);
+  animation: ws-fade-in 200ms ease-out;
+}
+@media (min-width: 768px) {
+  .ws-sheet { border-radius: 14px; animation-name: ws-fade-in; animation-duration: 120ms; }
+  .ws-scrim { background: transparent; }
+}
+@keyframes ws-sheet-in { from { transform: translateY(12px); opacity: 0; } }
+@keyframes ws-fade-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .ws-sheet, .ws-scrim { animation: none; }
+}
+
 /* Mobile dock: a floating pill of very subtle glass over the page. */
 .ws-dock {
   border-radius: 999px;

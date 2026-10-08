@@ -178,7 +178,7 @@ export function seedAdminAiFromEnv(log: FastifyBaseLogger): void {
     try {
       baseUrl = checkAiUrl(baseUrl);
     } catch (err) {
-      // Keep it so the admin sees and fixes it in Settings → AI tutor.
+      // Keep it so the admin sees and fixes it in Settings → Connections.
       log.warn({ baseUrl, reason: (err as Error).message }, "seeded AI URL isn't allowed");
     }
     const provider = db

@@ -8,7 +8,17 @@ import { btn } from "../components/ui";
 const smallBtn =
   "rounded-control border border-line-control px-2.5 py-1 text-xs font-medium hover:border-line-strong disabled:opacity-50 ";
 
-/** Admin-only: the registration switch and account management. */
+/** Admin → Server: settings that apply to the whole server, not to one account. */
+export function ServerAdmin() {
+  return (
+    <div className="max-w-2xl space-y-8">
+      <TimezoneSetting />
+      <TtsProviders />
+    </div>
+  );
+}
+
+/** Admin → Users: the registration switch and account management. */
 export function UsersAdmin() {
   const { user: me } = useAuth();
   const [users, setUsers] = useState<AdminUser[] | null>(null);
@@ -58,10 +68,6 @@ export function UsersAdmin() {
           {registration.open ? "Close registration now" : "Open registration for 24 hours"}
         </button>
       </section>
-
-      <TimezoneSetting />
-
-      <TtsProviders />
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold tracking-[-0.01em]">Users</h2>

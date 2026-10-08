@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { ImportIcon } from "../components/icons";
 import { SearchBox } from "../components/SearchBox";
 import { SectionIcon } from "../components/SectionIcon";
 import { SortControl, sortByMode, type SortMode } from "../components/SortControl";
-import { PageHeader, Pill, cardLink } from "../components/ui";
+import { PageHeader, Pill, btn, cardLink } from "../components/ui";
 import { api } from "../lib/api";
 import { useAsync } from "../lib/useAsync";
 
@@ -28,7 +29,15 @@ export function Cheatsheets() {
       <PageHeader
         title="Cheat sheets"
         subtitle="Grammar at a glance. Tap any word to look it up."
-        actions={list.length > 1 && <SortControl value={sort} onChange={setSort} />}
+        actions={
+          <>
+            {list.length > 1 && <SortControl value={sort} onChange={setSort} />}
+            <Link to="/import" className={btn.secondary}>
+              <ImportIcon className="h-4 w-4" />
+              Import
+            </Link>
+          </>
+        }
       />
       {list.length > 3 && (
         <div className="mb-3">

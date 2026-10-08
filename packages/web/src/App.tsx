@@ -2,13 +2,12 @@ import { useEffect } from "react";
 import { Navigate, NavLink, Outlet, useMatch } from "react-router-dom";
 import { api } from "./lib/api";
 import { useAuth } from "./lib/auth";
+import { AccountMenu } from "./components/AccountMenu";
 import { AppTitle } from "./components/AppTitle";
 import {
   HomeIcon,
-  LogOutIcon,
   NotesIcon,
   PracticeIcon,
-  SettingsIcon,
   SheetsIcon,
   StoriesIcon,
   VocabIcon,
@@ -24,15 +23,9 @@ const navItems = [
   { to: "/vocab", label: "Vocab", Icon: VocabIcon },
   { to: "/notes", label: "Notes", Icon: NotesIcon },
 ];
-const mobileItems = [...navItems, { to: "/settings", label: "Settings", end: false, Icon: SettingsIcon }];
-
-const iconButton = (active = false) =>
-  `grid h-9 w-9 place-items-center rounded-control transition-colors ${
-    active ? "bg-surface-sunken text-ink" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"
-  }`;
 
 export function App() {
-  const { authenticated, loading, logout } = useAuth();
+  const { authenticated, loading } = useAuth();
   // The story reader takes the whole screen (no header or tab bar).
   const storyMatch = useMatch("/stories/:id");
   const immersive = Boolean(storyMatch && !["new", "generate"].includes(storyMatch.params.id ?? ""));
@@ -98,13 +91,8 @@ export function App() {
               </NavLink>
             ))}
           </nav>
-          <div className="flex items-center gap-1 justify-self-end">
-            <NavLink to="/settings" aria-label="Settings" title="Settings" className={({ isActive }) => `hidden md:grid ${iconButton(isActive)}`}>
-              <SettingsIcon className="h-[18px] w-[18px]" />
-            </NavLink>
-            <button type="button" onClick={() => void logout()} aria-label="Log out" title="Log out" className={iconButton()}>
-              <LogOutIcon className="h-[18px] w-[18px]" />
-            </button>
+          <div className="flex items-center justify-self-end">
+            <AccountMenu />
           </div>
         </header>
       </div>
@@ -115,8 +103,8 @@ export function App() {
 
       {/* Mobile dock: a floating glass pill; the active section sits in a soft pill. */}
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(env(safe-area-inset-bottom)+10px)] md:hidden">
-        <nav aria-label="Main" className="ws-dock pointer-events-auto mx-auto grid max-w-md grid-cols-7 p-1.5">
-          {mobileItems.map(({ to, label, end, Icon }) => (
+        <nav aria-label="Main" className="ws-dock pointer-events-auto mx-auto grid max-w-md grid-cols-6 p-1.5">
+          {navItems.map(({ to, label, end, Icon }) => (
             <NavLink
               key={to}
               to={to}

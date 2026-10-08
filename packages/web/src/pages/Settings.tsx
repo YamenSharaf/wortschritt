@@ -18,41 +18,58 @@ import {
   setServerTts,
   speak,
 } from "../lib/tts";
-import { ImportPage } from "./Import";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { TabPills } from "../components/TabPills";
 import { AiSettings } from "./AiSettings";
-import { UsersAdmin } from "./UsersAdmin";
 import { SpeakerIcon } from "../components/icons";
 import { btn } from "../components/ui";
 
+const SETTINGS_TABS = [
+  { value: "learning", label: "Learning" },
+  { value: "account", label: "Account" },
+  { value: "connections", label: "Connections" },
+] as const;
+export type SettingsTab = (typeof SETTINGS_TABS)[number]["value"];
+
+/** Personal settings, one route per tab (/settings/learning, …) so links and Back work. */
 export function SettingsPage() {
-  const { user } = useAuth();
-  const [tab, setTab] = useState<"preferences" | "account" | "ai" | "users" | "import">(
-    "preferences",
-  );
-  const tabs = [
-    { value: "preferences", label: "Preferences" },
-    { value: "account", label: "Account" },
-    { value: "ai", label: "AI tutor" },
-    ...(user?.role === "admin" ? [{ value: "users", label: "Users" } as const] : []),
-    { value: "import", label: "Import content" },
-  ] as const;
+  const { tab } = useParams();
+  const navigate = useNavigate();
+  const current = SETTINGS_TABS.find((t) => t.value === tab)?.value;
+  if (!current) return <Navigate to="/settings/learning" replace />;
   return (
     <div>
       <h1 className="mb-4 text-[28px] font-semibold leading-[34px] tracking-[-0.02em]">Settings</h1>
       <div className="-mx-1 mb-6 overflow-x-auto px-1 pb-1">
-        <TabPills label="Settings sections" value={tab} onChange={setTab} options={tabs} />
+        <TabPills
+          label="Settings sections"
+          value={current}
+          onChange={(t) => navigate(`/settings/${t}`)}
+          options={SETTINGS_TABS}
+        />
       </div>
-      {tab === "preferences" && <Preferences />}
-      {tab === "account" && <Account />}
-      {tab === "ai" && <AiSettings />}
-      {tab === "users" && user?.role === "admin" && <UsersAdmin />}
-      {tab === "import" && <ImportPage />}
+      {current === "learning" && <Learning />}
+      {current === "account" && <Account />}
+      {current === "connections" && <Connections />}
     </div>
   );
 }
 
-function Preferences() {
+/** Things outside the app that act for you: the AI tutor's provider, connected agents, tokens. */
+function Connections() {
+  return (
+    <div className="max-w-xl space-y-10">
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold tracking-[-0.01em]">AI tutor</h2>
+        <AiSettings />
+      </section>
+      <ConnectedApps />
+      <ApiTokens />
+    </div>
+  );
+}
+
+function Learning() {
   const loaded = useAsync(() => api.settings(), []);
   const [form, setForm] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(false);
@@ -73,13 +90,6 @@ function Preferences() {
   return (
     <div className="max-w-md">
       <div className="space-y-4">
-        <Field label="Display name">
-          <input
-            value={form.displayName}
-            onChange={(e) => setForm({ ...form, displayName: e.target.value })}
-            className="input"
-          />
-        </Field>
         <Field label="Level (CEFR)">
           <select
             value={form.level}
@@ -142,7 +152,7 @@ function Preferences() {
           </span>
         </label>
         <p className="-mt-2 text-xs text-ink-subtle">
-          Only used when your AI tutor is set up (the AI tutor tab). Falls back to exact matching
+          Only used when your AI tutor is set up (Settings → Connections). Falls back to exact matching
           otherwise.
         </p>
         <button
@@ -225,7 +235,7 @@ function PronunciationSetting({
         </button>
         {!available && (
           <p className="text-xs text-ink-subtle">
-            Natural German voices can be set up by the admin (Settings → Users → Read-aloud
+            Natural German voices can be set up by the admin (Administration → Server → Read-aloud
             voices).
           </p>
         )}
@@ -311,6 +321,7 @@ function Account() {
         Signed in as <span className="font-medium text-ink ">{user?.username}</span>
         {user?.role === "admin" && " (admin)"}
       </p>
+      <DisplayName />
       <form onSubmit={changePassword} className="space-y-4">
         <h2 className="text-xl font-semibold tracking-[-0.01em]">Change password</h2>
         <Field label="Current password">
@@ -352,9 +363,46 @@ function Account() {
           <p className={`text-sm ${message.ok ? "text-success" : "text-danger"}`}>{message.text}</p>
         )}
       </form>
-      <ConnectedApps />
-      <ApiTokens />
     </div>
+  );
+}
+
+/** The name the app greets you with (part of the settings row). */
+function DisplayName() {
+  const loaded = useAsync(() => api.settings(), []);
+  const [form, setForm] = useState<Settings | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (loaded.status === "ready") setForm(loaded.data);
+  }, [loaded.status]);
+
+  if (!form) return null;
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form) return;
+    // Merge into the latest settings so a stale copy can't undo other changes.
+    const latest = await api.settings();
+    await api.saveSettings({ ...latest, displayName: form.displayName });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  }
+
+  return (
+    <form onSubmit={save} className="space-y-4">
+      <Field label="Display name">
+        <input
+          value={form.displayName}
+          onChange={(e) => setForm({ ...form, displayName: e.target.value })}
+          className="input"
+        />
+      </Field>
+      <button type="submit" className={btn.secondary}>
+        Save name
+      </button>
+      {saved && <span className="ml-3 text-sm text-success">Saved</span>}
+    </form>
   );
 }
 

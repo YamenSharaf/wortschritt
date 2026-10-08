@@ -17,6 +17,11 @@ import {
   Languages,
   Lightbulb,
   House,
+  GraduationCap,
+  Plug,
+  UserRound,
+  Import,
+  ShieldCheck,
   Layers,
   LogOut,
   NotebookPen,
@@ -77,3 +82,8 @@ export const MinimizeIcon = wrap(Minimize2);
 export const StopIcon = wrap(Square);
 export const TypeIcon = wrap(Type);
 export const CopyIcon = wrap(Copy);
+export const ImportIcon = wrap(Import);
+export const AdminIcon = wrap(ShieldCheck);
+export const LearningIcon = wrap(GraduationCap);
+export const AccountIcon = wrap(UserRound);
+export const ConnectionsIcon = wrap(Plug);

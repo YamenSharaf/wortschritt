@@ -37,7 +37,7 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   current content (null if it's gone). Notes and sheet views keep only their
   latest edit / view.
 - Days ("answered today", the activity timeline) are counted in the
-  server-wide time zone (`services/timezone.ts`; admin → Settings → Users,
+  server-wide time zone (`services/timezone.ts`; Administration → Server,
   stored in `app_settings`; default `TZ` or UTC).
 - Vocab & flashcards: `vocab`, `vocab_groups`, `vocab_group_members`,
   `vocab_stats` (running tally), `vocab_reviews` (one row per flashcard
@@ -125,7 +125,7 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   `lookup_word`.
 - Pronunciation / read-aloud: `routes/tts.ts` + `tts/providers.ts`. A voice
   id names its provider: Azure Speech neural voices (`azure:de-DE-KatjaNeural`; the admin stores region + key in
-  Settings → Users, key encrypted like AI keys, called through the egress
+  Administration → Server, key encrypted like AI keys, called through the egress
   guard), or the unofficial Edge "Read aloud" endpoint (`edge:…`, admin
   opt-in, `tts/edge.ts` WebSocket protocol as in edge-tts). Cloud voices are
   limited to `NEURAL_VOICES` (`@mdb/shared`). Clips are cached on disk by
@@ -182,7 +182,7 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   RFC 8252). Tokens: `mdbo_at_…` (1 h, valid only on their resource — an
   `app` token works with `authenticate()` on the REST API, an `mcp` one only
   on `/mcp`) and `mdbo_rt_…` (30 days, rotated on each refresh); one
-  `oauth_grants` row per approval, which Settings → Connected apps lists and
+  `oauth_grants` row per approval, which Settings → Connections lists and
   deletes. Disabling or deleting the user ends access. The issuer is
   `PUBLIC_URL` or the request's forwarded origin. All responses send
   `X-Frame-Options: DENY` so the consent page can't be framed.
@@ -270,7 +270,7 @@ SSE; `/grade` and `/generate` return JSON), add a client call in
 
 **Per-user providers and fallback.** Each user adds **OpenAI-compatible**
 providers (base URL + one key; presets for OpenRouter and OpenAI) and an ordered
-list of provider + model entries under Settings → AI tutor (`ai_providers` /
+list of provider + model entries under Settings → Connections (`ai_providers` /
 `ai_models`, `assistant/config.ts`); without one, their tutor UI stays hidden.
 Every request tries the entries in order (`streamCompletion` in
 `assistant/client.ts`): if one fails before any text arrives, the next is tried
@@ -348,14 +348,24 @@ The name and icon are fixed (`APP_NAME` in `@mdb/shared`, `brand/`).
 Phases: 1 users + auth + rate limiting · 2 per-user data, Users screen,
 registration · 3 per-user AI settings and instance settings.
 
-## Theming
+## Theming and navigation
 
-Light/dark is a `.dark` class on `<html>`; accent themes are a `data-accent`
-attribute selecting a `--accent` / `--accent-foreground` CSS-variable pair
-(defined in `packages/web/src/index.css`, listed in `lib/themes.ts`). Primary/
-active UI uses `bg-accent` / `text-accent-foreground` / `text-accent`. Both are
-saved per-browser in localStorage and applied pre-paint by an inline script in
-`index.html`. Managed by `lib/theme.tsx`; pickers in the navbar and Settings.
+Design tokens are CSS variables in `packages/web/src/index.css`: light values on
+`:root`, dark ones under `@media (prefers-color-scheme: dark)`, so the theme
+follows the device (Tailwind `darkMode: "media"`). `tailwind.config.js` maps the
+colours (`bg-surface`, `text-ink-muted`, `bg-brand`, …) to those variables, so
+Tailwind opacity modifiers don't work on them; use `color-mix` in CSS instead.
+The glass styles (`ws-bar` header, `ws-tabs`/`ws-tab` pills, `ws-dock`,
+`ws-glass-icon`, glass primary buttons, `ws-sheet`) live there too. Icons are
+Lucide through the wrappers in `components/icons.tsx` (1.75 stroke). The
+Wortschritt design system canvas documents the same tokens and components.
+
+Navigation: the section links (header on wide screens, the dock on phones) and
+the account menu (`components/AccountMenu.tsx`, the initial at the top right),
+which leads to Settings (`/settings/learning`, `/settings/account`,
+`/settings/connections`), Administration for admins (`/admin/users`,
+`/admin/server`) and log out. Import (`/import`) is a button on Practice and
+Cheat sheets.
 
 ## Build & deploy
 
