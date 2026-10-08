@@ -13,6 +13,7 @@ import {
   LogOut,
   NotebookPen,
   PenLine,
+  Quote,
   Play,
   Plus,
   RotateCcw,
@@ -56,3 +57,4 @@ export const RetryIcon = wrap(RotateCcw);
 export const SparklesIcon = wrap(Sparkles);
 export const LightbulbIcon = wrap(Lightbulb);
 export const LanguagesIcon = wrap(Languages);
+export const QuoteIcon = wrap(Quote);
