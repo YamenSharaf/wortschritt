@@ -23,6 +23,7 @@ import { getProgressSummary } from "../services/progress";
 import { wordDetails } from "../services/wiktionary";
 import { deleteStory, getStory, listStories, saveStory } from "../services/stories";
 import { buildStoryContext } from "../services/storyGen";
+import { getStoryTranslations, saveStoryTranslations } from "../services/storyTranslations";
 import {
   addWordToGroup,
   createGroup,
@@ -85,7 +86,9 @@ function guide(kind: "exercise" | "cheatsheet" | "story"): string {
   if (kind === "story") {
     return `${body}
 
-Saving: pass the object (not a JSON string) to save_story (argument \`story\`). Stories are private to this user. Saving never replaces an existing id unless you pass overwrite: true (which keeps the reading progress). Call validate_content with kind "story" first if you are unsure.`;
+Saving: pass the object (not a JSON string) to save_story (argument \`story\`). Stories are private to this user. Saving never replaces an existing id unless you pass overwrite: true (which keeps the reading progress). Call validate_content with kind "story" first if you are unsure.
+
+Optional, after saving: add line-by-line English with save_story_translations (get_story lists each paragraph's sentences).`;
   }
   const tool = kind === "exercise" ? "save_exercise_set (argument `set`)" : "save_cheatsheet (argument `sheet`)";
   return `${body}
@@ -330,13 +333,16 @@ export function createMcpServer(user: AuthUser): McpServer {
     "get_story",
     {
       title: "Get a story",
-      description: "One story in the save format (body in Markdown, glossary, questions), plus reading progress.",
+      description:
+        "One story in the save format (body in Markdown, glossary, questions), plus reading progress, and its paragraphs as the reader splits them into sentences, with any English lines (for save_story_translations).",
       inputSchema: { id: z.string().min(1) },
       annotations: READ,
     },
     async ({ id }) => {
       const view = getStory(user.id, id);
-      return view ? json(view) : fail(`No story "${id}". Use list_stories.`);
+      return view
+        ? json({ ...view, translations: getStoryTranslations(user.id, id)!.paragraphs })
+        : fail(`No story "${id}". Use list_stories.`);
     },
   );
 
@@ -374,6 +380,28 @@ export function createMcpServer(user: AuthUser): McpServer {
       annotations: READ,
     },
     async (opts) => json(buildStoryContext(user.id, opts)),
+  );
+
+  tool(
+    "save_story_translations",
+    {
+      title: "Add line-by-line English to a story",
+      description:
+        "Store English translations for a story's paragraphs, shown under each German sentence in the reader. Call get_story first: its \"translations\" lists every paragraph's sentences. Per paragraph, send exactly one natural English line per sentence, in order (or a single line for the whole paragraph). Replaces existing lines for those paragraphs.",
+      inputSchema: {
+        id: z.string().min(1),
+        paragraphs: z
+          .array(z.object({ index: z.number().int().min(0), lines: z.array(z.string().min(1).max(1000)).min(1) }))
+          .min(1),
+      },
+      annotations: { ...WRITE, idempotentHint: true },
+    },
+    async ({ id, paragraphs }) => {
+      const res = saveStoryTranslations(user.id, id, paragraphs);
+      if (!res.ok) return fail(res.status === 404 ? `No story "${id}". Use list_stories.` : res.error);
+      const done = res.view.paragraphs.filter((p) => p.lines).length;
+      return json({ saved: paragraphs.length, translated: done, of: res.view.paragraphs.length });
+    },
   );
 
   tool(

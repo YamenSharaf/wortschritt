@@ -16,6 +16,7 @@ import {
   gradeText,
   isOpenAnswer,
   itemFormatGuide,
+  splitSentences,
   story,
 } from "@mdb/shared";
 
@@ -199,4 +200,19 @@ test("the free-answer example inside the authoring guide is valid", () => {
   const item = { ...JSON.parse(json), id: "x" };
   assert.deepEqual(issues(exerciseSet.safeParse(set([item]))), []);
   assert.equal(item.answer.grading, "open");
+});
+
+test("splitSentences: German quotes, abbreviations and ordinals stay inside a sentence", () => {
+  assert.deepEqual(splitSentences("Sie hat Mia angerufen: „Kommst du mit zum See?“ Mia hat sofort Ja gesagt."), [
+    "Sie hat Mia angerufen: „Kommst du mit zum See?“",
+    "Mia hat sofort Ja gesagt.",
+  ]);
+  assert.deepEqual(splitSentences("Wir treffen uns am 3. Mai. Das ist z. B. ein Montag! Dr. Weber kommt auch… Oder nicht?"), [
+    "Wir treffen uns am 3. Mai.",
+    "Das ist z. B. ein Montag!",
+    "Dr. Weber kommt auch…",
+    "Oder nicht?",
+  ]);
+  assert.deepEqual(splitSentences("Lena ist **aufgestanden**. Die Sonne\nscheint."), ["Lena ist **aufgestanden**.", "Die Sonne scheint."]);
+  assert.deepEqual(splitSentences("- eins\n- zwei"), ["- eins\n- zwei"], "lists are one unit");
 });

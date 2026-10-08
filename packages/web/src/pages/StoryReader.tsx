@@ -9,6 +9,8 @@ import Markdown from "markdown-to-jsx";
 import { Link, useParams } from "react-router-dom";
 import {
   readerSettings as readerSettingsSchema,
+  splitSentences,
+  storyParagraphs,
   storySetId,
   type AnswerGrading,
   type ExerciseItem,
@@ -37,12 +39,13 @@ const THEMES: { id: ReaderSettings["theme"]; label: string; swatch: string }[] =
   { id: "dark", label: "Dark", swatch: "#11141a" },
 ];
 
-/** Paragraph-sized blocks: the unit for read-aloud and its highlight. */
-const splitBlocks = (md: string) =>
-  md
-    .split(/\n\s*\n/)
-    .map((b) => b.trim())
-    .filter(Boolean);
+/** The German text of a block, without its English translation lines. */
+function germanText(el: HTMLElement | null): string {
+  if (!el) return "";
+  const copy = el.cloneNode(true) as HTMLElement;
+  copy.querySelectorAll("[data-translation]").forEach((n) => n.remove());
+  return copy.textContent ?? "";
+}
 
 const wordRe = /[\p{L}ß]+(?:-[\p{L}ß]+)*/gu;
 const minutes = (words: number) => Math.max(1, Math.round(words / 120));
@@ -62,6 +65,12 @@ export function StoryReader() {
   const [reader, setReader] = useState<ReaderSettings>(() => readerSettingsSchema.parse({}));
   const [panel, setPanel] = useState(false);
   const [llmGrading, setLlmGrading] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false);
+  /** English lines per paragraph index (null = not translated yet). */
+  const [lines, setLines] = useState<Record<number, string[] | null>>({});
+  const [translating, setTranslating] = useState<Set<number>>(new Set());
+  const [translateError, setTranslateError] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const [speaking, setSpeaking] = useState<number | null>(null);
   const [lemmas, setLemmas] = useState<Record<string, string>>({});
   const articleRef = useRef<HTMLDivElement>(null);
@@ -78,14 +87,64 @@ export function StoryReader() {
         setSettings(se);
         setReader(se.reader);
         setLlmGrading(Boolean(st.enabled && se.llmGrading));
+        setAiEnabled(st.enabled);
       })
       .catch(() => {});
     return () => stopSpeaking();
   }, [id]);
 
   const story = view?.story;
-  const blocks = useMemo(() => (story ? splitBlocks(story.body) : []), [story]);
+  const blocks = useMemo(() => (story ? storyParagraphs(story.body) : []), [story]);
   const wordTotal = useMemo(() => (story ? (story.body.match(wordRe) ?? []).length : 0), [story]);
+
+  // --- line-by-line translations: stored ones on open; missing ones for the
+  // paragraphs on screen, a few at a time, with the learner's AI.
+  const translationsOn = reader.translations !== "off";
+  const hasAnyLines = Object.values(lines).some(Boolean);
+  useEffect(() => {
+    if (!story) return;
+    api
+      .storyTranslations(story.id)
+      .then((t) => setLines(Object.fromEntries(t.paragraphs.map((p) => [p.index, p.lines]))))
+      .catch(() => {});
+  }, [story]);
+  const queued = useRef(new Set<number>());
+  const flushTimer = useRef<number>();
+  const inFlight = useRef(new Set<number>());
+  useEffect(() => {
+    if (!story || !translationsOn || !aiEnabled || translateError) return;
+    const flush = () => {
+      const batch = [...queued.current].filter((i) => !inFlight.current.has(i)).slice(0, 4);
+      queued.current.clear();
+      if (!batch.length) return;
+      batch.forEach((i) => inFlight.current.add(i));
+      setTranslating(new Set(inFlight.current));
+      api
+        .translateStory(story.id, batch)
+        .then((t) => setLines(Object.fromEntries(t.paragraphs.map((p) => [p.index, p.lines]))))
+        .catch((e) => setTranslateError(e instanceof Error ? e.message : "Couldn't translate."))
+        .finally(() => {
+          batch.forEach((i) => inFlight.current.delete(i));
+          setTranslating(new Set(inFlight.current));
+        });
+    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const i = Number((e.target as HTMLElement).dataset.index);
+          if (e.isIntersecting && lines[i] === null && !inFlight.current.has(i)) queued.current.add(i);
+        }
+        window.clearTimeout(flushTimer.current);
+        flushTimer.current = window.setTimeout(flush, 250);
+      },
+      { rootMargin: "200px 0px" },
+    );
+    blockRefs.current.forEach((el) => el && observer.observe(el));
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(flushTimer.current);
+    };
+  }, [story, translationsOn, aiEnabled, lines, translateError]);
 
   // Base forms of the story's words, so "ging" is underlined when "gehen" is saved.
   useEffect(() => {
@@ -95,17 +154,31 @@ export function StoryReader() {
   }, [story]);
 
   // --- reader settings: applied at once, saved to the account shortly after.
+  // A change not saved yet is saved on leaving the page, so it isn't lost.
   const saveTimer = useRef<number>();
+  const pendingSave = useRef<Settings | null>(null);
+  const flushSave = useCallback(() => {
+    window.clearTimeout(saveTimer.current);
+    const updated = pendingSave.current;
+    pendingSave.current = null;
+    if (updated) api.saveSettings(updated, { keepalive: true }).catch(() => {});
+  }, []);
+  useEffect(() => {
+    window.addEventListener("pagehide", flushSave);
+    return () => {
+      window.removeEventListener("pagehide", flushSave);
+      flushSave();
+    };
+  }, [flushSave]);
   function changeReader(patch: Partial<ReaderSettings>) {
     const next = { ...reader, ...patch };
     setReader(next);
+    if (!settings) return;
+    const updated = { ...settings, reader: next };
+    setSettings(updated);
+    pendingSave.current = updated;
     window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(() => {
-      if (!settings) return;
-      const updated = { ...settings, reader: next };
-      setSettings(updated);
-      api.saveSettings(updated).catch(() => {});
-    }, 600);
+    saveTimer.current = window.setTimeout(flushSave, 600);
   }
 
   // --- saved-word underlines.
@@ -118,6 +191,7 @@ export function StoryReader() {
     const ranges: Range[] = [];
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (node.parentElement?.closest("[data-translation]")) continue;
       const text = node.textContent ?? "";
       for (const m of text.matchAll(wordRe)) {
         const w = m[0];
@@ -133,7 +207,7 @@ export function StoryReader() {
     const HighlightCtor = (window as unknown as { Highlight: new (...r: Range[]) => unknown }).Highlight;
     reg.set("saved-vocab", new HighlightCtor(...ranges));
     return () => reg.delete("saved-vocab");
-  }, [reader.highlightVocab, savedWords, lemmas, blocks, reader.font, reader.size]);
+  }, [reader.highlightVocab, savedWords, lemmas, blocks, reader.font, reader.size, reader.translations, lines]);
 
   // --- reading position: restored once, then saved as you scroll.
   const progress = useRef(0);
@@ -177,7 +251,7 @@ export function StoryReader() {
 
   // --- read aloud.
   function readFrom(start: number) {
-    const texts = blockRefs.current.slice(start).map((el) => el?.textContent ?? "");
+    const texts = blockRefs.current.slice(start).map(germanText);
     speakSequence(texts, {
       rate: reader.speechRate,
       onIndex: (i) => {
@@ -239,6 +313,21 @@ export function StoryReader() {
               ■ Stop
             </button>
           ))}
+        {(aiEnabled || hasAnyLines) && (
+          <button
+            type="button"
+            onClick={() => {
+              setTranslateError(null);
+              changeReader({
+                translations: reader.translations === "off" ? "peek" : reader.translations === "peek" ? "always" : "off",
+              });
+            }}
+            className={`${toolBtn} ${translationsOn ? "bg-slate-100 dark:bg-slate-800" : ""}`}
+            title="English line by line: off → peek (tap to reveal) → always"
+          >
+            EN{reader.translations === "peek" ? " · peek" : reader.translations === "always" ? " · on" : ""}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setPanel((p) => !p)}
@@ -253,7 +342,17 @@ export function StoryReader() {
         </Link>
       </div>
 
-      {panel && <ReaderPanel value={reader} onChange={changeReader} canSpeak={canSpeak} />}
+      {panel && (
+        <ReaderPanel value={reader} onChange={changeReader} canSpeak={canSpeak} canTranslate={aiEnabled || hasAnyLines} />
+      )}
+      {translationsOn && translateError && (
+        <p className="mb-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+          {translateError}{" "}
+          <button type="button" className="underline" onClick={() => setTranslateError(null)}>
+            Try again
+          </button>
+        </p>
+      )}
 
       <article className="reader rounded-2xl px-5 py-8 sm:px-10" data-theme={reader.theme}>
         <div
@@ -284,6 +383,7 @@ export function StoryReader() {
                   ref={(el) => {
                     blockRefs.current[i] = el;
                   }}
+                  data-index={i}
                   className={`reader-block group relative ${speaking === i ? "is-speaking" : ""}`}
                 >
                   {canSpeak && (
@@ -301,7 +401,19 @@ export function StoryReader() {
                       </svg>
                     </button>
                   )}
-                  <Markdown options={{ forceBlock: true }}>{b}</Markdown>
+                  {translationsOn ? (
+                    <TranslatedBlock
+                      block={b}
+                      lines={lines[i] ?? null}
+                      loading={translating.has(i)}
+                      peek={reader.translations === "peek"}
+                      revealed={revealed}
+                      onReveal={(k) => setRevealed((r) => new Set(r).add(k))}
+                      blockKey={i}
+                    />
+                  ) : (
+                    <Markdown options={{ forceBlock: true }}>{b}</Markdown>
+                  )}
                 </div>
               ))}
             </div>
@@ -392,10 +504,12 @@ function ReaderPanel({
   value,
   onChange,
   canSpeak,
+  canTranslate,
 }: {
   value: ReaderSettings;
   onChange: (p: Partial<ReaderSettings>) => void;
   canSpeak: boolean;
+  canTranslate: boolean;
 }) {
   const row = "flex flex-wrap items-center justify-between gap-2";
   const label = "text-sm text-slate-500";
@@ -487,7 +601,85 @@ function ReaderPanel({
           />
         </div>
       )}
+      {canTranslate && (
+        <div className={row}>
+          <span className={label}>English line by line</span>
+          <Segmented
+            value={value.translations}
+            options={[
+              { id: "off", label: "Off" },
+              { id: "peek", label: "Peek" },
+              { id: "always", label: "Always" },
+            ]}
+            onChange={(translations) => onChange({ translations })}
+          />
+        </div>
+      )}
     </div>
+  );
+}
+
+/**
+ * A paragraph with its English: under each sentence when they match one to
+ * one, else under the paragraph. "Peek" blurs each line until it's tapped.
+ * English lines are marked data-translation (skipped by read-aloud and the
+ * saved-word underlines) and data-no-tap (no dictionary popup).
+ */
+function TranslatedBlock({
+  block,
+  lines,
+  loading,
+  peek,
+  revealed,
+  onReveal,
+  blockKey,
+}: {
+  block: string;
+  lines: string[] | null;
+  loading: boolean;
+  peek: boolean;
+  revealed: Set<string>;
+  onReveal: (key: string) => void;
+  blockKey: number;
+}) {
+  const sentences = useMemo(() => splitSentences(block), [block]);
+  const english = (text: string, k: string) => {
+    const hidden = peek && !revealed.has(k);
+    return (
+      <span
+        data-translation
+        data-no-tap
+        role={hidden ? "button" : undefined}
+        tabIndex={hidden ? 0 : undefined}
+        aria-label={hidden ? "Show the English" : undefined}
+        onClick={() => hidden && onReveal(k)}
+        onKeyDown={(e) => hidden && (e.key === "Enter" || e.key === " ") && onReveal(k)}
+        className={`reader-translation ${hidden ? "is-hidden" : ""}`}
+      >
+        {text}
+      </span>
+    );
+  };
+  if (lines && lines.length === sentences.length && sentences.length > 1) {
+    return (
+      <p>
+        {sentences.map((s, j) => (
+          <span key={j} className="reader-sentence">
+            <Markdown options={{ forceInline: true }}>{s}</Markdown> {english(lines[j]!, `${blockKey}:${j}`)}
+          </span>
+        ))}
+      </p>
+    );
+  }
+  return (
+    <>
+      <Markdown options={{ forceBlock: true }}>{block}</Markdown>
+      {lines ? (
+        <div className="-mt-[0.6em] mb-[1em]">{english(lines.join(" "), `${blockKey}:all`)}</div>
+      ) : loading ? (
+        <div data-translation className="reader-translation-loading -mt-[0.6em] mb-[1em]" aria-label="Translating" />
+      ) : null}
+    </>
   );
 }
 

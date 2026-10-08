@@ -247,3 +247,34 @@ body {
   text-decoration-thickness: 2px;
   text-underline-offset: 4px;
 }
+
+/* Line-by-line English under story sentences. */
+.reader-sentence {
+  display: block;
+  margin-bottom: 0.55em;
+}
+.reader-translation {
+  display: block;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.78em;
+  line-height: 1.45;
+  color: rgb(var(--r-muted));
+  transition: filter 0.2s;
+}
+.reader-translation.is-hidden {
+  filter: blur(5px);
+  cursor: pointer;
+  user-select: none;
+}
+.reader-translation-loading {
+  height: 0.8em;
+  width: 60%;
+  border-radius: 0.4em;
+  background: rgb(var(--r-rule));
+  animation: reader-pulse 1.2s ease-in-out infinite;
+}
+@keyframes reader-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}

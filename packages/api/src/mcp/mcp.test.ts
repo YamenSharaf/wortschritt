@@ -118,7 +118,7 @@ test("initialize: instructions and every tool, with annotations", async () => {
     "get_cheatsheet", "get_exercise_set", "get_mistakes", "get_note", "get_progress", "get_set_history",
     "get_story", "get_story_context", "get_vocab", "list_cheatsheets", "list_exercise_sets", "list_notes", "list_stories",
     "list_vocab", "list_vocab_groups", "lookup_word", "remove_word_from_group", "save_cheatsheet", "save_exercise_set",
-    "save_story", "save_vocab", "update_note", "validate_content", "whoami",
+    "save_story", "save_story_translations", "save_vocab", "update_note", "validate_content", "whoami",
   ]);
   const save = tools.find((t) => t.name === "save_exercise_set")!;
   // The real schema, so the agent sees every item type and field.
@@ -272,7 +272,18 @@ test("stories: guide, validate, save, read back, private, delete", async () => {
   assert.match(await anna.err("save_story", { story: EXAMPLE_STORY }), /overwrite: true/);
   assert.match((await anna.ok("validate_content", { kind: "story", data: EXAMPLE_STORY })).id_status, /already have/);
   assert.equal((await anna.ok("list_stories"))[0].id, EXAMPLE_STORY.id);
-  assert.equal((await anna.ok("get_story", { id: EXAMPLE_STORY.id })).story.body, EXAMPLE_STORY.body);
+  const got = await anna.ok("get_story", { id: EXAMPLE_STORY.id });
+  assert.equal(got.story.body, EXAMPLE_STORY.body);
+  assert.equal(got.translations[0].sentences.length, 2);
+  assert.match(
+    await anna.err("save_story_translations", { id: EXAMPLE_STORY.id, paragraphs: [{ index: 0, lines: ["one"] , }, { index: 1, lines: ["a", "b", "c"] }] }),
+    /2 sentences but got 3/,
+  );
+  assert.deepEqual(
+    await anna.ok("save_story_translations", { id: EXAMPLE_STORY.id, paragraphs: [{ index: 0, lines: ["On Sunday Lena got up early.", "The sun was shining."] }] }),
+    { saved: 1, translated: 1, of: 3 },
+  );
+  assert.match(await admin.err("save_story_translations", { id: EXAMPLE_STORY.id, paragraphs: [{ index: 0, lines: ["x"] }] }), /No story/);
   assert.deepEqual(await admin.ok("list_stories"), [], "private");
   assert.match(await admin.err("get_story", { id: EXAMPLE_STORY.id }), /No story/);
   assert.match(await admin.err("delete_story", { id: EXAMPLE_STORY.id }), /No story/);

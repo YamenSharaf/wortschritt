@@ -54,6 +54,17 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   underlined with the CSS Custom Highlight API (no DOM changes), matching base
   forms via `POST /api/dict/lemmas`. Question answers are attempts/runs with
   set id `story:<id>`, so history and `get_mistakes` include them.
+- Story translations (`services/storyTranslations.ts`): English lines per
+  paragraph, one per sentence as `splitSentences` (`@mdb/shared` reading.ts,
+  shared with the reader) cuts it, or one line for the whole paragraph when
+  the AI's count doesn't match. Stored in `story_translations`, keyed by a
+  hash of the paragraph's text (an edit prunes changed paragraphs; FK
+  cascades on story and user delete). The reader (setting
+  `reader.translations`: off / peek / always) loads stored lines, then asks
+  the AI for paragraphs as they scroll into view, a few per request. English
+  lines carry `data-translation` (skipped by read-aloud and saved-word
+  underlines) and `data-no-tap`. Agents can provide lines via MCP
+  `save_story_translations` (`get_story` lists the sentences).
 - Story generation (`services/storyGen.ts`, prompt `buildStoryMessages` in
   `assistant/prompts.ts`): `POST /api/stories/generate` streams SSE progress
   (a long story can outlast a proxy's idle timeout) and saves the result.

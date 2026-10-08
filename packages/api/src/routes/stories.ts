@@ -4,6 +4,9 @@ import { z } from "zod";
 import {
   generateStoryBody,
   saveStoryBody,
+  saveStoryTranslationsBody,
+  storyTranslations,
+  translateStoryBody,
   story,
   storyContext,
   storyProgressBody,
@@ -22,6 +25,13 @@ import {
   updateStory,
 } from "../services/stories";
 import { buildStoryContext, generateStory, StoryGenerationError } from "../services/storyGen";
+import {
+  getStoryTranslations,
+  saveStoryTranslations,
+  TranslationError,
+  translateStoryParagraphs,
+} from "../services/storyTranslations";
+import { clientIp } from "../auth/loginGuard";
 
 const flag = z
   .enum(["true", "false"])
@@ -165,6 +175,64 @@ export async function storyRoutes(app: FastifyInstance) {
       } catch {
         /* already closed */
       }
+    },
+  );
+
+  // --- line-by-line translations -------------------------------------------
+  r.get(
+    "/api/stories/:id/translations",
+    {
+      preHandler: requireAuth,
+      schema: { tags: ["stories"], params, response: { 200: storyTranslations, 404: failure } },
+    },
+    async (req, reply) =>
+      getStoryTranslations(req.user!.id, req.params.id) ?? reply.code(404).send({ error: "no such story" }),
+  );
+
+  // Translate some paragraphs (those on screen) with the learner's AI.
+  r.post(
+    "/api/stories/:id/translations",
+    {
+      preHandler: requireAuth,
+      config: { rateLimit: { max: 40, timeWindow: "1 minute", keyGenerator: clientIp } },
+      schema: {
+        tags: ["stories"],
+        params,
+        body: translateStoryBody,
+        response: { 200: storyTranslations, 404: failure, 502: failure, 503: failure },
+      },
+    },
+    async (req, reply) => {
+      const ai = getAiChain(req.user!.id);
+      if (!ai) return reply.code(503).send({ error: "Set up your AI tutor under Settings → AI tutor first." });
+      try {
+        const view = await translateStoryParagraphs(req.user!.id, req.params.id, ai, req.body.paragraphs, {
+          onFallback: (failed, error) =>
+            req.log.warn({ provider: failed.provider, model: failed.model, error: error.publicMessage }, "AI model failed, trying the next one"),
+        });
+        return view ?? reply.code(404).send({ error: "no such story" });
+      } catch (err) {
+        const error = err instanceof TranslationError ? err.message : aiErrorMessage(err, req.log, "story translation");
+        return reply.code(502).send({ error });
+      }
+    },
+  );
+
+  // Provide the lines yourself (e.g. an agent that wrote the story).
+  r.put(
+    "/api/stories/:id/translations",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["stories"],
+        params,
+        body: saveStoryTranslationsBody,
+        response: { 200: storyTranslations, 400: failure, 404: failure },
+      },
+    },
+    async (req, reply) => {
+      const res = saveStoryTranslations(req.user!.id, req.params.id, req.body.paragraphs);
+      return res.ok ? res.view : reply.code(res.status).send({ error: res.error });
     },
   );
 }

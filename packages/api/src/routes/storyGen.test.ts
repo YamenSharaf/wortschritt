@@ -178,3 +178,68 @@ test("without an AI set up: 503, before any streaming", async () => {
   const c = await app.inject({ method: "GET", url: "/api/story-context?mistakes=true&vocab=true&topics=true", headers: { cookie } });
   assert.deepEqual({ ...(c.json() as object), level: undefined }, { level: undefined, mistakes: [], words: [], topics: [] });
 });
+
+// --- line-by-line translations --------------------------------------------------
+
+test("translations: sentences as the reader splits them; the AI fills the ones asked for", async () => {
+  const id = "ein-sonntag-am-see";
+  const t = (await me("GET", `/api/stories/${id}/translations`)).json();
+  assert.equal(t.paragraphs.length, 3);
+  assert.deepEqual(t.paragraphs[0].sentences, [
+    "Am Sonntag ist Lena früh aufgestanden.",
+    "Die Sonne hat geschienen, und sie wollte nicht zu Hause bleiben.",
+  ]);
+  assert.ok(t.paragraphs.every((p: { lines: unknown }) => p.lines === null));
+
+  // Paragraph 0 matches one to one; paragraph 1 comes back with the wrong count.
+  replies = [JSON.stringify({ paragraphs: [
+    ["On Sunday Lena got up early.", "The sun was shining, and she didn't want to stay at home."],
+    ["She called her friend Mia and asked her to come to the lake. Mia said yes."],
+  ] })];
+  const res = await me("POST", `/api/stories/${id}/translations`, { paragraphs: [0, 1] });
+  assert.equal(res.statusCode, 200, res.body);
+  const after = res.json().paragraphs;
+  assert.equal(after[0].lines.length, 2);
+  assert.equal(after[1].lines.length, 1, "kept as one line for the paragraph");
+  assert.equal(after[2].lines, null);
+  const [, user] = prompts[0]!;
+  assert.deepEqual(JSON.parse(user!.content).paragraphs[0], t.paragraphs[0].sentences);
+
+  // Already translated: no AI call.
+  prompts.length = 0;
+  await me("POST", `/api/stories/${id}/translations`, { paragraphs: [0, 1] });
+  assert.equal(prompts.length, 0);
+
+  // Unreadable reply: a clear error.
+  replies = ["Sorry!"];
+  const bad = await me("POST", `/api/stories/${id}/translations`, { paragraphs: [2] });
+  assert.equal(bad.statusCode, 502);
+  assert.match(bad.json().error, /couldn't be read/);
+});
+
+test("translations: provided lines must match the sentences; edits drop only changed paragraphs", async () => {
+  const id = "ein-sonntag-am-see";
+  const wrong = await me("PUT", `/api/stories/${id}/translations`, { paragraphs: [{ index: 2, lines: ["a", "b", "c"] }] });
+  assert.equal(wrong.statusCode, 400);
+  assert.match(wrong.json().error, /has 2 sentences but got 3 lines/);
+  assert.equal((await me("PUT", `/api/stories/${id}/translations`, { paragraphs: [{ index: 9, lines: ["x"] }] })).statusCode, 400);
+  const ok = await me("PUT", `/api/stories/${id}/translations`, {
+    paragraphs: [{ index: 2, lines: ["At the lake they swam and ate ice cream.", "In the evening Lena was tired but happy."] }],
+  });
+  assert.equal(ok.statusCode, 200, ok.body);
+
+  // Change paragraph 2 only: its lines go, the others stay.
+  const story = (await me("GET", `/api/stories/${id}`)).json().story;
+  const paragraphs = story.body.split("\n\n");
+  paragraphs[2] = "Am See haben die beiden Fußball gespielt.";
+  await me("PUT", `/api/stories/${id}`, { ...story, body: paragraphs.join("\n\n") });
+  const t = (await me("GET", `/api/stories/${id}/translations`)).json().paragraphs;
+  assert.ok(t[0].lines);
+  assert.ok(t[1].lines);
+  assert.equal(t[2].lines, null);
+
+  // Deleting the story deletes its translations.
+  const { db, schema } = await import("../db/client");
+  await me("DELETE", `/api/stories/${id}`);
+  assert.equal(db.select().from(schema.storyTranslations).all().filter((r) => r.storyId === id).length, 0);
+});

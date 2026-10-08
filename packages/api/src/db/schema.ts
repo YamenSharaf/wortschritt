@@ -288,3 +288,14 @@ export const dictCache = sqliteTable("dict_cache", {
     .notNull()
     .default(sql`(unixepoch())`),
 });
+
+/** English lines for a story paragraph (per learner, like the story). */
+export const storyTranslations = sqliteTable("story_translations", {
+  userId: integer("user_id").notNull(),
+  storyId: text("story_id").notNull(),
+  paragraphHash: text("paragraph_hash").notNull(),
+  lines: text("lines", { mode: "json" }).$type<string[]>().notNull(),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+}, (t) => [primaryKey({ columns: [t.userId, t.storyId, t.paragraphHash] })]);
