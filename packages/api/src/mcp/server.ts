@@ -556,7 +556,7 @@ export function createMcpServer(user: AuthUser): McpServer {
     {
       title: "Set cover art",
       description:
-        "Set (or with svg null, remove) the cover art of one of this user's stories, chapters (id \"<series id>-01\") or series: a small black-and-white SVG. Read get_authoring_guide kind \"cover\" first — the SVG is checked against its rules.",
+        "Set (or with svg null, remove) the cover art of one of this user's stories, chapters (id \"<series id>-01\") or series: an SVG illustration. Read get_authoring_guide kind \"cover\" first — the SVG is checked against its rules.",
       inputSchema: { kind: z.enum(["story", "series"]), id: z.string().min(1), svg: coverSvg.nullable() },
       annotations: WRITE,
     },
