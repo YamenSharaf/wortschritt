@@ -56,7 +56,7 @@ import {
  * sees exactly the format the app validates.
  */
 
-export const INSTRUCTIONS = `mit-dem-baby is a German-learning app. You act as one signed-in user. New here? get_app_guide explains what the app does, where things are in it, and how practice, vocab and the reader work.
+export const INSTRUCTIONS = `Wortschritt is a German-learning app. You act as one signed-in user. New here? get_app_guide explains what the app does, where things are in it, and how practice, vocab and the reader work.
 
 - Shared library (every user sees it): exercise sets and cheat sheets. Some are built in (read-only); the rest were imported by users. You can replace or delete only items you imported — an admin can delete anyone's.
 - Private to this user: stories (reading texts with comprehension questions) and series (books whose chapters are stories; get_authoring_guide kind "series" explains how to write one, also split across sub-agents; kind "cover" how to draw cover art), vocabulary (with groups), notes, and practice progress and history.
@@ -113,7 +113,7 @@ Saving: pass the object (not a JSON string) to ${tool}. Saving never replaces an
 
 export function createMcpServer(user: AuthUser): McpServer {
   const server = new McpServer(
-    { name: "mit-dem-baby", title: "mit dem Baby — German practice", version: "0.1.0" },
+    { name: "mit-dem-baby", title: "Wortschritt — German practice", version: "0.1.0" },
     { instructions: INSTRUCTIONS },
   );
   const tool = server.registerTool.bind(server);

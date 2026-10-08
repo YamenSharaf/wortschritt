@@ -14,8 +14,6 @@ services:
       PORT: "3000"
       DATABASE_PATH: /app/data/app.db
       CONTENT_DIR: /app/content
-      APP_NAME: ${APP_NAME:-Wortschritt}
-      APP_EMOJI: ${APP_EMOJI:-}
       # AI tutor: each user sets their own provider in the app; their API keys
       # are encrypted with this (openssl rand -base64 32 — keep a copy).
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}

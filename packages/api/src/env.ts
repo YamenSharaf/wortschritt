@@ -25,9 +25,6 @@ const envSchema = z.object({
   CONTENT_DIR: z.string().default("./content"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 
-  // Branding — the name in the header and title, plus an optional emoji after it.
-  APP_NAME: optionalEnv(z.string().min(1).default("Wortschritt")),
-  APP_EMOJI: optionalEnv(z.string().default("")),
 
   // Encrypts the API keys users save for their AI tutor (Settings → AI tutor).
   // Generate with `openssl rand -base64 32` and keep a copy: if it's lost or

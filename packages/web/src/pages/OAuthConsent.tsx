@@ -3,7 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import type { OAuthRequestView } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { useConfig } from "../lib/config";
+import { AppTitle } from "../components/AppTitle";
 
 /**
  * The OAuth consent screen (`/oauth/authorize`): an MCP client such as Claude
@@ -12,7 +12,6 @@ import { useConfig } from "../lib/config";
  */
 export function OAuthConsent() {
   const { authenticated, loading, logout } = useAuth();
-  const { appName, appEmoji } = useConfig();
   const location = useLocation();
   const [view, setView] = useState<OAuthRequestView | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +49,7 @@ export function OAuthConsent() {
     <div className="grid min-h-screen place-items-center px-4">
       <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <h1 className="mb-4 text-xl font-bold">
-          {appName} {appEmoji}
+          <AppTitle />
         </h1>
         {error && (
           <>

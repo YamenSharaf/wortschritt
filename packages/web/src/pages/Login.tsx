@@ -3,14 +3,13 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import { MIN_PASSWORD_LENGTH } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { useConfig } from "../lib/config";
+import { AppTitle } from "../components/AppTitle";
 
 const inputClass =
   "mb-4 w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 outline-none focus:border-accent dark:border-slate-700";
 
 export function Login() {
   const { login, register, authenticated } = useAuth();
-  const { appName, appEmoji } = useConfig();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [canRegister, setCanRegister] = useState(false);
   const [username, setUsername] = useState("");
@@ -75,7 +74,7 @@ export function Login() {
         className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
       >
         <h1 className="mb-1 text-xl font-bold">
-          {appName} {appEmoji}
+          <AppTitle />
         </h1>
         <p className="mb-6 text-sm text-slate-500">
           {registering ? "Create an account" : "Sign in"}

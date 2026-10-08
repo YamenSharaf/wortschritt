@@ -22,7 +22,6 @@ import { activityRoutes } from "./routes/activity";
 import { adminRoutes } from "./routes/admin";
 import { assistantRoutes } from "./routes/assistant";
 import { authRoutes } from "./routes/auth";
-import { configRoutes } from "./routes/config";
 import { contentRoutes } from "./routes/content";
 import { dictRoutes } from "./routes/dict";
 import { historyRoutes } from "./routes/history";
@@ -84,7 +83,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await app.register(swagger, {
     openapi: {
-      info: { title: "mit-dem-baby API", version: "0.1.0" },
+      info: { title: "Wortschritt API", version: "0.1.0" },
       components: {
         securitySchemes: {
           // Personal API tokens (Settings → Account → API tokens).
@@ -105,7 +104,6 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   // On the root instance (not a plugin), so its CORS hook covers every /api route.
   await nativeRoutes(app);
-  await app.register(configRoutes);
   await app.register(authRoutes);
   await app.register(adminRoutes);
   await app.register(contentRoutes);

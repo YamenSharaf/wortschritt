@@ -3,8 +3,7 @@ import { zipSync, strToU8, type Zippable } from "fflate";
 import { compiler } from "markdown-to-jsx";
 import { createElement, Fragment, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { Story } from "@mdb/shared";
-import { env } from "../env";
+import { APP_NAME, type Story } from "@mdb/shared";
 import { coverFor, coverPng } from "./covers";
 import { getSeriesView } from "./series";
 import { getStory } from "./stories";
@@ -197,7 +196,7 @@ ${book.chapters
 <dc:identifier id="bookid">urn:uuid:${book.uid}</dc:identifier>
 <dc:title>${esc(book.title)}</dc:title>
 <dc:language>de</dc:language>
-<dc:creator>${esc(env.APP_NAME)}</dc:creator>
+<dc:creator>${esc(APP_NAME)}</dc:creator>
 ${book.description ? `<dc:description>${esc(book.description)}</dc:description>` : ""}
 <meta property="dcterms:modified">${modified}</meta>
 ${book.cover ? `<meta name="cover" content="cover-image"/>` : ""}
