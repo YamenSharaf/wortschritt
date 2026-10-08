@@ -114,7 +114,7 @@ test("initialize: instructions and every tool, with annotations", async () => {
   const names = tools.map((t) => t.name).sort();
   assert.deepEqual(names, [
     "add_words_to_group", "create_note", "create_vocab_group", "delete_content", "delete_note",
-    "delete_series", "delete_story", "delete_vocab", "delete_vocab_group", "get_activity", "get_authoring_guide",
+    "delete_series", "delete_story", "delete_vocab", "delete_vocab_group", "get_activity", "get_app_guide", "get_authoring_guide",
     "get_cheatsheet", "get_cover", "get_exercise_set", "get_mistakes", "get_note", "get_progress", "get_series", "get_set_history",
     "get_story", "get_story_context", "get_vocab", "list_cheatsheets", "list_exercise_sets", "list_notes", "list_series", "list_stories",
     "list_vocab", "list_vocab_groups", "lookup_word", "remove_word_from_group", "save_chapter", "save_cheatsheet", "save_exercise_set", "save_series",

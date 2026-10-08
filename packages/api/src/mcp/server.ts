@@ -28,6 +28,7 @@ import { wordDetails } from "../services/wiktionary";
 import { deleteStory, getStory, listStories, saveStory } from "../services/stories";
 import { buildStoryContext } from "../services/storyGen";
 import { coverFor, setCover } from "../services/covers";
+import { APP_GUIDE } from "./appGuide";
 import { deleteSeries, getSeriesForWriting, listSeries, saveChapter, saveSeries } from "../services/series";
 import { getStoryTranslations, saveStoryTranslations } from "../services/storyTranslations";
 import {
@@ -55,10 +56,10 @@ import {
  * sees exactly the format the app validates.
  */
 
-export const INSTRUCTIONS = `mit-dem-baby is a German-learning app. You act as one signed-in user.
+export const INSTRUCTIONS = `mit-dem-baby is a German-learning app. You act as one signed-in user. New here? get_app_guide explains what the app does, where things are in it, and how practice, vocab and the reader work.
 
 - Shared library (every user sees it): exercise sets and cheat sheets. Some are built in (read-only); the rest were imported by users. You can replace or delete only items you imported — an admin can delete anyone's.
-- Private to this user: stories (reading texts with comprehension questions) and series (books whose chapters are stories; get_authoring_guide kind "series" explains how to write one, also split across sub-agents), vocabulary (with groups), notes, and practice progress and history.
+- Private to this user: stories (reading texts with comprehension questions) and series (books whose chapters are stories; get_authoring_guide kind "series" explains how to write one, also split across sub-agents; kind "cover" how to draw cover art), vocabulary (with groups), notes, and practice progress and history.
 
 Targeted practice: get_mistakes returns the items this user still gets wrong, with what they answered and the item itself — a good basis for a new exercise set on the same weak points.
 
@@ -127,6 +128,16 @@ export function createMcpServer(user: AuthUser): McpServer {
   };
 
   // --- account ---------------------------------------------------------------
+  tool(
+    "get_app_guide",
+    {
+      title: "How the app works",
+      description: "What this app is: its areas and where things are in the UI, how practice, vocab and the reader work, what data you can use, and typical tasks with their tools.",
+      annotations: READ,
+    },
+    async () => ({ content: [{ type: "text", text: APP_GUIDE }] }),
+  );
+
   tool(
     "whoami",
     { title: "Who am I", description: "The user this connection acts as, and their role (user or admin).", annotations: READ },

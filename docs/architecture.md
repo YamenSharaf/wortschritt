@@ -87,7 +87,7 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   shapes, text and gradients (no scripts, styles, images, links or outside
   `href`/`url()`); covers are served from `GET …/:id/cover.svg` with a
   sandboxing CSP and shown as `<img>`. Without art, `fallbackCover` draws one
-  from the title. Set via `PUT …/:id/cover` or MCP `set_cover`
+  from the title. Set via `PUT …/:id/cover` (the book page uploads an SVG file for the book and each chapter) or MCP `set_cover`
   (`get_authoring_guide` kind "cover"). EPUBs get the cover as a PNG
   (resvg; generic font families are mapped to the DejaVu fonts the Docker
   image installs) plus drawn chapter art at each chapter's start. On the

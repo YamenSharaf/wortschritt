@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { SeriesView } from "@mdb/shared";
 import { Cover } from "../components/Cover";
+import { CoverUpload } from "../components/CoverUpload";
 import { api } from "../lib/api";
 
 /** A book: what it's about, how far you are, and its chapters. */
@@ -11,12 +12,17 @@ export function SeriesPage() {
   const [view, setView] = useState<SeriesView | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const load = useCallback(
+    () =>
+      api
+        .series(id)
+        .then(setView)
+        .catch(() => setError("This book doesn't exist (or isn't yours).")),
+    [id],
+  );
   useEffect(() => {
-    api
-      .series(id)
-      .then(setView)
-      .catch(() => setError("This book doesn't exist (or isn't yours)."));
-  }, [id]);
+    void load();
+  }, [load]);
 
   if (error) {
     return (
@@ -46,13 +52,16 @@ export function SeriesPage() {
       </Link>
 
       <header className="flex gap-4">
-        <Cover
-          kind="series"
-          id={view.id}
-          version={view.cover}
-          fallbackKey={`${view.title}-${view.subtitle ?? ""}-${view.level}`}
-          className="w-28 shrink-0 sm:w-36"
-        />
+        <div className="w-28 shrink-0 space-y-1.5 sm:w-36">
+          <Cover
+            kind="series"
+            id={view.id}
+            version={view.cover}
+            fallbackKey={`${view.title}-${view.subtitle ?? ""}-${view.level}`}
+            className="w-full"
+          />
+          <CoverUpload kind="series" id={view.id} hasArt={Boolean(view.cover)} onChange={() => void load()} />
+        </div>
         <div className="min-w-0">
           <h1 className="text-2xl font-bold leading-tight">{view.title}</h1>
           {view.subtitle && <p className="text-sm text-slate-400">{view.subtitle}</p>}
@@ -121,13 +130,18 @@ export function SeriesPage() {
             </div>
           );
           return (
-            <li key={c.chapter}>
+            <li key={c.chapter} className="flex items-center">
               {c.storyId ? (
-                <Link to={`/stories/${c.storyId}`} className="block hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                  {body}
-                </Link>
+                <>
+                  <Link to={`/stories/${c.storyId}`} className="block min-w-0 flex-1 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    {body}
+                  </Link>
+                  <span className="pr-2">
+                    <CoverUpload kind="story" id={c.storyId} hasArt={Boolean(c.cover)} onChange={() => void load()} compact />
+                  </span>
+                </>
               ) : (
-                body
+                <div className="min-w-0 flex-1">{body}</div>
               )}
             </li>
           );
