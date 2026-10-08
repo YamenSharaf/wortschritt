@@ -27,7 +27,7 @@ const navItems = [
 const mobileItems = [...navItems, { to: "/settings", label: "Settings", end: false, Icon: SettingsIcon }];
 
 const iconButton = (active = false) =>
-  `grid h-9 w-9 place-items-center rounded-full transition-colors ${
+  `grid h-9 w-9 place-items-center rounded-control transition-colors ${
     active ? "bg-surface-sunken text-ink" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"
   }`;
 
@@ -76,26 +76,21 @@ export function App() {
   return (
     <VocabProvider>
     <div className="min-h-screen">
-      {/* Raycast-style bar: brand left, the section pills centred, account right. */}
-      <header className="sticky top-0 z-30 border-b border-line bg-[color-mix(in_srgb,var(--surface)_82%,transparent)] backdrop-blur-xl">
-        <div className="mx-auto grid h-14 max-w-5xl grid-cols-[1fr_auto] items-center gap-3 px-4 md:grid-cols-[1fr_auto_1fr]">
+      {/* A floating bar (Raycast-style): the mark left, sections centred, account right. */}
+      <div className="sticky top-0 z-30 px-3 pt-3 sm:px-4">
+        <header className="ws-bar mx-auto grid h-14 max-w-5xl grid-cols-[1fr_auto] items-center gap-3 px-3 sm:px-4 md:grid-cols-[1fr_auto_1fr]">
           <NavLink to="/" className="min-w-0 justify-self-start rounded-control text-base font-semibold tracking-tight">
             <AppTitle />
           </NavLink>
-          <nav
-            aria-label="Main"
-            className="hidden items-center gap-0.5 rounded-full border border-line bg-surface-sunken p-1 md:flex"
-          >
+          <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
             {navItems.map(({ to, label, end }) => (
               <NavLink
                 key={to}
                 to={to}
                 end={end}
                 className={({ isActive }) =>
-                  `rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-surface-raised text-ink shadow-card"
-                      : "text-ink-muted hover:text-ink"
+                  `rounded-chip px-2.5 py-1.5 text-sm font-medium tracking-[0.2px] transition-colors ${
+                    isActive ? "bg-surface-sunken text-ink" : "text-ink-muted hover:text-ink"
                   }`
                 }
               >
@@ -111,10 +106,10 @@ export function App() {
               <LogOutIcon className="h-[18px] w-[18px]" />
             </button>
           </div>
-        </div>
-      </header>
+        </header>
+      </div>
 
-      <main className="mx-auto max-w-5xl px-4 pb-28 pt-8 md:pb-16">
+      <main className="mx-auto max-w-5xl px-4 pb-28 pt-6 sm:px-5 md:pb-16">
         <Outlet />
       </main>
 
