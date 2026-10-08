@@ -15,7 +15,6 @@ Object.assign(process.env, {
   DATABASE_PATH: join(dir, "app.db"),
   CONTENT_DIR: resolve(import.meta.dirname, "../../../../content"),
   NODE_ENV: "test",
-  TTS_URL: "",
   ASSISTANT_API_KEY: "",
   PUBLIC_URL: "",
   DICTIONARY_API_URL: "off",

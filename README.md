@@ -14,7 +14,7 @@ without touching the codebase.
 | DB         | SQLite via Drizzle ORM (single file)               |
 | Web        | Vite + React + Tailwind (SPA)                       |
 | Auth       | Username + password (scrypt) → server-side sessions, rate-limited |
-| Packaging  | One Docker image (API serves the built SPA) + optional Piper TTS sidecar |
+| Packaging  | One Docker image (API serves the built SPA)        |
 
 The API is the product; the web app is just its first client. Because routes
 are defined with Zod, the OpenAPI spec is generated for free — a future mobile
@@ -57,8 +57,9 @@ client can codegen a typed client against it.
   connects their own OpenAI-compatible providers (e.g. OpenRouter) under
   Settings → AI tutor and orders models for fallback (https, publicly
   reachable); keys are stored encrypted (`ENCRYPTION_KEY`).
-- **Pronunciation (optional)** — 🔊 buttons backed by a Piper TTS sidecar, falling
-  back to the browser's voice.
+- **Pronunciation & read-aloud** — 🔊 buttons and the reader's read-aloud, with
+  Azure Speech or Edge neural voices (set up by the admin), falling back to the
+  browser's voice.
 - **Dashboard** — progress, recent activity and a daily goal.
 
 ## Features vs. content
@@ -182,12 +183,10 @@ Backups are trivial — copy `data/app.db`.
 
 ### Pronunciation (optional)
 
-Both compose files include a **Piper** TTS sidecar for neural German
-pronunciation (the 🔊 buttons on words and examples). It's internal-only (no
-published port); the app proxies to it and caches clips. A few German voices
-ship in the image; download more from **Settings → Pronunciation**. To turn it
-off, drop the `piper` service and set `TTS_URL=` (empty) — the app then falls
-back to the browser's built-in voice.
+Neural German voices come from **Azure Speech** (free tier; the admin enters a
+key + region under Settings → Users) or the unofficial **Edge "Read aloud"**
+endpoint (admin opt-in). The app proxies and caches clips; with neither set up
+it falls back to the browser's built-in voice.
 
 ## Data model
 

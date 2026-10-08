@@ -1,20 +1,12 @@
 import { eq } from "drizzle-orm";
-import {
-  NEURAL_VOICES,
-  TTS_VOICE_CATALOG,
-  ttsProviderOf,
-  type TtsAdminSettings,
-  type TtsProvider,
-} from "@mdb/shared";
+import { NEURAL_VOICES, ttsProviderOf, type TtsAdminSettings, type TtsProvider } from "@mdb/shared";
 import { guardedFetch } from "../assistant/egress";
 import { decryptSecret, encryptSecret, isEncryptionAvailable } from "../assistant/secrets";
 import { db, schema } from "../db/client";
-import { env } from "../env";
 import { edgeSynthesize } from "./edge";
 
 /**
  * Read-aloud providers. A voice id says which one speaks it:
- * - Piper (the optional TTS_URL sidecar): bare ids, "de_DE-thorsten-high";
  * - Azure Speech neural voices (admin stores a key + region): "azure:<name>";
  * - the Edge "Read aloud" endpoint (unofficial, admin opt-in): "edge:<name>".
  * Settings live in app_settings; the Azure key is encrypted like AI keys.
@@ -22,7 +14,6 @@ import { edgeSynthesize } from "./edge";
 
 const AZURE_KEY = "tts.azure";
 const EDGE_KEY = "tts.edge";
-const piperBase = env.TTS_URL ? env.TTS_URL.replace(/\/$/, "") : null;
 
 type AzureConfig = { region: string; key: string };
 
@@ -63,7 +54,6 @@ export function ttsAdminSettings(): TtsAdminSettings {
     /* keep empty */
   }
   return {
-    piper: { configured: Boolean(piperBase) },
     azure: { configured: azureConfig() !== null, region, canStoreKey: isEncryptionAvailable },
     edge: { enabled: edgeEnabled() },
   };
@@ -89,40 +79,15 @@ export function updateTtsSettings(body: { azure?: { region: string; key?: string
   if (body.edge !== undefined) writeSetting(EDGE_KEY, body.edge ? "1" : null);
 }
 
-/** Piper voices the sidecar has (GET /voices → { "<id>": {config}, … } or a list). */
-export async function piperVoices(): Promise<string[]> {
-  if (!piperBase) return [];
-  try {
-    const res = await fetch(`${piperBase}/voices`);
-    if (!res.ok) return [];
-    const json = (await res.json()) as unknown;
-    if (Array.isArray(json)) {
-      return json.map((v) => (typeof v === "string" ? v : ((v as { key?: string })?.key ?? ""))).filter(Boolean);
-    }
-    return json && typeof json === "object" ? Object.keys(json) : [];
-  } catch {
-    return [];
-  }
-}
-
 export type VoiceOption = { id: string; label: string; provider: TtsProvider };
 
-/** Every voice usable right now, Piper first. */
-export async function usableVoices(): Promise<VoiceOption[]> {
+/** Every voice usable right now. */
+export function usableVoices(): VoiceOption[] {
   const out: VoiceOption[] = [];
-  const installed = await piperVoices();
-  for (const v of TTS_VOICE_CATALOG) {
-    if (installed.includes(v.id)) out.push({ id: v.id, label: v.label, provider: "piper" });
-  }
-  for (const id of installed) {
-    if (!TTS_VOICE_CATALOG.some((v) => v.id === id)) out.push({ id, label: id, provider: "piper" });
-  }
   if (azureConfig()) for (const v of NEURAL_VOICES) out.push({ id: `azure:${v.name}`, label: `${v.label} · Azure`, provider: "azure" });
   if (edgeEnabled()) for (const v of NEURAL_VOICES) out.push({ id: `edge:${v.name}`, label: `${v.label} · Edge`, provider: "edge" });
   return out;
 }
-
-export { piperBase };
 
 const NEURAL_NAMES = new Set<string>(NEURAL_VOICES.map((v) => v.name));
 const xmlEscape = (s: string) =>
@@ -133,16 +98,7 @@ export class TtsUnavailable extends Error {}
 /** Synthesize with whichever provider the voice belongs to. */
 export async function synthesize(text: string, voice: string): Promise<{ audio: Buffer; type: string; ext: string }> {
   const provider = ttsProviderOf(voice);
-  if (provider === "piper") {
-    if (!piperBase) throw new TtsUnavailable("Piper isn't configured");
-    const res = await fetch(`${piperBase}/synthesize`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ text, voice }),
-    });
-    if (!res.ok) throw new Error(`piper ${res.status}: ${await res.text().catch(() => "")}`);
-    return { audio: Buffer.from(await res.arrayBuffer()), type: "audio/wav", ext: "wav" };
-  }
+  if (!provider) throw new TtsUnavailable(`unknown voice "${voice}"`);
   const name = voice.slice(provider.length + 1);
   if (!NEURAL_NAMES.has(name)) throw new TtsUnavailable(`unknown voice "${voice}"`);
   if (provider === "edge") {

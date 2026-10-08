@@ -16,7 +16,6 @@ Object.assign(process.env, {
   DATABASE_PATH: join(dir, "app.db"),
   CONTENT_DIR: resolve(import.meta.dirname, "../../../../content"),
   NODE_ENV: "test",
-  TTS_URL: "",
   ENCRYPTION_KEY: "test-encryption-key-that-is-long-enough",
   ASSISTANT_BASE_URL: "https://ai.example.com/v1",
   ASSISTANT_API_KEY: "sk-test",

@@ -64,32 +64,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # The Piper TTS sidecar image (optional pronunciation feature). Changes
-      # rarely, but rebuilding alongside the app keeps `latest` consistent.
-      - name: Derive piper image metadata
-        id: meta-piper
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-piper
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,format=short
-
-      - name: Build and push piper sidecar
-        uses: docker/build-push-action@v6
-        with:
-          context: ./piper
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta-piper.outputs.tags }}
-          labels: ${{ steps.meta-piper.outputs.labels }}
-          cache-from: type=gha,scope=piper
-          cache-to: type=gha,mode=max,scope=piper
-
       # After a successful push, ask Komodo to check the stack for image updates.
       # With auto-update enabled on the stack, Komodo redeploys it immediately
       # when a newer image is found (a no-op when nothing changed). Skipped on

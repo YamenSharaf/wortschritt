@@ -15,7 +15,6 @@ Object.assign(process.env, {
   DATABASE_PATH: join(dir, "app.db"),
   CONTENT_DIR: contentDir,
   NODE_ENV: "test",
-  TTS_URL: "",
   ASSISTANT_API_KEY: "",
 });
 

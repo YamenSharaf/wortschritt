@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useReducer, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import {
   generateCounts,
   MIN_PASSWORD_LENGTH,
-  TTS_VOICE_CATALOG,
   type ApiTokenView,
   type OAuthGrantView,
   type Settings,
@@ -211,10 +210,9 @@ function Preferences() {
 const PROVIDER_LABEL = {
   azure: "Natural voices (Azure)",
   edge: "Natural voices (Edge, unofficial)",
-  piper: "Piper voices (this server)",
 } as const;
 
-/** Choose the voice: the device's own, or a server voice (Azure, Edge or Piper). */
+/** Choose the voice: the device's own, or a server voice (Azure or Edge). */
 function PronunciationSetting({
   value,
   onChange,
@@ -223,35 +221,17 @@ function PronunciationSetting({
   onChange: (v: string) => void;
 }) {
   const status = useAsync(() => api.ttsStatus(), []);
-  const { user } = useAuth();
   const [installed, setInstalled] = useState<string[]>([]);
-  const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
     if (status.status === "ready") setInstalled(status.data.installed);
   }, [status.status]);
 
   const available = status.status === "ready" && status.data.available;
-  const notInstalled = useMemo(
-    () => TTS_VOICE_CATALOG.filter((v) => !installed.includes(v.id)),
-    [installed],
-  );
 
   function select(v: string) {
     onChange(v);
     setServerTts({ enabled: available && installed.includes(v), voice: v });
-  }
-
-  async function download(id: string) {
-    setBusy(id);
-    try {
-      const res = await api.ttsDownload(id);
-      setInstalled(res.installed);
-    } catch {
-      /* ignore; button re-enables */
-    } finally {
-      setBusy(null);
-    }
   }
 
   return (
@@ -263,7 +243,7 @@ function PronunciationSetting({
       >
         <option value="">Device voice (this browser)</option>
         {available &&
-          (["azure", "edge", "piper"] as const).map((provider) => {
+          (["azure", "edge"] as const).map((provider) => {
             const list = (status.status === "ready" ? status.data.voices : []).filter(
               (v) => v.provider === provider && installed.includes(v.id),
             );
@@ -294,30 +274,9 @@ function PronunciationSetting({
         {!available && (
           <p className="text-xs text-slate-400">
             Natural German voices can be set up by the admin (Settings → Users → Read-aloud
-            voices), or with the optional Piper TTS sidecar (<code>TTS_URL</code>).
+            voices).
           </p>
         )}
-        {/* Downloads write to the server for everyone: admin only. */}
-        {available && user?.role === "admin" && notInstalled.length > 0 && (
-            <div>
-              <p className="mb-1 text-xs font-medium text-slate-400">
-                Download more voices
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {notInstalled.map((v) => (
-                  <button
-                    key={v.id}
-                    type="button"
-                    disabled={busy === v.id}
-                    onClick={() => download(v.id)}
-                    className="rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs text-slate-600 hover:border-slate-400 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300"
-                  >
-                    {busy === v.id ? "Downloading…" : `↓ ${v.label}`}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
     </Field>
   );

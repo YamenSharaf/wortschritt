@@ -381,11 +381,6 @@ export const api = {
 
   // tts (pronunciation)
   ttsStatus: () => req<TtsStatus>("/api/tts/status"),
-  ttsDownload: (voice: string) =>
-    req<{ ok: true; installed: string[] }>("/api/tts/download", {
-      method: "POST",
-      body: JSON.stringify({ voice }),
-    }),
 
   // assistant
   assistantStatus: () =>

@@ -259,7 +259,7 @@ function UserRow({
 /**
  * Read-aloud voices for everyone on this server: Azure Speech neural voices
  * (the admin's key; free tier 0.5M characters a month) and the unofficial
- * Edge voices. Piper is configured with TTS_URL on the server.
+ * Edge voices.
  */
 function TtsProviders() {
   const [cfg, setCfg] = useState<TtsAdminSettings | null>(null);
@@ -319,7 +319,6 @@ function TtsProviders() {
         <h2 className="text-lg font-semibold">Read-aloud voices</h2>
         <p className="text-sm text-slate-500">
           Natural German voices for everyone on this server (reading aloud and pronunciation).
-          Piper: {cfg.piper.configured ? "configured" : "not configured (TTS_URL)"}.
         </p>
       </div>
 

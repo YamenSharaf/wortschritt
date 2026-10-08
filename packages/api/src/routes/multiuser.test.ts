@@ -15,7 +15,6 @@ Object.assign(process.env, {
   DATABASE_PATH: join(dir, "app.db"),
   CONTENT_DIR: contentDir,
   NODE_ENV: "test",
-  TTS_URL: "",
   ASSISTANT_API_KEY: "",
 });
 
@@ -137,11 +136,6 @@ test("admin routes are admin-only", async () => {
   assert.equal(
     (await app.inject({ method: "GET", url: "/api/admin/users" })).statusCode,
     401,
-  );
-  // Voice downloads write to the server for everyone: admin-only too.
-  assert.equal(
-    (await anna("POST", "/api/tts/download", { voice: "x" })).statusCode,
-    403,
   );
 });
 

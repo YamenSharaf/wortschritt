@@ -57,30 +57,16 @@ export const settingsSchema = z.object({
     .max(MAX_GENERATE_COUNT)
     .default(5),
   /** Preferred pronunciation voice. "" = the device's built-in TTS; otherwise
-   *  a Piper voice id (needs the TTS sidecar). */
+   *  a server voice id ("azure:…" or "edge:…"). */
   ttsVoice: z.string().default(""),
   reader: readerSettings.default({}),
 });
 export type Settings = z.infer<typeof settingsSchema>;
 
-/** Curated German Piper voices offered for download (also the download
- *  allowlist, so the /download proxy can't fetch arbitrary files). */
-export const TTS_VOICE_CATALOG = [
-  { id: "de_DE-thorsten-high", label: "Thorsten — high (male)" },
-  { id: "de_DE-thorsten-medium", label: "Thorsten — medium (male)" },
-  { id: "de_DE-eva_k-x_low", label: "Eva K (female)" },
-  { id: "de_DE-kerstin-low", label: "Kerstin (female)" },
-  { id: "de_DE-karlsson-low", label: "Karlsson (male)" },
-  { id: "de_DE-ramona-low", label: "Ramona (female)" },
-  { id: "de_DE-pavoque-low", label: "Pavoque (male)" },
-] as const;
-export const TTS_VOICE_IDS = TTS_VOICE_CATALOG.map((v) => v.id) as string[];
-
 /**
  * German neural voices offered by the cloud providers (Azure Speech and the
  * Edge "Read aloud" endpoint share them). Voice ids in settings carry the
- * provider: "azure:de-DE-KatjaNeural", "edge:de-DE-KatjaNeural"; Piper voice
- * ids stay bare ("de_DE-thorsten-high").
+ * provider: "azure:de-DE-KatjaNeural", "edge:de-DE-KatjaNeural".
  */
 export const NEURAL_VOICES = [
   { name: "de-DE-KatjaNeural", label: "Katja (female)" },
@@ -90,24 +76,22 @@ export const NEURAL_VOICES = [
   { name: "de-DE-AmalaNeural", label: "Amala (female)" },
   { name: "de-DE-KillianNeural", label: "Killian (male)" },
 ] as const;
-export const ttsProvider = z.enum(["piper", "azure", "edge"]);
+export const ttsProvider = z.enum(["azure", "edge"]);
 export type TtsProvider = z.infer<typeof ttsProvider>;
 
-/** Which provider a voice id belongs to. */
-export function ttsProviderOf(voice: string): TtsProvider {
+/** Which provider a voice id belongs to (null: not a server voice). */
+export function ttsProviderOf(voice: string): TtsProvider | null {
   if (voice.startsWith("azure:")) return "azure";
   if (voice.startsWith("edge:")) return "edge";
-  return "piper";
+  return null;
 }
 
 /** Pronunciation status for the client. */
 export const ttsStatus = z.object({
   /** Whether any server voice is usable. */
   available: z.boolean(),
-  /** Voice ids usable now (Piper voices downloaded, plus cloud voices). */
+  /** Voice ids usable now. */
   installed: z.array(z.string()),
-  /** Downloadable Piper voices (id + label). */
-  catalog: z.array(z.object({ id: z.string(), label: z.string() })),
   /** Every usable server voice, for the voice picker. */
   voices: z.array(z.object({ id: z.string(), label: z.string(), provider: ttsProvider })).default([]),
 });
@@ -867,7 +851,6 @@ export type ApiVersion = z.infer<typeof apiVersion>;
 
 /** The server's read-aloud providers, as the admin sees them. */
 export const ttsAdminSettings = z.object({
-  piper: z.object({ configured: z.boolean() }),
   azure: z.object({
     configured: z.boolean(),
     region: z.string(),
