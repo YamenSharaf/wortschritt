@@ -76,14 +76,40 @@ export const TTS_VOICE_CATALOG = [
 ] as const;
 export const TTS_VOICE_IDS = TTS_VOICE_CATALOG.map((v) => v.id) as string[];
 
-/** Pronunciation (Piper sidecar) status for the client. */
+/**
+ * German neural voices offered by the cloud providers (Azure Speech and the
+ * Edge "Read aloud" endpoint share them). Voice ids in settings carry the
+ * provider: "azure:de-DE-KatjaNeural", "edge:de-DE-KatjaNeural"; Piper voice
+ * ids stay bare ("de_DE-thorsten-high").
+ */
+export const NEURAL_VOICES = [
+  { name: "de-DE-KatjaNeural", label: "Katja (female)" },
+  { name: "de-DE-ConradNeural", label: "Conrad (male)" },
+  { name: "de-DE-SeraphinaMultilingualNeural", label: "Seraphina (female)" },
+  { name: "de-DE-FlorianMultilingualNeural", label: "Florian (male)" },
+  { name: "de-DE-AmalaNeural", label: "Amala (female)" },
+  { name: "de-DE-KillianNeural", label: "Killian (male)" },
+] as const;
+export const ttsProvider = z.enum(["piper", "azure", "edge"]);
+export type TtsProvider = z.infer<typeof ttsProvider>;
+
+/** Which provider a voice id belongs to. */
+export function ttsProviderOf(voice: string): TtsProvider {
+  if (voice.startsWith("azure:")) return "azure";
+  if (voice.startsWith("edge:")) return "edge";
+  return "piper";
+}
+
+/** Pronunciation status for the client. */
 export const ttsStatus = z.object({
-  /** Whether a TTS sidecar is configured. */
+  /** Whether any server voice is usable. */
   available: z.boolean(),
-  /** Voice ids currently downloaded/usable. */
+  /** Voice ids usable now (Piper voices downloaded, plus cloud voices). */
   installed: z.array(z.string()),
-  /** Downloadable voices (id + label). */
+  /** Downloadable Piper voices (id + label). */
   catalog: z.array(z.object({ id: z.string(), label: z.string() })),
+  /** Every usable server voice, for the voice picker. */
+  voices: z.array(z.object({ id: z.string(), label: z.string(), provider: ttsProvider })).default([]),
 });
 export type TtsStatus = z.infer<typeof ttsStatus>;
 
@@ -836,3 +862,33 @@ export const apiVersion = z.object({
   appName: z.string(),
 });
 export type ApiVersion = z.infer<typeof apiVersion>;
+
+// --- read-aloud providers (admin) ----------------------------------------------
+
+/** The server's read-aloud providers, as the admin sees them. */
+export const ttsAdminSettings = z.object({
+  piper: z.object({ configured: z.boolean() }),
+  azure: z.object({
+    configured: z.boolean(),
+    region: z.string(),
+    /** Whether keys can be stored (ENCRYPTION_KEY is set). */
+    canStoreKey: z.boolean(),
+  }),
+  edge: z.object({ enabled: z.boolean() }),
+});
+export type TtsAdminSettings = z.infer<typeof ttsAdminSettings>;
+
+/** Change providers: Azure (key optional to keep the stored one; null removes it), Edge on/off. */
+export const ttsAdminBody = z.object({
+  azure: z
+    .object({
+      region: z.string().trim().regex(/^[a-z0-9]{2,30}$/, "an Azure region like westeurope"),
+      key: z.string().trim().min(10).max(200).optional(),
+    })
+    .nullable()
+    .optional(),
+  edge: z.boolean().optional(),
+});
+
+/** Try a voice: synthesizes a short sentence. */
+export const ttsTestBody = z.object({ voice: z.string().min(1).max(100) });

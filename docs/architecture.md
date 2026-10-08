@@ -123,8 +123,14 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   goes through the egress guard with a timeout and size cap; any failure
   just leaves the offline gloss. `DICTIONARY_API_URL=off` disables it. MCP:
   `lookup_word`.
-- Pronunciation: `routes/tts.ts` proxies the Piper sidecar (`TTS_URL`) and
-  caches clips; unset → the browser's speech synthesis.
+- Pronunciation / read-aloud: `routes/tts.ts` + `tts/providers.ts`. A voice
+  id names its provider: Piper (bare ids, the `TTS_URL` sidecar), Azure Speech
+  neural voices (`azure:de-DE-KatjaNeural`; the admin stores region + key in
+  Settings → Users, key encrypted like AI keys, called through the egress
+  guard), or the unofficial Edge "Read aloud" endpoint (`edge:…`, admin
+  opt-in, `tts/edge.ts` WebSocket protocol as in edge-tts). Cloud voices are
+  limited to `NEURAL_VOICES` (`@mdb/shared`). Clips are cached on disk by
+  voice + text; no server voice → the browser's speech synthesis.
 - Settings: single JSON row (`services/settings.ts`).
 - Auth: `users` + `sessions` tables (`auth/`). Login checks a scrypt hash
   (`auth/password.ts`) and creates a server-side session; the cookie holds a
@@ -326,7 +332,7 @@ Branding and `TTS_URL` deliberately stay env vars.
 | Content | Exercises and cheat sheets stay a shared library. Imports record their owner; only the owner or admin may overwrite or delete one, and only admin may shadow a git content id |
 | Per user | Vocab, groups, flashcard stats, notes, attempts, runs, in-progress position, sheet views, settings |
 | AI | Per-user endpoint + key. `https://` only, connections to private/loopback/link-local IPs refused (checked on the resolved address), generic errors to the client, capped timeouts and sizes. Keys encrypted at rest with `ENCRYPTION_KEY`, never returned to the browser. The current `ASSISTANT_*` env becomes the admin's settings |
-| Instance (admin) | Registration switch (branding and TTS stay env vars) |
+| Instance (admin) | Registration switch, time zone, read-aloud providers (Azure key, Edge on/off); branding and `TTS_URL` stay env vars |
 
 Phases: 1 users + auth + rate limiting · 2 per-user data, Users screen,
 registration · 3 per-user AI settings and instance settings.
