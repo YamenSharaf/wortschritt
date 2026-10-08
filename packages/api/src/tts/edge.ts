@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { WebSocket } from "undici";
 
 /**
@@ -8,7 +8,8 @@ import { WebSocket } from "undici";
  * app offers it as an option next to Piper and Azure, never as the only one.
  */
 const TRUSTED_CLIENT_TOKEN = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
-const CHROMIUM_VERSION = "130.0.2849.68";
+// Keep in step with edge-tts (its CHROMIUM_FULL_VERSION): Microsoft refuses old ones.
+const CHROMIUM_VERSION = "143.0.3650.75";
 const HOST = "speech.platform.bing.com";
 const TIMEOUT_MS = 20_000;
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -25,6 +26,12 @@ export function secMsGec(nowMs = Date.now()): string {
 
 const xmlEscape = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+
+/** JavaScript's Date#toString in UTC, as the browser (and edge-tts) send it. */
+function edgeTimestamp(d = new Date()): string {
+  const [wd, day, mon, year, time] = d.toUTCString().replace(",", "").split(" ");
+  return `${wd} ${mon} ${day} ${year} ${time} GMT+0000 (Coordinated Universal Time)`;
+}
 
 /** A percentage for <prosody rate>, e.g. 0.8 → "-20%". */
 const ratePercent = (rate: number) => `${rate >= 1 ? "+" : ""}${Math.round((rate - 1) * 100)}%`;
@@ -45,12 +52,17 @@ export function edgeSynthesize(text: string, voice: string, rate = 1): Promise<B
   const url =
     `wss://${HOST}/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=${TRUSTED_CLIENT_TOKEN}` +
     `&Sec-MS-GEC=${secMsGec()}&Sec-MS-GEC-Version=1-${CHROMIUM_VERSION}&ConnectionId=${randomUUID().replace(/-/g, "")}`;
+  const major = CHROMIUM_VERSION.split(".")[0];
   const ws = new WebSocket(url, {
     headers: {
       Origin: "chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold",
-      "User-Agent": `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${CHROMIUM_VERSION.split(".")[0]}.0.0.0 Safari/537.36 Edg/${CHROMIUM_VERSION.split(".")[0]}.0.0.0`,
+      "User-Agent": `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${major}.0.0.0 Safari/537.36 Edg/${major}.0.0.0`,
+      "Accept-Encoding": "gzip, deflate, br, zstd",
+      "Accept-Language": "en-US,en;q=0.9",
       Pragma: "no-cache",
       "Cache-Control": "no-cache",
+      // A random machine id, as the browser sends.
+      Cookie: `muid=${randomBytes(16).toString("hex").toUpperCase()};`,
     },
   });
   ws.binaryType = "arraybuffer";
@@ -75,7 +87,7 @@ export function edgeSynthesize(text: string, voice: string, rate = 1): Promise<B
     const timer = setTimeout(() => finish(new Error("timed out")), TIMEOUT_MS);
 
     ws.addEventListener("open", () => {
-      const stamp = new Date().toUTCString();
+      const stamp = edgeTimestamp();
       ws.send(
         `X-Timestamp:${stamp}\r\nContent-Type:application/json; charset=utf-8\r\nPath:speech.config\r\n\r\n` +
           JSON.stringify({
@@ -107,7 +119,10 @@ export function edgeSynthesize(text: string, voice: string, rate = 1): Promise<B
       if (size > MAX_BYTES) return finish(new Error("audio too large"));
       chunks.push(audio);
     });
-    ws.addEventListener("error", () => finish(new Error("connection failed")));
+    ws.addEventListener("error", (ev) => {
+      const detail = (ev as unknown as { message?: string; error?: { message?: string } }).error?.message ?? (ev as unknown as { message?: string }).message;
+      finish(new Error(`connection failed${detail ? `: ${detail}` : ""}`));
+    });
     ws.addEventListener("close", () => finish(size ? null : new Error("closed before any audio")));
   });
 }
