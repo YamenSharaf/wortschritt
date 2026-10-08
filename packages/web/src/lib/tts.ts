@@ -178,9 +178,23 @@ function playDevice(text: string, lang: string, rate: number): Promise<void> {
   });
 }
 
+const clipUrl = (text: string, voice: string) =>
+  `/api/tts?voice=${encodeURIComponent(voice)}&text=${encodeURIComponent(text)}`;
+
+// Clips already asked for in this page session (the server caches them after).
+const prefetched = new Set<string>();
+function prefetchServer(text: string, voice: string): void {
+  const url = clipUrl(text, voice);
+  if (prefetched.has(url)) return;
+  prefetched.add(url);
+  void fetch(url, { credentials: "same-origin" })
+    .then((r) => r.arrayBuffer())
+    .catch(() => prefetched.delete(url));
+}
+
 function playServer(text: string, voice: string, rate: number): Promise<void> {
   return new Promise((resolve, reject) => {
-    const a = new Audio(`/api/tts?voice=${encodeURIComponent(voice)}&text=${encodeURIComponent(text)}`);
+    const a = new Audio(clipUrl(text, voice));
     audio = a;
     a.playbackRate = rate;
     a.onended = () => resolve();
@@ -203,21 +217,28 @@ export function speakSequence(
   activeSequence = token;
   const { lang = "de-DE", rate = 0.95 } = opts;
   const live = () => token === sequenceToken;
+  // Every clip in order, with the paragraph it belongs to.
+  const clips = texts.flatMap((t, i) => chunkText(t ?? "").map((text) => ({ i, text })));
   void (async () => {
-    for (let i = 0; i < texts.length && live(); i++) {
-      opts.onIndex?.(i);
-      for (const chunk of chunkText(texts[i] ?? "")) {
-        if (!live()) break;
-        if (serverTts.enabled && serverTts.voice) {
-          try {
-            await playServer(chunk, serverTts.voice, rate);
-            continue;
-          } catch {
-            if (!live()) break;
-          }
-        }
-        await playDevice(chunk, lang, rate);
+    let current = -1;
+    for (let k = 0; k < clips.length && live(); k++) {
+      const { i, text } = clips[k]!;
+      if (i !== current) {
+        current = i;
+        opts.onIndex?.(i);
       }
+      if (serverTts.enabled && serverTts.voice) {
+        // Have the server make the next clips while this one plays, so a new
+        // paragraph doesn't wait for its first synthesis.
+        for (const next of clips.slice(k + 1, k + 3)) prefetchServer(next.text, serverTts.voice);
+        try {
+          await playServer(text, serverTts.voice, rate);
+          continue;
+        } catch {
+          if (!live()) break;
+        }
+      }
+      await playDevice(text, lang, rate);
     }
     if (live()) sequenceToken++;
     if (activeSequence === token) opts.onEnd?.();
