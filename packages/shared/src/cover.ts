@@ -224,7 +224,7 @@ export function fallbackCover(o: { seed: string; title: string; subtitle?: strin
     .map((l, i) => `<text x="300" y="${(top + i * size * 1.12).toFixed(0)}" text-anchor="middle" font-family="serif" font-size="${size}" font-weight="bold" fill="${INK}">${esc(l)}</text>`)
     .join("\n");
   const after = top + (lines.length - 1) * size * 1.12 + 44;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${COVER_VIEWBOX}" width="600" height="900" data-spine="${bg}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${COVER_VIEWBOX}" width="600" height="900">
 <defs>${FILTERS}</defs>
 <rect width="600" height="900" fill="${PAPER}"/>
 <rect x="-30" y="-30" width="660" height="590" fill="${bg}" filter="url(#wash)"/>
@@ -239,29 +239,4 @@ ${o.level ? `<circle cx="530" cy="842" r="28" fill="${bg}" stroke="${INK}" strok
 <text x="530" y="851" text-anchor="middle" font-family="sans-serif" font-size="24" font-weight="bold" fill="${PAPER}">${esc(o.level)}</text>` : ""}
 <rect width="600" height="900" filter="url(#grain)"/>
 </svg>`;
-}
-
-/**
- * The cover's main colour (for a book's spine on the shelf): its
- * data-spine attribute, else the most used saturated fill or stop colour,
- * else a neutral.
- */
-export function coverColor(svg: string): string {
-  // The artist may name it: <svg data-spine="#3f8f4a" …>.
-  const named = svg.match(/<svg\b[^>]*\sdata-spine\s*=\s*["'](#[0-9a-fA-F]{6})["']/);
-  if (named) return named[1]!.toLowerCase();
-  const counts = new Map<string, number>();
-  for (const m of svg.matchAll(/(?:fill|stop-color)\s*=\s*["']#([0-9a-f]{6}|[0-9a-f]{3})["']/gi)) {
-    let hex = m[1]!.toLowerCase();
-    if (hex.length === 3) hex = [...hex].map((c) => c + c).join("");
-    const [rr, gg, bb] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as [number, number, number];
-    const max = Math.max(rr, gg, bb);
-    const min = Math.min(rr, gg, bb);
-    const light = (max + min) / 2;
-    const sat = max === min ? 0 : (max - min) / (1 - Math.abs(2 * light - 1));
-    if (sat < 0.25 || light < 0.15 || light > 0.85) continue;
-    counts.set(hex, (counts.get(hex) ?? 0) + 1);
-  }
-  const best = [...counts].sort((a, b) => b[1] - a[1])[0];
-  return best ? `#${best[0]}` : "#5b5248";
 }

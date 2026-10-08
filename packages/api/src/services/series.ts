@@ -1,7 +1,6 @@
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import {
   chapterStoryId,
-  coverColor,
   series as seriesSchema,
   story as storySchema,
   storyParagraphs,
@@ -13,7 +12,7 @@ import {
   type StoryView,
 } from "@mdb/shared";
 import { db, schema } from "../db/client";
-import { coverVersion, seriesFallbackCover } from "./covers";
+import { coverVersion } from "./covers";
 import { getStory, pruneTranslations, wordCount } from "./stories";
 
 /**
@@ -93,7 +92,6 @@ function summarize(id: string, s: Series, chapters: SeriesChapter[], updatedAt: 
     read: written.filter((c) => c.readAt).length,
     progress: Math.min(1, done / total),
     continueId: next?.storyId ?? null,
-    color: coverColor(cover ?? seriesFallbackCover(id, s)),
     cover: coverVersion(cover),
     updatedAt,
   };

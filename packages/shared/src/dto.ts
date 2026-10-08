@@ -801,8 +801,6 @@ export const seriesSummary = z.object({
   progress: z.number(),
   /** Where "Continue reading" goes (null when nothing is written yet). */
   continueId: z.string().nullable(),
-  /** The book's main colour (for its spine on the shelf). */
-  color: z.string().default("#5b5248"),
   /** Version of the cover art (changes with it), or null when there is none. */
   cover: z.string().nullable().default(null),
   updatedAt: z.number().int(),
