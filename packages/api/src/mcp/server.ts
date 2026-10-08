@@ -113,7 +113,7 @@ Saving: pass the object (not a JSON string) to ${tool}. Saving never replaces an
 
 export function createMcpServer(user: AuthUser): McpServer {
   const server = new McpServer(
-    { name: "mit-dem-baby", title: "Wortschritt — German practice", version: "0.1.0" },
+    { name: "wortschritt", title: "Wortschritt — German practice", version: "0.1.0" },
     { instructions: INSTRUCTIONS },
   );
   const tool = server.registerTool.bind(server);

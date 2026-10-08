@@ -7,7 +7,7 @@ import { env } from "../env";
  * Format: `v1.<iv>.<tag>.<ciphertext>` (base64url).
  */
 const key = env.ENCRYPTION_KEY
-  ? Buffer.from(hkdfSync("sha256", env.ENCRYPTION_KEY, "mit-dem-baby", "ai-api-keys-v1", 32))
+  ? Buffer.from(hkdfSync("sha256", env.ENCRYPTION_KEY, "wortschritt", "ai-api-keys-v1", 32))
   : null;
 
 export const isEncryptionAvailable = key !== null;
