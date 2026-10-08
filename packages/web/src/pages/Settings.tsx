@@ -10,8 +10,6 @@ import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { timeAgo } from "../lib/time";
 import { useAsync } from "../lib/useAsync";
-import { useTheme } from "../lib/theme";
-import { ACCENTS } from "../lib/themes";
 import {
   deviceVoices,
   getDeviceVoicePref,
@@ -68,7 +66,6 @@ export function SettingsPage() {
 
 function Preferences() {
   const loaded = useAsync(() => api.settings(), []);
-  const { theme, setTheme, accent, setAccent } = useTheme();
   const [form, setForm] = useState<Settings | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -119,40 +116,6 @@ function Preferences() {
             }
             className="input"
           />
-        </Field>
-        <Field label="Theme">
-          <select
-            value={theme}
-            onChange={(e) => {
-              const next = e.target.value as Settings["theme"];
-              setForm({ ...form, theme: next });
-              setTheme(next); // live preview + per-device preference
-            }}
-            className="input"
-          >
-            <option value="system">System</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
-        </Field>
-        <Field label="Theme color">
-          <div className="flex flex-wrap gap-2">
-            {ACCENTS.map((a) => (
-              <button
-                key={a.id}
-                type="button"
-                onClick={() => setAccent(a.id)}
-                aria-label={a.label}
-                title={a.label}
-                className={`h-8 w-8 rounded-full ring-2 ring-offset-2 ring-offset-white dark:ring-offset-slate-950 ${
-                  accent === a.id
-                    ? "ring-slate-900 dark:ring-white"
-                    : "ring-transparent"
-                }`}
-                style={{ backgroundColor: a.swatch }}
-              />
-            ))}
-          </div>
         </Field>
         <Field label="Exercises to generate per batch">
           <select

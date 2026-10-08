@@ -3,78 +3,94 @@
 @tailwind utilities;
 
 html {
-  /* colorScheme is set dynamically by the theme manager; this is the fallback. */
   color-scheme: light dark;
   -webkit-text-size-adjust: 100%;
 }
 
-body {
-  @apply text-slate-900 dark:text-slate-100;
-  background-color: rgb(var(--bg));
+/* Wortschritt design system tokens (the design system's tokens.json).
+   Light by default; dark follows the device setting. */
+:root {
+  --bg: #f6f7fa;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #eef1f6;
+  --border: #e3e7ee;
+  --border-strong: #c9d0db;
+  --border-control: #838b9c;
+  --highlight: #ffffff00;
+  --ink: #0f1420;
+  --ink-muted: #566074;
+  --ink-subtle: #646d80;
+  --brand: #2b6cb0;
+  --brand-hover: #245c98;
+  --on-brand: #ffffff;
+  --brand-soft: #e8f1fb;
+  --brand-ink: #1f5a99;
+  --tile-from: #4a90e2;
+  --tile-to: #22589a;
+  --glow: #4a90e21f;
+  --reward-1: #ffd95a;
+  --reward-2: #ff8a65;
+  --reward-3: #f0508c;
+  --on-reward: #0f1420;
+  --success: #127a4b;
+  --success-soft: #e5f5ed;
+  --danger: #c2362b;
+  --danger-soft: #fbebe9;
+  --warning: #9a5b00;
+  --warning-soft: #fdf2dd;
+  --focus: #2b6cb0;
+  --on-section: #ffffff;
+  --section-practice: #2b6cb0;
+  --section-sheets: #0f8583;
+  --section-stories: #d4512a;
+  --section-vocab: #a8701a;
+  --section-notes: #6d4fd1;
+  --shadow-card: 0 1px 2px #0f14200d, 0 2px 8px #0f142008;
+  --shadow-card-hover: 0 2px 4px #0f142010, 0 8px 24px #0f14200f;
+  --shadow-pop: 0 12px 32px #0f14201f, 0 2px 6px #0f142012;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b0d12;
+    --surface: #12151c;
+    --surface-raised: #191d27;
+    --surface-sunken: #0e1117;
+    --border: #ffffff14;
+    --border-strong: #ffffff29;
+    --border-control: #646b7a;
+    --highlight: #ffffff0f;
+    --ink: #edf0f5;
+    --ink-muted: #9aa3b2;
+    --ink-subtle: #7d8696;
+    --brand: #5aa9f5;
+    --brand-hover: #7bbbf8;
+    --on-brand: #0b0d12;
+    --brand-soft: #5aa9f51f;
+    --brand-ink: #8ec5ff;
+    --glow: #4a90e238;
+    --success: #3dd68c;
+    --success-soft: #3dd68c1f;
+    --danger: #ff7a6e;
+    --danger-soft: #ff7a6e1f;
+    --warning: #f5b544;
+    --warning-soft: #f5b5441f;
+    --focus: #8ec5ff;
+    --shadow-card: inset 0 1px 0 #ffffff0f, 0 1px 2px #00000066;
+    --shadow-card-hover: inset 0 1px 0 #ffffff17, 0 8px 24px #00000080;
+    --shadow-pop: inset 0 1px 0 #ffffff17, 0 16px 40px #000000a6;
+  }
 }
 
-/* Accent themes: --accent is the primary color, --accent-foreground the text on
-   it, --bg the subtly-tinted page background. `slate` (default) is neutral;
-   colored themes tint slightly in both modes. Set via [data-accent] on <html>. */
-:root {
-  --accent: 15 23 42;
-  --accent-foreground: 255 255 255;
-  --bg: 248 250 252;
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
 }
-:root.dark {
-  --accent: 248 250 252;
-  --accent-foreground: 15 23 42;
-  --bg: 10 12 16;
-}
-:root[data-accent="emerald"] {
-  --accent: 5 150 105;
-  --accent-foreground: 255 255 255;
-  --bg: 240 250 245;
-}
-:root[data-accent="emerald"].dark {
-  --accent: 16 185 129;
-  --accent-foreground: 255 255 255;
-  --bg: 6 26 19;
-}
-:root[data-accent="blue"] {
-  --accent: 37 99 235;
-  --accent-foreground: 255 255 255;
-  --bg: 240 246 253;
-}
-:root[data-accent="blue"].dark {
-  --accent: 59 130 246;
-  --accent-foreground: 255 255 255;
-  --bg: 9 17 33;
-}
-:root[data-accent="violet"] {
-  --accent: 124 58 237;
-  --accent-foreground: 255 255 255;
-  --bg: 245 243 253;
-}
-:root[data-accent="violet"].dark {
-  --accent: 139 92 246;
-  --accent-foreground: 255 255 255;
-  --bg: 22 14 34;
-}
-:root[data-accent="rose"] {
-  --accent: 225 29 72;
-  --accent-foreground: 255 255 255;
-  --bg: 253 243 246;
-}
-:root[data-accent="rose"].dark {
-  --accent: 244 63 94;
-  --accent-foreground: 255 255 255;
-  --bg: 33 13 22;
-}
-:root[data-accent="amber"] {
-  --accent: 217 119 6;
-  --accent-foreground: 255 255 255;
-  --bg: 253 248 238;
-}
-:root[data-accent="amber"].dark {
-  --accent: 245 158 11;
-  --accent-foreground: 15 23 42;
-  --bg: 33 23 7;
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
 }
 
 /* Answer feedback animations */
@@ -122,7 +138,7 @@ body {
 
 @layer components {
   .input {
-    @apply w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 outline-none focus:border-slate-900 dark:border-slate-700 dark:focus:border-white;
+    @apply w-full rounded-control border border-line-control bg-surface-sunken px-3 py-2 text-ink outline-none transition-colors placeholder:text-ink-subtle hover:border-ink-subtle focus:border-focus focus:bg-surface;
   }
 
   /* Rendered markdown (cheat sheets). Low-specificity :where() so utilities win. */
@@ -171,7 +187,7 @@ body {
 }
 
 /* Story reader. Its colours come from the reader theme (data-theme), not the
-   app theme, so sepia works in either mode; "auto" follows the app. */
+   app theme, so sepia works in either mode; "auto" follows the device. */
 .reader {
   --r-bg: 255 255 255;
   --r-fg: 30 41 59;
@@ -182,13 +198,21 @@ body {
   color: rgb(var(--r-fg));
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
 }
-:root.dark .reader[data-theme="auto"],
 .reader[data-theme="dark"] {
-  --r-bg: 17 20 26;
-  --r-fg: 226 232 240;
-  --r-muted: 148 163 184;
-  --r-rule: 51 65 85;
-  --r-mark: 96 165 250;
+  --r-bg: 18 21 28;
+  --r-fg: 237 240 245;
+  --r-muted: 154 163 178;
+  --r-rule: 44 50 62;
+  --r-mark: 142 197 255;
+}
+@media (prefers-color-scheme: dark) {
+  .reader[data-theme="auto"] {
+    --r-bg: 18 21 28;
+    --r-fg: 237 240 245;
+    --r-muted: 154 163 178;
+    --r-rule: 44 50 62;
+    --r-mark: 142 197 255;
+  }
 }
 .reader[data-theme="sepia"] {
   --r-bg: 248 241 227;

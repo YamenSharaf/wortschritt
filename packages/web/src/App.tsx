@@ -1,10 +1,8 @@
 import { useEffect } from "react";
 import { Navigate, NavLink, Outlet, useMatch } from "react-router-dom";
-import { ThemePicker } from "./components/ThemePicker";
 import { api } from "./lib/api";
 import { useAuth } from "./lib/auth";
 import { AppTitle } from "./components/AppTitle";
-import { useTheme } from "./lib/theme";
 import { setServerTts } from "./lib/tts";
 import { VocabProvider } from "./lib/vocab";
 
@@ -61,35 +59,8 @@ const navItems = [
   { to: "/settings", label: "Settings", Icon: Gear },
 ];
 
-function ThemeToggle() {
-  const { setTheme } = useTheme();
-  const isDark =
-    typeof document !== "undefined" &&
-    document.documentElement.classList.contains("dark");
-  return (
-    <button
-      type="button"
-      aria-label="Toggle theme"
-      onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="grid h-9 w-9 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
-    >
-      {isDark ? (
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-          <circle cx="12" cy="12" r="4" />
-          <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" strokeLinecap="round" />
-        </svg>
-      ) : (
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      )}
-    </button>
-  );
-}
-
 export function App() {
   const { authenticated, loading, logout } = useAuth();
-  const { setTheme, hasStored } = useTheme();
   // The story reader takes the whole screen (no header or tab bar).
   const storyMatch = useMatch("/stories/:id");
   const immersive = Boolean(storyMatch && !["new", "generate"].includes(storyMatch.params.id ?? ""));
@@ -97,16 +68,6 @@ export function App() {
   useEffect(() => {
     if (!immersive && document.fullscreenElement) void document.exitFullscreen().catch(() => {});
   }, [immersive]);
-
-  // On a device with no saved theme yet, inherit the account default once.
-  useEffect(() => {
-    if (authenticated && !hasStored) {
-      api
-        .settings()
-        .then((s) => setTheme(s.theme))
-        .catch(() => {});
-    }
-  }, [authenticated, hasStored, setTheme]);
 
   // Wire up the server voice (if one is chosen and available).
   useEffect(() => {
@@ -170,8 +131,6 @@ export function App() {
             ))}
           </nav>
           <div className="ml-auto flex shrink-0 items-center gap-1">
-            <ThemePicker />
-            <ThemeToggle />
             <button
               type="button"
               onClick={() => void logout()}

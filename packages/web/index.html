@@ -8,27 +8,11 @@
          (translate="no" above; this meta for Chrome's older check). -->
     <meta name="google" content="notranslate" />
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#020617" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#12151c" media="(prefers-color-scheme: dark)" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <title>Wortschritt — Learn German</title>
-    <script>
-      // Apply the saved theme + accent before first paint to avoid a flash.
-      (function () {
-        try {
-          var t = localStorage.getItem("mdb-theme") || "system";
-          var dark =
-            t === "dark" ||
-            (t === "system" &&
-              window.matchMedia("(prefers-color-scheme: dark)").matches);
-          var r = document.documentElement;
-          r.classList.toggle("dark", dark);
-          r.style.colorScheme = dark ? "dark" : "light";
-          r.dataset.accent = localStorage.getItem("mdb-accent") || "slate";
-        } catch (e) {}
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>
