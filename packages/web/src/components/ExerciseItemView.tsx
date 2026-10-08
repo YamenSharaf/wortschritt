@@ -9,6 +9,8 @@ import {
   type TextAnswer,
 } from "@mdb/shared";
 import { api } from "../lib/api";
+import { CheckIcon, CrossIcon } from "./icons";
+import { btn } from "./ui";
 
 /**
  * German answers are often mid-sentence and lowercase (verbs like "geht",
@@ -65,7 +67,7 @@ function Instructions({ text }: { text?: string }) {
   // A left rule + muted style marks this as the task directive so it reads as
   // guidance, not as part of the exercise sentence below it.
   return (
-    <p className="mb-4 border-l-2 border-slate-200 pl-3 text-sm italic text-slate-500 dark:border-slate-700">
+    <p className="mb-4 text-sm italic text-ink-muted">
       {text}
     </p>
   );
@@ -80,7 +82,7 @@ function Context({ text }: { text?: string }) {
   // rule on the left reads as a quoted premise — clearly apart from the thin,
   // italic task directive above and the exercise sentence below.
   return (
-    <p className="mb-3 rounded-r-lg border-l-4 border-accent bg-slate-100 p-3 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+    <p className="mb-3 rounded-control bg-surface-sunken p-3 text-ink">
       {text}
     </p>
   );
@@ -89,7 +91,7 @@ function ItemHint({ text }: { text?: string }) {
   if (!text) return null;
   return (
     <p className="mb-3 text-sm">
-      <span className="rounded bg-slate-100 px-2 py-1 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+      <span className="rounded-chip bg-surface-sunken px-2 py-1 text-ink-muted">
         {text}
       </span>
     </p>
@@ -99,7 +101,7 @@ function ItemHint({ text }: { text?: string }) {
 function Explanation({ text }: { text?: string }) {
   if (!text) return null;
   return (
-    <p className="mt-3 rounded-lg bg-slate-100 p-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+    <p className="mt-3 rounded-control bg-surface-sunken p-3 text-sm text-ink-muted">
       {text}
     </p>
   );
@@ -150,7 +152,7 @@ function OpenAnswerBadge({ answer }: { answer: TextAnswer }) {
   if (!isOpenAnswer(answer)) return null;
   return (
     <p className="mb-3 text-xs">
-      <span className="rounded-full border border-slate-300 px-2 py-0.5 text-slate-500 dark:border-slate-700">
+      <span className="rounded-full border border-line bg-surface-sunken px-2 py-0.5 font-medium text-ink-muted">
         Open answer — any correct answer counts
       </span>
     </p>
@@ -174,7 +176,7 @@ function MultipleChoice({
       <Instructions text={item.instructions} />
       <Context text={item.context} />
       <ItemHint text={item.hint} />
-      <p className="mb-4 text-lg">{item.prompt}</p>
+      <p className="mb-4 text-[17px] leading-7">{item.prompt}</p>
       <div className="grid gap-2">
         {item.choices.map((choice, i) => {
           const state = !done
@@ -193,12 +195,12 @@ function MultipleChoice({
                 setPicked(i);
                 onAnswered(i === item.answerIndex, item.choices[i]);
               }}
-              className={`rounded-lg border px-4 py-2 text-left ${
+              className={`min-h-11 rounded-control border px-4 py-2 text-left transition-colors ${
                 state === "correct"
-                  ? "border-green-500 bg-green-50 dark:bg-green-950"
+                  ? "border-transparent bg-success-soft font-medium text-success"
                   : state === "wrong"
-                    ? "border-red-500 bg-red-50 dark:bg-red-950"
-                    : "border-slate-300 hover:border-slate-500 dark:border-slate-700"
+                    ? "border-transparent bg-danger-soft text-danger"
+                    : "border-line-control bg-surface hover:border-ink-subtle hover:bg-surface-sunken disabled:opacity-60"
               }`}
             >
               {choice}
@@ -268,7 +270,7 @@ function Cloze({
           const value = values[seg.ref] ?? "";
           const ok = blank ? gradeText(value, blank.answer) : false;
           return (
-            <span key={i} className="inline-flex flex-col items-start align-baseline">
+            <span key={i} className="inline-flex flex-col items-center align-baseline">
               <input
                 value={value}
                 disabled={done}
@@ -281,19 +283,19 @@ function Cloze({
                 }
                 onKeyDown={(e) => e.key === "Enter" && !done && check()}
                 {...answerInputProps}
-                className={`mx-1 w-28 rounded border-b-2 bg-transparent px-1 text-center outline-none placeholder:text-slate-300 dark:placeholder:text-slate-600 ${
+                className={`mx-1 h-9 w-32 rounded-[8px] border px-2.5 text-center text-base font-medium outline-none transition-colors placeholder:font-normal placeholder:text-ink-subtle ${
                   !done
-                    ? "border-slate-400 focus:border-accent"
+                    ? "border-line-control bg-surface-sunken text-ink hover:border-ink-subtle focus:border-focus focus:bg-surface focus:shadow-[0_0_0_3px_var(--brand-soft)]"
                     : ok
-                      ? "border-green-500 text-green-700 dark:text-green-400"
-                      : "border-red-500 text-red-700 dark:text-red-400"
+                      ? "border-transparent bg-success-soft text-success"
+                      : "border-transparent bg-danger-soft text-danger line-through decoration-1"
                 }`}
               />
               {blank?.cue && !done && (
-                <span className="mx-1 text-xs text-slate-400">({blank.cue})</span>
+                <span className="mx-1 mt-0.5 text-xs text-ink-subtle">({blank.cue})</span>
               )}
               {done && blank && !isCanonical(value, blank.answer) && (
-                <span className="mx-1 text-xs text-green-600">
+                <span className="mx-1 mt-0.5 text-xs font-semibold text-ink">
                   {modelAnswer(blank.answer)}
                 </span>
               )}
@@ -305,7 +307,7 @@ function Cloze({
         <button
           type="button"
           onClick={check}
-          className="mt-4 rounded-lg bg-accent px-4 py-2 text-accent-foreground"
+          className={`${btn.primary} mt-4`}
         >
           Check
         </button>
@@ -335,12 +337,12 @@ function Flashcard({
       <button
         type="button"
         onClick={() => setFlipped((f) => !f)}
-        className="grid min-h-40 w-full place-items-center rounded-xl border border-slate-300 bg-white p-6 text-center text-xl dark:border-slate-700 dark:bg-slate-900"
+        className="grid min-h-44 w-full place-items-center rounded-panel border border-line bg-surface p-6 text-center text-[28px] font-semibold leading-9 tracking-[-0.02em] shadow-card-hover"
       >
         {flipped ? item.back : item.front}
       </button>
-      <p className="mt-2 text-center text-xs text-slate-400">
-        {flipped ? "" : "Click to flip"}
+      <p className="mt-2 text-center text-xs text-ink-subtle">
+        {flipped ? "" : "Tap to flip"}
       </p>
       {flipped && !rated && (
         <div className="mt-3 grid grid-cols-2 gap-2">
@@ -350,8 +352,9 @@ function Flashcard({
               setRated(true);
               onAnswered(false, "Didn't know", "self");
             }}
-            className="rounded-lg border border-red-400 px-4 py-2 text-red-600"
+            className={btn.secondary}
           >
+            <CrossIcon className="h-4 w-4" />
             Didn't know
           </button>
           <button
@@ -360,8 +363,9 @@ function Flashcard({
               setRated(true);
               onAnswered(true, "Knew it", "self");
             }}
-            className="rounded-lg border border-green-400 px-4 py-2 text-green-600"
+            className={btn.primary}
           >
+            <CheckIcon className="h-4 w-4" />
             Knew it
           </button>
         </div>
@@ -394,16 +398,21 @@ function ResultBanner({
   return (
     <div className="mt-3">
       {!ungraded && (
-        <p className={`font-medium ${result ? "text-green-600" : "text-red-600"}`}>
-          {result ? "Correct!" : "Not quite."}
+        <p
+          className={`flex items-center gap-2 rounded-control px-3 py-2 text-sm font-semibold ${
+            result ? "bg-success-soft text-success" : "bg-danger-soft text-danger"
+          }`}
+        >
+          {result ? <CheckIcon className="h-4 w-4" /> : <CrossIcon className="h-4 w-4" />}
+          {result ? "Correct." : "Not quite."}
         </p>
       )}
       {open && (
-        <div className="mt-2 rounded-lg bg-slate-100 p-3 text-sm dark:bg-slate-800">
-          <p className="mb-1 text-slate-500">Possible answers:</p>
+        <div className="mt-2 rounded-control bg-surface-sunken p-3 text-sm">
+          <p className="mb-1 text-ink-muted">Possible answers:</p>
           <ul className="space-y-1">
             {answer.accept.map((a) => (
-              <li key={a} className="font-medium text-slate-800 dark:text-slate-100">
+              <li key={a} className="font-medium text-ink">
                 {a}
               </li>
             ))}
@@ -411,12 +420,12 @@ function ResultBanner({
         </div>
       )}
       {showAnswer && (
-        <p className="mt-1 text-sm">
-          <span className="text-slate-500">Answer: </span>
+        <p className="mt-2 text-sm">
+          <span className="text-ink-muted">Answer: </span>
           <span className="font-medium">{modelAnswer(answer)}</span>
         </p>
       )}
-      {feedback && <p className="mt-1 text-sm text-slate-500">{feedback}</p>}
+      {feedback && <p className="mt-1 text-sm text-ink-muted">{feedback}</p>}
     </div>
   );
 }
@@ -465,7 +474,7 @@ function SentenceBuild({
       <ItemHint text={item.hint} />
       {hasBank ? (
         <>
-          <div className="mb-3 min-h-12 rounded-lg border border-dashed border-slate-300 p-2 dark:border-slate-700">
+          <div className="mb-3 min-h-12 rounded-control border border-dashed border-line-control bg-surface-sunken p-2">
             <div className="flex flex-wrap gap-2">
               {chosen.map((tokenIdx, pos) => (
                 <button
@@ -473,7 +482,7 @@ function SentenceBuild({
                   type="button"
                   disabled={result !== null}
                   onClick={() => setChosen((c) => c.filter((_, i) => i !== pos))}
-                  className="rounded bg-accent px-3 py-1 text-accent-foreground"
+                  className="rounded-[8px] border border-transparent bg-brand-soft px-3 py-1 font-medium text-brand-ink"
                 >
                   {item.tokens![tokenIdx]}
                 </button>
@@ -487,7 +496,7 @@ function SentenceBuild({
                 type="button"
                 disabled={result !== null}
                 onClick={() => setChosen((c) => [...c, i])}
-                className="rounded border border-slate-300 px-3 py-1 dark:border-slate-700"
+                className="rounded-[8px] border border-line-control bg-surface px-3 py-1 hover:bg-surface-sunken"
               >
                 {item.tokens![i]}
               </button>
@@ -502,7 +511,7 @@ function SentenceBuild({
           onKeyDown={(e) => e.key === "Enter" && result === null && check()}
           placeholder="Type the sentence…"
           {...answerInputProps}
-          className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 dark:border-slate-700"
+          className="input"
         />
       )}
 
@@ -511,7 +520,7 @@ function SentenceBuild({
           type="button"
           disabled={busy || (hasBank ? chosen.length === 0 : !text.trim())}
           onClick={check}
-          className="mt-4 rounded-lg bg-accent px-4 py-2 text-accent-foreground disabled:opacity-40"
+          className={`${btn.primary} mt-4`}
         >
           {busy ? "Checking…" : "Check"}
         </button>
@@ -574,7 +583,7 @@ function Transform({
       <OpenAnswerBadge answer={item.answer} />
       <Context text={item.context} />
       <ItemHint text={item.hint} />
-      <p className="mb-3 rounded-lg bg-slate-100 p-3 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+      <p className="mb-3 rounded-control bg-surface-sunken p-3 text-ink">
         {given}
       </p>
       {lead && <p className="mb-3 text-lg leading-relaxed">{lead}</p>}
@@ -585,14 +594,14 @@ function Transform({
         onKeyDown={(e) => e.key === "Enter" && result === null && check()}
         placeholder="Your answer…"
         {...answerInputProps}
-        className="w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 dark:border-slate-700"
+        className="input"
       />
       {result === null ? (
         <button
           type="button"
           disabled={busy || !text.trim()}
           onClick={check}
-          className="mt-4 rounded-lg bg-accent px-4 py-2 text-accent-foreground disabled:opacity-40"
+          className={`${btn.primary} mt-4`}
         >
           {busy ? "Checking…" : "Check"}
         </button>
@@ -634,7 +643,7 @@ function TrueFalse({
       <Instructions text={item.instructions ?? "Correct or incorrect?"} />
       <Context text={item.context} />
       <ItemHint text={item.hint} />
-      <p className="mb-4 text-lg">{item.statement}</p>
+      <p className="mb-4 text-[17px] leading-7">{item.statement}</p>
       <div className="grid grid-cols-2 gap-2">
         {[
           { label: "Correct", value: true },
@@ -653,12 +662,12 @@ function TrueFalse({
               type="button"
               disabled={done}
               onClick={() => pick(opt.value)}
-              className={`rounded-lg border px-4 py-2 ${
+              className={`min-h-11 rounded-control border px-4 py-2 transition-colors ${
                 state === "correct"
-                  ? "border-green-500 bg-green-50 dark:bg-green-950"
+                  ? "border-transparent bg-success-soft font-medium text-success"
                   : state === "wrong"
-                    ? "border-red-500 bg-red-50 dark:bg-red-950"
-                    : "border-slate-300 hover:border-slate-500 dark:border-slate-700"
+                    ? "border-transparent bg-danger-soft text-danger"
+                    : "border-line-control bg-surface hover:border-ink-subtle hover:bg-surface-sunken disabled:opacity-60"
               }`}
             >
               {opt.label}
@@ -668,8 +677,8 @@ function TrueFalse({
       </div>
       {done && item.correction && (
         <p className="mt-3 text-sm">
-          <span className="text-slate-500">Correct form: </span>
-          <span className="font-medium text-green-600">{item.correction}</span>
+          <span className="text-ink-muted">Correct form: </span>
+          <span className="font-semibold text-success">{item.correction}</span>
         </p>
       )}
       {done && <Explanation text={item.explanation} />}
@@ -734,7 +743,7 @@ function ConjugationTable({
           <tbody>
             {item.rows.map((row, r) => (
               <tr key={row}>
-                <td className="whitespace-nowrap p-2 text-slate-500">{row}</td>
+                <td className="whitespace-nowrap p-2 text-ink-muted">{row}</td>
                 {item.columns.map((col, c) => {
                   const value = values[key(c, r)] ?? "";
                   const ok = done && cellCorrect(c, r);
@@ -747,16 +756,16 @@ function ConjugationTable({
                           setValues((v) => ({ ...v, [key(c, r)]: e.target.value }))
                         }
                         {...answerInputProps}
-                        className={`w-24 rounded border bg-transparent px-2 py-1 outline-none ${
+                        className={`h-9 w-28 rounded-[8px] border px-2 font-medium outline-none transition-colors ${
                           !done
-                            ? "border-slate-300 focus:border-accent dark:border-slate-700"
+                            ? "border-line-control bg-surface-sunken text-ink focus:border-focus focus:bg-surface"
                             : ok
-                              ? "border-green-500 text-green-700 dark:text-green-400"
-                              : "border-red-500 text-red-700 dark:text-red-400"
+                              ? "border-transparent bg-success-soft text-success"
+                              : "border-transparent bg-danger-soft text-danger line-through decoration-1"
                         }`}
                       />
                       {done && !ok && (
-                        <div className="text-xs text-green-600">
+                        <div className="mt-0.5 text-xs font-semibold text-ink">
                           {col.answers[r]}
                         </div>
                       )}
@@ -772,7 +781,7 @@ function ConjugationTable({
         <button
           type="button"
           onClick={check}
-          className="mt-4 rounded-lg bg-accent px-4 py-2 text-accent-foreground"
+          className={`${btn.primary} mt-4`}
         >
           Check
         </button>

@@ -1,3 +1,5 @@
+import { CrossIcon, SearchIcon } from "./icons";
+
 /** Compact search input with a leading icon and a clear button. */
 export function SearchBox({
   value,
@@ -12,34 +14,22 @@ export function SearchBox({
 }) {
   return (
     <div className={`relative ${className}`}>
-      <svg
-        viewBox="0 0 24 24"
-        width="16"
-        height="16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-        aria-hidden
-      >
-        <circle cx="11" cy="11" r="7" />
-        <path d="m20 20-3.2-3.2" strokeLinecap="round" />
-      </svg>
+      <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-subtle" />
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="w-full rounded-lg border border-slate-300 bg-transparent py-2 pl-9 pr-8 text-sm outline-none focus:border-accent dark:border-slate-700"
+        className="h-10 w-full rounded-control border border-line-control bg-surface-sunken pl-9 pr-9 text-sm text-ink outline-none transition-colors placeholder:text-ink-subtle hover:border-ink-subtle focus:border-focus focus:bg-surface"
       />
       {value && (
         <button
           type="button"
           onClick={() => onChange("")}
           aria-label="Clear search"
-          className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+          className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-chip text-ink-subtle hover:text-ink"
         >
-          ✕
+          <CrossIcon className="h-4 w-4" />
         </button>
       )}
     </div>

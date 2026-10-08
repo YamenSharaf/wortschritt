@@ -2,7 +2,9 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { RunSummary } from "@mdb/shared";
 import { SearchBox } from "../components/SearchBox";
+import { SectionIcon } from "../components/SectionIcon";
 import { SortControl, sortByMode, type SortMode } from "../components/SortControl";
+import { Muted, PageHeader, Pill, cardLink } from "../components/ui";
 import { api } from "../lib/api";
 import { timeAgo } from "../lib/time";
 import { useAsync } from "../lib/useAsync";
@@ -28,53 +30,50 @@ export function Exercises() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Exercises</h1>
-        {list.length > 1 && <SortControl value={sort} onChange={setSort} />}
-      </div>
+      <PageHeader
+        title="Practice"
+        subtitle="Exercise sets for grammar and vocabulary. Wrong answers come back until you get them."
+        actions={list.length > 1 && <SortControl value={sort} onChange={setSort} />}
+      />
       {list.length > 3 && (
-        <div className="mb-3">
+        <div className="mb-5">
           <SearchBox value={q} onChange={setQ} placeholder="Search exercises…" />
         </div>
       )}
-      {exercises.status === "loading" && <p className="text-slate-500">Loading…</p>}
+      {exercises.status === "loading" && <Muted>Loading…</Muted>}
       {exercises.status === "ready" && exercises.data.length === 0 && (
-        <p className="text-slate-500">
+        <Muted>
           No exercises yet. Add some via{" "}
-          <Link className="underline" to="/import">
+          <Link className="text-brand-ink underline underline-offset-2" to="/import">
             Import
           </Link>
           .
-        </p>
+        </Muted>
       )}
       {exercises.status === "ready" && filtered.length === 0 && exercises.data.length > 0 && (
-        <p className="text-slate-500">No exercises match.</p>
+        <Muted>No exercises match.</Muted>
       )}
       {exercises.status === "ready" && (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           {sortByMode(filtered, sort).map((set) => (
-            <Link
-              key={set.id}
-              to={`/exercises/${set.id}`}
-              className="rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-medium">{set.title}</span>
-                <span className="shrink-0 rounded bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800">
-                  {set.level}
-                </span>
+            <Link key={set.id} to={`/exercises/${set.id}`} className={`${cardLink} flex flex-col`}>
+              <div className="flex items-start gap-3">
+                <SectionIcon section="practice" />
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-semibold leading-6 tracking-[-0.005em]">{set.title}</h2>
+                  {set.subtitle && <p className="text-sm text-ink-muted">{set.subtitle}</p>}
+                </div>
               </div>
-              {set.subtitle && (
-                <p className="text-xs text-slate-400">{set.subtitle}</p>
-              )}
-              {set.description && (
-                <p className="mt-1 text-sm text-slate-500">{set.description}</p>
-              )}
-              <div className="mt-2 flex items-center justify-between gap-2">
-                <p className="text-xs text-slate-400">
-                  {set.items.length} tasks · {set.tags.join(", ")}
-                </p>
-                <LastRunBadge run={lastRun[set.id]} />
+              {set.description && <p className="mt-3 text-sm leading-5 text-ink-muted">{set.description}</p>}
+              <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
+                <Pill>{set.level}</Pill>
+                <Pill>{set.items.length} tasks</Pill>
+                {set.tags.slice(0, 2).map((t) => (
+                  <Pill key={t}>{t}</Pill>
+                ))}
+                <span className="ml-auto">
+                  <LastRunBadge run={lastRun[set.id]} />
+                </span>
               </div>
             </Link>
           ))}

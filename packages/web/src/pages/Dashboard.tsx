@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { RunSummary } from "@mdb/shared";
-import { ChevronRightIcon, PlayIcon } from "../components/icons";
+import { PlayIcon } from "../components/icons";
+import { Pill, SectionHeading, btn, cardLink } from "../components/ui";
 import { SectionIcon, type Section } from "../components/SectionIcon";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -56,14 +57,14 @@ export function Dashboard() {
             <div className="flex flex-wrap gap-2 pt-3">
               <Link
                 to={continueTo}
-                className="inline-flex h-10 items-center gap-2 rounded-control bg-brand px-4 text-sm font-medium text-brand-on transition-colors hover:bg-brand-hover"
+                className={btn.primary}
               >
                 <PlayIcon className="h-4 w-4" />
                 {recentRuns[0] ? "Continue practice" : "Start practising"}
               </Link>
               <Link
                 to="/vocab/study"
-                className="inline-flex h-10 items-center rounded-control px-4 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink"
+                className={btn.ghost}
               >
                 Review words
               </Link>
@@ -134,7 +135,7 @@ export function Dashboard() {
               <Link
                 key={set.id}
                 to={`/exercises/${set.id}`}
-                className="group rounded-card border border-line bg-surface p-5 shadow-card transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px hover:border-line-strong hover:shadow-card-hover motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+                className={cardLink}
               >
                 <div className="flex items-start gap-3">
                   <SectionIcon section="practice" />
@@ -201,20 +202,6 @@ function GoalRing({ done, goal, total, correct }: { done: number; goal: number; 
   );
 }
 
-function SectionHeading({ title, more }: { title: string; more?: { to: string; label: string } }) {
-  return (
-    <div className="flex items-baseline justify-between gap-3">
-      <h2 className="text-xl font-semibold tracking-[-0.01em]">{title}</h2>
-      {more && (
-        <Link to={more.to} className="inline-flex items-center gap-0.5 text-sm font-medium text-ink-muted hover:text-ink">
-          {more.label}
-          <ChevronRightIcon className="h-4 w-4" />
-        </Link>
-      )}
-    </div>
-  );
-}
-
 function ListSection({ title, more, children }: { title: string; more?: { to: string; label: string }; children: ReactNode }) {
   return (
     <section className="min-w-0 space-y-3">
@@ -236,14 +223,6 @@ function Row({ to, section, title, meta, end }: { to: string; section: Section; 
       </div>
       {end}
     </Link>
-  );
-}
-
-function Pill({ children }: { children: ReactNode }) {
-  return (
-    <span className="inline-flex h-[22px] items-center rounded-full border border-line bg-surface-sunken px-2 text-xs font-medium text-ink-muted">
-      {children}
-    </span>
   );
 }
 
