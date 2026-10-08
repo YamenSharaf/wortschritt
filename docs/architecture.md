@@ -140,6 +140,11 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   session cookie, so every `requireAuth` / `requireAdmin` route works for both.
   `requireSession` (cookie only) guards token management and the password
   change. `/api/docs` (UI and spec) is behind `requireAuth`.
+- Model quirks (`assistant/client.ts`): when a provider answers 400 naming
+  `temperature` (e.g. recent Claude models, where it's deprecated) or
+  `max_tokens` (OpenAI reasoning models want `max_completion_tokens`), the
+  request is retried with that parameter dropped / renamed, and the fix is
+  remembered per endpoint + model until restart. Other 400s aren't retried.
 - MCP (`routes/mcp.ts`, `mcp/server.ts`): `POST /mcp`, Streamable HTTP in
   stateless JSON mode. Accepts an OAuth access token or an API token, never
   the cookie; a 401 carries `WWW-Authenticate: Bearer resource_metadata=…`,

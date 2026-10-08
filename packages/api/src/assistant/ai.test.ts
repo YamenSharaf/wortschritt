@@ -431,3 +431,51 @@ test("the env seed runs once: removed settings don't come back on restart", asyn
   const view = (await admin("GET", "/api/assistant/settings")).json() as View;
   assert.equal(view.providers.length, 0);
 });
+
+test("a model that rejects a parameter: adjusted, retried once and remembered", async () => {
+  const { collectCompletion, resetQuirksForTests } = await import("./client");
+  resetQuirksForTests();
+  const cfg = { entryId: 1, provider: "Omniroute", baseUrl: "https://ai.example.com/v1", model: "claude-new", apiKey: "k" };
+  const msgs = [{ role: "user", content: "x" }];
+  const body = (c: Call) => c.body as unknown as Record<string, unknown>;
+  // Verbatim from Omniroute → Anthropic for a model without temperature.
+  const noTemperature = JSON.stringify({
+    error: { message: "[400]: `temperature` is deprecated for this model.", type: "invalid_request_error", code: "bad_request" },
+  });
+  provider = (c) => ("temperature" in body(c) ? new Response(noTemperature, { status: 400 }) : sse(["O", "K"]));
+  calls.length = 0;
+  assert.equal(await collectCompletion([cfg], msgs, { temperature: 0, maxTokens: 16 }), "OK");
+  assert.equal(calls.length, 2);
+  assert.equal("temperature" in body(calls[1]!), false);
+  assert.equal(body(calls[1]!).max_tokens, 16);
+
+  // Remembered: right the first time from now on; other models unaffected.
+  calls.length = 0;
+  await collectCompletion([cfg], msgs, { temperature: 0.8, maxTokens: 100 });
+  assert.equal(calls.length, 1);
+  calls.length = 0;
+  provider = () => sse(["O", "K"]);
+  await collectCompletion([{ ...cfg, model: "other" }], msgs, { temperature: 0.3, maxTokens: 50 });
+  assert.equal(body(calls[0]!).temperature, 0.3);
+
+  // OpenAI-style: max_tokens → max_completion_tokens (→ no limit if that's refused too).
+  const openai = { ...cfg, model: "o-reasoner" };
+  provider = (c) =>
+    "max_tokens" in body(c)
+      ? new Response(
+          JSON.stringify({ error: { message: "Unsupported parameter: 'max_tokens' is not supported with this model. Use 'max_completion_tokens' instead." } }),
+          { status: 400 },
+        )
+      : sse(["O", "K"]);
+  calls.length = 0;
+  assert.equal(await collectCompletion([openai], msgs, { temperature: 0, maxTokens: 16 }), "OK");
+  assert.equal(body(calls.at(-1)!).max_completion_tokens, 16);
+  assert.equal("max_tokens" in body(calls.at(-1)!), false);
+
+  // Any other 400 is a real error: no retry.
+  provider = () => new Response(JSON.stringify({ error: { message: "model not found" } }), { status: 400 });
+  calls.length = 0;
+  await assert.rejects(collectCompletion([{ ...cfg, model: "nope" }], msgs, { temperature: 0, maxTokens: 16 }), /answered 400/);
+  assert.equal(calls.length, 1);
+  provider = () => sse(["O", "K"]);
+});
