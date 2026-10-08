@@ -3,7 +3,7 @@
  * out of the always-sent instructions so it only costs context when an
  * agent asks for it. Keep it in step with the app when features change.
  */
-export const APP_GUIDE = `# mit-dem-baby — how the app works
+export const APP_GUIDE = `# Wortschritt — how the app works
 
 A small self-hosted app for learning German, used by a few people (one admin). You act as one signed-in user: what you change is what they see in the app. Everything the learner reads is German at their level (whoami / get_progress); explanations to them are in English.
 

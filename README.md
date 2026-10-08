@@ -228,7 +228,7 @@ database refuses to start rather than misread it.
 ## API surface
 
 The full, typed spec is at `/api/docs` (OpenAPI UI and `/api/docs/json`; needs
-a sign-in or a token). Everything except `/api/config`, `/api/health` and the
+a sign-in or a token). Everything except `/api/health`, `/api/version` and the
 login/registration routes requires authentication.
 
 ### Using the API from scripts
@@ -291,7 +291,7 @@ Auth        POST /api/auth/login | /api/auth/logout | /api/auth/password
 Admin       GET  /api/admin/users        PATCH|DELETE /api/admin/users/:id
             POST /api/admin/users/:id/password
             GET|PUT /api/admin/registration   GET|PUT /api/admin/timezone
-Public      GET  /api/config  /api/health  /api/docs
+Public      GET  /api/health  /api/version
 MCP         POST /mcp            (OAuth or API token; see above)
 OAuth       GET  /.well-known/oauth-protected-resource[/mcp]  /.well-known/oauth-authorization-server
             POST /oauth/register  /oauth/token  /oauth/revoke   (page: /oauth/authorize)

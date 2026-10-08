@@ -1,7 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { and, eq, lt, lte, or, sql } from "drizzle-orm";
 import type { FastifyRequest } from "fastify";
-import type { OAuthGrantView, OAuthRequestView } from "@mdb/shared";
+import { APP_NAME, type OAuthGrantView, type OAuthRequestView } from "@mdb/shared";
 import { guardedFetch } from "../assistant/egress";
 import { db, schema } from "../db/client";
 import { env } from "../env";
@@ -66,7 +66,7 @@ export function protectedResourceMetadata(origin: string) {
     authorization_servers: [origin],
     scopes_supported: [SCOPE],
     bearer_methods_supported: ["header"],
-    resource_name: env.APP_NAME,
+    resource_name: APP_NAME,
   };
 }
 
@@ -77,7 +77,7 @@ export function apiProtectedResourceMetadata(origin: string) {
     authorization_servers: [origin],
     scopes_supported: [APP_SCOPE],
     bearer_methods_supported: ["header"],
-    resource_name: env.APP_NAME,
+    resource_name: APP_NAME,
   };
 }
 

@@ -135,7 +135,7 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   (`auth/password.ts`) and creates a server-side session; the cookie holds a
   random token, the database only its SHA-256. `requireAuth` (`auth/session.ts`)
   401s without a valid session and sets `req.user`. All routes except
-  `/api/config`, `/api/health`, `/api/auth/*` require it. The first boot after
+  `/api/health`, `/api/version`, `/api/auth/*` require it. The first boot after
   the `users` table exists creates the admin from `ADMIN_USERNAME` /
   `APP_PASSWORD` (`auth/users.ts`).
 - Users: learner tables carry `user_id` (FK to `users`, `ON DELETE CASCADE`);
@@ -301,7 +301,6 @@ go to the server log. Never call `fetch` on a user-supplied URL directly.
 | `ADMIN_USERNAME` | username of that admin account | admin |
 | `SESSION_SECRET` | cookie signing key (required, ≥8) | — |
 | `PORT` / `DATABASE_PATH` / `CONTENT_DIR` | runtime paths | 3000 / ./data/app.db / ./content |
-| `APP_NAME` / `APP_EMOJI` | name in the header/title + optional emoji after it (the icon is `brand/`) | Wortschritt / none |
 | `ENCRYPTION_KEY` | encrypts users' saved AI keys (≥32 chars, e.g. `openssl rand -base64 32`; keep a copy — if it changes, saved keys must be re-entered) | unset → AI keys can't be saved |
 | `ASSISTANT_BASE_URL` / `ASSISTANT_API_KEY` / `ASSISTANT_MODEL` | legacy single-user AI config; copied once into the admin's AI settings, then unused | OpenAI defaults |
 
@@ -333,7 +332,7 @@ To change the schema:
 Agreed design, built in phases (0 = the migration runner above; 1 = accounts,
 sessions and rate limiting; 2 = per-user data, Users screen and registration;
 3 = per-user AI settings — see Data flow → Auth / Users and The AI tutor).
-Branding deliberately stays env vars.
+The name and icon are fixed (`APP_NAME` in `@mdb/shared`, `brand/`).
 
 | Topic | Decision |
 | --- | --- |
@@ -344,7 +343,7 @@ Branding deliberately stays env vars.
 | Content | Exercises and cheat sheets stay a shared library. Imports record their owner; only the owner or admin may overwrite or delete one, and only admin may shadow a git content id |
 | Per user | Vocab, groups, flashcard stats, notes, attempts, runs, in-progress position, sheet views, settings |
 | AI | Per-user endpoint + key. `https://` only, connections to private/loopback/link-local IPs refused (checked on the resolved address), generic errors to the client, capped timeouts and sizes. Keys encrypted at rest with `ENCRYPTION_KEY`, never returned to the browser. The current `ASSISTANT_*` env becomes the admin's settings |
-| Instance (admin) | Registration switch, time zone, read-aloud providers (Azure key, Edge on/off); branding stays env vars |
+| Instance (admin) | Registration switch, time zone, read-aloud providers (Azure key, Edge on/off) |
 
 Phases: 1 users + auth + rate limiting · 2 per-user data, Users screen,
 registration · 3 per-user AI settings and instance settings.

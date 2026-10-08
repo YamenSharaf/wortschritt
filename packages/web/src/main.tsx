@@ -11,7 +11,6 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { App } from "./App";
 import "./index.css";
 import { AuthProvider } from "./lib/auth";
-import { ConfigProvider } from "./lib/config";
 import { ThemeProvider } from "./lib/theme";
 import { Cheatsheets } from "./pages/Cheatsheets";
 import { CheatsheetView } from "./pages/CheatsheetView";
@@ -63,11 +62,9 @@ const router = createBrowserRouter([
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
-      <ConfigProvider>
-        <AuthProvider>
-          <RouterProvider router={router} />
-        </AuthProvider>
-      </ConfigProvider>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
     </ThemeProvider>
   </StrictMode>,
 );

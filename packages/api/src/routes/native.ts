@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
-import { apiVersion } from "@mdb/shared";
+import { APP_NAME, apiVersion } from "@mdb/shared";
 import { env } from "../env";
 
 /**
@@ -40,6 +40,6 @@ export async function nativeRoutes(app: FastifyInstance) {
   app.withTypeProvider<ZodTypeProvider>().get(
     "/api/version",
     { schema: { tags: ["config"], response: { 200: apiVersion } } },
-    async () => ({ api: API_VERSION, minClient: MIN_CLIENT, appName: env.APP_NAME }),
+    async () => ({ api: API_VERSION, minClient: MIN_CLIENT, appName: APP_NAME }),
   );
 }

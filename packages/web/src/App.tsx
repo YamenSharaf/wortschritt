@@ -3,7 +3,7 @@ import { Navigate, NavLink, Outlet, useMatch } from "react-router-dom";
 import { ThemePicker } from "./components/ThemePicker";
 import { api } from "./lib/api";
 import { useAuth } from "./lib/auth";
-import { useConfig } from "./lib/config";
+import { AppTitle } from "./components/AppTitle";
 import { useTheme } from "./lib/theme";
 import { setServerTts } from "./lib/tts";
 import { VocabProvider } from "./lib/vocab";
@@ -90,7 +90,6 @@ function ThemeToggle() {
 export function App() {
   const { authenticated, loading, logout } = useAuth();
   const { setTheme, hasStored } = useTheme();
-  const { appName, appEmoji } = useConfig();
   // The story reader takes the whole screen (no header or tab bar).
   const storyMatch = useMatch("/stories/:id");
   const immersive = Boolean(storyMatch && !["new", "generate"].includes(storyMatch.params.id ?? ""));
@@ -148,13 +147,9 @@ export function App() {
         <div className="mx-auto flex max-w-4xl items-center gap-2 px-4 py-2.5">
           <NavLink
             to="/"
-            className="flex min-w-0 shrink items-center gap-2 text-base font-bold"
+            className="min-w-0 shrink text-base font-bold"
           >
-            <img src="/favicon.svg" alt="" className="h-6 w-6 shrink-0" />
-            <span className="truncate">
-              {appName}
-              {appEmoji && ` ${appEmoji}`}
-            </span>
+            <AppTitle />
           </NavLink>
           <nav className="ml-3 hidden flex-1 gap-1 text-sm md:flex">
             {navItems.map(({ to, label, end }) => (
