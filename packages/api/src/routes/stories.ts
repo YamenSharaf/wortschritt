@@ -32,6 +32,7 @@ import {
   translateStoryParagraphs,
 } from "../services/storyTranslations";
 import { clientIp } from "../auth/loginGuard";
+import { storyEpub } from "../services/epub";
 
 const flag = z
   .enum(["true", "false"])
@@ -233,6 +234,21 @@ export async function storyRoutes(app: FastifyInstance) {
     async (req, reply) => {
       const res = saveStoryTranslations(req.user!.id, req.params.id, req.body.paragraphs);
       return res.ok ? res.view : reply.code(res.status).send({ error: res.error });
+    },
+  );
+
+  // Download as an EPUB (German text and glossary; no translations or questions).
+  r.get(
+    "/api/stories/:id/epub",
+    { preHandler: requireAuth, schema: { tags: ["stories"], params } },
+    async (req, reply) => {
+      const file = storyEpub(req.user!.id, req.params.id);
+      if (!file) return reply.code(404).send({ error: "no such story" });
+      reply
+        .header("content-type", "application/epub+zip")
+        .header("content-disposition", `attachment; filename="${file.filename}"`)
+        .header("cache-control", "no-store")
+        .send(Buffer.from(file.data));
     },
   );
 }

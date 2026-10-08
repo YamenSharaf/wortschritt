@@ -72,6 +72,15 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   position. Writing is for agents only (MCP `get_series` returns the
   continuity bundle; `get_authoring_guide` kind "series" explains the
   workflow); the web UI reads.
+- EPUB export (`services/epub.ts`): `GET /api/stories/:id/epub` and
+  `/api/series/:id/epub` (written chapters only) build an EPUB 3 (+ EPUB 2
+  NCX) in memory with fflate: title page, nav, one XHTML file per chapter
+  marked `xml:lang="de"`, and the glossary as a `<dl>` after each chapter —
+  no translations or questions. Markdown goes through markdown-to-jsx's
+  `compiler` + React's `renderToStaticMarkup` (well-formed XHTML; images
+  and heading ids dropped). The book id is derived from the learner and
+  item, so re-exports replace the book on a device. Output was checked with
+  W3C EPUBCheck 5.1 (0 errors/warnings); tests check the container rules.
 - Story translations (`services/storyTranslations.ts`): English lines per
   paragraph, one per sentence as `splitSentences` (`@mdb/shared` reading.ts,
   shared with the reader) cuts it, or one line for the whole paragraph when
