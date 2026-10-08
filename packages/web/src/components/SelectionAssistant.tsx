@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { api, askAssistant } from "../lib/api";
 import { TutorMarkdown } from "./TutorMarkdown";
+import { CrossIcon, SparklesIcon } from "./icons";
+import { btn } from "./ui";
 
 type Anchor = { text: string; x: number; y: number };
 
@@ -96,35 +98,36 @@ export function SelectionAssistant() {
             top: Math.max(8, anchor.y - 40),
             transform: "translateX(-50%)",
           }}
-          className="z-50 rounded-full bg-accent px-3 py-1.5 text-xs font-medium text-accent-foreground shadow-lg"
+          className="ws-dock z-50 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-ink"
         >
-          ✨ Explain
+          <SparklesIcon className="h-3.5 w-3.5 text-brand-ink" />
+          Explain
         </button>
       )}
 
       {open && (
         <div
           ref={panelRef}
-          className="fixed bottom-20 right-4 z-50 flex max-h-[70vh] w-96 max-w-[calc(100vw-2rem)] flex-col rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900 md:bottom-4"
+          className="fixed bottom-20 right-4 z-50 flex max-h-[70vh] w-96 max-w-[calc(100vw-2rem)] flex-col rounded-card border border-line bg-surface shadow-pop md:bottom-4"
         >
-          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2 dark:border-slate-800">
-            <span className="text-sm font-semibold">Tutor ✨</span>
+          <div className="flex items-center justify-between border-b border-line px-4 py-2 ">
+            <span className="inline-flex items-center gap-1.5 text-sm font-semibold"><SparklesIcon className="h-4 w-4 text-brand-ink" />Tutor</span>
             <button
               type="button"
               onClick={close}
-              className="text-slate-400 hover:text-slate-900 dark:hover:text-white"
+              className="text-ink-subtle hover:text-ink"
               aria-label="Close"
             >
-              ✕
+              <CrossIcon className="h-4 w-4" />
             </button>
           </div>
 
           <div className="overflow-y-auto px-4 py-3">
-            <blockquote className="mb-3 border-l-2 border-slate-300 pl-3 text-sm italic text-slate-500 dark:border-slate-600">
+            <blockquote className="mb-3 border-l-2 border-line-control pl-3 text-sm italic text-ink-muted ">
               {selection.length > 240 ? selection.slice(0, 240) + "…" : selection}
             </blockquote>
             {error ? (
-              <p className="text-sm text-red-600">{error}</p>
+              <p className="text-sm text-danger">{error}</p>
             ) : (
               <TutorMarkdown text={answer} busy={busy} />
             )}
@@ -135,18 +138,18 @@ export function SelectionAssistant() {
               e.preventDefault();
               if (question.trim()) run(selection, question.trim());
             }}
-            className="flex gap-2 border-t border-slate-200 p-3 dark:border-slate-800"
+            className="flex gap-2 border-t border-line p-3 "
           >
             <input
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="Ask a follow-up…"
-              className="flex-1 rounded-lg border border-slate-300 bg-transparent px-3 py-1.5 text-sm outline-none focus:border-accent dark:border-slate-700"
+              className="flex-1 rounded-lg border border-line-control bg-transparent px-3 py-1.5 text-sm outline-none focus:border-focus "
             />
             <button
               type="submit"
               disabled={busy || !question.trim()}
-              className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground disabled:opacity-40"
+              className={`${btn.primary} ${btn.sm}`}
             >
               Ask
             </button>

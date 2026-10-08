@@ -24,7 +24,7 @@ export function Cover({
       alt=""
       loading="lazy"
       draggable={false}
-      className={`aspect-[2/3] rounded-sm bg-white object-cover shadow-sm ring-1 ring-black/10 ${className}`}
+      className={`aspect-[2/3] rounded-[6px] bg-white object-cover shadow-card ring-1 ring-[var(--border)] ${className}`}
     />
   );
 }

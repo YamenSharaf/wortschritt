@@ -20,7 +20,21 @@ import {
   type StoryView,
 } from "@mdb/shared";
 import { ExerciseItemView } from "../components/ExerciseItemView";
+import {
+  CheckIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  GlossaryIcon,
+  LanguagesIcon,
+  MaximizeIcon,
+  MinimizeIcon,
+  RetryIcon,
+  SpeakerIcon,
+  StopIcon,
+  TypeIcon,
+} from "../components/icons";
 import { TapToTranslate } from "../components/TapToTranslate";
+import { btn, card } from "../components/ui";
 import { api } from "../lib/api";
 import { speakSequence, stopSpeaking, ttsSupported } from "../lib/tts";
 import { useVocab } from "../lib/vocab";
@@ -494,8 +508,9 @@ function StoryReaderView() {
         {error ? (
           <div>
             <p className="mb-3">{error}</p>
-            <Link to="/stories" className="underline">
-              ← Stories
+            <Link to="/stories" className="inline-flex items-center gap-1 underline underline-offset-2">
+              <ChevronLeftIcon className="h-4 w-4" />
+              Stories
             </Link>
           </div>
         ) : (
@@ -509,7 +524,7 @@ function StoryReaderView() {
   const canSpeak = ttsSupported();
   const atEnd = paged && page >= pageCount;
   const iconBtn =
-    "grid h-9 min-w-9 place-items-center rounded-lg px-2 text-sm hover:bg-black/5 dark:hover:bg-white/10";
+    "grid h-9 min-w-9 place-items-center rounded-control px-2 text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/10";
   const typography: React.CSSProperties = {
     fontFamily: FONTS[reader.font].family,
     fontSize: `${reader.size}px`,
@@ -580,7 +595,10 @@ function StoryReaderView() {
       <div className="reader-rule flex flex-wrap items-center gap-3 border-t pt-5">
         {view.readAt ? (
           <>
-            <span className="text-green-600 dark:text-green-400">You've read this ✓</span>
+            <span className="inline-flex items-center gap-1.5 font-medium text-success">
+              <CheckIcon className="h-4 w-4" />
+              You've read this
+            </span>
             <button type="button" onClick={() => void markRead(false)} className="reader-muted underline">
               Mark as unread
             </button>
@@ -589,25 +607,28 @@ function StoryReaderView() {
           <button
             type="button"
             onClick={() => void markRead(true)}
-            className={book?.next ? "reader-muted underline" : "rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground"}
+            className={book?.next ? "reader-muted underline underline-offset-2" : btn.primary}
           >
+            {!book?.next && <CheckIcon className="h-4 w-4" />}
             Finished reading
           </button>
         )}
         {book && (
           <span className="ml-auto flex items-center gap-3">
             {book.prev && (
-              <Link to={`/stories/${book.prev}`} className="reader-muted underline">
-                ← Previous
+              <Link to={`/stories/${book.prev}`} className="reader-muted inline-flex items-center gap-1 underline-offset-2 hover:underline">
+                <ChevronLeftIcon className="h-4 w-4" />
+                Previous
               </Link>
             )}
             {book.next ? (
               <button
                 type="button"
                 onClick={() => void nextChapter()}
-                className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground"
+                className={btn.primary}
               >
-                Next chapter →
+                Next chapter
+                <ChevronRightIcon className="h-4 w-4" />
               </button>
             ) : (
               <Link to={`/series/${book.id}`} className="reader-muted underline">
@@ -635,22 +656,19 @@ function StoryReaderView() {
         <div className="mx-auto flex h-12 max-w-4xl items-center gap-1 px-2">
           <Link
             to={book ? `/series/${book.id}` : "/stories"}
-            className="reader-muted mr-auto flex min-w-0 items-center gap-1 rounded-lg px-2 py-1.5 text-sm hover:bg-black/5 dark:hover:bg-white/10"
+            className="reader-muted mr-auto flex min-w-0 items-center gap-1 rounded-control px-2 py-1.5 text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/10"
           >
-            <span aria-hidden>←</span>
+            <ChevronLeftIcon className="h-4 w-4 shrink-0" />
             <span className="truncate">{book ? book.title : "Stories"}</span>
           </Link>
           {canSpeak &&
             (speaking === null ? (
               <button type="button" onClick={playFromView} className={iconBtn} title="Read aloud from here" aria-label="Read aloud">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                  <path d="M11 5 6 9H3v6h3l5 4V5Z" strokeLinejoin="round" />
-                  <path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8 8 0 0 1 0 12" strokeLinecap="round" />
-                </svg>
+                <SpeakerIcon className="h-[18px] w-[18px]" />
               </button>
             ) : (
               <button type="button" onClick={stop} className={iconBtn} aria-label="Stop reading aloud">
-                ■
+                <StopIcon className="h-[18px] w-[18px]" />
               </button>
             ))}
           {(aiEnabled || hasAnyLines) && (
@@ -665,7 +683,10 @@ function StoryReaderView() {
               className={`${iconBtn} font-medium ${translationsOn ? "bg-black/5 dark:bg-white/10" : ""}`}
               title="English line by line: off → peek (tap to reveal) → always"
             >
-              EN{reader.translations === "peek" ? "·peek" : reader.translations === "always" ? "·on" : ""}
+              <span className="inline-flex items-center gap-1">
+                <LanguagesIcon className="h-[18px] w-[18px]" />
+                <span className="text-xs">{reader.translations === "peek" ? "Peek" : reader.translations === "always" ? "On" : ""}</span>
+              </span>
             </button>
           )}
           {story.glossary.length > 0 && (
@@ -676,21 +697,18 @@ function StoryReaderView() {
               aria-label="Glossary"
               title="Glossary"
             >
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                <path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5Z" strokeLinejoin="round" />
-                <path d="M8 7h7M8 11h5" strokeLinecap="round" />
-              </svg>
+              <GlossaryIcon className="h-[18px] w-[18px]" />
             </button>
           )}
           <button
             type="button"
             onClick={() => setSheet((s) => (s === "settings" ? null : "settings"))}
-            className={`${iconBtn} font-serif text-base ${sheet === "settings" ? "bg-black/5 dark:bg-white/10" : ""}`}
+            className={`${iconBtn} ${sheet === "settings" ? "bg-black/5 dark:bg-white/10" : ""}`}
             aria-expanded={sheet === "settings"}
             aria-label="Text settings"
             title="Text settings"
           >
-            Aa
+            <TypeIcon className="h-[18px] w-[18px]" />
           </button>
           {canFullscreen && (
             <button
@@ -700,13 +718,7 @@ function StoryReaderView() {
               aria-label={fullscreen ? "Exit full screen" : "Full screen"}
               title={fullscreen ? "Exit full screen" : "Full screen"}
             >
-              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                {fullscreen ? (
-                  <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" strokeLinecap="round" strokeLinejoin="round" />
-                ) : (
-                  <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" strokeLinecap="round" strokeLinejoin="round" />
-                )}
-              </svg>
+              {fullscreen ? <MinimizeIcon className="h-[17px] w-[17px]" /> : <MaximizeIcon className="h-[17px] w-[17px]" />}
             </button>
           )}
         </div>
@@ -734,7 +746,7 @@ function StoryReaderView() {
           </div>
         )}
         {translationsOn && translateError && (
-          <p className="mx-auto mb-2 max-w-md rounded-lg bg-amber-50 p-2 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+          <p className="mx-auto mb-2 max-w-md rounded-control bg-warning-soft px-3 py-2 text-sm text-warning">
             {translateError}{" "}
             <button type="button" className="underline" onClick={() => setTranslateError(null)}>
               Try again
@@ -815,7 +827,7 @@ function StoryReaderView() {
         <div className="reader-muted pointer-events-none absolute inset-x-0 bottom-0 flex h-10 items-center justify-center gap-3 font-sans text-xs" lang="en">
           <span className="tabular-nums">{atEnd ? "End" : `${page + 1} / ${pageCount}`}</span>
           <span className="h-0.5 w-24 overflow-hidden rounded-full" style={{ background: "rgb(var(--r-rule))" }}>
-            <span className="block h-full bg-accent" style={{ width: `${Math.round((Math.min(page + 1, pageCount) / pageCount) * 100)}%` }} />
+            <span className="block h-full bg-brand" style={{ width: `${Math.round((Math.min(page + 1, pageCount) / pageCount) * 100)}%` }} />
           </span>
         </div>
       ) : null}
@@ -824,10 +836,11 @@ function StoryReaderView() {
         <button
           type="button"
           onClick={stop}
-          className="absolute bottom-12 right-4 z-30 rounded-full bg-accent px-4 py-2 font-sans text-sm font-medium text-accent-foreground shadow-lg"
+          className="ws-dock absolute bottom-12 right-4 z-30 inline-flex items-center gap-2 px-4 py-2 font-sans text-sm font-medium text-ink"
           lang="en"
         >
-          ■ Stop reading
+          <StopIcon className="h-4 w-4" />
+          Stop reading
         </button>
       )}
     </div>
@@ -842,8 +855,8 @@ function firstOnPage(ends: number[], p: number): number {
 
 function Glossary({ entries }: { entries: Story["glossary"] }) {
   return (
-    <div className="reader-rule rounded-xl border px-4 py-3 font-sans text-sm" style={{ background: "rgb(var(--r-bg))" }}>
-      <p className="mb-2 font-medium" lang="en">
+    <div className="reader-rule rounded-card border px-4 py-3 font-sans text-sm shadow-pop" style={{ background: "rgb(var(--r-bg))" }}>
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] opacity-70" lang="en">
         Glossary
       </p>
       <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
@@ -870,15 +883,14 @@ function Segmented<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="inline-flex rounded-lg border border-slate-300 p-0.5 dark:border-slate-700">
+    <div className="ws-tabs ws-tabs--sm">
       {options.map((o) => (
         <button
           key={o.id}
           type="button"
           onClick={() => onChange(o.id)}
-          className={`rounded-md px-2.5 py-1 text-sm ${
-            value === o.id ? "bg-accent text-accent-foreground" : "text-slate-600 dark:text-slate-300"
-          }`}
+          aria-pressed={value === o.id}
+          className="ws-tab"
         >
           {o.label}
         </button>
@@ -899,9 +911,11 @@ function ReaderPanel({
   canTranslate: boolean;
 }) {
   const row = "flex flex-wrap items-center justify-between gap-2";
-  const label = "text-sm text-slate-500";
+  const label = "text-sm text-ink-muted";
+  const stepBtn =
+    "grid h-8 w-8 place-items-center rounded-control border border-line-control bg-surface text-ink transition-colors hover:bg-surface-sunken";
   return (
-    <div className="mb-3 space-y-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+    <div className="mb-3 space-y-3.5 rounded-card border border-line bg-surface-raised p-4 text-ink shadow-pop">
       <div className={row}>
         <span className={label}>Layout</span>
         <Segmented
@@ -924,11 +938,11 @@ function ReaderPanel({
       <div className={row}>
         <span className={label}>Size</span>
         <div className="flex items-center gap-2">
-          <button type="button" className="h-8 w-8 rounded-lg border border-slate-300 text-sm dark:border-slate-700" onClick={() => onChange({ size: Math.max(14, value.size - 1) })} aria-label="Smaller text">
+          <button type="button" className={`${stepBtn} text-sm`} onClick={() => onChange({ size: Math.max(14, value.size - 1) })} aria-label="Smaller text">
             A−
           </button>
-          <span className="w-10 text-center text-sm tabular-nums">{value.size}px</span>
-          <button type="button" className="h-8 w-8 rounded-lg border border-slate-300 text-base dark:border-slate-700" onClick={() => onChange({ size: Math.min(30, value.size + 1) })} aria-label="Larger text">
+          <span className="w-12 text-center font-mono text-sm tabular-nums">{value.size}px</span>
+          <button type="button" className={`${stepBtn} text-base`} onClick={() => onChange({ size: Math.min(30, value.size + 1) })} aria-label="Larger text">
             A+
           </button>
         </div>
@@ -968,9 +982,9 @@ function ReaderPanel({
               title={t.label}
               aria-label={`${t.label} theme`}
               aria-pressed={value.theme === t.id}
-              className={`h-8 w-8 rounded-full border ${
-                value.theme === t.id ? "ring-2 ring-accent ring-offset-2 dark:ring-offset-slate-900" : ""
-              } border-slate-300 dark:border-slate-600`}
+              className={`h-8 w-8 rounded-full border border-line-control ${
+                value.theme === t.id ? "outline outline-2 outline-offset-2 outline-focus" : ""
+              }`}
               style={{ background: t.swatch }}
             />
           ))}
@@ -982,7 +996,7 @@ function ReaderPanel({
           type="checkbox"
           checked={value.highlightVocab}
           onChange={(e) => onChange({ highlightVocab: e.target.checked })}
-          className="h-4 w-4"
+          className="ws-switch-native h-4 w-4 accent-[var(--brand)]"
         />
       </label>
       {canSpeak && (
@@ -1118,8 +1132,8 @@ function StoryQuiz({
   return (
     <section className="mt-8">
       <div className="mb-3 flex items-baseline justify-between gap-2">
-        <h2 className="text-lg font-semibold">Fragen zum Text</h2>
-        <span className="text-sm text-slate-500">
+        <h2 className="text-xl font-semibold tracking-[-0.01em]">Fragen zum Text</h2>
+        <span className="font-mono text-sm tabular-nums text-ink-muted">
           {Object.keys(results).length}/{total}
         </span>
       </div>
@@ -1127,9 +1141,9 @@ function StoryQuiz({
         {story.questions.map((q, i) => (
           <div
             key={`${round}-${q.id}`}
-            className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
+            className={`${card} p-5 text-ink`}
           >
-            <p className="mb-2 text-xs font-medium text-slate-400">Frage {i + 1}</p>
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-subtle">Frage {i + 1}</p>
             <ExerciseItemView
               item={q}
               llmGrading={llmGrading}
@@ -1139,8 +1153,8 @@ function StoryQuiz({
         ))}
       </TapToTranslate>
       {done && (
-        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-          <span className="font-medium">
+        <div className={`${card} mt-4 flex flex-wrap items-center gap-3 p-4 text-ink`}>
+          <span className="font-semibold">
             {correct}/{total} richtig
           </span>
           <button
@@ -1149,8 +1163,9 @@ function StoryQuiz({
               setResults({});
               setRound((r) => r + 1);
             }}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-700"
+            className={`${btn.secondary} ${btn.sm}`}
           >
+            <RetryIcon className="h-4 w-4" />
             Try again
           </button>
         </div>

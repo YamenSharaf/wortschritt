@@ -85,7 +85,7 @@ export function CoverUpload({
           disabled={busy}
           title={error ?? "Upload a cover (SVG)"}
           aria-label="Upload a cover (SVG)"
-          className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 ${error ? "text-red-600" : "text-slate-400"}`}
+          className={`grid h-8 w-8 shrink-0 place-items-center rounded-chip hover:bg-surface-sunken ${error ? "text-danger" : "text-ink-subtle hover:text-ink"}`}
         >
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
             <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -100,16 +100,16 @@ export function CoverUpload({
     <div className="text-sm">
       {picker}
       <div className="flex flex-wrap gap-x-3 gap-y-1">
-        <button type="button" disabled={busy} onClick={() => input.current?.click()} className="text-slate-500 underline">
+        <button type="button" disabled={busy} onClick={() => input.current?.click()} className="text-ink-muted underline underline-offset-2 hover:text-ink">
           {busy ? "Saving…" : hasArt ? "Change cover" : "Upload cover"}
         </button>
         {hasArt && (
-          <button type="button" disabled={busy} onClick={() => void remove()} className="text-slate-500 underline">
+          <button type="button" disabled={busy} onClick={() => void remove()} className="text-ink-muted underline underline-offset-2 hover:text-ink">
             Remove
           </button>
         )}
       </div>
-      {error && <p className="mt-1 text-red-600">{error}</p>}
+      {error && <p className="mt-1 text-danger">{error}</p>}
     </div>
   );
 }

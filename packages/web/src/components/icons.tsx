@@ -1,11 +1,18 @@
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowUp,
+  BookA,
+  Maximize2,
+  Minimize2,
+  Square,
+  Type,
   BookOpen,
   Check,
   ChevronLeft,
   ChevronRight,
   CircleAlert,
+  Copy,
+  Download,
   FileText,
   Languages,
   Lightbulb,
@@ -21,6 +28,7 @@ import {
   Search,
   Settings,
   Sparkles,
+  Trash2,
   Volume2,
   X,
 } from "lucide-react";
@@ -60,3 +68,12 @@ export const LightbulbIcon = wrap(Lightbulb);
 export const LanguagesIcon = wrap(Languages);
 export const QuoteIcon = wrap(Quote);
 export const ArrowUpIcon = wrap(ArrowUp);
+export const PenLineIcon = wrap(PenLine);
+export const DownloadIcon = wrap(Download);
+export const TrashIcon = wrap(Trash2);
+export const GlossaryIcon = wrap(BookA);
+export const MaximizeIcon = wrap(Maximize2);
+export const MinimizeIcon = wrap(Minimize2);
+export const StopIcon = wrap(Square);
+export const TypeIcon = wrap(Type);
+export const CopyIcon = wrap(Copy);
