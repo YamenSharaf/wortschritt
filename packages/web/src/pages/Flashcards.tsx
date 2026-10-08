@@ -4,6 +4,8 @@ import type { VocabEntry } from "@mdb/shared";
 import { SpeakButton } from "../components/SpeakButton";
 import { formChips } from "../lib/forms";
 import { useVocab } from "../lib/vocab";
+import { CheckIcon, ChevronLeftIcon, CrossIcon, RetryIcon } from "../components/icons";
+import { btn, card } from "../components/ui";
 
 type Dir = "de" | "en";
 const DIR_KEY = "mdb-flashcard-dir";
@@ -110,8 +112,9 @@ export function Flashcards() {
   }, [phase, i, queue, flipped]);
 
   const back = (
-    <Link to="/vocab" className="text-sm text-slate-500 hover:underline">
-      ← Vocab
+    <Link to="/vocab" className="inline-flex items-center gap-1 text-sm font-medium text-ink-muted hover:text-ink">
+      <ChevronLeftIcon className="h-4 w-4" />
+      Vocab
     </Link>
   );
 
@@ -120,11 +123,11 @@ export function Flashcards() {
       <div className="space-y-4">
         {back}
         {entries.length > 0 && pool.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700">
+          <p className="rounded-card border border-dashed border-line-control p-6 text-center text-sm text-ink-muted">
             No words in “{groupName}” yet. Add some, then come back to study.
           </p>
         ) : (
-          <p className="text-slate-500">Loading…</p>
+          <p className="text-ink-muted">Loading…</p>
         )}
       </div>
     );
@@ -138,32 +141,40 @@ export function Flashcards() {
     return (
       <div className="mx-auto max-w-md space-y-5">
         {back}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center dark:border-slate-800 dark:bg-slate-900">
-          <div className="text-5xl font-bold">{pct}%</div>
-          <p className="mt-1 text-slate-500">
-            You knew <span className="font-semibold text-slate-700 dark:text-slate-200">{knownCount}</span> of {total} in “{groupName}”.
+        <div className={`${card} px-6 py-8 text-center`}>
+          <div
+            role="img"
+            aria-label={`${pct} percent known`}
+            className="mx-auto mb-4 grid h-24 w-24 place-items-center rounded-full"
+            style={{ background: `conic-gradient(from -90deg, var(--reward-1), var(--reward-2), var(--reward-3) ${pct}%, var(--surface-sunken) 0)` }}
+          >
+            <span className="grid h-[78px] w-[78px] place-items-center rounded-full bg-surface font-mono text-base font-medium tabular-nums">{pct}%</span>
+          </div>
+          <p className="text-ink-muted">
+            You knew <span className="font-semibold text-ink">{knownCount}</span> of {total} in “{groupName}”.
           </p>
           <div className="mt-5 flex flex-col gap-2">
             {missed.length > 0 && (
               <button
                 type="button"
                 onClick={() => start(missed)}
-                className="rounded-lg bg-accent px-4 py-2.5 font-medium text-accent-foreground"
+                className={btn.primary}
               >
-                ↻ Review the {missed.length} you missed
+                <RetryIcon className="h-4 w-4" />
+                Review the {missed.length} you missed
               </button>
             )}
             <button
               type="button"
               onClick={() => start(pool)}
-              className="rounded-lg border border-slate-300 px-4 py-2.5 font-medium hover:border-slate-500 dark:border-slate-700"
+              className={btn.secondary}
             >
               Study all {pool.length} again
             </button>
             <button
               type="button"
               onClick={() => navigate("/vocab")}
-              className="rounded-lg px-4 py-2 text-sm text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+              className={btn.ghost}
             >
               Done
             </button>
@@ -187,22 +198,22 @@ export function Flashcards() {
         <button
           type="button"
           onClick={toggleDir}
-          className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium hover:border-slate-500 dark:border-slate-700"
+          className={`${btn.secondary} ${btn.sm} font-mono`}
           title="Switch which side is shown first"
         >
           {dir === "de" ? "DE → EN" : "EN → DE"}
         </button>
       </div>
 
-      <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
+      <div className="mt-4 flex items-center justify-between text-xs font-medium text-ink-subtle">
         <span>{groupName}</span>
         <span>
           {i + 1} / {queue.length}
         </span>
       </div>
-      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-sunken">
         <div
-          className="h-full bg-accent transition-all"
+          className="h-full rounded-full bg-[linear-gradient(90deg,var(--reward-1),var(--reward-2),var(--reward-3))] transition-all"
           style={{ width: `${((i + (flipped ? 0.5 : 0)) / queue.length) * 100}%` }}
         />
       </div>
@@ -210,23 +221,23 @@ export function Flashcards() {
       <button
         type="button"
         onClick={() => setFlipped(true)}
-        className="mt-4 flex min-h-[16rem] w-full cursor-pointer flex-col rounded-2xl border border-slate-200 bg-white p-6 text-left dark:border-slate-800 dark:bg-slate-900"
+        className="mt-4 flex min-h-[17rem] w-full cursor-pointer flex-col rounded-panel border border-line bg-surface p-7 text-left shadow-card-hover"
       >
-        <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-subtle">
           {dir === "de" ? "German" : "English"}
         </div>
         <div className="mt-1 flex items-center gap-2">
-          <span className="font-content text-3xl font-semibold">{promptText}</span>
+          <span className="font-content text-[34px] font-semibold leading-10 tracking-[-0.02em]">{promptText}</span>
           {dir === "de" && <SpeakButton text={card.display} />}
         </div>
 
         {flipped ? (
-          <div className="mt-5 border-t border-slate-200 pt-4 font-content dark:border-slate-700">
-            <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+          <div className="mt-5 border-t border-line pt-4 font-content">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-subtle">
               {dir === "de" ? "English" : "German"}
             </div>
             <div className="mt-1 flex items-center gap-2">
-              <span className="text-xl text-slate-700 dark:text-slate-200">{answerText}</span>
+              <span className="text-xl text-ink">{answerText}</span>
               {dir === "en" && <SpeakButton text={card.display} />}
             </div>
             {formChips(card.forms).length > 0 && (
@@ -234,9 +245,9 @@ export function Flashcards() {
                 {formChips(card.forms).map(([label, val]) => (
                   <span
                     key={label}
-                    className="rounded-md bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800"
+                    className="rounded-full border border-line bg-surface-sunken px-2 py-0.5 text-xs"
                   >
-                    <span className="text-slate-400">{label}:</span>{" "}
+                    <span className="text-ink-subtle">{label}:</span>{" "}
                     <span className="font-medium">{val}</span>
                   </span>
                 ))}
@@ -245,19 +256,19 @@ export function Flashcards() {
             {card.examples.length > 0 && (
               <div className="mt-3 space-y-2">
                 {card.examples.slice(0, 2).map((ex, k) => (
-                  <div key={k} className="rounded-lg bg-slate-50 p-2 text-sm dark:bg-slate-800">
+                  <div key={k} className="rounded-control bg-surface-sunken p-2.5 text-sm">
                     <div className="flex items-start justify-between gap-1">
-                      <p className="text-slate-800 dark:text-slate-100">{ex.de}</p>
+                      <p className="text-ink">{ex.de}</p>
                       <SpeakButton text={ex.de} className="-mr-1 -mt-1" />
                     </div>
-                    <p className="text-slate-500">{ex.en}</p>
+                    <p className="text-ink-muted">{ex.en}</p>
                   </div>
                 ))}
               </div>
             )}
           </div>
         ) : (
-          <div className="mt-auto pt-6 text-sm text-slate-400">
+          <div className="mt-auto pt-6 text-sm text-ink-subtle">
             Tap to reveal · <span className="hidden sm:inline">Space</span>
           </div>
         )}
@@ -267,24 +278,26 @@ export function Flashcards() {
         <button
           type="button"
           onClick={() => grade(false)}
-          className="rounded-xl border border-red-200 bg-red-50 py-3 font-semibold text-red-700 hover:border-red-300 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
+          className={`${btn.secondary} h-12`}
         >
-          ✗ Don’t know
-          <span className="ml-1 hidden text-xs opacity-60 sm:inline">←</span>
+          <CrossIcon className="h-4 w-4 text-danger" />
+          Don’t know
+          <kbd className="ml-1 hidden rounded-chip border border-line bg-surface-sunken px-1.5 font-mono text-[11px] text-ink-subtle sm:inline">←</kbd>
         </button>
         <button
           type="button"
           onClick={() => grade(true)}
-          className="rounded-xl border border-green-200 bg-green-50 py-3 font-semibold text-green-700 hover:border-green-300 dark:border-green-900/60 dark:bg-green-950/40 dark:text-green-300"
+          className={`${btn.primary} h-12`}
         >
-          ✓ Know
-          <span className="ml-1 hidden text-xs opacity-60 sm:inline">→</span>
+          <CheckIcon className="h-4 w-4" />
+          Know
+          <kbd className="ml-1 hidden rounded-chip border border-line bg-surface-sunken px-1.5 font-mono text-[11px] text-ink-subtle sm:inline">→</kbd>
         </button>
       </div>
 
-      <div className="mt-3 text-center text-xs text-slate-400">
-        <span className="text-green-600">{knownSoFar} known</span> ·{" "}
-        <span className="text-red-500">{missedSoFar} missed</span>
+      <div className="mt-3 text-center text-xs text-ink-subtle">
+        <span className="font-medium text-success">{knownSoFar} known</span> ·{" "}
+        <span className="font-medium text-danger">{missedSoFar} missed</span>
       </div>
     </div>
   );

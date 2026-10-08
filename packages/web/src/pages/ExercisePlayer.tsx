@@ -9,6 +9,16 @@ import {
   type ExerciseSet,
 } from "@mdb/shared";
 import { ExerciseItemView } from "../components/ExerciseItemView";
+import {
+  CheckIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CrossIcon,
+  LanguagesIcon,
+  LightbulbIcon,
+  SparklesIcon,
+} from "../components/icons";
+import { btn, card } from "../components/ui";
 import { TapToTranslate } from "../components/TapToTranslate";
 import { TutorMarkdown } from "../components/TutorMarkdown";
 import { api, askAssistant, type ChatTurn } from "../lib/api";
@@ -294,12 +304,24 @@ function Runner({
 
   if (done) {
     return (
-      <div className="mx-auto max-w-md text-center">
-        <h1 className="mb-2 text-2xl font-bold">Done! 🎉</h1>
-        <p className="mb-1 text-slate-500">
-          {correctCount} / {answeredCount} correct
+      <div className={`${card} mx-auto max-w-md px-6 py-10 text-center`}>
+        <div
+          role="img"
+          aria-label={`${correctCount} of ${answeredCount} correct`}
+          className="mx-auto mb-5 grid h-24 w-24 place-items-center rounded-full"
+          style={{
+            background: `conic-gradient(from -90deg, var(--reward-1), var(--reward-2), var(--reward-3) ${answeredCount ? Math.round((correctCount / answeredCount) * 100) : 0}%, var(--surface-sunken) 0)`,
+          }}
+        >
+          <span className="grid h-[78px] w-[78px] place-items-center rounded-full bg-surface font-mono text-base font-medium tabular-nums">
+            {correctCount}/{answeredCount}
+          </span>
+        </div>
+        <h1 className="mb-1 text-[28px] font-semibold leading-[34px] tracking-[-0.02em]">Set finished</h1>
+        <p className="mb-1 text-ink-muted">
+          {correctCount} of {answeredCount} correct
         </p>
-        <p className="mb-6 text-xs text-slate-400">
+        <p className="mb-6 text-sm text-ink-subtle">
           {answeredCount === items.length
             ? "Whole set completed."
             : `${answeredCount} of ${items.length} questions answered.`}
@@ -311,16 +333,17 @@ function Runner({
                 type="button"
                 onClick={generateMore}
                 disabled={genBusy}
-                className="flex-1 rounded-lg border border-slate-300 px-4 py-2 font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+                className={`${btn.secondary} flex-1`}
               >
-                {genBusy ? "Generating…" : `✨ Generate ${genCount} more like these`}
+                {!genBusy && <SparklesIcon className="h-4 w-4" />}
+                {genBusy ? "Generating…" : `Generate ${genCount} more like these`}
               </button>
               <select
                 value={genCount}
                 onChange={(e) => setGenCount(Number(e.target.value))}
                 disabled={genBusy}
                 aria-label="How many exercises to generate"
-                className="rounded-lg border border-slate-300 bg-transparent px-2 py-2 font-medium tabular-nums outline-none focus:border-slate-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900"
+                className="rounded-control border border-line-control bg-surface-sunken px-2 text-sm font-medium tabular-nums text-ink outline-none focus:border-focus disabled:opacity-50"
               >
                 {generateCounts.map((n) => (
                   <option key={n} value={n}>
@@ -330,7 +353,7 @@ function Runner({
               </select>
             </div>
             {genError && (
-              <p className="mt-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+              <p className="mt-2 rounded-control bg-danger-soft px-3 py-2 text-sm text-danger">
                 {genError}
               </p>
             )}
@@ -338,9 +361,9 @@ function Runner({
         )}
         <Link
           to="/exercises"
-          className="inline-block rounded-lg bg-accent px-4 py-2 text-accent-foreground"
+          className={btn.primary}
         >
-          Back to exercises
+          Back to practice
         </Link>
       </div>
     );
@@ -351,16 +374,17 @@ function Runner({
 
   return (
     <div className="mx-auto max-w-xl">
-      <div className="mb-1 flex items-center justify-between gap-2 text-sm text-slate-500">
-        <Link to="/exercises" className="hover:underline">
-          ← {title}
+      <div className="mb-1 flex items-center justify-between gap-2 text-sm text-ink-muted">
+        <Link to="/exercises" className="inline-flex min-w-0 items-center gap-1 hover:text-ink">
+          <ChevronLeftIcon className="h-4 w-4 shrink-0" />
+          <span className="truncate font-medium">{title}</span>
         </Link>
         <button
           type="button"
           onClick={() => setNavOpen((o) => !o)}
           aria-expanded={navOpen}
           aria-label={navOpen ? "Hide question navigator" : "Show question navigator"}
-          className="flex shrink-0 items-center gap-2 rounded hover:text-slate-700 dark:hover:text-slate-300"
+          className="flex shrink-0 items-center gap-2 rounded-chip px-1 hover:text-ink"
         >
           <ScoreChips correct={correctCount} wrong={answeredCount - correctCount} />
           <span className="tabular-nums">
@@ -370,17 +394,17 @@ function Runner({
         </button>
       </div>
       {set.subtitle && (
-        <p className="mb-3 text-xs text-slate-400">{set.subtitle}</p>
+        <p className="mb-3 text-sm text-ink-subtle">{set.subtitle}</p>
       )}
       <button
         type="button"
         onClick={() => setNavOpen((o) => !o)}
         aria-hidden
         tabIndex={-1}
-        className="mb-3 block h-1.5 w-full overflow-hidden rounded bg-slate-200 dark:bg-slate-800"
+        className="mb-4 block h-2 w-full overflow-hidden rounded-full bg-surface-sunken"
       >
         <span
-          className="block h-full bg-accent transition-all"
+          className="block h-full rounded-full bg-[linear-gradient(90deg,var(--reward-1),var(--reward-2),var(--reward-3))] transition-all"
           style={{ width: `${(answeredCount / items.length) * 100}%` }}
         />
       </button>
@@ -397,17 +421,17 @@ function Runner({
 
       <div
         ref={cardRef}
-        className={`rounded-xl border border-slate-200 bg-white p-6 font-content dark:border-slate-800 dark:bg-slate-900 ${
+        className={`${card} p-6 font-content sm:p-7 ${
           answered ? (lastCorrect ? "animate-correct" : "animate-wrong") : ""
         }`}
       >
         {answeredEarlier && (
-          <p className="mb-3 rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+          <p className="mb-4 rounded-control bg-surface-sunken px-3 py-2 text-xs text-ink-muted">
             You answered this{" "}
             <span
-              className={priorResult ? "text-green-600" : "text-red-600"}
+              className={priorResult ? "font-medium text-success" : "font-medium text-danger"}
             >
-              {priorResult ? "correctly ✓" : "incorrectly ✗"}
+              {priorResult ? "correctly" : "incorrectly"}
             </span>{" "}
             this run — answer again to change it.
           </p>
@@ -437,26 +461,30 @@ function Runner({
           type="button"
           onClick={() => goTo(index - 1)}
           disabled={index === 0}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium hover:border-slate-500 disabled:opacity-40 dark:border-slate-700"
+          className={btn.secondary}
+          aria-label="Previous question"
         >
-          ← Prev
+          <ChevronLeftIcon className="h-4 w-4" />
+          Prev
         </button>
         {answered ? (
           <button
             type="button"
             onClick={next}
-            className="flex-1 rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground"
+            className={`${btn.primary} flex-1`}
           >
             {index + 1 >= items.length ? "Finish" : "Next"}
+            <ChevronRightIcon className="h-4 w-4" />
           </button>
         ) : (
           <button
             type="button"
             onClick={() => goTo(index + 1)}
             disabled={index + 1 >= items.length}
-            className="flex-1 rounded-lg border border-slate-300 px-4 py-2 font-medium hover:border-slate-500 disabled:opacity-40 dark:border-slate-700"
+            className={`${btn.ghost} flex-1`}
           >
-            Skip →
+            Skip
+            <ChevronRightIcon className="h-4 w-4" />
           </button>
         )}
       </div>
@@ -489,8 +517,8 @@ function ScoreChips({ correct, wrong }: { correct: number; wrong: number }) {
   if (correct + wrong === 0) return null;
   return (
     <span className="flex items-center gap-1.5 tabular-nums">
-      <span className="text-green-600">✓ {correct}</span>
-      <span className="text-red-500">✗ {wrong}</span>
+      <span className="inline-flex items-center gap-0.5 text-success"><CheckIcon className="h-3.5 w-3.5" />{correct}</span>
+      <span className="inline-flex items-center gap-0.5 text-danger"><CrossIcon className="h-3.5 w-3.5" />{wrong}</span>
     </span>
   );
 }
@@ -521,14 +549,14 @@ function QuestionNav({
         let cls: string;
         if (mine !== undefined) {
           cls = mine
-            ? "bg-green-500 text-white border-green-500"
-            : "bg-red-500 text-white border-red-500";
+            ? "border-transparent bg-success-soft text-success font-semibold"
+            : "border-transparent bg-danger-soft text-danger font-semibold";
         } else if (prev !== undefined) {
           cls = prev
-            ? "border-green-400 text-green-600 dark:text-green-400"
-            : "border-red-400 text-red-600 dark:text-red-400";
+            ? "border-dashed border-current text-success"
+            : "border-dashed border-current text-danger";
         } else {
-          cls = "border-slate-300 text-slate-500 dark:border-slate-700 dark:text-slate-400";
+          cls = "border-line bg-surface text-ink-muted";
         }
         const prevNote =
           prev !== undefined ? ` · last run: ${prev ? "correct" : "wrong"}` : "";
@@ -539,8 +567,8 @@ function QuestionNav({
             onClick={() => onJump(i)}
             title={`Question ${i + 1}${prevNote}`}
             aria-label={`Go to question ${i + 1}${prevNote}`}
-            className={`grid h-7 w-7 place-items-center rounded-md border text-xs tabular-nums ${cls} ${
-              current ? "ring-2 ring-accent ring-offset-1 ring-offset-white dark:ring-offset-slate-950" : ""
+            className={`grid h-8 w-8 place-items-center rounded-chip border text-xs tabular-nums ${cls} ${
+              current ? "outline outline-2 outline-offset-1 outline-focus" : ""
             }`}
           >
             {i + 1}
@@ -553,7 +581,7 @@ function QuestionNav({
 
 const msgOf = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const chipCls =
-  "rounded-full border border-slate-300 px-3 py-1 text-xs hover:border-slate-500 dark:border-slate-700";
+  "inline-flex h-8 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-xs font-medium text-ink-muted transition-colors hover:border-line-strong hover:text-ink";
 
 type OneShot = { kind: "hint" | "translate"; text: string; busy: boolean; error?: string };
 type Chat = { msgs: ChatTurn[]; input: string; busy: boolean; error?: string };
@@ -650,10 +678,12 @@ function TutorHelp({
     <div className="mt-3">
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => runShot("hint")} className={chipCls}>
-          💡 Hint
+          <LightbulbIcon className="h-3.5 w-3.5" />
+          Hint
         </button>
         <button type="button" onClick={() => runShot("translate")} className={chipCls}>
-          🌐 Translate
+          <LanguagesIcon className="h-3.5 w-3.5" />
+          Translate
         </button>
         {showWhyWrong && (
           <button type="button" onClick={startWhyWrong} className={chipCls}>
@@ -663,9 +693,9 @@ function TutorHelp({
       </div>
 
       {shot && (
-        <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900">
+        <div className="mt-2 rounded-card border border-line bg-surface-raised p-4 shadow-card">
           {shot.error ? (
-            <span className="text-sm text-red-600">{shot.error}</span>
+            <span className="text-sm text-danger">{shot.error}</span>
           ) : (
             <TutorMarkdown text={shot.text} busy={shot.busy} />
           )}
@@ -673,7 +703,7 @@ function TutorHelp({
       )}
 
       {chat && (
-        <div className="mt-2 flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900">
+        <div className="mt-2 flex flex-col gap-2 rounded-card border border-line bg-surface-raised p-4 shadow-card">
           {chat.msgs.map((m, i) =>
             m.role === "assistant" ? (
               <TutorMarkdown
@@ -684,13 +714,13 @@ function TutorHelp({
             ) : (
               <div
                 key={i}
-                className="max-w-[85%] self-end rounded-lg bg-slate-200 px-3 py-1.5 text-sm dark:bg-slate-700"
+                className="max-w-[85%] self-end rounded-control bg-brand-soft px-3 py-1.5 text-sm text-ink"
               >
                 {m.content}
               </div>
             ),
           )}
-          {chat.error && <p className="text-sm text-red-600">{chat.error}</p>}
+          {chat.error && <p className="text-sm text-danger">{chat.error}</p>}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -704,12 +734,12 @@ function TutorHelp({
                 setChat((s) => (s ? { ...s, input: e.target.value } : s))
               }
               placeholder="Ask a follow-up…"
-              className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-transparent px-3 py-1.5 text-sm outline-none focus:border-accent dark:border-slate-700"
+              className="input min-w-0 flex-1 py-1.5 text-sm"
             />
             <button
               type="submit"
               disabled={chat.busy || !chat.input.trim()}
-              className="shrink-0 rounded-lg bg-accent px-3 py-1.5 text-sm text-accent-foreground disabled:opacity-40"
+              className={`${btn.primary} ${btn.sm} shrink-0`}
             >
               Send
             </button>
