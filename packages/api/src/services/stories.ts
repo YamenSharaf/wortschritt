@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { and, asc, desc, eq, notInArray, sql } from "drizzle-orm";
 import { storyParagraphs, story as storySchema, type ExerciseItem, type Story, type StorySeriesInfo, type StorySummary, type StoryView } from "@mdb/shared";
 import { db, schema } from "../db/client";
+import { coverVersion } from "./covers";
 
 /**
  * Stories are private: every query is scoped to the learner. The JSON is
@@ -62,6 +63,7 @@ export function listStories(userId: number): StorySummary[] {
       tags: s.tags,
       words: wordCount(s.body),
       questions: s.questions.length,
+      cover: coverVersion(row.cover),
       progress: row.progress,
       readAt: row.readAt,
       createdAt: row.createdAt,

@@ -379,16 +379,18 @@ function StoryReaderView() {
   }, [view]);
 
   // Keyboard: arrows / space / page keys turn pages; Escape closes a sheet.
+  // Volume keys too, where the device passes them to the page (most phone
+  // browsers keep them for the volume; page-turner remotes send arrows).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
       if (t.closest("input,textarea,select,[contenteditable]")) return;
       if (e.key === "Escape") setSheet(null);
       if (!paged) return;
-      if (["ArrowRight", "PageDown", " "].includes(e.key)) {
+      if (["ArrowRight", "PageDown", " ", "AudioVolumeDown", "VolumeDown"].includes(e.key)) {
         e.preventDefault();
         turn(1);
-      } else if (["ArrowLeft", "PageUp"].includes(e.key)) {
+      } else if (["ArrowLeft", "PageUp", "AudioVolumeUp", "VolumeUp"].includes(e.key)) {
         e.preventDefault();
         turn(-1);
       }
@@ -400,6 +402,22 @@ function StoryReaderView() {
   // Swipes (touch/pen) turn pages; the click that ends a swipe is swallowed.
   const swipe = useRef<{ x: number; y: number } | null>(null);
   const swiped = useRef(false);
+
+  // A tap that isn't on a word: the outer quarters turn the page, the middle
+  // shows or hides the bars. (Words anywhere on the page stay tappable.)
+  const tapAt = useCallback(
+    (x: number) => {
+      const area = areaRef.current;
+      if (paged && area) {
+        const r = area.getBoundingClientRect();
+        const at = (x - r.left) / r.width;
+        if (at < 0.25 && pageRef.current > 0) return turn(-1);
+        if (at > 0.75 && pageRef.current < countRef.current) return turn(1);
+      }
+      setChrome((c) => !c);
+    },
+    [paged, turn],
+  );
 
   // The reader owns the screen while it's open.
   useEffect(() => {
@@ -496,7 +514,7 @@ function StoryReaderView() {
   };
 
   const text = (
-    <TapToTranslate onMiss={() => setChrome((c) => !c)}>
+    <TapToTranslate onMiss={(e) => tapAt(e.clientX)}>
       <div ref={articleRef} className="reader-text">
         <header className="mb-[1.2em]">
           {book && (
@@ -726,8 +744,14 @@ function StoryReaderView() {
         <div
           ref={areaRef}
           className="absolute inset-x-0 bottom-10 top-14 flex justify-center"
+          // Keep horizontal drags ours: otherwise the browser takes the gesture
+          // (and cancels the pointer) before a swipe can turn the page.
+          style={{ touchAction: "pan-y pinch-zoom" }}
           onPointerDown={(e) => {
             if (e.pointerType !== "mouse") swipe.current = { x: e.clientX, y: e.clientY };
+          }}
+          onPointerCancel={() => {
+            swipe.current = null;
           }}
           onPointerUp={(e) => {
             const s = swipe.current;
@@ -746,6 +770,12 @@ function StoryReaderView() {
               e.stopPropagation();
               e.preventDefault();
             }
+          }}
+          onClick={(e) => {
+            // Taps beside the text column (the text handles its own).
+            const t = e.target as HTMLElement;
+            if (articleRef.current?.contains(t) || t.closest("a,button,input,textarea,select,label,[data-no-tap]")) return;
+            tapAt(e.clientX);
           }}
         >
           <div className="h-full overflow-hidden" style={{ width: colWidth || "100%", visibility: atEnd ? "hidden" : undefined }}>
@@ -766,23 +796,6 @@ function StoryReaderView() {
                 {ending}
               </div>
             </div>
-          )}
-          {/* Page-turn strips at the edges (words in the middle stay tappable). */}
-          {page > 0 && (
-            <button
-              type="button"
-              aria-label="Previous page"
-              onClick={() => turn(-1)}
-              className="absolute inset-y-0 left-0 z-10 w-[15%] cursor-w-resize"
-            />
-          )}
-          {!atEnd && (
-            <button
-              type="button"
-              aria-label="Next page"
-              onClick={() => turn(1)}
-              className="absolute inset-y-0 right-0 z-10 w-[15%] cursor-e-resize"
-            />
           )}
         </div>
       ) : (

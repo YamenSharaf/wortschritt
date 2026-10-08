@@ -3,7 +3,9 @@ import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import {
   buildImportPrompt,
+  buildCoverGuide,
   buildSeriesGuide,
+  coverSvg,
   buildStoryPrompt,
   cheatsheet,
   createNoteBody,
@@ -25,6 +27,7 @@ import { getProgressSummary } from "../services/progress";
 import { wordDetails } from "../services/wiktionary";
 import { deleteStory, getStory, listStories, saveStory } from "../services/stories";
 import { buildStoryContext } from "../services/storyGen";
+import { coverFor, setCover } from "../services/covers";
 import { deleteSeries, getSeriesForWriting, listSeries, saveChapter, saveSeries } from "../services/series";
 import { getStoryTranslations, saveStoryTranslations } from "../services/storyTranslations";
 import {
@@ -78,7 +81,8 @@ function formatIssues(error: z.ZodError): string[] {
   return error.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`);
 }
 
-function guide(kind: "exercise" | "cheatsheet" | "story" | "series"): string {
+function guide(kind: "exercise" | "cheatsheet" | "story" | "series" | "cover"): string {
+  if (kind === "cover") return buildCoverGuide();
   if (kind === "series") {
     return `${buildSeriesGuide()}
 
@@ -135,8 +139,8 @@ export function createMcpServer(user: AuthUser): McpServer {
     {
       title: "Content format guide",
       description:
-        "The exact JSON format for exercise sets, cheat sheets, stories or series (books in chapters, with the workflow for writing them, also across sub-agents): a complete valid example, every item type, and the rules the app checks. Read it before creating or editing content.",
-      inputSchema: { kind: z.enum(["exercise", "cheatsheet", "story", "series"]) },
+        "The exact JSON format for exercise sets, cheat sheets, stories or series (books in chapters, with the workflow for writing them, also across sub-agents): a complete valid example, every item type, and the rules the app checks. Read it before creating or editing content. Kind \"cover\": how to draw cover art (SVG) for set_cover.",
+      inputSchema: { kind: z.enum(["exercise", "cheatsheet", "story", "series", "cover"]) },
       annotations: READ,
     },
     async ({ kind }) => ({ content: [{ type: "text", text: guide(kind) }] }),
@@ -519,6 +523,36 @@ export function createMcpServer(user: AuthUser): McpServer {
       const info = res.view.series!;
       return json({ saved: res.view.story.id, chapter, of: info.total, replaced: res.replaced });
     },
+  );
+
+  tool(
+    "get_cover",
+    {
+      title: "Get cover art",
+      description:
+        "The cover SVG of one of this user's stories, chapters (id \"<series id>-01\") or series, and whether it is drawn or generated from the title (generated = no art yet).",
+      inputSchema: { kind: z.enum(["story", "series"]), id: z.string().min(1) },
+      annotations: READ,
+    },
+    async ({ kind, id }) => {
+      const cover = coverFor(user.id, kind, id);
+      return cover ? json(cover) : fail(`No ${kind} "${id}". Use list_${kind === "story" ? "stories" : "series"}.`);
+    },
+  );
+
+  tool(
+    "set_cover",
+    {
+      title: "Set cover art",
+      description:
+        "Set (or with svg null, remove) the cover art of one of this user's stories, chapters (id \"<series id>-01\") or series: a small black-and-white SVG. Read get_authoring_guide kind \"cover\" first — the SVG is checked against its rules.",
+      inputSchema: { kind: z.enum(["story", "series"]), id: z.string().min(1), svg: coverSvg.nullable() },
+      annotations: WRITE,
+    },
+    async ({ kind, id, svg }) =>
+      setCover(user.id, kind, id, svg)
+        ? json({ saved: id, kind, cover: svg ? "drawn" : "generated" })
+        : fail(`No ${kind} "${id}". Use list_${kind === "story" ? "stories" : "series"}.`),
   );
 
   tool(

@@ -1,5 +1,21 @@
 import { z } from "zod";
+import { checkCoverSvg } from "./cover";
 import { cefrLevel, cheatsheet, exerciseItem, exerciseSet, series as seriesSchema, story } from "./exercises";
+
+// --- covers -------------------------------------------------------------------
+
+/** A cover SVG, checked (see `checkCoverSvg`). */
+export const coverSvg = z
+  .string()
+  .min(1)
+  .transform((s) => s.trim())
+  .superRefine((s, ctx) => {
+    for (const message of checkCoverSvg(s)) ctx.addIssue({ code: z.ZodIssueCode.custom, message });
+  });
+
+/** Set (svg) or remove (null) a cover. */
+export const setCoverBody = z.object({ svg: coverSvg.nullable() });
+
 
 /** Choices offered for "generate N more" (in increments of 5). */
 export const generateCounts = [5, 10, 15, 20] as const;
@@ -607,6 +623,8 @@ export const storySummary = z.object({
   tags: z.array(z.string()),
   words: z.number().int(),
   questions: z.number().int(),
+  /** Version of the cover art (changes with it), or null when there is none. */
+  cover: z.string().nullable().default(null),
   /** How far the learner has scrolled (0–1). */
   progress: z.number(),
   readAt: z.number().int().nullable(),
@@ -765,6 +783,8 @@ export const seriesChapter = z.object({
   readAt: z.number().int().nullable(),
   /** Continuity summary (for writers). */
   summary: z.string().nullable(),
+  /** Version of the cover art (changes with it), or null when there is none. */
+  cover: z.string().nullable().default(null),
 });
 export type SeriesChapter = z.infer<typeof seriesChapter>;
 
@@ -781,6 +801,8 @@ export const seriesSummary = z.object({
   progress: z.number(),
   /** Where "Continue reading" goes (null when nothing is written yet). */
   continueId: z.string().nullable(),
+  /** Version of the cover art (changes with it), or null when there is none. */
+  cover: z.string().nullable().default(null),
   updatedAt: z.number().int(),
 });
 export type SeriesSummary = z.infer<typeof seriesSummary>;
@@ -803,3 +825,4 @@ export const saveChapterBody = z.object({
   summary: z.string().min(1).max(1500),
   overwrite: z.boolean().default(false),
 });
+

@@ -18,7 +18,7 @@ export function TapToTranslate({
   /** Language of the content, e.g. "de". */
   lang?: string;
   /** A tap that hit no word (and nothing interactive), e.g. to show/hide bars. */
-  onMiss?: () => void;
+  onMiss?: (e: React.MouseEvent) => void;
 }) {
   const { canTap, openWord } = useVocab();
 
@@ -30,7 +30,7 @@ export function TapToTranslate({
     if (sel && !sel.isCollapsed && sel.toString().trim()) return;
     const hit = canTap ? wordAtPoint(e.clientX, e.clientY) : null;
     if (hit) openWord(hit.word, e.clientX, e.clientY, hit.context);
-    else onMiss?.();
+    else onMiss?.(e);
   }
 
   return (

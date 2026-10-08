@@ -5,6 +5,7 @@ import { createElement, Fragment, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { Story } from "@mdb/shared";
 import { env } from "../env";
+import { coverFor, coverPng } from "./covers";
 import { getSeriesView } from "./series";
 import { getStory } from "./stories";
 
@@ -19,7 +20,14 @@ import { getStory } from "./stories";
  * React's static renderer, whose output is well-formed XHTML.
  */
 
-type Chapter = { label: string | null; title: string; body: string; glossary: Story["glossary"] };
+type Chapter = {
+  label: string | null;
+  title: string;
+  body: string;
+  glossary: Story["glossary"];
+  /** The chapter's own cover art as PNG, shown at its start. */
+  image?: Uint8Array;
+};
 type Book = {
   /** Stable per learner and item, so re-exports update the same book on a device. */
   uid: string;
@@ -28,6 +36,8 @@ type Book = {
   description?: string;
   level: string;
   modified: number;
+  /** Cover image (PNG). */
+  cover?: Uint8Array;
   chapters: Chapter[];
 };
 
@@ -91,6 +101,10 @@ blockquote { margin: 0 0 0.8em 1em; font-style: italic; }
 .title-page { text-align: center; margin-top: 25%; }
 .title-page h1 { page-break-before: auto; break-before: auto; font-size: 1.8em; }
 .subtitle { font-style: italic; }
+.cover { margin: 0; padding: 0; text-align: center; }
+.cover img { max-width: 100%; max-height: 100%; }
+.chapter-image { text-align: center; margin: 0 0 1.2em; }
+.chapter-image img { max-width: 60%; }
 .meta { font-size: 0.85em; opacity: 0.75; margin-top: 2em; }
 .description { margin-top: 2em; text-align: left; }
 nav ol { list-style: none; padding: 0; }
@@ -122,6 +136,7 @@ ${book.chapters.map((c, i) => `<li><a href="${files[i]}">${esc(chapterTitle(c))}
 </nav>
 <nav epub:type="landmarks" hidden="hidden">
 <ol>
+${book.cover ? `<li><a epub:type="cover" href="cover.xhtml">Cover</a></li>` : ""}
 <li><a epub:type="titlepage" href="title.xhtml">Titel</a></li>
 <li><a epub:type="toc" href="nav.xhtml">Inhalt</a></li>
 <li><a epub:type="bodymatter" href="${files[0]}">${esc(chapterTitle(book.chapters[0]!))}</a></li>
@@ -129,11 +144,18 @@ ${book.chapters.map((c, i) => `<li><a href="${files[i]}">${esc(chapterTitle(c))}
 </nav>`,
   );
 
-  const chapters = book.chapters.map((c) =>
+  const images = book.chapters.map((c, i) => (c.image ? `images/chapter-${String(i + 1).padStart(2, "0")}.png` : null));
+  const coverPage = page(
+    book.title,
+    `<section class="cover" epub:type="cover"><img src="cover.png" alt="${esc(book.title)}"/></section>`,
+  );
+
+  const chapters = book.chapters.map((c, i) =>
     page(
       chapterTitle(c),
       `<section epub:type="chapter" role="doc-chapter">
 <h1>${c.label ? `<span class="label">${esc(c.label)}</span>` : ""}${esc(c.title)}</h1>
+${images[i] ? `<div class="chapter-image"><img src="${images[i]}" alt=""/></div>` : ""}
 ${markdownToXhtml(c.body)}
 ${
   c.glossary.length
@@ -178,15 +200,19 @@ ${book.chapters
 <dc:creator>${esc(env.APP_NAME)}</dc:creator>
 ${book.description ? `<dc:description>${esc(book.description)}</dc:description>` : ""}
 <meta property="dcterms:modified">${modified}</meta>
+${book.cover ? `<meta name="cover" content="cover-image"/>` : ""}
 </metadata>
 <manifest>
 <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
 <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
 <item id="css" href="style.css" media-type="text/css"/>
 <item id="title" href="title.xhtml" media-type="application/xhtml+xml"/>
+${book.cover ? `<item id="cover-image" href="cover.png" media-type="image/png" properties="cover-image"/>\n<item id="cover" href="cover.xhtml" media-type="application/xhtml+xml"/>` : ""}
+${images.map((f, i) => (f ? `<item id="img${i + 1}" href="${f}" media-type="image/png"/>` : "")).filter(Boolean).join("\n")}
 ${files.map((f, i) => `<item id="ch${i + 1}" href="${f}" media-type="application/xhtml+xml"/>`).join("\n")}
 </manifest>
 <spine toc="ncx">
+${book.cover ? `<itemref idref="cover" linear="yes"/>` : ""}
 <itemref idref="title"/>
 <itemref idref="nav"/>
 ${files.map((_, i) => `<itemref idref="ch${i + 1}"/>`).join("\n")}
@@ -213,13 +239,25 @@ ${files.map((_, i) => `<itemref idref="ch${i + 1}"/>`).join("\n")}
     "OEBPS/style.css": [strToU8(STYLE), { mtime }],
     "OEBPS/title.xhtml": [strToU8(titlePage), { mtime }],
   };
+  if (book.cover) {
+    // PNGs are already compressed.
+    zip["OEBPS/cover.png"] = [book.cover, { level: 0, mtime }];
+    zip["OEBPS/cover.xhtml"] = [strToU8(coverPage), { mtime }];
+  }
   chapters.forEach((xhtml, i) => {
     zip[`OEBPS/${files[i]}`] = [strToU8(xhtml), { mtime }];
+    if (images[i]) zip[`OEBPS/${images[i]}`] = [book.chapters[i]!.image!, { level: 0, mtime }];
   });
   return zipSync(zip, { level: 9 });
 }
 
 export type EpubFile = { filename: string; data: Uint8Array };
+
+/** The book's cover (drawn or generated) as a PNG, sized for e-readers. */
+function bookCover(userId: number, kind: "story" | "series", id: string): Uint8Array | undefined {
+  const art = coverFor(userId, kind, id);
+  return art ? coverPng(art.svg, 1200) : undefined;
+}
 
 /** One story as a book with a single chapter. */
 export function storyEpub(userId: number, id: string): EpubFile | null {
@@ -234,6 +272,7 @@ export function storyEpub(userId: number, id: string): EpubFile | null {
       subtitle: s.subtitle,
       level: s.level,
       modified: view.updatedAt,
+      cover: bookCover(userId, "story", s.id),
       chapters: [{ label: null, title: s.title, body: s.body, glossary: s.glossary }],
     }),
   };
@@ -249,7 +288,15 @@ export function seriesEpub(userId: number, id: string): EpubFile | null | "empty
     const story = c.storyId ? getStory(userId, c.storyId) : null;
     if (!story) continue;
     modified = Math.max(modified, story.updatedAt);
-    chapters.push({ label: `Kapitel ${c.chapter}`, title: story.story.title, body: story.story.body, glossary: story.story.glossary });
+    const art = coverFor(userId, "story", c.storyId!);
+    chapters.push({
+      label: `Kapitel ${c.chapter}`,
+      title: story.story.title,
+      body: story.story.body,
+      glossary: story.story.glossary,
+      // Only drawn chapter art; generated chapter covers would just repeat the title.
+      image: art && !art.generated ? coverPng(art.svg, 800) : undefined,
+    });
   }
   if (!chapters.length) return "empty";
   return {
@@ -261,6 +308,7 @@ export function seriesEpub(userId: number, id: string): EpubFile | null | "empty
       description: view.description,
       level: view.level,
       modified,
+      cover: bookCover(userId, "series", view.id),
       chapters,
     }),
   };

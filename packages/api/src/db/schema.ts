@@ -276,6 +276,8 @@ export const stories = sqliteTable("stories", {
   seriesId: text("series_id"),
   chapter: integer("chapter"),
   summary: text("summary"),
+  /** Cover art: a checked SVG (see `checkCoverSvg`). */
+  cover: text("cover"),
   createdAt: integer("created_at")
     .notNull()
     .default(sql`(unixepoch())`),
@@ -309,6 +311,8 @@ export const series = sqliteTable("series", {
   userId: integer("user_id").notNull(),
   id: text("id").notNull(),
   data: text("data", { mode: "json" }).$type<Series>().notNull(),
+  /** Cover art: a checked SVG (see `checkCoverSvg`). */
+  cover: text("cover"),
   createdAt: integer("created_at")
     .notNull()
     .default(sql`(unixepoch())`),

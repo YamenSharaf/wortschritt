@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { SeriesSummary, StorySummary } from "@mdb/shared";
+import { Cover } from "../components/Cover";
 import { SearchBox } from "../components/SearchBox";
 import { api } from "../lib/api";
 import { useAsync } from "../lib/useAsync";
@@ -62,7 +63,7 @@ export function StoriesPage() {
       {filteredBooks.length > 0 && (
         <section className="mb-6">
           <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Books</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-3 gap-x-4 gap-y-5 sm:grid-cols-4 md:grid-cols-5">
             {filteredBooks.map((b) => (
               <BookCard key={b.id} book={b} />
             ))}
@@ -100,8 +101,9 @@ export function StoriesPage() {
               to={`/stories/${s.id}`}
               className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900"
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
+              <div className="flex items-start justify-between gap-3">
+                <Cover kind="story" id={s.id} version={s.cover} fallbackKey={`${s.title}-${s.level}`} className="w-10 shrink-0" />
+                <div className="min-w-0 flex-1">
                   <div className="font-medium">{s.title}</div>
                   {s.subtitle && <div className="text-xs text-slate-400">{s.subtitle}</div>}
                 </div>
@@ -127,41 +129,35 @@ export function StoriesPage() {
   );
 }
 
+/** A book on the shelf: its cover, title and how far you've read. */
 function BookCard({ book }: { book: SeriesSummary }) {
+  const done = book.read === book.total && book.total > 0;
   return (
-    <Link
-      to={`/series/${book.id}`}
-      className="relative flex gap-3 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900"
-    >
-      <div className="grid h-16 w-12 shrink-0 place-items-center rounded-md bg-accent text-lg text-accent-foreground shadow-sm" aria-hidden>
-        📖
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="font-medium">{book.title}</div>
-            {book.subtitle && <div className="text-xs text-slate-400">{book.subtitle}</div>}
-          </div>
-          <span className="shrink-0 rounded-full border border-slate-300 px-2 py-0.5 text-xs text-slate-500 dark:border-slate-700">
-            {book.level}
+    <Link to={`/series/${book.id}`} className="group block min-w-0">
+      <div className="relative">
+        <Cover
+          kind="series"
+          id={book.id}
+          version={book.cover}
+          fallbackKey={`${book.title}-${book.subtitle ?? ""}-${book.level}`}
+          className="w-full transition group-hover:-translate-y-0.5 group-hover:shadow-md"
+        />
+        {done && (
+          <span className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full bg-green-600 text-xs text-white shadow" aria-label="Read">
+            ✓
           </span>
-        </div>
-        <div className="mt-2 flex flex-wrap gap-x-3 text-xs text-slate-500">
-          <span>
-            {book.written === book.total ? `${book.total} chapters` : `${book.written} of ${book.total} chapters written`}
-          </span>
-          {book.read > 0 && (
-            <span className={book.read === book.total ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"}>
-              {book.read === book.total ? "Read ✓" : `${Math.round(book.progress * 100)}% read`}
-            </span>
-          )}
-        </div>
+        )}
       </div>
-      {book.progress > 0.01 && book.read < book.total && (
-        <div className="absolute inset-x-0 bottom-0 h-0.5 bg-slate-100 dark:bg-slate-800">
+      {book.progress > 0.01 && !done && (
+        <div className="mt-1.5 h-0.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
           <div className="h-full bg-accent" style={{ width: `${Math.round(book.progress * 100)}%` }} />
         </div>
       )}
+      <div className="mt-1.5 line-clamp-2 text-sm font-medium leading-snug">{book.title}</div>
+      <div className="text-xs text-slate-500">
+        {book.level} ·{" "}
+        {book.written === book.total ? `${book.total} chapters` : `${book.written}/${book.total} chapters`}
+      </div>
     </Link>
   );
 }

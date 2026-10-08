@@ -564,6 +564,16 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 13,
+    // Covers: an SVG per story (chapter) or series, kept apart from the
+    // content so re-saving a text keeps its cover.
+    name: "covers",
+    up(db) {
+      addColumn(db, "stories", "cover", "TEXT");
+      addColumn(db, "series", "cover", "TEXT");
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;
