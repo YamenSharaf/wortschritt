@@ -193,6 +193,20 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   tokens only (never `allow-credentials`); public `GET /api/version`
   (`{ api, minClient, appName }`) for the app's compatibility check. See
   issue #2 for the app itself.
+- Sync for the native app (`services/sync.ts`, `routes/sync.ts`, migration 14):
+  SQLite triggers on a learner's tables (stories, translations, series,
+  vocab + stats + group members, groups, notes, settings) append
+  `(user_id, kind, item_id)` to `sync_log`, so every write path counts.
+  `GET /api/sync/changes?since=<seq>&library=<version>` returns the current
+  state of each item changed since the cursor (or its id under `deleted`),
+  a book whenever one of its chapters changed, and the whole shared library
+  when its hash differs; no `since` (or one older than the pruned horizon,
+  90 days) gives a full snapshot. Pages of 1000 items (`more`).
+  `POST /api/sync/push` replays offline actions (answers, runs, sheet views,
+  reading progress — max-merged — vocab, notes) once per `opId`
+  (`sync_ops`, 30 days); a note edited on two devices keeps both (conflict
+  copy). `sync_log` holds ids only and has no FK (triggers fire while a
+  user's rows cascade away); `pruneSync` drops deleted users' entries.
 - Brute-force protection: password routes are limited per client IP
   (`@fastify/rate-limit`, 10/min, keyed on `CF-Connecting-IP` when present) and
   per username (10 failures / 15 min lock that name, `auth/loginGuard.ts`).

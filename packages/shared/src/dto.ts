@@ -892,3 +892,94 @@ export const ttsAdminBody = z.object({
 
 /** Try a voice: synthesizes a short sentence. */
 export const ttsTestBody = z.object({ voice: z.string().min(1).max(100) });
+
+// --- sync (native app) -----------------------------------------------------------
+
+/** A story as the app keeps it offline: the view, its cover version and English lines. */
+export const syncStory = storyView.extend({
+  cover: z.string().nullable(),
+  translations: storyTranslations.nullable(),
+});
+export type SyncStory = z.infer<typeof syncStory>;
+
+/** GET /api/sync/changes: what changed since `since` (or everything). */
+export const syncChangesQuery = z.object({
+  /** The cursor from the last sync; omit for a full snapshot. */
+  since: z.string().regex(/^\d+$/).optional(),
+  /** The library version the app has; the library is sent when it differs. */
+  library: z.string().max(64).optional(),
+});
+
+export const syncChanges = z.object({
+  /** Pass back as `since` next time. */
+  cursor: z.string(),
+  /** A full snapshot: replace local data with this (first sync, or the app was offline too long). */
+  full: z.boolean(),
+  /** More changes are waiting: call again with the new cursor. */
+  more: z.boolean(),
+  /** The whole shared library, only when it changed (or on a full snapshot). */
+  library: z
+    .object({
+      version: z.string(),
+      exerciseSets: z.array(exerciseSet),
+      cheatsheets: z.array(cheatsheet),
+      /** Ids of the read-only built-in items. */
+      builtIn: z.array(z.string()),
+    })
+    .nullable(),
+  stories: z.array(syncStory),
+  series: z.array(seriesView),
+  vocab: z.array(vocabEntry),
+  groups: z.array(vocabGroup),
+  notes: z.array(note),
+  /** The learner's settings, when they changed. */
+  settings: settingsSchema.nullable(),
+  deleted: z.object({
+    stories: z.array(z.string()),
+    series: z.array(z.string()),
+    vocab: z.array(z.string()),
+    groups: z.array(z.string()),
+    notes: z.array(z.string()),
+  }),
+});
+export type SyncChanges = z.infer<typeof syncChanges>;
+
+/**
+ * An action the app did offline, replayed by POST /api/sync/push. `opId` is
+ * the app's own id for it (e.g. a UUID): replays of the same op are applied
+ * once.
+ */
+const opId = z.string().min(8).max(64);
+export const syncOp = z.discriminatedUnion("type", [
+  z.object({ opId, type: z.literal("attempt"), data: attemptBody }),
+  z.object({ opId, type: z.literal("run"), data: recordRunBody }),
+  z.object({ opId, type: z.literal("sheetView"), data: sheetViewBody }),
+  /** Progress only moves forward (max of server and app); `read` sets or clears read. */
+  z.object({ opId, type: z.literal("storyProgress"), storyId: z.string().min(1), progress: z.number().min(0).max(1), read: z.boolean().optional() }),
+  z.object({ opId, type: z.literal("vocabSave"), data: saveVocabBody }),
+  z.object({ opId, type: z.literal("vocabRemove"), word: z.string().min(1) }),
+  z.object({ opId, type: z.literal("vocabStudy"), word: z.string().min(1), known: z.boolean() }),
+  z.object({ opId, type: z.literal("noteCreate"), data: createNoteBody }),
+  /**
+   * `baseUpdatedAt`: the note's updatedAt the app edited from. If the server's
+   * note changed since, the app's version is saved as a conflict copy instead.
+   */
+  z.object({ opId, type: z.literal("noteUpdate"), id: z.string().min(1), baseUpdatedAt: z.number().int(), data: saveNoteBody }),
+  z.object({ opId, type: z.literal("noteDelete"), id: z.string().min(1) }),
+]);
+export type SyncOp = z.infer<typeof syncOp>;
+
+export const syncPushBody = z.object({ ops: z.array(syncOp).min(1).max(500) });
+
+export const syncOpResult = z.object({
+  opId: z.string(),
+  ok: z.boolean(),
+  /** Already applied by an earlier push (this is that result). */
+  duplicate: z.boolean().default(false),
+  error: z.string().optional(),
+  /** E.g. a created note's id, or a conflict copy's. */
+  noteId: z.string().optional(),
+  conflict: z.boolean().optional(),
+});
+export const syncPushResult = z.object({ results: z.array(syncOpResult) });
+export type SyncPushResult = z.infer<typeof syncPushResult>;
