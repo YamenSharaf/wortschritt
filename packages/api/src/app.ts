@@ -34,6 +34,8 @@ import { progressRoutes } from "./routes/progress";
 import { seriesRoutes } from "./routes/series";
 import { coverRoutes } from "./routes/covers";
 import { nativeRoutes } from "./routes/native";
+import { syncRoutes } from "./routes/sync";
+import { pruneSync } from "./services/sync";
 import { settingsRoutes } from "./routes/settings";
 import { storyRoutes } from "./routes/stories";
 import { ttsRoutes } from "./routes/tts";
@@ -56,6 +58,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   const prune = () => {
     pruneExpiredSessions();
     pruneOAuth();
+    pruneSync();
   };
   prune();
   setInterval(prune, 60 * 60 * 1000).unref();
@@ -117,6 +120,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(storyRoutes);
   await app.register(seriesRoutes);
   await app.register(coverRoutes);
+  await app.register(syncRoutes);
   await app.register(dictRoutes);
   await app.register(assistantRoutes);
   await app.register(mcpRoutes);

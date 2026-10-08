@@ -574,6 +574,115 @@ export const migrations: Migration[] = [
       addColumn(db, "series", "cover", "TEXT");
     },
   },
+  {
+    version: 14,
+    // Sync for the native app. sync_log records which of a learner's items
+    // changed (or vanished), filled by triggers so every write path counts
+    // (web, MCP, app). It holds ids only, no content, and has no FK: rows
+    // written while a user's data cascades away would otherwise fail the
+    // delete; logs of deleted users are pruned. sync_ops makes pushed
+    // offline actions idempotent (one row per client op id).
+    name: "sync",
+    up(db) {
+      db.exec(`
+        CREATE TABLE sync_log (
+          seq INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          kind TEXT NOT NULL,
+          item_id TEXT NOT NULL,
+          at INTEGER NOT NULL DEFAULT (unixepoch())
+        );
+        CREATE INDEX ix_sync_log_user_seq ON sync_log(user_id, seq);
+        CREATE TABLE sync_ops (
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          op_id TEXT NOT NULL,
+          result TEXT NOT NULL,
+          created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+          PRIMARY KEY (user_id, op_id)
+        );
+        CREATE TRIGGER sync_stories_insert AFTER INSERT ON stories BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'story', NEW.id);
+        END;
+        CREATE TRIGGER sync_stories_update AFTER UPDATE ON stories BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'story', NEW.id);
+        END;
+        CREATE TRIGGER sync_stories_delete AFTER DELETE ON stories BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (OLD.user_id, 'story', OLD.id);
+        END;
+        CREATE TRIGGER sync_series_insert AFTER INSERT ON series BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'series', NEW.id);
+        END;
+        CREATE TRIGGER sync_series_update AFTER UPDATE ON series BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'series', NEW.id);
+        END;
+        CREATE TRIGGER sync_series_delete AFTER DELETE ON series BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (OLD.user_id, 'series', OLD.id);
+        END;
+        CREATE TRIGGER sync_story_translations_insert AFTER INSERT ON story_translations BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'story', NEW.story_id);
+        END;
+        CREATE TRIGGER sync_story_translations_update AFTER UPDATE ON story_translations BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'story', NEW.story_id);
+        END;
+        CREATE TRIGGER sync_story_translations_delete AFTER DELETE ON story_translations BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (OLD.user_id, 'story', OLD.story_id);
+        END;
+        CREATE TRIGGER sync_vocab_insert AFTER INSERT ON vocab BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'vocab', NEW.word);
+        END;
+        CREATE TRIGGER sync_vocab_update AFTER UPDATE ON vocab BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'vocab', NEW.word);
+        END;
+        CREATE TRIGGER sync_vocab_delete AFTER DELETE ON vocab BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (OLD.user_id, 'vocab', OLD.word);
+        END;
+        CREATE TRIGGER sync_vocab_stats_insert AFTER INSERT ON vocab_stats BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'vocab', NEW.word);
+        END;
+        CREATE TRIGGER sync_vocab_stats_update AFTER UPDATE ON vocab_stats BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'vocab', NEW.word);
+        END;
+        CREATE TRIGGER sync_vocab_stats_delete AFTER DELETE ON vocab_stats BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (OLD.user_id, 'vocab', OLD.word);
+        END;
+        CREATE TRIGGER sync_vocab_groups_insert AFTER INSERT ON vocab_groups BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'group', CAST(NEW.id AS TEXT));
+        END;
+        CREATE TRIGGER sync_vocab_groups_update AFTER UPDATE ON vocab_groups BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'group', CAST(NEW.id AS TEXT));
+        END;
+        CREATE TRIGGER sync_vocab_groups_delete AFTER DELETE ON vocab_groups BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (OLD.user_id, 'group', CAST(OLD.id AS TEXT));
+        END;
+        CREATE TRIGGER sync_notes_insert AFTER INSERT ON notes BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'note', NEW.id);
+        END;
+        CREATE TRIGGER sync_notes_update AFTER UPDATE ON notes BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'note', NEW.id);
+        END;
+        CREATE TRIGGER sync_notes_delete AFTER DELETE ON notes BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (OLD.user_id, 'note', OLD.id);
+        END;
+        CREATE TRIGGER sync_settings_insert AFTER INSERT ON settings BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'settings', 'me');
+        END;
+        CREATE TRIGGER sync_settings_update AFTER UPDATE ON settings BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'settings', 'me');
+        END;
+        CREATE TRIGGER sync_settings_delete AFTER DELETE ON settings BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (OLD.user_id, 'settings', 'me');
+        END;
+        CREATE TRIGGER sync_vocab_group_members_insert AFTER INSERT ON vocab_group_members BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'group', CAST(NEW.group_id AS TEXT));
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'vocab', NEW.word);
+        END;
+        CREATE TRIGGER sync_vocab_group_members_delete AFTER DELETE ON vocab_group_members BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (OLD.user_id, 'group', CAST(OLD.group_id AS TEXT));
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (OLD.user_id, 'vocab', OLD.word);
+        END;
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

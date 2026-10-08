@@ -322,6 +322,19 @@ test("admin: temporary password ends the user's sessions", async () => {
   ben = await login("ben", "temporary-password");
 });
 
+test("sync is private: changes and pushed actions stay with their user", async () => {
+  const annaNote = (await anna("POST", "/api/notes", { title: "Annas Notiz", body: "geheim" })).json();
+  const pushed = await anna("POST", "/api/sync/push", { ops: [{ opId: "anna-sync-op-1", type: "vocabSave", data: { word: "geheim", translation: "secret" } }] });
+  assert.equal(pushed.statusCode, 200, pushed.body);
+  const mine = (await admin("GET", "/api/sync/changes")).json() as { notes: { id: string }[]; vocab: { word: string }[] };
+  assert.ok(!mine.notes.some((n) => n.id === annaNote.id));
+  assert.ok(!mine.vocab.some((v) => v.word === "geheim"));
+  // The same op id from another user is that user's own op.
+  const r = (await admin("POST", "/api/sync/push", { ops: [{ opId: "anna-sync-op-1", type: "noteDelete", id: annaNote.id }] })).json();
+  assert.equal(r.results[0].duplicate, false);
+  assert.equal((await anna("GET", `/api/notes/${annaNote.id}`)).statusCode, 200, "not deletable by someone else");
+});
+
 test("admin: deleting a user deletes their data but keeps their imports", async () => {
   const users = (await admin("GET", "/api/admin/users")).json() as { id: number; username: string }[];
   const annaId = users.find((u) => u.username === "anna")!.id;
@@ -333,6 +346,10 @@ test("admin: deleting a user deletes their data but keeps their imports", async 
   assert.equal(db.select().from(schema.vocab).where(eq(schema.vocab.userId, annaId)).all().length, 0);
   assert.equal(db.select().from(schema.vocabStats).where(eq(schema.vocabStats.userId, annaId)).all().length, 0);
   assert.equal(db.select().from(schema.stories).where(eq(schema.stories.userId, annaId)).all().length, 0);
+  assert.equal(db.select().from(schema.syncOps).where(eq(schema.syncOps.userId, annaId)).all().length, 0);
+  const { pruneSync } = await import("../services/sync");
+  pruneSync();
+  assert.equal(db.select().from(schema.syncLog).where(eq(schema.syncLog.userId, annaId)).all().length, 0, "her change log is pruned");
   const sets = (await ben("GET", "/api/exercises")).json() as { id: string }[];
   assert.ok(sets.some((s) => s.id === "anna-set"), "anna's import stays in the library");
   // yamen's data is untouched.

@@ -320,3 +320,24 @@ export const series = sqliteTable("series", {
     .notNull()
     .default(sql`(unixepoch())`),
 }, (t) => [primaryKey({ columns: [t.userId, t.id] })]);
+
+/** Which of a learner's items changed (filled by triggers, see migration 14). */
+export const syncLog = sqliteTable("sync_log", {
+  seq: integer("seq").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  kind: text("kind").notNull(),
+  itemId: text("item_id").notNull(),
+  at: integer("at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+/** Pushed offline actions already applied (idempotency), with their result. */
+export const syncOps = sqliteTable("sync_ops", {
+  userId: integer("user_id").notNull(),
+  opId: text("op_id").notNull(),
+  result: text("result").notNull(),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+}, (t) => [primaryKey({ columns: [t.userId, t.opId] })]);
