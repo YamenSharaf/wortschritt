@@ -113,29 +113,26 @@ export function App() {
         <Outlet />
       </main>
 
-      {/* Mobile tab bar: the active tab's icon sits in a soft pill. */}
-      <nav
-        aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-7 border-t border-line bg-[color-mix(in_srgb,var(--surface)_90%,transparent)] pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
-      >
-        {mobileItems.map(({ to, label, end, Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              `group flex min-w-0 flex-col items-center gap-1 px-0.5 pb-2 pt-2 text-[10px] font-medium leading-tight ${
-                isActive ? "is-active text-brand-ink" : "text-ink-subtle"
-              }`
-            }
-          >
-            <span className="grid h-7 w-12 place-items-center rounded-full transition-colors group-[.is-active]:bg-brand-soft">
+      {/* Mobile dock: a floating glass pill; the active section sits in a soft pill. */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(env(safe-area-inset-bottom)+10px)] md:hidden">
+        <nav aria-label="Main" className="ws-dock pointer-events-auto mx-auto grid max-w-md grid-cols-7 p-1.5">
+          {mobileItems.map(({ to, label, end, Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) =>
+                `flex min-w-0 flex-col items-center gap-0.5 rounded-full px-0.5 py-1.5 text-[10px] font-medium leading-tight transition-colors ${
+                  isActive ? "bg-brand-soft text-brand-ink" : "text-ink-muted hover:text-ink"
+                }`
+              }
+            >
               <Icon className="h-5 w-5 shrink-0" />
-            </span>
-            <span className="w-full truncate text-center">{label}</span>
-          </NavLink>
-        ))}
-      </nav>
+              <span className="w-full truncate text-center">{label}</span>
+            </NavLink>
+          ))}
+        </nav>
+      </div>
     </div>
     </VocabProvider>
   );
