@@ -10,6 +10,8 @@ import {
   type Story,
 } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
+import { ChevronLeftIcon, PlusIcon } from "../components/icons";
+import { btn } from "../components/ui";
 
 const LEVELS: CefrLevel[] = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
@@ -109,8 +111,8 @@ export function StoryEditor() {
     }
   }, [editing, id]);
 
-  if (error && !form) return <p className="text-red-600">{error}</p>;
-  if (!form) return <p className="text-slate-500">Loading…</p>;
+  if (error && !form) return <p className="text-danger">{error}</p>;
+  if (!form) return <p className="text-ink-muted">Loading…</p>;
 
   const set = (patch: Partial<Form>) => setForm({ ...form, ...patch });
   const currentId = editing ? id! : slugify(form.title);
@@ -195,16 +197,17 @@ export function StoryEditor() {
   }
 
   const tab = (active: boolean) =>
-    `rounded-md px-3 py-1 text-sm ${active ? "bg-accent text-accent-foreground" : "text-slate-600 dark:text-slate-300"}`;
+    `rounded-md px-3 py-1 text-sm ${active ? "bg-surface-raised text-ink shadow-card" : "text-ink-muted hover:text-ink"}`;
   const label = "mb-1 block text-sm font-medium";
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-2">
-        <Link to={editing ? `/stories/${id}` : "/stories"} className="mr-auto text-sm text-slate-500 hover:underline">
-          ← {editing ? "Back to the story" : "Stories"}
+        <Link to={editing ? `/stories/${id}` : "/stories"} className="mr-auto text-sm text-ink-muted hover:underline">
+          <ChevronLeftIcon className="h-4 w-4" />
+          {editing ? "Back to the story" : "Stories"}
         </Link>
-        <div className="inline-flex rounded-lg border border-slate-300 p-0.5 dark:border-slate-700">
+        <div className="inline-flex rounded-control border border-line-control p-0.5 ">
           <button type="button" className={tab(mode === "form")} onClick={() => switchMode("form")}>
             Form
           </button>
@@ -213,14 +216,14 @@ export function StoryEditor() {
           </button>
         </div>
       </div>
-      <h1 className="text-2xl font-bold">{editing ? "Edit story" : "New story"}</h1>
+      <h1 className="text-[28px] font-semibold leading-[34px] tracking-[-0.02em]">{editing ? "Edit story" : "New story"}</h1>
 
       {mode === "json" ? (
         <section className="space-y-2">
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-ink-muted">
             Paste a story in the app's format — e.g. one an AI wrote from this prompt:{" "}
             <button type="button" className="underline" onClick={() => void copy(buildStoryPrompt(), "story")}>
-              {copied === "story" ? "Copied ✓" : "Copy LLM prompt"}
+              {copied === "story" ? "Copied" : "Copy LLM prompt"}
             </button>
           </p>
           <textarea
@@ -237,7 +240,7 @@ export function StoryEditor() {
               <label className={label}>Title</label>
               <input value={form.title} onChange={(e) => set({ title: e.target.value })} className="input" lang="de" />
               {!editing && form.title && (
-                <p className="mt-1 text-xs text-slate-400">Address: /stories/{currentId}</p>
+                <p className="mt-1 text-xs text-ink-subtle">Address: /stories/{currentId}</p>
               )}
             </div>
             <div>
@@ -252,13 +255,13 @@ export function StoryEditor() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className={label}>
-                Subtitle <span className="font-normal text-slate-400">(optional, English)</span>
+                Subtitle <span className="font-normal text-ink-subtle">(optional, English)</span>
               </label>
               <input value={form.subtitle} onChange={(e) => set({ subtitle: e.target.value })} className="input" />
             </div>
             <div>
               <label className={label}>
-                Tags <span className="font-normal text-slate-400">(comma-separated)</span>
+                Tags <span className="font-normal text-ink-subtle">(comma-separated)</span>
               </label>
               <input value={form.tags} onChange={(e) => set({ tags: e.target.value })} className="input" placeholder="freizeit, perfekt" />
             </div>
@@ -267,7 +270,7 @@ export function StoryEditor() {
           <section>
             <div className="mb-1 flex items-center justify-between">
               <label className="text-sm font-medium">Story (Markdown)</label>
-              <div className="inline-flex rounded-lg border border-slate-300 p-0.5 dark:border-slate-700">
+              <div className="inline-flex rounded-control border border-line-control p-0.5 ">
                 <button type="button" className={tab(!preview)} onClick={() => setPreview(false)}>
                   Write
                 </button>
@@ -277,7 +280,7 @@ export function StoryEditor() {
               </div>
             </div>
             {preview ? (
-              <div className="reader reader-text min-h-[20rem] rounded-xl p-5 font-serif text-lg leading-relaxed" data-theme="auto">
+              <div className="reader reader-text min-h-[20rem] rounded-card p-5 font-serif text-lg leading-relaxed" data-theme="auto">
                 <Markdown options={{ forceBlock: true }}>{form.body || "*Nothing to preview yet.*"}</Markdown>
               </div>
             ) : (
@@ -293,7 +296,7 @@ export function StoryEditor() {
 
           <section>
             <label className={label}>
-              Glossary <span className="font-normal text-slate-400">(words worth explaining)</span>
+              Glossary <span className="font-normal text-ink-subtle">(words worth explaining)</span>
             </label>
             <div className="space-y-2">
               {form.glossary.map((g, i) => (
@@ -315,7 +318,7 @@ export function StoryEditor() {
                     type="button"
                     aria-label="Remove"
                     onClick={() => set({ glossary: form.glossary.filter((_, j) => j !== i) })}
-                    className="shrink-0 rounded-lg border border-slate-300 px-3 text-slate-500 dark:border-slate-700"
+                    className="shrink-0 rounded-control border border-line-control px-3 text-ink-muted "
                   >
                     ×
                   </button>
@@ -324,16 +327,17 @@ export function StoryEditor() {
               <button
                 type="button"
                 onClick={() => set({ glossary: [...form.glossary, { term: "", meaning: "" }] })}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm dark:border-slate-700"
+                className={`${btn.secondary} ${btn.sm}`}
               >
-                + Add word
+                <PlusIcon className="h-4 w-4" />
+                Add word
               </button>
             </div>
           </section>
 
-          <details className="rounded-xl border border-slate-200 p-4 dark:border-slate-800" open={form.questions.trim() !== "[]"}>
+          <details className="rounded-card border border-line p-4 " open={form.questions.trim() !== "[]"}>
             <summary className="cursor-pointer text-sm font-medium">Comprehension questions (JSON)</summary>
-            <p className="mb-2 mt-2 text-sm text-slate-500">
+            <p className="mb-2 mt-2 text-sm text-ink-muted">
               An array of exercise items (the same types as exercises). Let an AI write them:{" "}
               <button
                 type="button"
@@ -341,7 +345,7 @@ export function StoryEditor() {
                 disabled={!form.body.trim()}
                 onClick={() => void copy(questionsPrompt(form.body), "questions")}
               >
-                {copied === "questions" ? "Copied ✓" : "Copy LLM prompt for this story"}
+                {copied === "questions" ? "Copied" : "Copy LLM prompt for this story"}
               </button>
             </p>
             <textarea
@@ -355,7 +359,7 @@ export function StoryEditor() {
       )}
 
       {issues.length > 0 && (
-        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+        <div className="rounded-control bg-danger-soft p-3 text-sm text-danger ">
           <p className="mb-1 font-medium">Please fix:</p>
           <ul className="list-disc pl-5">
             {issues.map((i) => (
@@ -364,19 +368,19 @@ export function StoryEditor() {
           </ul>
         </div>
       )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
 
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           disabled={busy}
           onClick={() => void save()}
-          className="rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground disabled:opacity-50"
+          className={`${btn.primary}`}
         >
           {busy ? "Saving…" : editing ? "Save changes" : "Save story"}
         </button>
         {editing && (
-          <button type="button" onClick={() => void remove()} className="ml-auto rounded-lg border border-slate-300 px-3 py-2 text-sm text-red-600 dark:border-slate-700">
+          <button type="button" onClick={() => void remove()} className="ml-auto rounded-control border border-line-control px-3 py-2 text-sm text-danger ">
             Delete story
           </button>
         )}

@@ -3,9 +3,10 @@ import { MIN_PASSWORD_LENGTH, NEURAL_VOICES, type AdminUser, type RegistrationSt
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { timeAgo } from "../lib/time";
+import { btn } from "../components/ui";
 
 const smallBtn =
-  "rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700";
+  "rounded-control border border-line-control px-2.5 py-1 text-xs font-medium hover:border-line-strong disabled:opacity-50 ";
 
 /** Admin-only: the registration switch and account management. */
 export function UsersAdmin() {
@@ -35,14 +36,14 @@ export function UsersAdmin() {
   }
 
   if (!users || !registration) {
-    return <p className="text-slate-500">{error ?? "Loading…"}</p>;
+    return <p className="text-ink-muted">{error ?? "Loading…"}</p>;
   }
 
   return (
     <div className="max-w-2xl space-y-8">
       <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Registration</h2>
-        <p className="text-sm text-slate-500">
+        <h2 className="text-xl font-semibold tracking-[-0.01em]">Registration</h2>
+        <p className="text-sm text-ink-muted">
           {registration.open && registration.openUntil
             ? `Open — anyone with the link can create an account until ${new Date(
                 registration.openUntil * 1000,
@@ -52,7 +53,7 @@ export function UsersAdmin() {
         <button
           type="button"
           onClick={() => act(() => api.adminSetRegistration(!registration.open))}
-          className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground"
+          className={`${btn.primary}`}
         >
           {registration.open ? "Close registration now" : "Open registration for 24 hours"}
         </button>
@@ -63,9 +64,9 @@ export function UsersAdmin() {
       <TtsProviders />
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Users</h2>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <ul className="divide-y divide-slate-200 rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+        <h2 className="text-xl font-semibold tracking-[-0.01em]">Users</h2>
+        {error && <p className="text-sm text-danger">{error}</p>}
+        <ul className="divide-y divide-[var(--border)] rounded-card border border-line ">
           {users.map((u) => (
             <UserRow key={u.id} user={u} isMe={u.username === me?.username} act={act} />
           ))}
@@ -110,8 +111,8 @@ function TimezoneSetting() {
 
   return (
     <section className="space-y-2">
-      <h2 className="text-lg font-semibold">Time zone</h2>
-      <p className="text-sm text-slate-500">
+      <h2 className="text-xl font-semibold tracking-[-0.01em]">Time zone</h2>
+      <p className="text-sm text-ink-muted">
         For everyone on this server: when a new day starts for the daily goal, and how practice
         history is grouped by day.
       </p>
@@ -133,15 +134,15 @@ function TimezoneSetting() {
             <button
               type="button"
               onClick={() => void change(browserZone)}
-              className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium dark:border-slate-700"
+              className="rounded-control border border-line-control px-2.5 py-1 text-xs font-medium "
             >
               Use mine ({browserZone.replace(/_/g, " ")})
             </button>
           )}
-          {saved && <span className="text-sm text-green-600">Saved ✓</span>}
+          {saved && <span className="text-sm text-success">Saved</span>}
         </div>
       )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </section>
   );
 }
@@ -169,18 +170,18 @@ function UserRow({
     <li className="space-y-2 p-3">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium">{user.username}</span>
-        {isMe && <span className="text-xs text-slate-400">(you)</span>}
+        {isMe && <span className="text-xs text-ink-subtle">(you)</span>}
         {user.role === "admin" && (
-          <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs dark:bg-slate-800">
+          <span className="rounded-md bg-surface-sunken px-1.5 py-0.5 text-xs ">
             admin
           </span>
         )}
         {user.disabled && (
-          <span className="rounded-md bg-red-100 px-1.5 py-0.5 text-xs text-red-700 dark:bg-red-950 dark:text-red-300">
+          <span className="rounded-md bg-danger-soft px-1.5 py-0.5 text-xs text-danger ">
             disabled
           </span>
         )}
-        <span className="ml-auto text-xs text-slate-400">
+        <span className="ml-auto text-xs text-ink-subtle">
           {user.lastLoginAt ? `last sign-in ${timeAgo(user.lastLoginAt)}` : "never signed in"}
         </span>
       </div>
@@ -213,7 +214,7 @@ function UserRow({
           </button>
           <button
             type="button"
-            className={`${smallBtn} text-red-600`}
+            className={`${smallBtn} text-danger`}
             onClick={() => {
               if (
                 window.confirm(
@@ -246,7 +247,7 @@ function UserRow({
           >
             Save
           </button>
-          <span className="w-full text-xs text-slate-400">
+          <span className="w-full text-xs text-ink-subtle">
             Signs {user.username} out everywhere. Tell them the new password; they can change it
             under Settings → Account.
           </span>
@@ -302,7 +303,7 @@ function TtsProviders() {
       // Play the sample too (served from the server, cached after the first time).
       const sample = new Audio(`/api/tts?${new URLSearchParams({ voice, text: "Guten Tag! Ich lerne Deutsch." })}`);
       await sample.play().catch(() => {});
-      setMsg({ ok: true, text: "It works ✓ — pick the voice under Preferences → Pronunciation voice." });
+      setMsg({ ok: true, text: "It works. pick the voice under Preferences → Pronunciation voice." });
     } catch (err) {
       setMsg({ ok: false, text: err instanceof ApiError ? err.message : "The test failed." });
     } finally {
@@ -310,31 +311,31 @@ function TtsProviders() {
     }
   }
 
-  if (!cfg) return msg ? <p className="text-sm text-red-600">{msg.text}</p> : null;
+  if (!cfg) return msg ? <p className="text-sm text-danger">{msg.text}</p> : null;
   const testable = cfg.azure.configured || cfg.edge.enabled;
 
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold">Read-aloud voices</h2>
-        <p className="text-sm text-slate-500">
+        <h2 className="text-xl font-semibold tracking-[-0.01em]">Read-aloud voices</h2>
+        <p className="text-sm text-ink-muted">
           Natural German voices for everyone on this server (reading aloud and pronunciation).
         </p>
       </div>
 
-      <div className="space-y-2 rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+      <div className="space-y-2 rounded-card border border-line p-4 ">
         <div className="flex items-center justify-between gap-2">
           <h3 className="font-medium">Azure Speech</h3>
-          <span className={`text-xs ${cfg.azure.configured ? "text-green-600" : "text-slate-400"}`}>
-            {cfg.azure.configured ? "Set up ✓" : "Not set up"}
+          <span className={`text-xs ${cfg.azure.configured ? "text-success" : "text-ink-subtle"}`}>
+            {cfg.azure.configured ? "Set up" : "Not set up"}
           </span>
         </div>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-ink-muted">
           Microsoft's neural voices (Katja, Conrad, Seraphina…). Create a Speech resource in Azure (the
           free tier has 0.5 million characters a month; clips are cached) and paste its key and region.
         </p>
         {!cfg.azure.canStoreKey ? (
-          <p className="text-xs text-amber-600">Set ENCRYPTION_KEY on the server to store a key.</p>
+          <p className="text-xs text-warning">Set ENCRYPTION_KEY on the server to store a key.</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             <input value={region} onChange={(e) => setRegion(e.target.value.trim())} placeholder="Region, e.g. westeurope" className="input w-44" />
@@ -363,7 +364,7 @@ function TtsProviders() {
         )}
       </div>
 
-      <div className="space-y-2 rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+      <div className="space-y-2 rounded-card border border-line p-4 ">
         <label className="flex items-start gap-3">
           <input
             type="checkbox"
@@ -374,7 +375,7 @@ function TtsProviders() {
           />
           <span>
             <span className="font-medium">Edge voices (free, unofficial)</span>
-            <span className="block text-xs text-slate-500">
+            <span className="block text-xs text-ink-muted">
               The same natural voices through the endpoint Microsoft Edge's "Read aloud" uses — no account,
               but not an official API: it can change or stop working at any time.
             </span>
@@ -400,7 +401,7 @@ function TtsProviders() {
           </button>
         </div>
       )}
-      {msg && <p className={`text-sm ${msg.ok ? "text-green-600" : "text-red-600"}`}>{msg.text}</p>}
+      {msg && <p className={`text-sm ${msg.ok ? "text-success" : "text-danger"}`}>{msg.text}</p>}
     </section>
   );
 }

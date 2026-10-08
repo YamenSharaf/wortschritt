@@ -4,9 +4,10 @@ import { MIN_PASSWORD_LENGTH } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { AppTitle } from "../components/AppTitle";
+import { btn } from "../components/ui";
 
 const inputClass =
-  "mb-4 w-full rounded-lg border border-slate-300 bg-transparent px-3 py-2 outline-none focus:border-accent dark:border-slate-700";
+  "mb-4 w-full rounded-control border border-line-control bg-transparent px-3 py-2 outline-none focus:border-focus ";
 
 export function Login() {
   const { login, register, authenticated } = useAuth();
@@ -71,12 +72,12 @@ export function Login() {
     <div className="grid min-h-screen place-items-center px-4">
       <form
         onSubmit={onSubmit}
-        className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+        className="w-full max-w-sm rounded-card border border-line bg-surface p-6 shadow-sm "
       >
         <h1 className="mb-1 text-xl font-bold">
           <AppTitle />
         </h1>
-        <p className="mb-6 text-sm text-slate-500">
+        <p className="mb-6 text-sm text-ink-muted">
           {registering ? "Create an account" : "Sign in"}
         </p>
         <label className="mb-1 block text-sm font-medium">Username</label>
@@ -92,7 +93,7 @@ export function Login() {
         <label className="mb-1 block text-sm font-medium">
           Password
           {registering && (
-            <span className="font-normal text-slate-400">
+            <span className="font-normal text-ink-subtle">
               {" "}
               (at least {MIN_PASSWORD_LENGTH} characters)
             </span>
@@ -118,11 +119,11 @@ export function Login() {
             />
           </>
         )}
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+        {error && <p className="mb-3 text-sm text-danger">{error}</p>}
         <button
           type="submit"
           disabled={busy}
-          className="w-full rounded-lg bg-accent px-4 py-2 font-medium text-accent-foreground disabled:opacity-50"
+          className={`${btn.primary} w-full`}
         >
           {busy ? "…" : registering ? "Create account" : "Sign in"}
         </button>
@@ -130,7 +131,7 @@ export function Login() {
           <button
             type="button"
             onClick={switchMode}
-            className="mt-3 w-full text-center text-sm text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+            className="mt-3 w-full text-center text-sm text-ink-muted hover:text-ink "
           >
             {registering ? "I already have an account" : "New here? Create an account"}
           </button>

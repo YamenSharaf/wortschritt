@@ -544,7 +544,7 @@ function StoryReaderView() {
           <p className="reader-muted mt-1 font-sans text-xs" lang="en">
             {story.subtitle ? `${story.subtitle} · ` : ""}
             {story.level} · {minutes(wordTotal)} min
-            {view.readAt ? " · read ✓" : ""}
+            {view.readAt ? " · read" : ""}
           </p>
         </header>
         {blocks.map((b, i) => (

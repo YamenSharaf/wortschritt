@@ -7,6 +7,8 @@ import { api, formsFromLookup } from "../lib/api";
 import { formChips } from "../lib/forms";
 import { timeAgo } from "../lib/time";
 import { useVocab } from "../lib/vocab";
+import { CheckIcon, CrossIcon, PlusIcon, SparklesIcon, VocabIcon } from "../components/icons";
+import { btn } from "../components/ui";
 
 export function VocabPage() {
   const {
@@ -55,16 +57,17 @@ export function VocabPage() {
   return (
     <div>
       <div className="mb-1 flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Vocab</h1>
+        <h1 className="text-[28px] font-semibold leading-[34px] tracking-[-0.02em]">Vocab</h1>
         <button
           type="button"
           onClick={() => setAdding((a) => !a)}
-          className="shrink-0 rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground"
+          className={`${btn.primary} ${btn.sm} shrink-0`}
         >
-          {adding ? "Close" : "＋ Add word"}
+          {!adding && <PlusIcon className="h-4 w-4" />}
+          {adding ? "Close" : "Add word"}
         </button>
       </div>
-      <p className="mb-4 text-sm text-slate-500">
+      <p className="mb-4 text-sm text-ink-muted">
         Words you saved by tapping them in content, or added by hand.
       </p>
 
@@ -97,9 +100,10 @@ export function VocabPage() {
       {poolCount > 0 && (
         <Link
           to={`/vocab/study?group=${group ?? "all"}`}
-          className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground"
+          className={`${btn.primary} mt-3 justify-center`}
         >
-          ▶ Flashcards
+          <VocabIcon className="h-4 w-4" />
+          Study flashcards
           <span className="opacity-80">
             {group == null ? `all ${poolCount}` : `${poolCount}`} card
             {poolCount === 1 ? "" : "s"}
@@ -108,13 +112,13 @@ export function VocabPage() {
       )}
 
       {filtered.length === 0 ? (
-        <p className="mt-4 rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700">
+        <p className="mt-4 rounded-card border border-dashed border-line-control p-6 text-center text-sm text-ink-muted ">
           {entries.length === 0
-            ? "No words yet. Tap a word in a cheat sheet or exercise → 🌐 Translate → ＋ Add, or use ＋ Add word above."
+            ? "No words yet. Tap a word in a cheat sheet, exercise or story and choose Add to vocab, or use Add word above."
             : "No words match."}
         </p>
       ) : (
-        <div className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+        <div className="mt-3 divide-y divide-[var(--border)] overflow-hidden rounded-card border border-line ">
           {filtered.map((e) => (
             <VocabRow
               key={e.word}
@@ -253,7 +257,7 @@ function AddWordForm({
   return (
     <form
       onSubmit={submit}
-      className="mb-4 space-y-2 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900"
+      className="mb-4 space-y-2 rounded-card border border-line bg-surface p-3 "
     >
       <div className="flex flex-col gap-2 sm:flex-row">
         <input
@@ -285,22 +289,23 @@ function AddWordForm({
                   ? "Generate the translation with AI"
                   : "Fill from the built-in dictionary"
               }
-              className="shrink-0 whitespace-nowrap rounded-lg border border-slate-300 px-3 text-sm font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+              className="shrink-0 whitespace-nowrap rounded-control border border-line-control px-3 text-sm font-medium hover:border-line-strong disabled:opacity-50 "
             >
-              {genBusy ? "…" : "✨ Generate"}
+              {!genBusy && <SparklesIcon className="h-4 w-4" />}
+              {genBusy ? "…" : "Generate"}
             </button>
           )}
         </div>
         <button
           type="submit"
           disabled={busy || genBusy || !word.trim()}
-          className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
+          className={`${btn.primary} shrink-0`}
         >
           {busy ? "Adding…" : "Add"}
         </button>
       </div>
-      {error && <p className="text-xs text-red-600">{error}</p>}
-      <p className="text-xs text-slate-400">
+      {error && <p className="text-xs text-danger">{error}</p>}
+      <p className="text-xs text-ink-subtle">
         {enabled
           ? "Leave the translation blank and Add fills it (with examples) using AI — or tap Generate first."
           : dictAvailable
@@ -330,8 +335,8 @@ function GroupBar({
   const chip = (active: boolean) =>
     `rounded-full border px-3 py-1 text-xs font-medium ${
       active
-        ? "border-accent bg-accent text-accent-foreground"
-        : "border-slate-300 text-slate-600 hover:border-slate-400 dark:border-slate-700 dark:text-slate-300"
+        ? "border-transparent bg-brand-soft text-brand-ink"
+        : "border-line-control text-ink-muted hover:border-line-strong"
     }`;
 
   return (
@@ -353,9 +358,9 @@ function GroupBar({
               type="button"
               onClick={() => void onDelete(g.id)}
               title="Delete group"
-              className="ml-1 text-xs text-slate-400 hover:text-red-600"
+              className="ml-1 text-xs text-ink-subtle hover:text-danger"
             >
-              ✕
+              <CrossIcon className="h-4 w-4" />
             </button>
           )}
         </span>
@@ -376,7 +381,7 @@ function GroupBar({
             onChange={(e) => setName(e.target.value)}
             onBlur={() => !name.trim() && setCreating(false)}
             placeholder="Group name"
-            className="w-32 rounded-full border border-slate-300 bg-transparent px-3 py-1 text-xs outline-none focus:border-accent dark:border-slate-700"
+            className="w-32 rounded-full border border-line-control bg-transparent px-3 py-1 text-xs outline-none focus:border-focus "
           />
           <button type="submit" className="text-xs font-medium text-accent">
             Add
@@ -386,9 +391,10 @@ function GroupBar({
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs text-slate-500 hover:border-slate-400 dark:border-slate-700"
+          className="inline-flex items-center gap-1 rounded-full border border-dashed border-line-control px-3 py-1 text-xs text-ink-muted hover:border-line-strong hover:text-ink"
         >
-          ＋ New group
+          <PlusIcon className="h-3.5 w-3.5" />
+          New group
         </button>
       )}
     </div>
@@ -444,15 +450,15 @@ function VocabRow({
   const memberChips = groups.filter((g) => entry.groups.includes(g.id));
 
   return (
-    <div className="bg-white dark:bg-slate-900">
+    <div className="bg-surface ">
       <div className="flex items-center pr-2">
         <button
           type="button"
           onClick={onToggle}
-          className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60"
+          className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left hover:bg-surface-sunken "
         >
           <span className="w-1/3 shrink-0 font-medium">{entry.display}</span>
-          <span className="min-w-0 flex-1 truncate text-sm text-slate-500">
+          <span className="min-w-0 flex-1 truncate text-sm text-ink-muted">
             {entry.translation}
           </span>
           {memberChips.length > 0 && (
@@ -460,7 +466,7 @@ function VocabRow({
               {memberChips.slice(0, 2).map((g) => (
                 <span
                   key={g.id}
-                  className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800"
+                  className="rounded-full bg-surface-sunken px-2 py-0.5 text-[10px] text-ink-muted "
                 >
                   {g.name}
                 </span>
@@ -468,7 +474,7 @@ function VocabRow({
             </span>
           )}
           <MasteryDot entry={entry} />
-          <span className="shrink-0 text-xs text-slate-400">{timeAgo(entry.createdAt)}</span>
+          <span className="shrink-0 text-xs text-ink-subtle">{timeAgo(entry.createdAt)}</span>
           <svg
             viewBox="0 0 24 24"
             width="14"
@@ -476,7 +482,7 @@ function VocabRow({
             fill="none"
             stroke="currentColor"
             strokeWidth="2.5"
-            className={`shrink-0 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+            className={`shrink-0 text-ink-subtle transition-transform ${open ? "rotate-180" : ""}`}
             aria-hidden
           >
             <path d="m6 9 6 6 6-6" />
@@ -486,26 +492,26 @@ function VocabRow({
       </div>
 
       {open && (
-        <div className="border-t border-slate-100 px-4 py-3 font-content dark:border-slate-800">
-          <p className="text-sm text-slate-700 dark:text-slate-200">{entry.translation}</p>
+        <div className="border-t border-line px-4 py-3 font-content ">
+          <p className="text-sm text-ink ">{entry.translation}</p>
           <FormsLine forms={entry.forms} />
           <div className="mt-2 space-y-2">
             {entry.examples.map((ex, i) => (
-              <div key={i} className="rounded-lg bg-slate-50 p-2 text-sm dark:bg-slate-800">
+              <div key={i} className="rounded-control bg-surface-sunken p-2 text-sm ">
                 <div className="flex items-start justify-between gap-1">
-                  <p className="text-slate-800 dark:text-slate-100">{ex.de}</p>
+                  <p className="text-ink ">{ex.de}</p>
                   <SpeakButton text={ex.de} className="-mr-1 -mt-1" />
                 </div>
-                <p className="text-slate-500">{ex.en}</p>
+                <p className="text-ink-muted">{ex.en}</p>
               </div>
             ))}
             {entry.examples.length === 0 && (
-              <p className="text-sm text-slate-400">No examples yet.</p>
+              <p className="text-sm text-ink-subtle">No examples yet.</p>
             )}
           </div>
 
           <div className="mt-3">
-            <p className="mb-1 text-xs font-medium text-slate-400">Groups</p>
+            <p className="mb-1 text-xs font-medium text-ink-subtle">Groups</p>
             <div className="flex flex-wrap items-center gap-1.5">
               {groups.map((g) => {
                 const member = entry.groups.includes(g.id);
@@ -516,11 +522,11 @@ function VocabRow({
                     onClick={() => void onToggleGroup(entry.word, g.id, !member)}
                     className={`rounded-full border px-2.5 py-1 text-xs ${
                       member
-                        ? "border-accent bg-accent text-accent-foreground"
-                        : "border-slate-300 text-slate-500 hover:border-slate-400 dark:border-slate-700"
+                        ? "border-transparent bg-brand-soft text-brand-ink"
+                        : "border-line-control text-ink-muted hover:border-line-strong"
                     }`}
                   >
-                    {member ? "✓ " : ""}
+                    {member && <CheckIcon className="mr-0.5 inline h-3 w-3" />}
                     {g.name}
                   </button>
                 );
@@ -540,7 +546,7 @@ function VocabRow({
                   value={newGroup}
                   onChange={(e) => setNewGroup(e.target.value)}
                   placeholder="New group"
-                  className="w-28 rounded-full border border-dashed border-slate-300 bg-transparent px-2.5 py-1 text-xs outline-none focus:border-accent dark:border-slate-700"
+                  className="w-28 rounded-full border border-dashed border-line-control bg-transparent px-2.5 py-1 text-xs outline-none focus:border-focus "
                 />
                 {newGroup.trim() && (
                   <button type="submit" className="text-xs font-medium text-accent">
@@ -552,20 +558,20 @@ function VocabRow({
           </div>
 
           {entry.stats && (
-            <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
-              <span className="font-medium text-slate-400">Flashcards:</span>
-              <span className="text-green-600">{entry.stats.known} known</span>
+            <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-muted">
+              <span className="font-medium text-ink-subtle">Flashcards:</span>
+              <span className="text-success">{entry.stats.known} known</span>
               <span>·</span>
-              <span className="text-red-500">{entry.stats.missed} missed</span>
+              <span className="text-danger">{entry.stats.missed} missed</span>
               {entry.stats.lastStudiedAt && (
-                <span className="text-slate-400">
+                <span className="text-ink-subtle">
                   · last {timeAgo(entry.stats.lastStudiedAt)}
                 </span>
               )}
               <button
                 type="button"
                 onClick={() => void onResetStudy(entry.word)}
-                className="text-slate-400 underline decoration-dotted hover:text-slate-600 dark:hover:text-slate-300"
+                className="text-ink-subtle underline decoration-dotted hover:text-ink "
               >
                 reset
               </button>
@@ -573,7 +579,7 @@ function VocabRow({
           )}
 
           {error && (
-            <p className="mt-2 rounded-lg border border-red-300 bg-red-50 px-2 py-1.5 text-xs text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+            <p className="mt-2 rounded-control border border-transparent bg-danger-soft px-2 py-1.5 text-xs text-danger ">
               {error}
             </p>
           )}
@@ -583,14 +589,14 @@ function VocabRow({
               onClick={refresh}
               disabled={busy || !canRefresh}
               title={canRefresh ? "" : "AI tutor not configured"}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium hover:border-slate-500 disabled:opacity-50 dark:border-slate-700"
+              className={`${btn.secondary} ${btn.sm}`}
             >
               {busy ? "Regenerating…" : "↻ Regenerate"}
             </button>
             <button
               type="button"
               onClick={() => void onRemove(entry.word)}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-red-600 hover:border-red-400 dark:border-slate-700"
+              className="rounded-control border border-line-control px-3 py-1.5 text-sm font-medium text-danger hover:border-danger "
             >
               Remove
             </button>
@@ -611,9 +617,9 @@ function FormsLine({ forms }: { forms: VocabEntry["forms"] }) {
       {chips.map(([label, val]) => (
         <span
           key={label}
-          className="rounded-md bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800"
+          className="rounded-md bg-surface-sunken px-2 py-0.5 text-xs "
         >
-          <span className="text-slate-400">{label}:</span>{" "}
+          <span className="text-ink-subtle">{label}:</span>{" "}
           <span className="font-medium">{val}</span>
         </span>
       ))}
@@ -631,7 +637,7 @@ function MasteryDot({ entry }: { entry: VocabEntry }) {
     <span
       title={`Flashcards: ${s.known} known · ${s.missed} missed`}
       className={`h-2 w-2 shrink-0 rounded-full ${
-        known ? "bg-green-500" : "bg-amber-500"
+        known ? "bg-success" : "bg-warning"
       }`}
       aria-hidden
     />

@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { STORY_LENGTHS, type CefrLevel, type GenerateStoryBody, type StoryContext } from "@mdb/shared";
 import { api, ApiError, generateStory, type StoryGenerationEvent } from "../lib/api";
+import { ChevronLeftIcon, SparklesIcon } from "../components/icons";
+import { btn } from "../components/ui";
 
 const LEVELS: CefrLevel[] = ["A1", "A2", "B1", "B2", "C1", "C2"];
 const IDEAS = [
@@ -70,11 +72,12 @@ export function StoryGenerate() {
   if (aiReady === false) {
     return (
       <div className="space-y-3">
-        <Link to="/stories" className="text-sm text-slate-500 hover:underline">
-          ← Stories
+        <Link to="/stories" className="inline-flex items-center gap-1 text-sm font-medium text-ink-muted hover:text-ink">
+          <ChevronLeftIcon className="h-4 w-4" />
+          Stories
         </Link>
-        <h1 className="text-2xl font-bold">Generate a story</h1>
-        <p className="text-slate-500">
+        <h1 className="text-[28px] font-semibold leading-[34px] tracking-[-0.02em]">Generate a story</h1>
+        <p className="text-ink-muted">
           This needs your AI tutor. Set it up under{" "}
           <Link to="/settings" className="underline">
             Settings → AI tutor
@@ -91,20 +94,21 @@ export function StoryGenerate() {
 
   const busy = progress !== null;
   const segBtn = (active: boolean) =>
-    `rounded-md px-3 py-1 text-sm ${active ? "bg-accent text-accent-foreground" : "text-slate-600 dark:text-slate-300"}`;
-  const seg = "inline-flex rounded-lg border border-slate-300 p-0.5 dark:border-slate-700";
+    `rounded-md px-3 py-1 text-sm ${active ? "bg-surface-raised text-ink shadow-card" : "text-ink-muted hover:text-ink"}`;
+  const seg = "inline-flex rounded-control border border-line-control p-0.5 ";
 
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
-        <Link to="/stories" className="mr-auto text-sm text-slate-500 hover:underline">
-          ← Stories
+        <Link to="/stories" className="mr-auto text-sm text-ink-muted hover:underline">
+          <ChevronLeftIcon className="h-4 w-4" />
+          Stories
         </Link>
-        <Link to="/stories/new" className="text-sm text-slate-500 hover:underline">
+        <Link to="/stories/new" className="inline-flex items-center gap-1 text-sm font-medium text-ink-muted hover:text-ink">
           Write one yourself instead
         </Link>
       </div>
-      <h1 className="text-2xl font-bold">Generate a story</h1>
+      <h1 className="text-[28px] font-semibold leading-[34px] tracking-[-0.02em]">Generate a story</h1>
 
       <div>
         <label htmlFor="story-prompt" className="mb-1 block text-sm font-medium">
@@ -129,7 +133,7 @@ export function StoryGenerate() {
                 key={i}
                 type="button"
                 onClick={() => setPrompt(i)}
-                className="rounded-full border border-slate-300 px-2.5 py-1 text-xs text-slate-600 hover:border-slate-500 dark:border-slate-700 dark:text-slate-300"
+                className="rounded-full border border-line-control px-2.5 py-1 text-xs text-ink-muted hover:border-line-strong "
               >
                 {i}
               </button>
@@ -140,7 +144,7 @@ export function StoryGenerate() {
 
       <div className="flex flex-wrap gap-x-6 gap-y-3">
         <div>
-          <span className="mb-1 block text-sm text-slate-500">Level</span>
+          <span className="mb-1 block text-sm text-ink-muted">Level</span>
           <select value={level} disabled={busy} onChange={(e) => setLevel(e.target.value as CefrLevel)} className="input w-24">
             {LEVELS.map((l) => (
               <option key={l}>{l}</option>
@@ -148,7 +152,7 @@ export function StoryGenerate() {
           </select>
         </div>
         <div>
-          <span className="mb-1 block text-sm text-slate-500">Length</span>
+          <span className="mb-1 block text-sm text-ink-muted">Length</span>
           <div className={seg}>
             {(["short", "medium", "long"] as const).map((l) => (
               <button key={l} type="button" disabled={busy} className={segBtn(length === l)} onClick={() => setLength(l)}>
@@ -159,7 +163,7 @@ export function StoryGenerate() {
           </div>
         </div>
         <div>
-          <span className="mb-1 block text-sm text-slate-500">Questions</span>
+          <span className="mb-1 block text-sm text-ink-muted">Questions</span>
           <select value={questions} disabled={busy} onChange={(e) => setQuestions(Number(e.target.value))} className="input w-24">
             {[0, 3, 4, 5, 6, 8].map((n) => (
               <option key={n} value={n}>
@@ -170,7 +174,7 @@ export function StoryGenerate() {
         </div>
       </div>
 
-      <section className="rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+      <section className="rounded-card border border-line p-4 ">
         <h2 className="mb-2 text-sm font-semibold">Keep in mind</h2>
         <ContextOption
           label="My recent mistakes"
@@ -200,7 +204,7 @@ export function StoryGenerate() {
           items={preview?.topics}
           empty="No exercises practised yet."
         />
-        <div className="mt-3 border-t border-slate-200 pt-3 dark:border-slate-800">
+        <div className="mt-3 border-t border-line pt-3 ">
           <span className="mb-1.5 block text-sm">Vocabulary</span>
           <div className={seg}>
             <button type="button" disabled={busy} className={segBtn(vocabulary === "known")} onClick={() => setVocabulary("known")}>
@@ -210,7 +214,7 @@ export function StoryGenerate() {
               Stretch me
             </button>
           </div>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-ink-muted">
             {vocabulary === "known"
               ? `Only words a ${level} learner knows.`
               : "About 1 in 20 words a bit above your level — each one explained in the glossary."}
@@ -218,13 +222,13 @@ export function StoryGenerate() {
         </div>
       </section>
 
-      {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">{error}</p>}
+      {error && <p className="rounded-control bg-danger-soft p-3 text-sm text-danger ">{error}</p>}
 
       {busy ? (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-accent" aria-hidden />
+        <div className="flex flex-wrap items-center gap-3 rounded-card border border-line bg-surface p-4 ">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-line-control border-t-accent" aria-hidden />
           <span className="text-sm">{progressText(progress)}</span>
-          <button type="button" onClick={cancel} className="ml-auto text-sm text-slate-500 underline">
+          <button type="button" onClick={cancel} className="ml-auto text-sm text-ink-muted underline">
             Cancel
           </button>
         </div>
@@ -233,9 +237,10 @@ export function StoryGenerate() {
           type="button"
           disabled={prompt.trim().length < 3 || aiReady === null}
           onClick={() => void go()}
-          className="rounded-lg bg-accent px-5 py-2.5 font-medium text-accent-foreground disabled:opacity-50"
+          className={`${btn.primary}`}
         >
-          ✨ Write my story
+          <SparklesIcon className="h-4 w-4" />
+          Write my story
         </button>
       )}
     </div>
@@ -283,16 +288,16 @@ function ContextOption({
         />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2">
-            <span className={`text-sm ${n === 0 ? "text-slate-400" : ""}`}>{label}</span>
+            <span className={`text-sm ${n === 0 ? "text-ink-subtle" : ""}`}>{label}</span>
             {n > 0 && (
-              <button type="button" onClick={() => setOpen((o) => !o)} className="text-xs text-slate-500 underline">
+              <button type="button" onClick={() => setOpen((o) => !o)} className="text-xs text-ink-muted underline">
                 {open ? "hide" : `see ${n}`}
               </button>
             )}
           </div>
-          <p className="text-xs text-slate-500">{n === 0 && items ? empty : hint}</p>
+          <p className="text-xs text-ink-muted">{n === 0 && items ? empty : hint}</p>
           {open && n > 0 && (
-            <div className="mt-1.5 rounded-lg bg-slate-50 p-2 text-xs text-slate-600 dark:bg-slate-800/50 dark:text-slate-300" lang="de">
+            <div className="mt-1.5 rounded-control bg-surface-sunken p-2 text-xs text-ink-muted " lang="de">
               {inline ? (
                 items!.join(" · ")
               ) : (
