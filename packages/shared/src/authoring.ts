@@ -260,7 +260,6 @@ export function buildCoverGuide(): string {
 
 Style: a warm hand-drawn comic illustration, like a newspaper comic strip or a children's book — thick, slightly wobbly black ink outlines (stroke "#1d1a17", width 4–6, round joins and caps), flat colours with a watercolour feel, a limited palette of 4–6 colours that fits the story's mood, and paper grain over everything. One clear scene that makes you curious about the story: the main character(s), a key object, a recognisable place. Give characters personality with simple means: a pose, a big expression, a funny detail. Leave a calm area for the title.
 - Series cover: the book's title in large lettering (the main word or two very big), plus the level ("A1") in a small badge. Chapter cover: the chapter's title and "Kapitel N", showing that chapter's key moment; keep the book's palette and characters so the chapters look like one set.
-- Spine colour: add data-spine="#rrggbb" to the <svg> with the book's main colour (used for its spine on the shelf).
 
 Rules (the app checks them and rejects anything else):
 - One <svg xmlns="http://www.w3.org/2000/svg" viewBox="${COVER_VIEWBOX}" width="600" height="900">…</svg> — portrait 2:3.
@@ -276,7 +275,7 @@ Useful filters (put them in <defs>):
 <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="5" result="g"/><feColorMatrix in="g" type="matrix" values="0 0 0 0 0.35  0 0 0 0 0.28  0 0 0 0 0.2  0 0 0 0.16 0"/></filter>  — as the last element: <rect width="600" height="900" filter="url(#grain)"/>.
 
 Example (shortened; a series cover):
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="${COVER_VIEWBOX}" width="600" height="900" data-spine="#3f8f4a">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="${COVER_VIEWBOX}" width="600" height="900">
 <defs><filter id="ink" …/><filter id="wash" …/><filter id="grain" …/>
 <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7e3b5"/><stop offset="1" stop-color="#f1b77e"/></linearGradient></defs>
 <rect width="600" height="900" fill="#f4ead5"/>

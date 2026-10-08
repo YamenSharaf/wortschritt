@@ -4,15 +4,15 @@ import type { SeriesSummary } from "@mdb/shared";
 import { Cover } from "./Cover";
 
 /**
- * The learner's books on wooden shelves: face-out covers, or spines side by
- * side like a real bookcase. The choice is remembered on this device.
+ * The learner's books: face-out covers on wooden shelves, or a list. The
+ * choice is remembered on this device.
  */
-type View = "covers" | "spines";
+type View = "covers" | "list";
 const VIEW_KEY = "mdb.shelfView";
 
 function loadView(): View {
   try {
-    return localStorage.getItem(VIEW_KEY) === "spines" ? "spines" : "covers";
+    return localStorage.getItem(VIEW_KEY) === "list" ? "list" : "covers";
   } catch {
     return "covers";
   }
@@ -43,14 +43,14 @@ export function Bookshelf({ books }: { books: SeriesSummary[] }) {
   }, [view]);
 
   const inner = Math.max(0, width - PAD * 2);
-  const rows = width ? (view === "covers" ? coverRows(books, inner) : spineRows(books, inner)) : [];
+  const rows = width && view === "covers" ? coverRows(books, inner) : [];
 
   return (
     <section className="mb-6">
       <div className="mb-2 flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Books</h2>
         <div className="flex rounded-lg border border-slate-300 p-0.5 text-xs dark:border-slate-700" role="group" aria-label="Shelf view">
-          {(["covers", "spines"] as const).map((v) => (
+          {(["covers", "list"] as const).map((v) => (
             <button
               key={v}
               type="button"
@@ -63,14 +63,16 @@ export function Bookshelf({ books }: { books: SeriesSummary[] }) {
           ))}
         </div>
       </div>
-      <div ref={ref} className="space-y-6">
-        {rows.map((row, i) => (
-          <Shelf key={`${view}-${i}`}>
-            {view === "covers"
-              ? row.items.map((b) => <FaceOut key={b.id} book={b} width={(row as CoverRow).bookWidth} />)
-              : row.items.map((b) => <Spine key={b.id} book={b} />)}
-          </Shelf>
-        ))}
+      <div ref={ref} className={view === "covers" ? "space-y-6" : "grid gap-3 sm:grid-cols-2"}>
+        {view === "covers"
+          ? rows.map((row, i) => (
+              <Shelf key={i}>
+                {row.items.map((b) => (
+                  <FaceOut key={b.id} book={b} width={row.bookWidth} />
+                ))}
+              </Shelf>
+            ))
+          : books.map((b) => <ListItem key={b.id} book={b} />)}
       </div>
     </section>
   );
@@ -102,28 +104,6 @@ function coverRows(books: SeriesSummary[], inner: number): CoverRow[] {
   const bookWidth = Math.min(160, (inner - GAP * (perRow - 1)) / perRow);
   const rows: CoverRow[] = [];
   for (let i = 0; i < books.length; i += perRow) rows.push({ items: books.slice(i, i + perRow), bookWidth });
-  return rows;
-}
-
-function spineWidth(b: SeriesSummary) {
-  return 34 + Math.min(b.total, 12) * 2.5;
-}
-
-function spineRows(books: SeriesSummary[], inner: number): Array<{ items: SeriesSummary[] }> {
-  const rows: Array<{ items: SeriesSummary[] }> = [];
-  let row: SeriesSummary[] = [];
-  let used = 0;
-  for (const b of books) {
-    const w = spineWidth(b) + GAP;
-    if (row.length && used + w - GAP > inner) {
-      rows.push({ items: row });
-      row = [];
-      used = 0;
-    }
-    row.push(b);
-    used += w;
-  }
-  if (row.length) rows.push({ items: row });
   return rows;
 }
 
@@ -177,57 +157,46 @@ function FaceOut({ book, width }: { book: SeriesSummary; width: number }) {
   );
 }
 
-/** Light text on dark spines and dark text on light ones. */
-function inkFor(hex: string): string {
-  const n = parseInt(hex.replace("#", ""), 16);
-  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-  return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? "#1d1a17" : "#f4ead5";
-}
-
-/** Height varies a little per book, like a real shelf. */
-function spineHeight(id: string): number {
-  let h = 0;
-  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return 170 + (h % 40);
-}
-
-function Spine({ book }: { book: SeriesSummary }) {
-  const ink = inkFor(book.color);
+function ListItem({ book }: { book: SeriesSummary }) {
+  const done = book.read === book.total && book.total > 0;
   return (
     <Link
       to={`/series/${book.id}`}
-      aria-label={label(book)}
-      title={label(book)}
-      className="group relative shrink-0 transition-transform duration-200 hover:-translate-y-1.5"
-      style={{ width: spineWidth(book), height: spineHeight(book.id) }}
+      className="relative flex gap-3 overflow-hidden rounded-xl border border-slate-200 bg-white p-3 hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900"
     >
-      <Marker book={book} />
-      <div
-        className="flex h-full flex-col items-center justify-between overflow-hidden rounded-[3px] py-3"
-        style={{
-          background: `linear-gradient(90deg, rgba(0,0,0,.28), rgba(255,255,255,.14) 22%, rgba(0,0,0,0) 45%, rgba(0,0,0,.22)), ${book.color}`,
-          color: ink,
-          boxShadow: "1px 2px 4px rgba(0,0,0,.35)",
-        }}
-      >
-        <span className="h-1 w-full border-y opacity-60" style={{ borderColor: ink }} aria-hidden />
-        <span
-          className="min-h-0 flex-1 overflow-hidden py-2 text-center font-serif font-bold"
-          // Long titles wrap onto a second line (column) instead of being cut.
-          style={{
-            writingMode: "vertical-rl",
-            transform: "rotate(180deg)",
-            fontSize: book.title.length > 16 ? 12 : 14,
-            lineHeight: 1.1,
-            whiteSpace: book.title.length > 16 ? "normal" : "nowrap",
-          }}
-          lang="de"
-        >
-          {book.title}
-        </span>
-        <span className="font-sans text-[10px] font-bold tracking-wider">{book.level}</span>
-        <span className="mt-1.5 h-1 w-full border-y opacity-60" style={{ borderColor: ink }} aria-hidden />
+      <Cover
+        kind="series"
+        id={book.id}
+        version={book.cover}
+        fallbackKey={`${book.title}-${book.subtitle ?? ""}-${book.level}`}
+        className="w-14 shrink-0"
+      />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="font-medium" lang="de">
+              {book.title}
+            </div>
+            {book.subtitle && <div className="text-xs text-slate-400">{book.subtitle}</div>}
+          </div>
+          <span className="shrink-0 rounded-full border border-slate-300 px-2 py-0.5 text-xs text-slate-500 dark:border-slate-700">
+            {book.level}
+          </span>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-x-3 text-xs text-slate-500">
+          <span>{book.written === book.total ? `${book.total} chapters` : `${book.written} of ${book.total} chapters written`}</span>
+          {book.read > 0 && (
+            <span className={done ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"}>
+              {done ? "Read ✓" : `${Math.round(book.progress * 100)}% read`}
+            </span>
+          )}
+        </div>
       </div>
+      {book.progress > 0.01 && !done && (
+        <div className="absolute inset-x-0 bottom-0 h-0.5 bg-slate-100 dark:bg-slate-800">
+          <div className="h-full bg-accent" style={{ width: `${Math.round(book.progress * 100)}%` }} />
+        </div>
+      )}
     </Link>
   );
 }

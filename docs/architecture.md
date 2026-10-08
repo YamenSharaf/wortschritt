@@ -91,8 +91,7 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   (`get_authoring_guide` kind "cover"). EPUBs get the cover as a PNG
   (resvg; generic font families are mapped to the DejaVu fonts the Docker
   image installs) plus drawn chapter art at each chapter's start. On the
-  Stories page books stand on shelves, face-out or as spines; a spine's
-  colour is the cover's `data-spine` or its most used colour (`coverColor`).
+  Stories page books stand face-out on shelves, or show as a list.
 - Story translations (`services/storyTranslations.ts`): English lines per
   paragraph, one per sentence as `splitSentences` (`@mdb/shared` reading.ts,
   shared with the reader) cuts it, or one line for the whole paragraph when

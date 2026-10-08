@@ -66,7 +66,7 @@ export function coverFor(
 }
 
 /** The cover a series without art gets. */
-export const seriesFallbackCover = (id: string, s: Series) =>
+const seriesFallbackCover = (id: string, s: Series) =>
   fallbackCover({ seed: id, title: s.title, subtitle: s.subtitle, level: s.level });
 
 const GENERIC: Record<string, string> = {
