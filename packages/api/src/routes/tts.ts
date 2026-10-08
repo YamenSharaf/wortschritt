@@ -4,12 +4,10 @@ import { dirname, join, resolve } from "node:path";
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { TTS_VOICE_CATALOG, TTS_VOICE_IDS, ttsAdminBody, ttsAdminSettings as ttsAdminDto, ttsStatus, ttsTestBody } from "@mdb/shared";
+import { ttsAdminBody, ttsAdminSettings as ttsAdminDto, ttsStatus, ttsTestBody } from "@mdb/shared";
 import { requireAdmin, requireAuth } from "../auth/session";
 import { env } from "../env";
 import {
-  piperBase as base,
-  piperVoices as installedVoices,
   synthesize,
   TtsConfigError,
   ttsAdminSettings,
@@ -24,10 +22,8 @@ const cacheDir = join(dirname(resolve(env.DATABASE_PATH)), "tts-cache");
 /** A cached clip for this voice and text, or a fresh one (then cached). */
 async function clip(text: string, voice: string): Promise<{ audio: Buffer; type: string }> {
   const key = createHash("sha256").update(`${voice}\n${text}`).digest("hex");
-  for (const [ext, type] of [["wav", "audio/wav"], ["mp3", "audio/mpeg"]] as const) {
-    const file = join(cacheDir, `${key}.${ext}`);
-    if (existsSync(file)) return { audio: readFileSync(file), type };
-  }
+  const file = join(cacheDir, `${key}.mp3`);
+  if (existsSync(file)) return { audio: readFileSync(file), type: "audio/mpeg" };
   const out = await synthesize(text, voice);
   try {
     if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
@@ -49,11 +45,10 @@ export async function ttsRoutes(app: FastifyInstance) {
       schema: { tags: ["tts"], response: { 200: ttsStatus } },
     },
     async () => {
-      const voices = await usableVoices();
+      const voices = usableVoices();
       return {
         available: voices.length > 0,
         installed: voices.map((v) => v.id),
-        catalog: TTS_VOICE_CATALOG.map((v) => ({ id: v.id, label: v.label })),
         voices,
       };
     },
@@ -123,47 +118,4 @@ export async function ttsRoutes(app: FastifyInstance) {
     },
   );
 
-  // Download a voice into the shared volume (allowlisted to the catalog).
-  // Admin-only: it writes to the server for everyone.
-  r.post(
-    "/api/tts/download",
-    {
-      preHandler: requireAdmin,
-      schema: {
-        tags: ["tts"],
-        body: z.object({ voice: z.string().min(1) }),
-        response: {
-          200: z.object({ ok: z.literal(true), installed: z.array(z.string()) }),
-          400: z.object({ error: z.string() }),
-          401: z.object({ error: z.string() }),
-          403: z.object({ error: z.string() }),
-          502: z.object({ error: z.string() }),
-          503: z.object({ error: z.string() }),
-        },
-      },
-    },
-    async (req, reply) => {
-      if (!base) return reply.code(503).send({ error: "tts not configured" });
-      const { voice } = req.body;
-      if (!TTS_VOICE_IDS.includes(voice)) {
-        return reply.code(400).send({ error: "unknown voice" });
-      }
-      try {
-        const upstream = await fetch(`${base}/download`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ voice }),
-        });
-        if (!upstream.ok) {
-          const detail = await upstream.text().catch(() => "");
-          app.log.error({ status: upstream.status, detail }, "tts download error");
-          return reply.code(502).send({ error: "download failed" });
-        }
-        return { ok: true as const, installed: await installedVoices() };
-      } catch (err) {
-        app.log.error(err, "tts download request failed");
-        return reply.code(502).send({ error: "download failed" });
-      }
-    },
-  );
 }

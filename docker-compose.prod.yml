@@ -33,9 +33,6 @@ services:
       ASSISTANT_BASE_URL: ${ASSISTANT_BASE_URL:-https://api.openai.com/v1}
       ASSISTANT_API_KEY: ${ASSISTANT_API_KEY:-}
       ASSISTANT_MODEL: ${ASSISTANT_MODEL:-gpt-4o-mini}
-      # Pronunciation: the Piper TTS sidecar below. Remove the piper service and
-      # set TTS_URL="" to fall back to the browser's built-in voice everywhere.
-      TTS_URL: ${TTS_URL-http://piper:5000}
       # Public URL (e.g. https://deutsch.example.com) for MCP sign-in (OAuth).
       # Optional: by default it's taken from the request (works behind a tunnel).
       PUBLIC_URL: ${PUBLIC_URL:-}
@@ -46,20 +43,4 @@ services:
       - ./data:/app/data
       # Optional: override the baked-in git content without rebuilding.
       # - ./content:/app/content:ro
-    depends_on:
-      - piper
     restart: unless-stopped
-
-  # Neural German pronunciation (Piper). Internal only — no published port, so
-  # it's reachable only by the app over the compose network. Comes with a few
-  # German voices; more are downloaded from Settings → Pronunciation.
-  piper:
-    image: ghcr.io/yamensharaf/mit-dem-baby-piper:latest
-    volumes:
-      - piper-voices:/voices
-    restart: unless-stopped
-
-volumes:
-  # Seeded from the piper image's baked-in voices on first run; downloaded
-  # voices persist here and are visible to the app.
-  piper-voices:

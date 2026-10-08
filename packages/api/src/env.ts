@@ -49,10 +49,6 @@ const envSchema = z.object({
   // bearer token (CORS; never with cookies). Comma-separated.
   APP_ORIGINS: optionalEnv(z.string().default("capacitor://localhost,https://localhost,http://localhost")),
 
-  // Optional Piper TTS sidecar (base URL, e.g. http://piper:5000). Unset =
-  // pronunciation falls back to the browser's built-in speech synthesis.
-  TTS_URL: optionalEnv(z.string().url().optional()),
-
   // Online dictionary (Wiktionary data) shown under the offline gloss when a
   // word is tapped. Results are cached in the database. "off" = offline only.
   DICTIONARY_API_URL: optionalEnv(
@@ -83,4 +79,3 @@ export const hasLegacyAssistantEnv =
   env.ASSISTANT_API_KEY.length > 0 ||
   env.ASSISTANT_BASE_URL !== "https://api.openai.com/v1";
 
-export const isTtsEnabled = Boolean(env.TTS_URL);

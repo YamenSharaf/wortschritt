@@ -1,13 +1,13 @@
 /**
- * Pronunciation. Prefers the Piper TTS sidecar (via /api/tts) when configured
- * and a voice is chosen, otherwise falls back to the browser's built-in speech
+ * Pronunciation. Prefers a server voice (Azure or Edge, via /api/tts) when
+ * one is chosen, otherwise falls back to the browser's built-in speech
  * synthesis. If the server clip fails to play, it falls back too.
  */
 
 type ServerTts = { enabled: boolean; voice: string };
 let serverTts: ServerTts = { enabled: false, voice: "" };
 
-/** Set by the app once it knows the sidecar status + chosen voice. */
+/** Set by the app once it knows the server voices + chosen voice. */
 export function setServerTts(next: Partial<ServerTts>) {
   serverTts = { ...serverTts, ...next };
 }
@@ -206,7 +206,7 @@ function playServer(text: string, voice: string, rate: number): Promise<void> {
 /**
  * Read texts one after another (a story's paragraphs). `onIndex(i)` fires as
  * paragraph i starts, `onEnd` once when finished or stopped. Returns a stop
- * function. Uses the Piper voice when set up, the device voice otherwise.
+ * function. Uses the server voice when set up, the device voice otherwise.
  */
 export function speakSequence(
   texts: string[],

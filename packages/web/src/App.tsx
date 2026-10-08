@@ -109,7 +109,7 @@ export function App() {
     }
   }, [authenticated, hasStored, setTheme]);
 
-  // Wire up the Piper voice (if the sidecar is up and a voice is chosen).
+  // Wire up the server voice (if one is chosen and available).
   useEffect(() => {
     if (!authenticated) return;
     Promise.all([api.ttsStatus(), api.settings()])

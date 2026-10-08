@@ -14,7 +14,6 @@ Object.assign(process.env, {
   DATABASE_PATH: join(dir, "app.db"),
   CONTENT_DIR: resolve(import.meta.dirname, "../../../../content"),
   NODE_ENV: "test",
-  TTS_URL: "",
   ASSISTANT_API_KEY: "",
   DICTIONARY_API_URL: "off",
   ENCRYPTION_KEY: "test-encryption-key-that-is-long-enough",
@@ -57,7 +56,6 @@ test("no providers: no server voices, and cloud voices are refused", async () =>
   assert.equal((await tts("azure:de-DE-KatjaNeural", "Hallo")).statusCode, 503);
   assert.equal((await tts("edge:de-DE-KatjaNeural", "Hallo")).statusCode, 503);
   assert.deepEqual((await me("GET", "/api/admin/tts")).json(), {
-    piper: { configured: false },
     azure: { configured: false, region: "", canStoreKey: true },
     edge: { enabled: false },
   });
