@@ -187,6 +187,11 @@ export const api = {
     req<WordDetails | null>(`/api/dict/${encodeURIComponent(word)}/details`),
   seriesList: () => req<SeriesSummary[]>("/api/series"),
   series: (id: string) => req<SeriesView>(`/api/series/${encodeURIComponent(id)}`),
+  setCover: (kind: "story" | "series", id: string, svg: string | null) =>
+    req<{ cover: string | null }>(`/api/${kind === "series" ? "series" : "stories"}/${encodeURIComponent(id)}/cover`, {
+      method: "PUT",
+      body: JSON.stringify({ svg }),
+    }),
   deleteSeries: (id: string) =>
     req<{ ok: true }>(`/api/series/${encodeURIComponent(id)}`, { method: "DELETE" }),
   storyTranslations: (id: string) =>
