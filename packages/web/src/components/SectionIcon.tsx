@@ -17,7 +17,7 @@ export function SectionIcon({ section, size = "md" }: { section: Section; size?:
   const glyph = size === "lg" ? "h-6 w-6" : size === "sm" ? "h-3.5 w-3.5" : "h-[18px] w-[18px]";
   return (
     <span
-      className={`inline-grid shrink-0 place-items-center text-section-on shadow-[inset_0_1px_0_#ffffff33,inset_0_-1px_0_#00000026] ${box} ${bg}`}
+      className={`ws-gloss inline-grid shrink-0 place-items-center text-section-on ${box} ${bg}`}
       aria-hidden
     >
       <Icon className={glyph} />
