@@ -99,7 +99,7 @@ test("registration accepts a reverse-DNS app scheme, not other schemes", async (
   const ok = await send({
     method: "POST",
     url: "/oauth/register",
-    payload: { client_name: "mit dem baby (Android)", redirect_uris: [REDIRECT], token_endpoint_auth_method: "none", grant_types: ["authorization_code", "refresh_token"] },
+    payload: { client_name: "Wortschritt (Android)", redirect_uris: [REDIRECT], token_endpoint_auth_method: "none", grant_types: ["authorization_code", "refresh_token"] },
   });
   assert.equal(ok.statusCode, 201, ok.body);
 });

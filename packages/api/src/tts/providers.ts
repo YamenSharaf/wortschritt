@@ -114,7 +114,7 @@ export async function synthesize(text: string, voice: string): Promise<{ audio: 
       "Ocp-Apim-Subscription-Key": cfg.key,
       "Content-Type": "application/ssml+xml",
       "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3",
-      "User-Agent": "mit-dem-baby",
+      "User-Agent": "wortschritt",
     },
     body: `<speak version='1.0' xml:lang='${lang}'><voice name='${name}'>${xmlEscape(text)}</voice></speak>`,
     signal: AbortSignal.timeout(20_000),

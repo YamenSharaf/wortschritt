@@ -266,7 +266,7 @@ export function storyEpub(userId: number, id: string): EpubFile | null {
   return {
     filename: `${s.id}.epub`,
     data: buildEpub({
-      uid: uuidFrom(`mit-dem-baby:${userId}:story:${s.id}`),
+      uid: uuidFrom(`wortschritt:${userId}:story:${s.id}`),
       title: s.title,
       subtitle: s.subtitle,
       level: s.level,
@@ -301,7 +301,7 @@ export function seriesEpub(userId: number, id: string): EpubFile | null | "empty
   return {
     filename: `${view.id}.epub`,
     data: buildEpub({
-      uid: uuidFrom(`mit-dem-baby:${userId}:series:${view.id}`),
+      uid: uuidFrom(`wortschritt:${userId}:series:${view.id}`),
       title: view.title,
       subtitle: view.subtitle,
       description: view.description,
