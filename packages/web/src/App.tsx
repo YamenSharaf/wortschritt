@@ -3,61 +3,33 @@ import { Navigate, NavLink, Outlet, useMatch } from "react-router-dom";
 import { api } from "./lib/api";
 import { useAuth } from "./lib/auth";
 import { AppTitle } from "./components/AppTitle";
+import {
+  HomeIcon,
+  LogOutIcon,
+  NotesIcon,
+  PracticeIcon,
+  SettingsIcon,
+  SheetsIcon,
+  StoriesIcon,
+  VocabIcon,
+} from "./components/icons";
 import { setServerTts } from "./lib/tts";
 import { VocabProvider } from "./lib/vocab";
 
-type IconProps = { className?: string };
-const Home = ({ className }: IconProps) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
-    <path d="M3 10.5 12 3l9 7.5" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M5 9.5V21h14V9.5" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-const Book = ({ className }: IconProps) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
-    <path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5Z" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M19 17H6" strokeLinecap="round" />
-  </svg>
-);
-const Dumbbell = ({ className }: IconProps) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
-    <path d="M6.5 6.5 17.5 17.5M4 8v8M8 5v14M16 5v14M20 8v8" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-const Gear = ({ className }: IconProps) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
-    <circle cx="12" cy="12" r="3" />
-    <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1" strokeLinecap="round" />
-  </svg>
-);
-const OpenBook = ({ className }: IconProps) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
-    <path d="M12 6.5C10 5 7 4.5 3 5v13c4-.5 7 0 9 1.5 2-1.5 5-2 9-1.5V5c-4-.5-7 0-9 1.5Z" strokeLinejoin="round" />
-    <path d="M12 6.5v13" strokeLinecap="round" />
-  </svg>
-);
-const Cards = ({ className }: IconProps) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
-    <rect x="3" y="7" width="14" height="12" rx="2" strokeLinejoin="round" />
-    <path d="M7 4h11a2 2 0 0 1 2 2v9" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-const Pencil = ({ className }: IconProps) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden>
-    <path d="M4 20h4L18.5 9.5a2 2 0 0 0-2.8-2.8L5 17.2V20Z" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M14 7.5 16.5 10" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
 const navItems = [
-  { to: "/", label: "Home", end: true, Icon: Home },
-  { to: "/cheatsheets", label: "Sheets", Icon: Book },
-  { to: "/exercises", label: "Practice", Icon: Dumbbell },
-  { to: "/stories", label: "Stories", Icon: OpenBook },
-  { to: "/vocab", label: "Vocab", Icon: Cards },
-  { to: "/notes", label: "Notes", Icon: Pencil },
-  { to: "/settings", label: "Settings", Icon: Gear },
+  { to: "/", label: "Home", end: true, Icon: HomeIcon },
+  { to: "/exercises", label: "Practice", Icon: PracticeIcon },
+  { to: "/cheatsheets", label: "Sheets", Icon: SheetsIcon },
+  { to: "/stories", label: "Stories", Icon: StoriesIcon },
+  { to: "/vocab", label: "Vocab", Icon: VocabIcon },
+  { to: "/notes", label: "Notes", Icon: NotesIcon },
 ];
+const mobileItems = [...navItems, { to: "/settings", label: "Settings", end: false, Icon: SettingsIcon }];
+
+const iconButton = (active = false) =>
+  `grid h-9 w-9 place-items-center rounded-full transition-colors ${
+    active ? "bg-surface-sunken text-ink" : "text-ink-muted hover:bg-surface-sunken hover:text-ink"
+  }`;
 
 export function App() {
   const { authenticated, loading, logout } = useAuth();
@@ -104,25 +76,26 @@ export function App() {
   return (
     <VocabProvider>
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90">
-        <div className="mx-auto flex max-w-4xl items-center gap-2 px-4 py-2.5">
-          <NavLink
-            to="/"
-            className="min-w-0 shrink text-base font-bold"
-          >
+      {/* Raycast-style bar: brand left, the section pills centred, account right. */}
+      <header className="sticky top-0 z-30 border-b border-line bg-[color-mix(in_srgb,var(--surface)_82%,transparent)] backdrop-blur-xl">
+        <div className="mx-auto grid h-14 max-w-5xl grid-cols-[1fr_auto] items-center gap-3 px-4 md:grid-cols-[1fr_auto_1fr]">
+          <NavLink to="/" className="min-w-0 justify-self-start rounded-control text-base font-semibold tracking-tight">
             <AppTitle />
           </NavLink>
-          <nav className="ml-3 hidden flex-1 gap-1 text-sm md:flex">
+          <nav
+            aria-label="Main"
+            className="hidden items-center gap-0.5 rounded-full border border-line bg-surface-sunken p-1 md:flex"
+          >
             {navItems.map(({ to, label, end }) => (
               <NavLink
                 key={to}
                 to={to}
                 end={end}
                 className={({ isActive }) =>
-                  `rounded-lg px-3 py-1.5 ${
+                  `rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
                     isActive
-                      ? "bg-accent text-accent-foreground"
-                      : "hover:bg-slate-100 dark:hover:bg-slate-800"
+                      ? "bg-surface-raised text-ink shadow-card"
+                      : "text-ink-muted hover:text-ink"
                   }`
                 }
               >
@@ -130,41 +103,41 @@ export function App() {
               </NavLink>
             ))}
           </nav>
-          <div className="ml-auto flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              onClick={() => void logout()}
-              className="rounded-lg px-2.5 py-1.5 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
-            >
-              Log out
+          <div className="flex items-center gap-1 justify-self-end">
+            <NavLink to="/settings" aria-label="Settings" title="Settings" className={({ isActive }) => `hidden md:grid ${iconButton(isActive)}`}>
+              <SettingsIcon className="h-[18px] w-[18px]" />
+            </NavLink>
+            <button type="button" onClick={() => void logout()} aria-label="Log out" title="Log out" className={iconButton()}>
+              <LogOutIcon className="h-[18px] w-[18px]" />
             </button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 pb-24 pt-6 md:pb-12">
+      <main className="mx-auto max-w-5xl px-4 pb-28 pt-8 md:pb-16">
         <Outlet />
       </main>
 
-      {/* Mobile bottom tab bar — one fixed column per item */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-7 overflow-hidden border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 md:hidden">
-        {navItems.map(({ to, label, end, Icon }) => (
+      {/* Mobile tab bar: the active tab's icon sits in a soft pill. */}
+      <nav
+        aria-label="Main"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-7 border-t border-line bg-[color-mix(in_srgb,var(--surface)_90%,transparent)] pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
+      >
+        {mobileItems.map(({ to, label, end, Icon }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
             className={({ isActive }) =>
-              `flex min-w-0 flex-col items-center gap-0.5 border-t-2 px-0.5 pb-1.5 pt-1 ${
-                isActive
-                  ? "border-accent text-accent"
-                  : "border-transparent text-slate-400 dark:text-slate-500"
+              `group flex min-w-0 flex-col items-center gap-1 px-0.5 pb-2 pt-2 text-[10px] font-medium leading-tight ${
+                isActive ? "is-active text-brand-ink" : "text-ink-subtle"
               }`
             }
           >
-            <Icon className="h-5 w-5 shrink-0" />
-            <span className="w-full truncate text-center text-[10px] leading-tight">
-              {label}
+            <span className="grid h-7 w-12 place-items-center rounded-full transition-colors group-[.is-active]:bg-brand-soft">
+              <Icon className="h-5 w-5 shrink-0" />
             </span>
+            <span className="w-full truncate text-center">{label}</span>
           </NavLink>
         ))}
       </nav>

@@ -90,13 +90,13 @@ export function LastRunBadge({ run }: { run?: RunSummary }) {
   const pct = run.answered ? run.correct / run.answered : 0;
   const tone =
     pct >= 0.8
-      ? "text-green-600 dark:text-green-400"
+      ? "text-success"
       : pct >= 0.5
-        ? "text-amber-600 dark:text-amber-400"
-        : "text-red-600 dark:text-red-400";
+        ? "text-warning"
+        : "text-danger";
   return (
     <span
-      className="shrink-0 whitespace-nowrap text-xs text-slate-400"
+      className="shrink-0 whitespace-nowrap text-xs text-ink-subtle"
       title={`Last run ${timeAgo(run.finishedAt)}`}
     >
       Last:{" "}

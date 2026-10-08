@@ -1,141 +1,154 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { RunSummary } from "@mdb/shared";
+import { ChevronRightIcon, PlayIcon } from "../components/icons";
+import { SectionIcon, type Section } from "../components/SectionIcon";
 import { api } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import { timeAgo } from "../lib/time";
 import { useAsync } from "../lib/useAsync";
 import { LastRunBadge } from "./Exercises";
 
 export function Dashboard() {
+  const { user } = useAuth();
   const progress = useAsync(() => api.progress(), []);
+  const settings = useAsync(() => api.settings(), []);
   const exercises = useAsync(() => api.exercises(), []);
   const runs = useAsync(() => api.runs(), []);
   const sheets = useAsync(() => api.sheetViews(5), []);
   const notes = useAsync(() => api.notes(), []);
   const recentRuns = runs.status === "ready" ? runs.data.slice(0, 5) : [];
+  const recentSheets = sheets.status === "ready" ? sheets.data.slice(0, 4) : [];
   const recentNotes = notes.status === "ready" ? notes.data.slice(0, 4) : [];
 
   const lastRun: Record<string, RunSummary> = {};
   if (runs.status === "ready") for (const r of runs.data) lastRun[r.setId] = r;
 
+  const name =
+    (settings.status === "ready" && settings.data.displayName.trim()) || user?.username || "";
+  const p = progress.status === "ready" ? progress.data : null;
+  const left = p ? Math.max(0, p.dailyGoal - p.answeredToday) : 0;
+  const continueTo = recentRuns[0] ? runHref(recentRuns[0].setId) : "/exercises";
+
   return (
-    <div className="space-y-8">
-      <section>
-        <h1 className="mb-4 text-2xl font-bold">Welcome back 👋</h1>
-        {progress.status === "ready" && (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <Stat label="Today" value={`${progress.data.answeredToday}/${progress.data.dailyGoal}`} />
-            <Stat label="Answered" value={progress.data.totalAnswered} />
-            <Stat label="Correct" value={progress.data.totalCorrect} />
-            <Stat
-              label="Accuracy"
-              value={
-                progress.data.totalAnswered
-                  ? `${Math.round((progress.data.totalCorrect / progress.data.totalAnswered) * 100)}%`
-                  : "—"
-              }
-            />
+    <div className="space-y-10">
+      <section className="relative overflow-hidden rounded-panel border border-line bg-surface px-6 py-8 shadow-card sm:px-8 sm:py-10">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-24 -top-40 aspect-square w-[34rem] bg-[radial-gradient(closest-side,var(--glow),transparent)]"
+        />
+        <div className="relative flex flex-wrap items-center justify-between gap-8">
+          <div className="min-w-0 max-w-xl space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-subtle">
+              {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
+            </p>
+            <h1 className="text-balance text-[34px] font-semibold leading-[40px] tracking-[-0.025em] sm:text-[40px] sm:leading-[44px]">
+              {greeting()}
+              {name && `, ${name}`}
+            </h1>
+            <p className="text-ink-muted">
+              {!p
+                ? " "
+                : left > 0
+                  ? `${left} ${left === 1 ? "answer" : "answers"} left to reach today's goal.`
+                  : "Today's goal is done. Anything more is a bonus."}
+            </p>
+            <div className="flex flex-wrap gap-2 pt-3">
+              <Link
+                to={continueTo}
+                className="inline-flex h-10 items-center gap-2 rounded-control bg-brand px-4 text-sm font-medium text-brand-on transition-colors hover:bg-brand-hover"
+              >
+                <PlayIcon className="h-4 w-4" />
+                {recentRuns[0] ? "Continue practice" : "Start practising"}
+              </Link>
+              <Link
+                to="/vocab/study"
+                className="inline-flex h-10 items-center rounded-control px-4 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-sunken hover:text-ink"
+              >
+                Review words
+              </Link>
+            </div>
           </div>
-        )}
+          {p && <GoalRing done={p.answeredToday} goal={p.dailyGoal} total={p.totalAnswered} correct={p.totalCorrect} />}
+        </div>
       </section>
 
-      {recentRuns.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-lg font-semibold">Recent practice</h2>
-          <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-            {recentRuns.map((r) => (
-              <Link
-                key={r.setId}
-                to={runHref(r.setId)}
-                className="flex items-center justify-between gap-3 bg-white px-4 py-3 hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/60"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{r.setTitle}</p>
-                  <p className="text-xs text-slate-400">{timeAgo(r.finishedAt)}</p>
-                </div>
-                <LastRunBadge run={r} />
-              </Link>
-            ))}
-          </div>
-        </section>
+      {(recentRuns.length > 0 || recentSheets.length > 0 || recentNotes.length > 0) && (
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          {recentRuns.length > 0 && (
+            <ListSection title="Recent practice" more={{ to: "/exercises", label: "All exercises" }}>
+              {recentRuns.map((r) => (
+                <Row
+                  key={r.setId}
+                  to={runHref(r.setId)}
+                  section={r.setId.startsWith("story:") ? "stories" : "practice"}
+                  title={r.setTitle}
+                  meta={timeAgo(r.finishedAt)}
+                  end={<LastRunBadge run={r} />}
+                />
+              ))}
+            </ListSection>
+          )}
+          {(recentSheets.length > 0 || recentNotes.length > 0) && (
+            <div className="space-y-8">
+              {recentSheets.length > 0 && (
+                <ListSection title="Recently viewed" more={{ to: "/cheatsheets", label: "All sheets" }}>
+                  {recentSheets.map((s) => (
+                    <Row key={s.sheetId} to={`/cheatsheets/${s.sheetId}`} section="sheets" title={s.title} meta={timeAgo(s.viewedAt)} />
+                  ))}
+                </ListSection>
+              )}
+              {recentNotes.length > 0 && (
+                <ListSection title="Recent notes" more={{ to: "/notes", label: "All notes" }}>
+                  {recentNotes.map((n) => (
+                    <Row
+                      key={n.id}
+                      to={`/notes/${n.id}`}
+                      section="notes"
+                      title={n.title.trim() || "Untitled"}
+                      meta={[n.category.trim(), timeAgo(n.updatedAt)].filter(Boolean).join(" · ")}
+                    />
+                  ))}
+                </ListSection>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
-      {sheets.status === "ready" && sheets.data.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-lg font-semibold">Recently viewed</h2>
-          <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-            {sheets.data.map((s) => (
-              <Link
-                key={s.sheetId}
-                to={`/cheatsheets/${s.sheetId}`}
-                className="flex items-center justify-between gap-3 bg-white px-4 py-3 hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/60"
-              >
-                <p className="min-w-0 truncate font-medium">{s.title}</p>
-                <span className="shrink-0 text-xs text-slate-400">
-                  {timeAgo(s.viewedAt)}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {recentNotes.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-lg font-semibold">Recent notes</h2>
-          <div className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-800">
-            {recentNotes.map((n) => (
-              <Link
-                key={n.id}
-                to={`/notes/${n.id}`}
-                className="flex items-center justify-between gap-3 bg-white px-4 py-3 hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/60"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium">
-                    {n.title.trim() || "Untitled"}
-                  </p>
-                  {n.category.trim() && (
-                    <p className="truncate text-xs uppercase tracking-wide text-slate-500">
-                      {n.category.trim()}
-                    </p>
-                  )}
-                </div>
-                <span className="shrink-0 text-xs text-slate-400">
-                  {timeAgo(n.updatedAt)}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section>
-        <h2 className="mb-3 text-lg font-semibold">Exercises</h2>
-        {exercises.status === "loading" && <p className="text-slate-500">Loading…</p>}
+      <section className="space-y-3">
+        <SectionHeading title="Exercises" more={{ to: "/exercises", label: "See all" }} />
+        {exercises.status === "loading" && <p className="text-ink-muted">Loading…</p>}
         {exercises.status === "ready" && exercises.data.length === 0 && (
-          <p className="text-slate-500">
-            No exercises yet. Add some via <Link className="underline" to="/import">Import</Link>.
+          <p className="text-ink-muted">
+            No exercises yet. Add some via{" "}
+            <Link className="text-brand-ink underline underline-offset-2" to="/import">
+              Import
+            </Link>
+            .
           </p>
         )}
-        {exercises.status === "ready" && (
-          <div className="grid gap-3 sm:grid-cols-2">
+        {exercises.status === "ready" && exercises.data.length > 0 && (
+          <div className="grid gap-4 sm:grid-cols-2">
             {exercises.data.slice(0, 4).map((set) => (
               <Link
                 key={set.id}
                 to={`/exercises/${set.id}`}
-                className="rounded-xl border border-slate-200 bg-white p-4 hover:border-slate-400 dark:border-slate-800 dark:bg-slate-900"
+                className="group rounded-card border border-line bg-surface p-5 shadow-card transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px hover:border-line-strong hover:shadow-card-hover motion-reduce:transition-none motion-reduce:hover:translate-y-0"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium">{set.title}</span>
-                  <span className="shrink-0 rounded bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800">
-                    {set.level}
-                  </span>
+                <div className="flex items-start gap-3">
+                  <SectionIcon section="practice" />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-semibold leading-6 tracking-[-0.005em]">{set.title}</h3>
+                    {set.subtitle && <p className="text-sm text-ink-muted">{set.subtitle}</p>}
+                  </div>
                 </div>
-                {set.subtitle && (
-                  <p className="text-xs text-slate-400">{set.subtitle}</p>
-                )}
-                <div className="mt-1 flex items-center justify-between gap-2">
-                  <p className="text-sm text-slate-500">{set.items.length} tasks</p>
-                  <LastRunBadge run={lastRun[set.id]} />
+                <div className="mt-4 flex items-center gap-2">
+                  <Pill>{set.level}</Pill>
+                  <Pill>{set.items.length} tasks</Pill>
+                  <span className="ml-auto">
+                    <LastRunBadge run={lastRun[set.id]} />
+                  </span>
                 </div>
               </Link>
             ))}
@@ -146,12 +159,91 @@ export function Dashboard() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
+function greeting(): string {
+  const h = new Date().getHours();
+  return h < 11 ? "Guten Morgen" : h < 18 ? "Guten Tag" : "Guten Abend";
+}
+
+/** The daily goal in the reward gradient, with all-time numbers under it. */
+function GoalRing({ done, goal, total, correct }: { done: number; goal: number; total: number; correct: number }) {
+  const pct = Math.min(100, Math.round((done / goal) * 100));
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-      <div className="text-2xl font-bold">{value}</div>
-      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
+    <div className="flex items-center gap-4">
+      <div
+        role="img"
+        aria-label={`Daily goal: ${done} of ${goal} answers`}
+        className="grid h-24 w-24 shrink-0 place-items-center rounded-full"
+        style={{
+          background: `conic-gradient(from -90deg, var(--reward-1), var(--reward-2), var(--reward-3) ${pct}%, var(--surface-sunken) 0)`,
+        }}
+      >
+        <span className="grid h-[78px] w-[78px] place-items-center rounded-full bg-surface font-mono text-base font-medium tabular-nums">
+          {pct}%
+        </span>
+      </div>
+      <dl className="space-y-1 text-sm">
+        <div>
+          <dt className="sr-only">Today</dt>
+          <dd className="font-medium tabular-nums">
+            {done} of {goal} today
+          </dd>
+        </div>
+        <div className="text-ink-muted">
+          <dt className="inline">Accuracy </dt>
+          <dd className="inline tabular-nums">{total ? `${Math.round((correct / total) * 100)}%` : "—"}</dd>
+        </div>
+        <div className="text-ink-muted">
+          <dd className="inline tabular-nums">{total}</dd>
+          <dt className="inline"> answered in total</dt>
+        </div>
+      </dl>
     </div>
+  );
+}
+
+function SectionHeading({ title, more }: { title: string; more?: { to: string; label: string } }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <h2 className="text-xl font-semibold tracking-[-0.01em]">{title}</h2>
+      {more && (
+        <Link to={more.to} className="inline-flex items-center gap-0.5 text-sm font-medium text-ink-muted hover:text-ink">
+          {more.label}
+          <ChevronRightIcon className="h-4 w-4" />
+        </Link>
+      )}
+    </div>
+  );
+}
+
+function ListSection({ title, more, children }: { title: string; more?: { to: string; label: string }; children: ReactNode }) {
+  return (
+    <section className="min-w-0 space-y-3">
+      <SectionHeading title={title} more={more} />
+      <div className="divide-y divide-[var(--border)] overflow-hidden rounded-card border border-line bg-surface shadow-card">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function Row({ to, section, title, meta, end }: { to: string; section: Section; title: string; meta?: string; end?: ReactNode }) {
+  return (
+    <Link to={to} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-sunken">
+      <SectionIcon section={section} size="sm" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium leading-6">{title}</p>
+        {meta && <p className="truncate text-xs text-ink-subtle">{meta}</p>}
+      </div>
+      {end}
+    </Link>
+  );
+}
+
+function Pill({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex h-[22px] items-center rounded-full border border-line bg-surface-sunken px-2 text-xs font-medium text-ink-muted">
+      {children}
+    </span>
   );
 }
 
