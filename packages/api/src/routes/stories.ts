@@ -135,7 +135,7 @@ export async function storyRoutes(app: FastifyInstance) {
     },
     async (req, reply) => {
       const ai = getAiChain(req.user!.id);
-      if (!ai) return reply.code(503).send({ error: "Set up your AI tutor under Settings → AI tutor first." });
+      if (!ai) return reply.code(503).send({ error: "Set up your AI tutor under Settings → Connections first." });
 
       reply.hijack();
       const raw = reply.raw;
@@ -205,7 +205,7 @@ export async function storyRoutes(app: FastifyInstance) {
     },
     async (req, reply) => {
       const ai = getAiChain(req.user!.id);
-      if (!ai) return reply.code(503).send({ error: "Set up your AI tutor under Settings → AI tutor first." });
+      if (!ai) return reply.code(503).send({ error: "Set up your AI tutor under Settings → Connections first." });
       try {
         const view = await translateStoryParagraphs(req.user!.id, req.params.id, ai, req.body.paragraphs, {
           onFallback: (failed, error) =>

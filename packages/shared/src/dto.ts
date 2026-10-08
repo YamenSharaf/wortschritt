@@ -533,7 +533,7 @@ export const oauthDecisionBody = z.object({
   approve: z.boolean(),
 });
 
-/** An app the user has connected (Settings → Connected apps). */
+/** An app the user has connected (Settings → Connections). */
 export const oauthGrantView = z.object({
   id: z.number().int(),
   clientName: z.string(),

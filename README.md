@@ -34,7 +34,7 @@ client can codegen a typed client against it.
 - **Notes** — free-form, categorized Markdown notes, auto-saved.
 - **Accounts** — a few people can share one instance: each has their own
   vocab, notes, progress and settings, while exercises and cheat sheets are a
-  shared library. The admin manages accounts under Settings → Users and can open
+  shared library. The admin manages accounts under Administration → Users (account menu) and can open
   self-registration for 24 hours at a time.
 - **Tap-to-gloss** — tap a German word for an instant translation from a bundled
   offline dictionary (see `packages/api/assets/ATTRIBUTION.md`), then fuller
@@ -57,7 +57,7 @@ client can codegen a typed client against it.
   wrong", translations, chat, AI grading of free-text answers, "generate more"
   items, vocab lookups, and tidying rough notes into clean Markdown. Each user
   connects their own OpenAI-compatible providers (e.g. OpenRouter) under
-  Settings → AI tutor and orders models for fallback (https, publicly
+  Settings → Connections and orders models for fallback (https, publicly
   reachable); keys are stored encrypted (`ENCRYPTION_KEY`).
 - **Pronunciation & read-aloud** — 🔊 buttons and the reader's read-aloud, with
   Azure Speech or Edge neural voices (set up by the admin), falling back to the
@@ -186,7 +186,7 @@ Backups are trivial — copy `data/app.db`.
 ### Pronunciation (optional)
 
 Neural German voices come from **Azure Speech** (free tier; the admin enters a
-key + region under Settings → Users) or the unofficial **Edge "Read aloud"**
+key + region under Administration → Server) or the unofficial **Edge "Read aloud"**
 endpoint (admin opt-in). The app proxies and caches clips; with neither set up
 it falls back to the browser's built-in voice.
 
@@ -233,7 +233,7 @@ login/registration routes requires authentication.
 
 ### Using the API from scripts
 
-Create a personal token under **Settings → Account → API tokens** (shown once),
+Create a personal token under **Settings → Connections → API tokens** (shown once),
 then send it as a Bearer token:
 
 ```bash
@@ -254,7 +254,7 @@ a custom connector in Claude (or any MCP client) with the URL
 
 - **OAuth (no setup):** the client opens the app's sign-in page, the user
   allows access, and the browser returns to the client. Each user connects as
-  themselves; **Settings → Account → Connected apps** lists and disconnects
+  themselves; **Settings → Connections → Connected apps** lists and disconnects
   them. The app is its own authorization server (discovery under
   `/.well-known/`, Dynamic Client Registration and Client ID Metadata
   Documents, PKCE S256, 1 h access tokens that only work on `/mcp`, rotating

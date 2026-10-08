@@ -191,7 +191,7 @@ test("another user has no AI until they set up their own", async () => {
   const before = calls.length;
   const res = await anna("POST", "/api/assistant/word", { word: "Haus" });
   assert.equal(res.statusCode, 503);
-  assert.match(res.json().error, /Settings → AI tutor/);
+  assert.match(res.json().error, /Settings → Connections/);
   assert.equal(calls.length, before, "nothing was sent upstream");
 });
 

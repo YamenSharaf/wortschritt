@@ -167,7 +167,7 @@ function extractJsonObject(content: string): unknown | null {
   return null;
 }
 
-const NOT_SET_UP = "Set up your AI tutor under Settings → AI tutor first.";
+const NOT_SET_UP = "Set up your AI tutor under Settings → Connections first.";
 
 /** Log when a model in the user's list fails and the next one is tried. */
 const logFallback =

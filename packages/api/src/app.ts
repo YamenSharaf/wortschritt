@@ -86,7 +86,7 @@ export async function buildApp(): Promise<FastifyInstance> {
       info: { title: "Wortschritt API", version: "0.1.0" },
       components: {
         securitySchemes: {
-          // Personal API tokens (Settings → Account → API tokens).
+          // Personal API tokens (Settings → Connections → API tokens).
           bearer: { type: "http", scheme: "bearer" },
         },
       },

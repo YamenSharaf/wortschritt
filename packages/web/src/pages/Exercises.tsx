@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { RunSummary } from "@mdb/shared";
+import { ImportIcon } from "../components/icons";
 import { SearchBox } from "../components/SearchBox";
 import { SectionIcon } from "../components/SectionIcon";
 import { SortControl, sortByMode, type SortMode } from "../components/SortControl";
-import { Muted, PageHeader, Pill, cardLink } from "../components/ui";
+import { Muted, PageHeader, Pill, btn, cardLink } from "../components/ui";
 import { api } from "../lib/api";
 import { timeAgo } from "../lib/time";
 import { useAsync } from "../lib/useAsync";
@@ -33,7 +34,15 @@ export function Exercises() {
       <PageHeader
         title="Practice"
         subtitle="Exercise sets for grammar and vocabulary. Wrong answers come back until you get them."
-        actions={list.length > 1 && <SortControl value={sort} onChange={setSort} />}
+        actions={
+          <>
+            {list.length > 1 && <SortControl value={sort} onChange={setSort} />}
+            <Link to="/import" className={btn.secondary}>
+              <ImportIcon className="h-4 w-4" />
+              Import
+            </Link>
+          </>
+        }
       />
       {list.length > 3 && (
         <div className="mb-5">

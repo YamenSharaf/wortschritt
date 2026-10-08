@@ -79,8 +79,8 @@ export function StoryGenerate() {
         <h1 className="text-[28px] font-semibold leading-[34px] tracking-[-0.02em]">Generate a story</h1>
         <p className="text-ink-muted">
           This needs your AI tutor. Set it up under{" "}
-          <Link to="/settings" className="underline">
-            Settings → AI tutor
+          <Link to="/settings/connections" className="underline">
+            Settings → Connections
           </Link>
           , or{" "}
           <Link to="/stories/new" className="underline">

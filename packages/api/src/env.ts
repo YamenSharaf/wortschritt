@@ -26,7 +26,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 
 
-  // Encrypts the API keys users save for their AI tutor (Settings → AI tutor).
+  // Encrypts the API keys users save for their AI tutor (Settings → Connections).
   // Generate with `openssl rand -base64 32` and keep a copy: if it's lost or
   // changed, saved AI keys can't be decrypted and must be re-entered. Unset =
   // users can't save AI settings.
