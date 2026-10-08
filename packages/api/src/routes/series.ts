@@ -3,6 +3,7 @@ import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { saveChapterBody, saveSeriesBody, seriesSummary, seriesView, storyView } from "@mdb/shared";
 import { requireAuth } from "../auth/session";
+import { seriesEpub } from "../services/epub";
 import { deleteSeries, getSeriesView, listSeries, saveChapter, saveSeries } from "../services/series";
 
 const ok = z.object({ ok: z.literal(true) });
@@ -63,6 +64,22 @@ export async function seriesRoutes(app: FastifyInstance) {
         overwrite: req.body.overwrite,
       });
       return res.ok ? res.view : reply.code(res.status).send({ error: res.error });
+    },
+  );
+
+  // Download the written chapters as one EPUB.
+  r.get(
+    "/api/series/:id/epub",
+    { preHandler: requireAuth, schema: { tags: ["series"], params } },
+    async (req, reply) => {
+      const file = seriesEpub(req.user!.id, req.params.id);
+      if (!file) return reply.code(404).send({ error: "no such series" });
+      if (file === "empty") return reply.code(409).send({ error: "no chapters written yet" });
+      reply
+        .header("content-type", "application/epub+zip")
+        .header("content-disposition", `attachment; filename="${file.filename}"`)
+        .header("cache-control", "no-store")
+        .send(Buffer.from(file.data));
     },
   );
 }

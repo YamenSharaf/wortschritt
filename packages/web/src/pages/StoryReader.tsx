@@ -694,9 +694,18 @@ function StoryReaderView() {
             {sheet === "settings" ? (
               <>
                 <ReaderPanel value={reader} onChange={changeReader} canSpeak={canSpeak} canTranslate={aiEnabled || hasAnyLines} />
-                <Link to={`/stories/${story.id}/edit`} className="reader-muted text-sm underline">
-                  Edit this story
-                </Link>
+                <div className="reader-muted flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                  <a
+                    href={book ? `/api/series/${book.id}/epub` : `/api/stories/${story.id}/epub`}
+                    download
+                    className="underline"
+                  >
+                    Download {book ? "the book" : "this story"} as EPUB
+                  </a>
+                  <Link to={`/stories/${story.id}/edit`} className="underline">
+                    Edit this story
+                  </Link>
+                </div>
               </>
             ) : (
               <Glossary entries={story.glossary} />

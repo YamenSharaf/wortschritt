@@ -127,9 +127,21 @@ export function SeriesPage() {
       <p className="text-sm text-slate-500">
         Books are written by an AI agent connected via MCP (ask it to continue this one with its next chapters).
       </p>
-      <button type="button" onClick={() => void remove()} className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-red-600 dark:border-slate-700">
-        Delete book
-      </button>
+      <div className="flex flex-wrap gap-2">
+        {view.written > 0 && (
+          <a
+            href={`/api/series/${view.id}/epub`}
+            download
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium dark:border-slate-700"
+            title="For e-readers: the German text with a table of contents and each chapter's word list"
+          >
+            Download EPUB
+          </a>
+        )}
+        <button type="button" onClick={() => void remove()} className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-red-600 dark:border-slate-700">
+          Delete book
+        </button>
+      </div>
     </div>
   );
 }
