@@ -77,8 +77,12 @@ function chaptersOf(s: Series, rows: ReturnType<typeof chapterRows>): SeriesChap
 
 function summarize(id: string, s: Series, chapters: SeriesChapter[], updatedAt: number, cover: string | null): SeriesSummary {
   const written = chapters.filter((c) => c.storyId);
-  const total = Math.max(chapters.length, 1);
-  const done = written.reduce((sum, c) => sum + (c.readAt ? 1 : Math.min(c.progress, 1)), 0);
+  // Weighted by length (planned chapters count as an average written one),
+  // so a short chapter doesn't count as much as a long one.
+  const avg = written.length ? written.reduce((sum, c) => sum + c.words, 0) / written.length : 1;
+  const weight = (c: SeriesChapter) => (c.storyId ? Math.max(c.words, 1) : Math.max(avg, 1));
+  const total = chapters.reduce((sum, c) => sum + weight(c), 0) || 1;
+  const done = written.reduce((sum, c) => sum + weight(c) * (c.readAt ? 1 : Math.min(c.progress, 1)), 0);
   // Continue with the first written chapter not finished yet, else the last one.
   const next = written.find((c) => !c.readAt) ?? written.at(-1);
   return {

@@ -111,6 +111,12 @@ test("book progress and where to continue", async () => {
   assert.equal(summary.total, 4);
   assert.equal(summary.progress, (1 + 0.5) / 4);
   assert.equal(summary.continueId, `${SID}-02`);
+
+  // Weighted by length: a chapter three times as long counts three times.
+  const long = [EXAMPLE_STORY.body, EXAMPLE_STORY.body, EXAMPLE_STORY.body].join("\n\n");
+  await me("PUT", `/api/series/${SID}/chapters/3`, { ...chapter(3, "Lang"), story: { ...EXAMPLE_STORY, body: long }, overwrite: true });
+  const [weighted] = (await me("GET", "/api/series")).json();
+  assert.ok(Math.abs(weighted.progress - (1 + 0.5) / 6) < 1e-9, String(weighted.progress));
 });
 
 test("overwriting the series keeps its chapters; deleting it deletes them", async () => {
