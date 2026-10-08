@@ -312,7 +312,9 @@ function StoryReaderView() {
     if (!paged || !blockPages.length) return;
     if (reflowing.current) reflowing.current = false;
     else if (page < pageCount) anchor.current = firstOnPage(blockEnds.current, page);
-    progress.current = Math.max(progress.current, Math.min(1, (page + 1) / pageCount));
+    // Pages turned past count as read (the page you're on doesn't yet); the
+    // end page counts as all of it.
+    progress.current = Math.max(progress.current, Math.min(1, page / pageCount));
   }, [paged, page, pageCount, blockPages]);
 
   const turn = useCallback((delta: number) => {
