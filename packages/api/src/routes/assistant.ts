@@ -355,7 +355,8 @@ export async function assistantRoutes(app: FastifyInstance) {
             const text = await collectFromOne(
               cfg,
               [{ role: "user", content: "Reply with just the word: OK" }],
-              { temperature: 0, maxTokens: 5 },
+              // Room for models that think before answering.
+              { temperature: 0, maxTokens: 16 },
             );
             return { ...base, ok: true, reply: text.trim().slice(0, 100), ms: Date.now() - started };
           } catch (err) {

@@ -25,6 +25,31 @@ const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 type Message = { role: string; content: string };
 type ChatChunk = { choices?: Array<{ delta?: { content?: string } }> };
 
+/**
+ * Request parameters a model turned out to reject, learned from its 400s
+ * (per endpoint + model, for the life of the process). Newer models differ:
+ * some reject `temperature` altogether (e.g. recent Claude models), some
+ * want `max_completion_tokens` instead of `max_tokens` (OpenAI's reasoning
+ * models), some refuse any token limit through a given gateway.
+ */
+type Quirks = { noTemperature?: true; maxCompletionTokens?: true; noTokenLimit?: true };
+const quirks = new Map<string, Quirks>();
+const quirkKey = (cfg: AiConfig) => `${cfg.baseUrl}\n${cfg.model}`;
+
+/** The adjustment a 400's message asks for, if it names a parameter not yet adjusted. */
+export function quirkFrom(detail: string, q: Quirks): Quirks | null {
+  const d = detail.toLowerCase();
+  if (!q.noTemperature && d.includes("temperature")) return { noTemperature: true };
+  if (!q.maxCompletionTokens && !q.noTokenLimit && d.includes("max_tokens")) return { maxCompletionTokens: true };
+  if (q.maxCompletionTokens && !q.noTokenLimit && d.includes("max_completion_tokens")) return { noTokenLimit: true };
+  return null;
+}
+
+/** Forget learned quirks (tests). */
+export function resetQuirksForTests(): void {
+  quirks.clear();
+}
+
 /** Yields the text deltas of a chat completion from one entry. */
 async function* streamOne(
   cfg: AiConfig,
@@ -33,32 +58,35 @@ async function* streamOne(
 ): AsyncGenerator<string> {
   const signals = [AbortSignal.timeout(TIMEOUT_MS), ...(opts.signal ? [opts.signal] : [])];
   let upstream;
-  try {
-    upstream = await guardedFetch(`${cfg.baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...(cfg.apiKey ? { authorization: `Bearer ${cfg.apiKey}` } : {}),
-      },
-      body: JSON.stringify({
-        model: cfg.model,
-        stream: true,
-        temperature: opts.temperature,
-        max_tokens: opts.maxTokens,
-        messages,
-      }),
-      signal: AbortSignal.any(signals),
-    });
-  } catch (err) {
-    throw toAiError(err);
-  }
-
-  if (!upstream.ok || !upstream.body) {
+  // A 400 that names a parameter is retried with it adjusted (at most once per kind).
+  for (let attempt = 0; ; attempt++) {
+    const q = quirks.get(quirkKey(cfg)) ?? {};
+    const body: Record<string, unknown> = { model: cfg.model, stream: true, messages };
+    if (!q.noTemperature) body.temperature = opts.temperature;
+    if (!q.noTokenLimit) body[q.maxCompletionTokens ? "max_completion_tokens" : "max_tokens"] = opts.maxTokens;
+    try {
+      upstream = await guardedFetch(`${cfg.baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(cfg.apiKey ? { authorization: `Bearer ${cfg.apiKey}` } : {}),
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.any(signals),
+      });
+    } catch (err) {
+      throw toAiError(err);
+    }
+    if (upstream.ok && upstream.body) break;
     const detail = (await upstream.text().catch(() => "")).slice(0, 2000);
-    throw new AiRequestError(`The AI provider answered ${upstream.status}.`, {
-      status: upstream.status,
-      detail,
-    });
+    const fix = upstream.status === 400 && attempt < 3 ? quirkFrom(detail, q) : null;
+    if (!fix) {
+      throw new AiRequestError(`The AI provider answered ${upstream.status}.`, {
+        status: upstream.status,
+        detail,
+      });
+    }
+    quirks.set(quirkKey(cfg), { ...q, ...fix });
   }
 
   const decoder = new TextDecoder();
