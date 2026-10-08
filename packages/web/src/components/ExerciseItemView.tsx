@@ -9,7 +9,7 @@ import {
   type TextAnswer,
 } from "@mdb/shared";
 import { api } from "../lib/api";
-import { CheckIcon, CrossIcon } from "./icons";
+import { CheckIcon, CrossIcon, LightbulbIcon, QuoteIcon } from "./icons";
 import { btn } from "./ui";
 
 /**
@@ -62,48 +62,75 @@ export function ExerciseItemView({ item, onAnswered, llmGrading }: Props) {
 
 // --- shared bits -----------------------------------------------------------
 
+/** A small uppercase label over a helper line (design system: eyebrow). */
+function Eyebrow({ children }: { children: string }) {
+  return <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-subtle">{children}</div>;
+}
+
 function Instructions({ text }: { text?: string }) {
   if (!text) return null;
-  // A left rule + muted style marks this as the task directive so it reads as
-  // guidance, not as part of the exercise sentence below it.
+  // The task directive: labelled and quiet, so it reads as guidance rather
+  // than as part of the exercise sentence below it.
   return (
-    <p className="mb-4 text-sm italic text-ink-muted">
-      {text}
+    <div className="mb-5">
+      <Eyebrow>Task</Eyebrow>
+      <p className="text-sm text-ink-muted">{text}</p>
+    </div>
+  );
+}
+
+/** A scenario/premise the item is based on: a quoted line, set apart from the
+ *  prompt by a quote mark and a muted colour rather than a box. */
+function Context({ text }: { text?: string }) {
+  if (!text) return null;
+  return (
+    <p className="mb-5 flex gap-2.5 text-base leading-6 text-ink-muted">
+      <QuoteIcon className="mt-1 h-4 w-4 shrink-0 text-ink-subtle" />
+      <span>{text}</span>
     </p>
   );
 }
 
-/** Always-visible helper text on an item (e.g. the words to use). */
-/** A scenario/premise the item is based on — a distinct quoted block so it
- *  reads apart from the prompt/question below it. */
-function Context({ text }: { text?: string }) {
-  if (!text) return null;
-  // The scenario the whole item hangs on. A filled block with a thick accent
-  // rule on the left reads as a quoted premise — clearly apart from the thin,
-  // italic task directive above and the exercise sentence below.
-  return (
-    <p className="mb-3 rounded-control bg-surface-sunken p-3 text-ink">
-      {text}
-    </p>
-  );
-}
+/** Always-visible helper text on an item. A list of words ("Wörter: ich ·
+ *  sich · waschen") becomes a word bank of chips; anything else a quiet line. */
 function ItemHint({ text }: { text?: string }) {
   if (!text) return null;
-  return (
-    <p className="mb-3 text-sm">
-      <span className="rounded-chip bg-surface-sunken px-2 py-1 text-ink-muted">
+  const m = /^([^:·]{1,20}):\s*(.+)$/.exec(text);
+  const label = m ? m[1]!.trim() : "Words";
+  const body = m ? m[2]! : text;
+  const words = body.split("·").map((w) => w.trim()).filter(Boolean);
+  if (words.length < 2) {
+    return (
+      <p className="mb-5 flex items-center gap-2 text-sm text-ink-muted">
+        <LightbulbIcon className="h-4 w-4 shrink-0 text-ink-subtle" />
         {text}
-      </span>
-    </p>
+      </p>
+    );
+  }
+  return (
+    <div className="mb-5">
+      <Eyebrow>{label}</Eyebrow>
+      <div className="flex flex-wrap gap-1.5">
+        {words.map((w, i) => (
+          <span
+            key={i}
+            className="inline-flex h-7 items-center rounded-[8px] border border-dashed border-line-control px-2.5 text-sm font-medium text-ink"
+          >
+            {w}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
 function Explanation({ text }: { text?: string }) {
   if (!text) return null;
   return (
-    <p className="mt-3 rounded-control bg-surface-sunken p-3 text-sm text-ink-muted">
-      {text}
-    </p>
+    <div className="mt-5 border-t border-line pt-4">
+      <Eyebrow>Why</Eyebrow>
+      <p className="text-sm leading-6 text-ink-muted">{text}</p>
+    </div>
   );
 }
 
@@ -285,7 +312,7 @@ function Cloze({
                 {...answerInputProps}
                 className={`mx-1 h-9 w-32 rounded-[8px] border px-2.5 text-center text-base font-medium outline-none transition-colors placeholder:font-normal placeholder:text-ink-subtle ${
                   !done
-                    ? "border-line-control bg-surface-sunken text-ink hover:border-ink-subtle focus:border-focus focus:bg-surface focus:shadow-[0_0_0_3px_var(--brand-soft)]"
+                    ? "border-line-control bg-surface-sunken text-ink hover:border-ink-subtle focus:border-focus focus:bg-surface focus:shadow-[0_0_0_3px_var(--brand-soft),0_0_18px_var(--glow)]"
                     : ok
                       ? "border-transparent bg-success-soft text-success"
                       : "border-transparent bg-danger-soft text-danger line-through decoration-1"
@@ -408,8 +435,8 @@ function ResultBanner({
         </p>
       )}
       {open && (
-        <div className="mt-2 rounded-control bg-surface-sunken p-3 text-sm">
-          <p className="mb-1 text-ink-muted">Possible answers:</p>
+        <div className="mt-4 text-sm">
+          <Eyebrow>Possible answers</Eyebrow>
           <ul className="space-y-1">
             {answer.accept.map((a) => (
               <li key={a} className="font-medium text-ink">
@@ -583,9 +610,7 @@ function Transform({
       <OpenAnswerBadge answer={item.answer} />
       <Context text={item.context} />
       <ItemHint text={item.hint} />
-      <p className="mb-3 rounded-control bg-surface-sunken p-3 text-ink">
-        {given}
-      </p>
+      <p className="mb-4 text-[17px] leading-7 text-ink">{given}</p>
       {lead && <p className="mb-3 text-lg leading-relaxed">{lead}</p>}
       <input
         value={text}

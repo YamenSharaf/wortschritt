@@ -16,6 +16,7 @@ import {
   CrossIcon,
   LanguagesIcon,
   LightbulbIcon,
+  RetryIcon,
   SparklesIcon,
 } from "../components/icons";
 import { btn, card } from "../components/ui";
@@ -426,7 +427,8 @@ function Runner({
         }`}
       >
         {answeredEarlier && (
-          <p className="mb-4 rounded-control bg-surface-sunken px-3 py-2 text-xs text-ink-muted">
+          <p className="mb-5 flex items-center gap-2 text-xs text-ink-muted">
+            <RetryIcon className="h-3.5 w-3.5 shrink-0 text-ink-subtle" />
             You answered this{" "}
             <span
               className={priorResult ? "font-medium text-success" : "font-medium text-danger"}
