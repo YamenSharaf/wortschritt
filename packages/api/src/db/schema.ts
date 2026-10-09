@@ -291,6 +291,8 @@ export const stories = sqliteTable("stories", {
   /** How far they've scrolled, 0–1. */
   progress: real("progress").notNull().default(0),
   readAt: integer("read_at"),
+  /** When the read state last changed (read, or "Read again"). */
+  readStateAt: integer("read_state_at"),
   /** Set for a chapter of a series (with its 1-based number and summary). */
   seriesId: text("series_id"),
   chapter: integer("chapter"),

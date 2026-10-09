@@ -721,6 +721,15 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 17,
+    // When a story's read state last changed (marked read, or "Read again"),
+    // so an older offline action from the app can't undo a newer one.
+    name: "story-read-state",
+    up(db) {
+      addColumn(db, "stories", "read_state_at", "INTEGER");
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

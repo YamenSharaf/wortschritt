@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { and, asc, desc, eq, notInArray, sql } from "drizzle-orm";
-import { storyParagraphs, story as storySchema, type ExerciseItem, type Story, type StorySeriesInfo, type StorySummary, type StoryView } from "@mdb/shared";
+import { storyParagraphs, story as storySchema, type ExerciseItem, type ReadingStatus, type Story, type StorySeriesInfo, type StorySummary, type StoryView } from "@mdb/shared";
 import { db, schema } from "../db/client";
 import { coverVersion } from "./covers";
 
@@ -38,6 +38,22 @@ export function wordCount(markdown: string): number {
     .filter((w) => /\p{L}/u.test(w)).length;
 }
 
+// --- reading rules (the server decides; clients show the result) ----------
+
+/** Past this, a story counts as started ("reading"). */
+const STARTED = 0.02;
+/** From here on, reopening starts at the top rather than at the very end. */
+const NEAR_END = 0.98;
+
+export function readingStatus(progress: number, readAt: number | null): ReadingStatus {
+  return readAt ? "read" : progress > STARTED ? "reading" : "unread";
+}
+
+/** Where the reader should reopen, or null for the top (not started, nearly done, or read). */
+export function resumeAt(progress: number, readAt: number | null): number | null {
+  return !readAt && progress > STARTED && progress < NEAR_END ? progress : null;
+}
+
 function parse(data: unknown): Story | null {
   const r = storySchema.safeParse(data);
   return r.success ? r.data : null;
@@ -66,6 +82,7 @@ export function listStories(userId: number): StorySummary[] {
       cover: coverVersion(row.cover),
       progress: row.progress,
       readAt: row.readAt,
+      status: readingStatus(row.progress, row.readAt),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     });
@@ -82,6 +99,8 @@ export function getStory(userId: number, id: string): StoryView | null {
     series: row.seriesId && row.chapter ? seriesInfo(userId, row.seriesId, row.chapter) : null,
     progress: row.progress,
     readAt: row.readAt,
+    status: readingStatus(row.progress, row.readAt),
+    resumeAt: resumeAt(row.progress, row.readAt),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -148,10 +167,44 @@ export function deleteStory(userId: number, id: string): boolean {
   return db.delete(schema.stories).where(key(userId, id)).run().changes > 0;
 }
 
-export function setStoryProgress(userId: number, id: string, progress: number, read?: boolean): boolean {
-  const set: { progress: number; readAt?: number | null } = { progress };
-  if (read !== undefined) set.readAt = read ? now() : null;
-  return db.update(schema.stories).set(set).where(key(userId, id)).run().changes > 0;
+type ReadOutcome = "ok" | "stale" | "missing";
+
+/**
+ * Record how far the learner has read: the further position wins. `at` (from
+ * the app's queue) older than the last read-state change is stale: reading
+ * done before "Read again" doesn't count towards the new pass.
+ */
+export function advanceStoryProgress(userId: number, id: string, progress: number, at?: number): ReadOutcome {
+  const row = db.select({ readStateAt: schema.stories.readStateAt }).from(schema.stories).where(key(userId, id)).get();
+  if (!row) return "missing";
+  if (at !== undefined && row.readStateAt && at < row.readStateAt) return "stale";
+  db.update(schema.stories)
+    .set({ progress: sql`max(${schema.stories.progress}, ${progress})` })
+    .where(key(userId, id))
+    .run();
+  return "ok";
+}
+
+/**
+ * Mark read (progress to the end) or "Read again" (unread, back to the start:
+ * the only way progress goes backwards). An `at` older than the last change
+ * is stale; marking a read story read again is a no-op.
+ */
+export function setStoryRead(userId: number, id: string, read: boolean, at?: number): ReadOutcome {
+  const row = db
+    .select({ readAt: schema.stories.readAt, readStateAt: schema.stories.readStateAt })
+    .from(schema.stories)
+    .where(key(userId, id))
+    .get();
+  if (!row) return "missing";
+  if (at !== undefined && row.readStateAt && at < row.readStateAt) return "stale";
+  if (read && row.readAt) return "ok";
+  const when = Math.min(at ?? now(), now());
+  db.update(schema.stories)
+    .set(read ? { readAt: when, progress: 1, readStateAt: when } : { readAt: null, progress: 0, readStateAt: when })
+    .where(key(userId, id))
+    .run();
+  return "ok";
 }
 
 /** The learner's stories' questions, as exercise "sets" for history lookups. */

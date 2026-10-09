@@ -301,8 +301,9 @@ function StoryReaderView() {
     if (!restored.current) {
       restored.current = true;
       progress.current = savedProgress.current = view.progress;
-      const p = view.progress;
-      setPage(p > 0.02 && p < 0.98 && !view.readAt ? Math.min(count - 1, Math.floor(p * count)) : 0);
+      // The server says where to reopen (null: at the top).
+      const p = view.resumeAt;
+      setPage(p === null ? 0 : Math.min(count - 1, Math.floor(p * count)));
     } else {
       setPage(wasEnd ? count : Math.min(count - 1, starts[anchor.current] ?? 0));
     }
@@ -350,8 +351,8 @@ function StoryReaderView() {
       progress.current = savedProgress.current = view.progress;
       const sc = scrollerRef.current;
       const el = articleRef.current;
-      if (view.progress > 0.05 && view.progress < 0.97 && !view.readAt) {
-        sc.scrollTop = el.offsetTop + view.progress * el.offsetHeight - sc.clientHeight;
+      if (view.resumeAt !== null) {
+        sc.scrollTop = el.offsetTop + view.resumeAt * el.offsetHeight - sc.clientHeight;
       }
     } else {
       scrollTo(anchor.current);
@@ -491,14 +492,30 @@ function StoryReaderView() {
   /** "Next chapter": finishing this one counts as having read it. */
   async function nextChapter() {
     if (!view?.series?.next) return;
-    if (!view.readAt) await markRead(true).catch(() => {});
+    if (!view.readAt) await markRead().catch(() => {});
     navigate(`/stories/${view.series.next}`);
   }
 
-  async function markRead(read: boolean) {
+  async function markRead() {
     if (!view) return;
-    await api.storyProgress(view.story.id, read ? 1 : progress.current, read);
-    setView({ ...view, readAt: read ? Math.floor(Date.now() / 1000) : null });
+    await api.markStoryRead(view.story.id);
+    showRead();
+  }
+
+  /** Reflect a read the server recorded (also after finishing the quiz). */
+  function showRead() {
+    setView((v) => (v ? { ...v, readAt: Math.floor(Date.now() / 1000), progress: 1, status: "read", resumeAt: null } : v));
+  }
+
+  /** "Read again": unread, back to the start, here and on the server. */
+  async function readAgain() {
+    if (!view) return;
+    await api.readStoryAgain(view.story.id);
+    anchor.current = 0;
+    progress.current = savedProgress.current = 0;
+    setView({ ...view, readAt: null, progress: 0, status: "unread", resumeAt: null });
+    if (paged) setPage(0);
+    else if (scrollerRef.current) scrollerRef.current.scrollTop = 0;
   }
 
   if (error || !view || !story) {
@@ -598,14 +615,14 @@ function StoryReaderView() {
               <CheckIcon className="h-4 w-4" />
               You've read this
             </span>
-            <button type="button" onClick={() => void markRead(false)} className="reader-muted underline">
-              Mark as unread
+            <button type="button" onClick={() => void readAgain()} className="reader-muted underline">
+              Read again
             </button>
           </>
         ) : (
           <button
             type="button"
-            onClick={() => void markRead(true)}
+            onClick={() => void markRead()}
             className={book?.next ? "reader-muted underline underline-offset-2" : btn.primary}
           >
             {!book?.next && <CheckIcon className="h-4 w-4" />}
@@ -638,7 +655,7 @@ function StoryReaderView() {
         )}
       </div>
       {story.questions.length > 0 && (
-        <StoryQuiz story={story} onFinished={() => !view.readAt && void markRead(true)} />
+        <StoryQuiz story={story} onFinished={showRead} />
       )}
     </div>
   );

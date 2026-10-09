@@ -102,7 +102,7 @@ test("an existing chapter needs overwrite (progress kept); clashes and unknown s
 
 test("book progress and where to continue", async () => {
   await me("PUT", `/api/series/${SID}/chapters/2`, chapter(2, "Der erste Arbeitstag"));
-  await me("PUT", `/api/stories/${SID}-01/progress`, { progress: 1, read: true });
+  await me("POST", `/api/stories/${SID}-01/read`);
   await me("PUT", `/api/stories/${SID}-02/progress`, { progress: 0.5 });
   const [summary] = (await me("GET", "/api/series")).json();
   assert.equal(summary.read, 1);
@@ -110,6 +110,9 @@ test("book progress and where to continue", async () => {
   assert.equal(summary.total, 4);
   assert.equal(summary.progress, (1 + 0.5) / 4);
   assert.equal(summary.continueId, `${SID}-02`);
+  assert.equal(summary.status, "reading");
+  const book = (await me("GET", `/api/series/${SID}`)).json();
+  assert.deepEqual(book.chapters.map((c: { status: string }) => c.status), ["read", "reading", "unread", "unread"]);
 
   // Weighted by length: a chapter three times as long counts three times.
   const long = [EXAMPLE_STORY.body, EXAMPLE_STORY.body, EXAMPLE_STORY.body].join("\n\n");

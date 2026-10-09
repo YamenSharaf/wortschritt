@@ -70,12 +70,26 @@ test("edit keeps progress; the id can't change; overwrite via create", async () 
 });
 
 test("progress and read state; reader settings are saved per account", async () => {
-  await me("PUT", `/api/stories/${ID}/progress`, { progress: 1, read: true });
-  const v = (await me("GET", `/api/stories/${ID}`)).json();
-  assert.equal(v.progress, 1);
+  const view = async () => (await me("GET", `/api/stories/${ID}`)).json();
+  // Progress only moves forward; the server says where to reopen.
+  await me("PUT", `/api/stories/${ID}/progress`, { progress: 0.5 });
+  await me("PUT", `/api/stories/${ID}/progress`, { progress: 0.3 });
+  let v = await view();
+  assert.deepEqual([v.progress, v.status, v.resumeAt], [0.5, "reading", 0.5]);
+  await me("PUT", `/api/stories/${ID}/progress`, { progress: 0.99 });
+  assert.equal((await view()).resumeAt, null, "nearly done: reopen at the top");
+
+  // Marked read: the end, no resume point.
+  assert.equal((await me("POST", `/api/stories/${ID}/read`)).statusCode, 200);
+  v = await view();
+  assert.deepEqual([v.progress, v.status, v.resumeAt], [1, "read", null]);
   assert.ok(v.readAt);
-  await me("PUT", `/api/stories/${ID}/progress`, { progress: 0.5, read: false });
-  assert.equal((await me("GET", `/api/stories/${ID}`)).json().readAt, null);
+  // "Read again": unread, back to the start (the only way progress goes back).
+  assert.equal((await me("DELETE", `/api/stories/${ID}/read`)).statusCode, 200);
+  v = await view();
+  assert.deepEqual([v.progress, v.status, v.readAt], [0, "unread", null]);
+  assert.equal((await me("GET", "/api/stories")).json().find((s: { id: string }) => s.id === ID).status, "unread");
+  assert.equal((await me("POST", "/api/stories/nope/read")).statusCode, 404);
   assert.equal((await me("PUT", `/api/stories/${ID}/progress`, { progress: 2 })).statusCode, 400);
 
   const settings = (await me("GET", "/api/settings")).json();
@@ -92,7 +106,10 @@ test("answers to a story's questions show up in history with the question", asyn
   const wrong = { type: "true_false", value: !(q as { correct: boolean }).correct };
   const v = (await me("POST", "/api/answers", { setId: `story:${ID}`, itemId: q.id, response: wrong })).json();
   assert.deepEqual(v, { correct: false, grading: "auto" });
+  assert.equal((await me("GET", `/api/stories/${ID}`)).json().status, "unread");
   await me("POST", "/api/runs", { setId: `story:${ID}`, done: true });
+  // Finishing the questions means the story was read.
+  assert.equal((await me("GET", `/api/stories/${ID}`)).json().status, "read");
   const [m] = (await me("GET", "/api/history/mistakes")).json();
   assert.equal(m.setId, `story:${ID}`);
   assert.equal(m.setTitle, EXAMPLE_STORY.title);

@@ -19,7 +19,7 @@ import { allGenerated, listGenerated } from "./generated";
 import { getProgressSummary } from "./progress";
 import { getSeriesView, listSeries } from "./series";
 import { getSettings } from "./settings";
-import { getStory, listStories, setStoryProgress } from "./stories";
+import { advanceStoryProgress, getStory, listStories, setStoryRead } from "./stories";
 import { getStoryTranslations } from "./storyTranslations";
 import { getVocab, listGroups, listVocab, recordStudy, removeVocab, upsertVocab } from "./vocab";
 
@@ -216,12 +216,14 @@ function apply(userId: number, op: SyncOp): Omit<Result, "opId" | "duplicate"> {
     case "sheetView":
       recordSheetView(userId, op.data);
       return { ok: true };
-    case "storyProgress": {
-      const view = getStory(userId, op.storyId);
-      if (!view) return { ok: false, error: "no such story" };
-      // Progress only moves forward, whichever device read further.
-      setStoryProgress(userId, op.storyId, Math.max(view.progress, op.progress), op.read);
-      return { ok: true };
+    case "storyProgress":
+    case "storyRead": {
+      // Progress only moves forward, whichever device read further; read
+      // state changes apply in time order (an older one is stale).
+      const at = Math.min(op.at, Math.floor(Date.now() / 1000));
+      const r = op.type === "storyProgress" ? advanceStoryProgress(userId, op.storyId, op.progress, at) : setStoryRead(userId, op.storyId, op.read, at);
+      if (r === "missing") return { ok: false, error: "no such story" };
+      return r === "stale" ? { ok: true, stale: true } : { ok: true };
     }
     case "vocabSave":
       upsertVocab(userId, op.data);

@@ -180,11 +180,17 @@ export const api = {
     }),
   deleteStory: (id: string) =>
     req<{ ok: true }>(`/api/stories/${encodeURIComponent(id)}`, { method: "DELETE" }),
-  storyProgress: (id: string, progress: number, read?: boolean) =>
+  /** How far you've read; the server keeps the further position. */
+  storyProgress: (id: string, progress: number) =>
     req<{ ok: true }>(`/api/stories/${encodeURIComponent(id)}/progress`, {
       method: "PUT",
-      body: JSON.stringify({ progress, read }),
+      body: JSON.stringify({ progress }),
     }),
+  markStoryRead: (id: string) =>
+    req<{ ok: true }>(`/api/stories/${encodeURIComponent(id)}/read`, { method: "POST" }),
+  /** "Read again": unread, back to the start. */
+  readStoryAgain: (id: string) =>
+    req<{ ok: true }>(`/api/stories/${encodeURIComponent(id)}/read`, { method: "DELETE" }),
   wordDetails: (word: string) =>
     req<WordDetails | null>(`/api/dict/${encodeURIComponent(word)}/details`),
   seriesList: () => req<SeriesSummary[]>("/api/series"),

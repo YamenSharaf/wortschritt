@@ -13,7 +13,7 @@ import {
 } from "@mdb/shared";
 import { db, schema } from "../db/client";
 import { coverVersion } from "./covers";
-import { getStory, pruneTranslations, wordCount } from "./stories";
+import { getStory, pruneTranslations, readingStatus, wordCount } from "./stories";
 
 /**
  * Series: books whose chapters are stories (private, like stories). The
@@ -55,6 +55,7 @@ function chaptersOf(s: Series, rows: ReturnType<typeof chapterRows>): SeriesChap
         words: wordCount(story.data.body),
         progress: row.progress,
         readAt: row.readAt,
+        status: readingStatus(row.progress, row.readAt),
         summary: row.summary,
         cover: coverVersion(row.cover),
       });
@@ -67,6 +68,7 @@ function chaptersOf(s: Series, rows: ReturnType<typeof chapterRows>): SeriesChap
         words: 0,
         progress: 0,
         readAt: null,
+        status: "unread",
         summary: null,
         cover: null,
       });
@@ -85,6 +87,9 @@ function summarize(id: string, s: Series, chapters: SeriesChapter[], updatedAt: 
   const done = written.reduce((sum, c) => sum + weight(c) * (c.readAt ? 1 : Math.min(c.progress, 1)), 0);
   // Continue with the first written chapter not finished yet, else the last one.
   const next = written.find((c) => !c.readAt) ?? written.at(-1);
+  const read = written.filter((c) => c.readAt).length;
+  // Read once every planned chapter is; started once any chapter is.
+  const status = chapters.length > 0 && read === chapters.length ? "read" : chapters.some((c) => c.status !== "unread") ? "reading" : "unread";
   return {
     id,
     title: s.title,
@@ -93,8 +98,9 @@ function summarize(id: string, s: Series, chapters: SeriesChapter[], updatedAt: 
     description: s.description,
     written: written.length,
     total: chapters.length,
-    read: written.filter((c) => c.readAt).length,
+    read,
     progress: Math.min(1, done / total),
+    status,
     continueId: next?.storyId ?? null,
     cover: coverVersion(cover),
     updatedAt,

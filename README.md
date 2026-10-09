@@ -312,7 +312,8 @@ Vocab       GET|POST /api/vocab    GET|DELETE /api/vocab/:word
             DELETE /api/vocab-groups/:id/words/:word
 Notes       GET|POST /api/notes    GET|PUT|DELETE /api/notes/:id
 Stories     GET|POST /api/stories  GET|PUT|DELETE /api/stories/:id
-            PUT /api/stories/:id/progress   GET /api/story-context   GET /api/stories/:id/epub
+            PUT /api/stories/:id/progress   POST|DELETE /api/stories/:id/read
+            GET /api/story-context   GET /api/stories/:id/epub
             GET|POST|PUT /api/stories/:id/translations  (read / translate with AI / provide)
 Series      GET|POST /api/series   GET|DELETE /api/series/:id   PUT /api/series/:id/chapters/:n
             GET /api/series/:id/epub

@@ -14,8 +14,8 @@ import { useAsync } from "../lib/useAsync";
 const minutes = (words: number) => Math.max(1, Math.round(words / 120));
 
 function status(s: StorySummary): { label: string; tone: "success" | "brand" } | null {
-  if (s.readAt) return { label: "Read", tone: "success" };
-  if (s.progress > 0.02) return { label: `${Math.round(s.progress * 100)}% read`, tone: "brand" };
+  if (s.status === "read") return { label: "Read", tone: "success" };
+  if (s.status === "reading") return { label: `${Math.round(s.progress * 100)}% read`, tone: "brand" };
   return null;
 }
 
@@ -110,7 +110,7 @@ export function StoriesPage() {
                   )}
                 </div>
               </div>
-              {!s.readAt && s.progress > 0.02 && (
+              {s.status === "reading" && (
                 <div className="absolute inset-x-0 bottom-0 h-[3px] bg-surface-sunken">
                   <div className="h-full bg-brand" style={{ width: `${Math.round(s.progress * 100)}%` }} />
                 </div>
