@@ -11,13 +11,15 @@ packages/
   shared/   Zod schemas + inferred types + grading. The shared contract.
   api/      Fastify server (TS via tsx), Drizzle + SQLite, content loader, auth,
             AI proxy. Also serves the built SPA in production.
-  client/   The API client for every frontend: endpoints, SSE streaming, media
-            URLs and the speech logic. No DOM or Node APIs — the platform
-            passes in fetch, auth headers, a device voice and a clip player.
-            `@mdb/client/react` holds the screens' state as hooks (running an
-            exercise set, the tutor chat, the story reader, …) under a
-            `ClientProvider` (the API and the platform's speech); web and
-            app render them their own way.
+  client/   What every frontend shares: the API client (endpoints, SSE
+            streaming, media URLs), the speech logic, per-device preferences
+            and plain helpers (describeItem, formChips, timeAgo). No DOM or
+            Node APIs — the platform passes in fetch, auth headers, a device
+            voice, a clip player and a key-value store. `@mdb/client/react`
+            holds the screens' state as hooks (sign-in, an exercise set, the
+            tutor chat, the story reader, vocab and flashcards, notes, story
+            generation, …) under a `ClientProvider`; web and app render them
+            their own way.
   web/      Vite + React + Tailwind SPA. One client of the API.
 content/    Git-versioned JSON content (exercises + cheatsheets).
 docs/       This documentation.
@@ -282,7 +284,7 @@ This is the one place a new *feature* is coded. Steps:
 3. **Renderer** — add a `case "your_type"` + component in
    `packages/web/src/components/ExerciseItemView.tsx`. It receives the item,
    calls `submit(response)` once and renders the verdict it resolves to.
-4. **Describe** — add a branch to `packages/web/src/lib/describeItem.ts` so the
+4. **Describe** — add a branch to `packages/client/src/describeItem.ts` so the
    tutor (hint/translate/why-wrong) and generation get a readable label +
    expected answers. **Never put the answer in `label`** — it's used for
    translate, which must not reveal the solution.

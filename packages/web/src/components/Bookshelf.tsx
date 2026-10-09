@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { preferences } from "@mdb/client";
+import { usePreference } from "@mdb/client/react";
 import { Link } from "react-router-dom";
 import type { SeriesSummary } from "@mdb/shared";
 import { Cover } from "./Cover";
@@ -10,26 +11,8 @@ import { Pill, cardLink } from "./ui";
  * The learner's books: a grid of covers, or a list. The
  * choice is remembered on this device.
  */
-type View = "covers" | "list";
-const VIEW_KEY = "mdb.shelfView";
-
-function loadView(): View {
-  try {
-    return localStorage.getItem(VIEW_KEY) === "list" ? "list" : "covers";
-  } catch {
-    return "covers";
-  }
-}
-
 export function Bookshelf({ books }: { books: SeriesSummary[] }) {
-  const [view, setView] = useState<View>(loadView);
-  useEffect(() => {
-    try {
-      localStorage.setItem(VIEW_KEY, view);
-    } catch {
-      /* private mode: just not remembered */
-    }
-  }, [view]);
+  const [view, setView] = usePreference(preferences.shelfView);
 
   return (
     <section className="mb-6">

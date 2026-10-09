@@ -7,7 +7,7 @@ import { SectionIcon } from "../components/SectionIcon";
 import { SortControl, sortByMode, type SortMode } from "../components/SortControl";
 import { Muted, PageHeader, Pill, btn, cardLink } from "../components/ui";
 import { api } from "../lib/api";
-import { timeAgo } from "../lib/time";
+import { timeAgo } from "@mdb/client";
 import { useAsync } from "@mdb/client/react";
 
 export function Exercises() {

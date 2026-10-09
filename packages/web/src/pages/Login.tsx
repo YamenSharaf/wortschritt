@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { MIN_PASSWORD_LENGTH } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
-import { useAuth } from "../lib/auth";
+import { useAuth } from "@mdb/client/react";
 import { AppTitle } from "../components/AppTitle";
 import { btn } from "../components/ui";
 

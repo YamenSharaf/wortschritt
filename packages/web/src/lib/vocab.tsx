@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import type { DictEntry, WordDetails } from "@mdb/shared";
 import { useVocabState, useWordLookup, useWordTranslation, type VocabState } from "@mdb/client/react";
 import { SpeakButton } from "../components/SpeakButton";
-import { perfektAux } from "./forms";
+import { perfektAux } from "@mdb/client";
 import { speak, ttsSupported } from "./tts";
 import { CheckIcon, CopyIcon, CrossIcon, LanguagesIcon, PlusIcon, SpeakerIcon } from "../components/icons";
 import { btn } from "../components/ui";

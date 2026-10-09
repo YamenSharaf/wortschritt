@@ -4,6 +4,7 @@
  */
 import { createSpeech, pickVoice, type ClipPlayer, type DeviceSpeech } from "@mdb/client";
 import { api } from "./api";
+import { localStore } from "./storage";
 
 function webSpeechSupported(): boolean {
   return (
@@ -39,19 +40,10 @@ export function deviceVoices(): SpeechSynthesisVoice[] {
 // A specific device voice, remembered per browser/device (not synced).
 const DEVICE_VOICE_KEY = "mdb-device-voice";
 export function getDeviceVoicePref(): string {
-  try {
-    return localStorage.getItem(DEVICE_VOICE_KEY) || "";
-  } catch {
-    return "";
-  }
+  return localStore.get(DEVICE_VOICE_KEY) || "";
 }
 export function setDeviceVoicePref(uri: string): void {
-  try {
-    if (uri) localStorage.setItem(DEVICE_VOICE_KEY, uri);
-    else localStorage.removeItem(DEVICE_VOICE_KEY);
-  } catch {
-    /* ignore */
-  }
+  localStore.set(DEVICE_VOICE_KEY, uri || null);
 }
 
 const device: DeviceSpeech = {

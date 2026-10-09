@@ -1,6 +1,6 @@
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { TabPills } from "../components/TabPills";
-import { useAuth } from "../lib/auth";
+import { useAuth } from "@mdb/client/react";
 import { ServerAdmin, UsersAdmin } from "./UsersAdmin";
 
 const ADMIN_TABS = [

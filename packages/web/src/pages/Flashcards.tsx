@@ -1,14 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
-import { filterVocab, useFlashcards } from "@mdb/client/react";
+import { useEffect, useMemo } from "react";
+import { preferences } from "@mdb/client";
+import { filterVocab, useFlashcards, usePreference } from "@mdb/client/react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { SpeakButton } from "../components/SpeakButton";
-import { formChips } from "../lib/forms";
+import { formChips } from "@mdb/client";
 import { useVocab } from "../lib/vocab";
 import { CheckIcon, ChevronLeftIcon, CrossIcon, RetryIcon } from "../components/icons";
 import { btn, card } from "../components/ui";
 
-type Dir = "de" | "en";
-const DIR_KEY = "mdb-flashcard-dir";
 
 export function Flashcards() {
   const { entries, groups, recordStudy } = useVocab();
@@ -24,26 +23,12 @@ export function Flashcards() {
 
   const pool = useMemo(() => filterVocab(entries, { group: groupId }), [entries, groupId]);
 
-  const [dir, setDir] = useState<Dir>(() => {
-    try {
-      return (localStorage.getItem(DIR_KEY) as Dir) || "de";
-    } catch {
-      return "de";
-    }
-  });
+  const [dir, setDir] = usePreference(preferences.flashcardSide);
   const session = useFlashcards(pool, recordStudy);
   const { phase, queue, index: i, card: word, flipped, setFlipped, start, grade } = session;
 
   function toggleDir() {
-    setDir((d) => {
-      const next = d === "de" ? "en" : "de";
-      try {
-        localStorage.setItem(DIR_KEY, next);
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
+    setDir((d) => (d === "de" ? "en" : "de"));
     setFlipped(false);
   }
 

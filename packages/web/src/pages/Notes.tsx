@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import type { Note } from "@mdb/shared";
 import { SearchBox } from "../components/SearchBox";
 import { api } from "../lib/api";
-import { timeAgo } from "../lib/time";
+import { timeAgo } from "@mdb/client";
 import { filterNotes, noteCategories, noteSnippet, useAsync } from "@mdb/client/react";
 import { PlusIcon } from "../components/icons";
 import { Pill, btn, cardLink } from "../components/ui";

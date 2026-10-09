@@ -5,8 +5,8 @@ import { PlayIcon } from "../components/icons";
 import { Pill, SectionHeading, btn, cardLink } from "../components/ui";
 import { SectionIcon, type Section } from "../components/SectionIcon";
 import { api } from "../lib/api";
-import { useAuth } from "../lib/auth";
-import { timeAgo } from "../lib/time";
+import { useAuth } from "@mdb/client/react";
+import { timeAgo } from "@mdb/client";
 import { useAsync } from "@mdb/client/react";
 import { LastRunBadge } from "./Exercises";
 

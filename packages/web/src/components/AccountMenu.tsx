@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "../lib/auth";
+import { useAuth } from "@mdb/client/react";
 import {
   AccountIcon,
   AdminIcon,

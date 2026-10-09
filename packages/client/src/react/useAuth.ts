@@ -1,16 +1,11 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, createElement, useContext, useEffect, useState, type ReactNode } from "react";
 import type { AuthUserDto } from "@mdb/shared";
-import { api } from "./api";
+import { useApi } from "./context";
 
 type AuthState = {
   authenticated: boolean;
   user: AuthUserDto | null;
+  /** True until the server has said who's signed in. */
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string) => Promise<void>;
@@ -19,7 +14,12 @@ type AuthState = {
 
 const AuthContext = createContext<AuthState | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+/**
+ * Who's signed in, asked of the server on start. How the session is kept is
+ * the API client's business (a cookie on the web, a token in the app).
+ */
+export function AuthProvider({ children }: { children?: ReactNode }) {
+  const api = useApi();
   const [user, setUser] = useState<AuthUserDto | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((r) => setUser(r.user))
       .catch(() => setUser(null))
       .finally(() => setLoading(false));
-  }, []);
+  }, [api]);
 
   const value: AuthState = {
     authenticated: user !== null,
@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return createElement(AuthContext.Provider, { value }, children);
 }
 
 export function useAuth(): AuthState {

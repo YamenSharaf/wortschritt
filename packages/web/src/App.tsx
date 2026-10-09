@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Navigate, NavLink, Outlet, useMatch } from "react-router-dom";
 import { api } from "./lib/api";
-import { useAuth } from "./lib/auth";
+import { useAuth } from "@mdb/client/react";
 import { AccountMenu } from "./components/AccountMenu";
 import { AppTitle } from "./components/AppTitle";
 import {

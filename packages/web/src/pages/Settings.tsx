@@ -7,8 +7,8 @@ import {
   type Settings,
 } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
-import { useAuth } from "../lib/auth";
-import { timeAgo } from "../lib/time";
+import { useAuth } from "@mdb/client/react";
+import { timeAgo } from "@mdb/client";
 import { useAsync } from "@mdb/client/react";
 import {
   deviceVoices,

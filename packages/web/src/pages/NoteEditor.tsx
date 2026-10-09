@@ -1,7 +1,7 @@
-import { useState } from "react";
 import Markdown from "markdown-to-jsx";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useNoteEditor, type NoteSaveState } from "@mdb/client/react";
+import { NOTE_FONT_SIZE, preferences } from "@mdb/client";
+import { useNoteEditor, usePreference, type NoteSaveState } from "@mdb/client/react";
 import { TapToTranslate } from "../components/TapToTranslate";
 import { ChevronLeftIcon, SheetsIcon, SparklesIcon } from "../components/icons";
 import { btn } from "../components/ui";
@@ -19,26 +19,7 @@ const mdOptions = {
   },
 };
 
-// Reading size for the note body, remembered per device.
-const FONT_KEY = "mdb-note-fontsize";
-const MIN_FONT = 12;
-const MAX_FONT = 26;
-const DEFAULT_FONT = 16;
-function getNoteFontSize(): number {
-  try {
-    const n = Number(localStorage.getItem(FONT_KEY));
-    return n >= MIN_FONT && n <= MAX_FONT ? n : DEFAULT_FONT;
-  } catch {
-    return DEFAULT_FONT;
-  }
-}
-function storeNoteFontSize(px: number): void {
-  try {
-    localStorage.setItem(FONT_KEY, String(px));
-  } catch {
-    /* ignore */
-  }
-}
+const { min: MIN_FONT, max: MAX_FONT } = NOTE_FONT_SIZE;
 
 export function NoteEditor() {
   const { id } = useParams();
@@ -46,14 +27,11 @@ export function NoteEditor() {
   const { title, category, body, mode, saveState, categories, aiBusy, savingSheet, undoBody } = note;
   const aiError = note.error;
   const navigate = useNavigate();
-  const [fontSize, setFontSize] = useState(getNoteFontSize);
+  // Reading size for the note body, remembered per device.
+  const [fontSize, setFontSize] = usePreference(preferences.noteFontSize);
 
   function changeFont(delta: number) {
-    setFontSize((s) => {
-      const next = Math.min(MAX_FONT, Math.max(MIN_FONT, s + delta));
-      storeNoteFontSize(next);
-      return next;
-    });
+    setFontSize((s) => Math.min(MAX_FONT, Math.max(MIN_FONT, s + delta)));
   }
 
   async function saveAsCheatsheet() {

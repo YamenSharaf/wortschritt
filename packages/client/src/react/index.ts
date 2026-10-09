@@ -6,3 +6,5 @@ export * from "./useStoryReader";
 export * from "./useVocab";
 export * from "./useNotes";
 export * from "./useStoryGeneration";
+export * from "./usePreference";
+export * from "./useAuth";

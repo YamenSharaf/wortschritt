@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import type { OAuthRequestView } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
-import { useAuth } from "../lib/auth";
+import { useAuth } from "@mdb/client/react";
 import { AppTitle } from "../components/AppTitle";
 import { btn } from "../components/ui";
 

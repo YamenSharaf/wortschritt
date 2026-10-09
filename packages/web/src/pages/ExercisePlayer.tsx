@@ -7,7 +7,7 @@ import { ArrowUpIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CrossIcon, L
 import { btn, card } from "../components/ui";
 import { TapToTranslate } from "../components/TapToTranslate";
 import { TutorMarkdown } from "../components/TutorMarkdown";
-import { describeItem } from "../lib/describeItem";
+import { describeItem } from "@mdb/client";
 
 // Enter presses within this window of an answer resolving are treated as the
 // tail of the submitting keystroke, not a request to advance. Comfortably above
