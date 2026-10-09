@@ -43,6 +43,12 @@ export const preferences = {
   flashcardSide: { key: "mdb-flashcard-dir", fallback: "de", parse: oneOf("de", "en") } as Preference<"de" | "en">,
   /** The bookshelf as covers or a list. */
   shelfView: { key: "mdb.shelfView", fallback: "covers", parse: oneOf("covers", "list") } as Preference<"covers" | "list">,
+  /** Light or dark: the device's setting, or a fixed one. */
+  colorScheme: { key: "mdb-scheme", fallback: "system", parse: oneOf("system", "light", "dark") } as Preference<
+    "system" | "light" | "dark"
+  >,
+  /** An e-ink screen (monochrome, slow refresh): plain styles, nothing moves. */
+  display: { key: "mdb-display", fallback: "standard", parse: oneOf("standard", "eink") } as Preference<"standard" | "eink">,
   /** The note text size, in px. */
   noteFontSize: { key: "mdb-note-fontsize", fallback: 16, parse: between(12, 26) } as Preference<number>,
 };

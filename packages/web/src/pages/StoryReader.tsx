@@ -37,6 +37,7 @@ import {
 import { TapToTranslate } from "../components/TapToTranslate";
 import { btn, card } from "../components/ui";
 import { api } from "../lib/api";
+import { isEink } from "../lib/appearance";
 import { useVocab } from "../lib/vocab";
 
 const FONTS: Record<ReaderSettings["font"], { label: string; family: string }> = {
@@ -861,7 +862,7 @@ function ReaderPanel({
       <div className={row}>
         <span className={label}>Theme</span>
         <div className="flex gap-2">
-          {THEMES.map((t) => (
+          {THEMES.filter((t) => !(isEink() && t.id === "sepia")).map((t) => (
             <button
               key={t.id}
               type="button"

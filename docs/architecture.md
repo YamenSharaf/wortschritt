@@ -408,7 +408,12 @@ CSS variables; never edit that file, and `pnpm test` fails when it is stale.
 `tailwind.config.js` maps the colours (`bg-surface`, `text-ink-muted`,
 `bg-brand`, …) to those variables, so Tailwind opacity modifiers don't work on
 them; use `color-mix` in CSS instead. Component styles in `index.css` use the
-variables only (blurs, glass mixes and durations too). The glass styles (`ws-bar` header, `ws-tabs`/`ws-tab` pills, `ws-dock`,
+variables only (blurs, glass mixes and durations too). Two attributes on `<html>`
+pick the values: `data-scheme` (`light`/`dark`; absent follows the device) and
+`data-display="eink"`. Both are per-device preferences (Settings →
+Appearance, `lib/appearance.ts`); an inline script in `index.html` applies them
+before the first paint. Don't use Tailwind `dark:` variants (they follow the
+device only): theme-dependent styles go through tokens. The glass styles (`ws-bar` header, `ws-tabs`/`ws-tab` pills, `ws-dock`,
 `ws-glass-icon`, glass primary buttons, `ws-sheet`) live there too. Icons are
 Lucide through the wrappers in `components/icons.tsx` (1.75 stroke). The
 rules, every token and the components are in

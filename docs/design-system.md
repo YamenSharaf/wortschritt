@@ -12,7 +12,17 @@ look, update both the code and this file.
 
 Wortschritt is a calm, precise study tool for learning German, with one bright idea: progress feels like climbing steps. The interface stays quiet (hairline borders, cool neutrals, one blue) so the colourful parts mean something: the section icons that tell you where you are, and the warm reward gradient that tells you you're getting better.
 
-Light and dark are equal citizens. The app follows the device setting automatically; there is no theme switch. Every token below has a value for both themes, and every pair of text and ground meets 4.5:1 in both.
+Light and dark are equal citizens. The app follows the device setting unless a device picks one (Settings → Appearance, remembered per device). Every token below has a value for both themes, and every pair of text and ground meets 4.5:1 in both.
+
+## E-ink
+
+E-readers (the owner reads on a Boox Page: monochrome, slow refresh) get their own display, switched on per device in Settings → Appearance, in light and in dark. It is a set of token values, not a second design: the same roles, rendered for paper.
+
+- Black, white and a few greys far apart (they must survive 16 grey levels): every accent (`brand`, `success`, `danger`, the sections, the reward gradient) is ink. The token test fails if an e-ink colour isn't a grey.
+- No depth effects: shadows are `none` (cards keep their border; `shadow-pop` becomes a 1px ring), glass is a solid outlined surface, gradients are flat, nothing is blurred or see-through, the scrim is clear.
+- Nothing moves: every `motion-*` is 0, and no animation or transition runs at all.
+- Meaning never rests on colour, which here is gone: right and wrong carry ✓ / ✗ (and wrong answers are struck through), selected states have a border.
+- The reader has an e-ink light and an e-ink dark theme (Sepia is the light one); *Peek* translations hide behind a grey bar instead of a blur.
 
 ## Principles
 
@@ -36,7 +46,7 @@ Light and dark are equal citizens. The app follows the device setting automatica
 - Text is `ink`, secondary text `ink-muted`, timestamps and placeholders `ink-subtle`. Links and brand-coloured text are `brand-ink`.
 - The primary button is glass: a 14% tint of `brand` with a 34% `brand` hairline and `brand-ink` text. Solid `brand` (with `on-brand` text) is for the selected switch, progress and selection states. `brand-soft` marks the current dock item, open tutor chips and the learner's chat bubbles.
 - The reward gradient (`reward-1` yellow → `reward-2` coral → `reward-3` pink, text `on-reward`) is only for achievement: the daily goal, streaks, mastered sets, a correct-answer moment. Never on buttons or plain progress.
-- Grading uses `success`, `warning` and `danger` on their `-soft` grounds, always with an icon and a word, never colour alone.
+- Grading uses `success`, `warning` and `danger` on their `-soft` grounds, always with an icon and a word, never colour alone: answer options get ✓ / ✗, and a wrong one is struck through.
 - Each section owns a colour for its glass icon: Practice `section-practice`, Cheat sheets `section-sheets`, Stories `section-stories`, Vocab `section-vocab`, Notes `section-notes`. The colour tints the squircle and draws the glyph.
 - Floating chrome has its own tokens: the header bar (`bar-from` → `bar-to`, `bar-highlight`), the tab pills (`tabs-track`, `tabs-active-from` → `tabs-active-to`, `tabs-active-border`) and the phone dock (`dock-from` → `dock-to`, `dock-border`, `dock-highlight`, `dock-shadow`).
 - One `glow` per page at most, behind the hero, in the top-right corner. The app-icon gradient (`tile-from` → `tile-to`) appears only in the icon and splash screen.
@@ -67,7 +77,7 @@ Light and dark are equal citizens. The app follows the device setting automatica
 
 - Colour changes on hover and press take `motion-fast` (150ms); popovers, sheets and card lift take `motion-base` (200ms), ease-out.
 - Cards lift by 1px on hover. Nothing bounces, nothing loops.
-- Every duration is a token, so `prefers-reduced-motion` sets them all to 0 in one place.
+- Every duration is a token, so `prefers-reduced-motion` (and the e-ink display) sets them all to 0 in one place.
 
 ## States and accessibility
 

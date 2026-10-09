@@ -13,6 +13,16 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <title>Wortschritt — Learn German</title>
+    <script>
+      // This device's appearance before the first paint (no flash of the wrong
+      // scheme on a dark e-reader). Keys and values: `preferences` in
+      // packages/client/src/storage.ts; kept up to date by lib/appearance.ts.
+      try {
+        var s = localStorage.getItem("mdb-scheme"), d = localStorage.getItem("mdb-display");
+        if (s === "light" || s === "dark") document.documentElement.dataset.scheme = s;
+        if (d === "eink") document.documentElement.dataset.display = d;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

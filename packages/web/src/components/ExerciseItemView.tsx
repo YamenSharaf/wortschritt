@@ -202,11 +202,11 @@ function MultipleChoice({
                 state === "correct"
                   ? "border-transparent bg-success-soft font-medium text-success"
                   : state === "wrong"
-                    ? "border-transparent bg-danger-soft text-danger"
+                    ? "border-transparent bg-danger-soft text-danger line-through decoration-1"
                     : "border-line-control bg-surface hover:border-ink-subtle hover:bg-surface-sunken disabled:opacity-60"
               }`}
             >
-              {choice}
+              <VerdictLabel state={state}>{choice}</VerdictLabel>
             </button>
           );
         })}
@@ -642,11 +642,11 @@ function TrueFalse({
                 state === "correct"
                   ? "border-transparent bg-success-soft font-medium text-success"
                   : state === "wrong"
-                    ? "border-transparent bg-danger-soft text-danger"
+                    ? "border-transparent bg-danger-soft text-danger line-through decoration-1"
                     : "border-line-control bg-surface hover:border-ink-subtle hover:bg-surface-sunken disabled:opacity-60"
               }`}
             >
-              {opt.label}
+              <VerdictLabel state={state}>{opt.label}</VerdictLabel>
             </button>
           );
         })}
@@ -758,5 +758,20 @@ function ConjugationTable({
         <Explanation text={item.explanation} />
       )}
     </div>
+  );
+}
+
+/**
+ * An answer option's text with its verdict as a mark, not only a colour
+ * (colour-blind learners, and e-ink, where green and red are both grey).
+ */
+function VerdictLabel({ state, children }: { state: "correct" | "wrong" | "idle"; children: React.ReactNode }) {
+  if (state === "idle") return <>{children}</>;
+  return (
+    <span className="flex items-center justify-between gap-2">
+      <span>{children}</span>
+      {state === "correct" ? <CheckIcon className="h-4 w-4 shrink-0" /> : <CrossIcon className="h-4 w-4 shrink-0" />}
+      <span className="sr-only">{state === "correct" ? "(right answer)" : "(your answer, wrong)"}</span>
+    </span>
   );
 }

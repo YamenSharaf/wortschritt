@@ -7,9 +7,9 @@ import {
   type Settings,
 } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
-import { useAuth } from "@mdb/client/react";
+import { useAsync, useAuth } from "@mdb/client/react";
 import { timeAgo } from "@mdb/client";
-import { useAsync } from "@mdb/client/react";
+import { useAppearance } from "../lib/appearance";
 import {
   deviceVoices,
   getDeviceVoicePref,
@@ -48,7 +48,12 @@ export function SettingsPage() {
           options={SETTINGS_TABS}
         />
       </div>
-      {current === "learning" && <Learning />}
+      {current === "learning" && (
+        <>
+          <Learning />
+          <Appearance />
+        </>
+      )}
       {current === "account" && <Account />}
       {current === "connections" && <Connections />}
     </div>
@@ -165,6 +170,47 @@ function Learning() {
         {saved && <span className="ml-3 text-sm text-success">Saved</span>}
       </div>
     </div>
+  );
+}
+
+/** How the app looks on this device; not synced, since a phone and an e-reader differ. */
+function Appearance() {
+  const look = useAppearance();
+  return (
+    <section className="mt-10 max-w-md">
+      <h2 className="text-xl font-semibold tracking-[-0.01em]">Appearance</h2>
+      <p className="mb-4 mt-1 text-sm text-ink-muted">On this device only.</p>
+      <div className="space-y-4">
+        <div>
+          <span className="mb-1.5 block text-sm font-medium">Theme</span>
+          <TabPills
+            size="sm"
+            label="Theme"
+            value={look.scheme}
+            onChange={look.setScheme}
+            options={[
+              { value: "system", label: "Like the device" },
+              { value: "light", label: "Light" },
+              { value: "dark", label: "Dark" },
+            ]}
+          />
+        </div>
+        <label className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            checked={look.display === "eink"}
+            onChange={(e) => look.setDisplay(e.target.checked ? "eink" : "standard")}
+            className="mt-0.5 h-4 w-4"
+          />
+          <span>
+            <span className="block text-sm font-medium">E-ink display</span>
+            <span className="block text-xs text-ink-subtle">
+              For e-readers: black and white, no animations, nothing see-through. Works with light and dark.
+            </span>
+          </span>
+        </label>
+      </div>
+    </section>
   );
 }
 

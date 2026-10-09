@@ -323,3 +323,23 @@ body {
 .reader.fixed {
   box-shadow: none;
 }
+
+/* E-ink: a slow, monochrome panel smears motion, so nothing animates or
+   glides (the tokens already drop shadows, glass and blur). Native controls
+   (checkboxes) take the ink colour instead of the browser's blue. */
+:root[data-display="eink"] {
+  accent-color: var(--ink);
+}
+:root[data-display="eink"] *,
+:root[data-display="eink"] *::before,
+:root[data-display="eink"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+/* "Peek" translations can't hide behind a blur here: a grey bar instead. */
+:root[data-display="eink"] .reader-translation.is-hidden {
+  color: transparent;
+  background: rgb(var(--r-muted) / 0.22);
+  border-radius: 0.3em;
+}
