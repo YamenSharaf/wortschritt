@@ -115,7 +115,7 @@ test("incremental: changes from any write path, deletions, and books follow thei
   cursor = c.cursor;
 
   // Reading a chapter changes its book's progress too; a cover change counts.
-  await me("PUT", `/api/stories/${EXAMPLE_SERIES.id}-01/progress`, { progress: 1, read: true });
+  await me("POST", `/api/stories/${EXAMPLE_SERIES.id}-01/read`);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 900"><rect width="600" height="900" fill="#fff"/></svg>`;
   await me("PUT", `/api/stories/${EXAMPLE_STORY.id}/cover`, { svg });
   const c2 = await changes(me, cursor, libraryVersion);
@@ -150,7 +150,7 @@ const nowS = () => Math.floor(Date.now() / 1000);
 test("push: applied once per op id; progress only moves forward; answers are recorded", async () => {
   await me("PUT", `/api/stories/${EXAMPLE_STORY.id}/progress`, { progress: 0.6 });
   const r1 = await push(me, [
-    { opId: "op-progress-1", type: "storyProgress", storyId: EXAMPLE_STORY.id, progress: 0.3 },
+    { opId: "op-progress-1", type: "storyProgress", storyId: EXAMPLE_STORY.id, progress: 0.3, at: nowS() },
     { opId: "op-attempt-1", type: "answer", at: nowS(), data: mc(1) },
   ]);
   assert.deepEqual(r1.map((r) => [r.ok, r.duplicate]), [[true, false], [true, false]]);
@@ -161,9 +161,11 @@ test("push: applied once per op id; progress only moves forward; answers are rec
   assert.deepEqual(r2.map((r) => [r.ok, r.duplicate]), [[true, true]]);
   assert.deepEqual((await me("GET", "/api/progress")).json(), before, "a replay isn't counted twice");
 
-  await push(me, [{ opId: "op-progress-2", type: "storyProgress", storyId: EXAMPLE_STORY.id, progress: 0.9, read: true }]);
+  await push(me, [{ opId: "op-progress-2", type: "storyProgress", storyId: EXAMPLE_STORY.id, progress: 0.9, at: nowS() }]);
+  assert.equal((await me("GET", `/api/stories/${EXAMPLE_STORY.id}`)).json().progress, 0.9);
+  await push(me, [{ opId: "op-read-1", type: "storyRead", storyId: EXAMPLE_STORY.id, read: true, at: nowS() }]);
   const story = (await me("GET", `/api/stories/${EXAMPLE_STORY.id}`)).json();
-  assert.equal(story.progress, 0.9);
+  assert.deepEqual([story.progress, story.status], [1, "read"]);
   assert.ok(story.readAt);
 
   await push(me, [
@@ -206,15 +208,40 @@ test("private: another user's sync and pushes never touch your data", async () =
   assert.equal(later.notes.length + later.deleted.notes.length, 0, "my changes aren't in Anna's log");
 
   const r = await push(anna, [
-    { opId: "anna-op-1", type: "storyProgress", storyId: EXAMPLE_STORY.id, progress: 0.1 },
+    { opId: "anna-op-1", type: "storyProgress", storyId: EXAMPLE_STORY.id, progress: 0.1, at: nowS() },
     { opId: "anna-op-2", type: "noteDelete", id: myNote.id },
     { opId: "anna-op-3", type: "noteUpdate", id: myNote.id, baseUpdatedAt: 0, data: { body: "hacked" } },
   ]);
   assert.equal(r[0]!.ok, false);
   assert.equal((await me("GET", `/api/notes/${myNote.id}`)).json().body, "x", "not deleted or changed");
   // Op ids are per user: the same id from me is a new op.
-  const mine = await push(me, [{ opId: "anna-op-1", type: "storyProgress", storyId: EXAMPLE_STORY.id, progress: 0.95 }]);
+  const mine = await push(me, [{ opId: "anna-op-1", type: "storyProgress", storyId: EXAMPLE_STORY.id, progress: 0.95, at: nowS() }]);
   assert.equal(mine[0]!.duplicate, false);
+});
+
+test("push: read state applies in time order; reading before \"Read again\" doesn't count", async () => {
+  const id = EXAMPLE_STORY.id;
+  const story = async () => (await me("GET", `/api/stories/${id}`)).json();
+  // The web: read, then "Read again" (now). An older read from the phone is stale.
+  await me("POST", `/api/stories/${id}/read`);
+  await me("DELETE", `/api/stories/${id}/read`);
+  const old = nowS() - 600;
+  let r = await push(me, [
+    { opId: "op-read-old", type: "storyRead", storyId: id, read: true, at: old },
+    { opId: "op-progress-old", type: "storyProgress", storyId: id, progress: 0.8, at: old },
+  ]);
+  assert.deepEqual(r.map((x) => [x.ok, x.stale]), [[true, true], [true, true]]);
+  assert.deepEqual([(await story()).progress, (await story()).status], [0, "unread"]);
+  // Newer reading on the phone counts, and so does marking read after.
+  const later = nowS() + 1;
+  r = await push(me, [
+    { opId: "op-progress-new", type: "storyProgress", storyId: id, progress: 0.4, at: later },
+    { opId: "op-read-new", type: "storyRead", storyId: id, read: true, at: later },
+  ]);
+  assert.deepEqual(r.map((x) => [x.ok, x.stale]), [[true, undefined], [true, undefined]]);
+  assert.equal((await story()).status, "read");
+  r = await push(me, [{ opId: "op-read-missing", type: "storyRead", storyId: "nope", read: true, at: later }]);
+  assert.equal(r[0]!.ok, false);
 });
 
 test("stats: every pull carries the server's numbers, the same as the web's", async () => {

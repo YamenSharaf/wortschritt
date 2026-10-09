@@ -64,18 +64,18 @@ export function Bookshelf({ books }: { books: SeriesSummary[] }) {
 }
 
 const label = (b: SeriesSummary) =>
-  `${b.title}${b.read === b.total && b.total > 0 ? " — read" : b.progress > 0.01 ? ` — ${Math.round(b.progress * 100)}% read` : ""}`;
+  `${b.title}${b.status === "read" ? " — read" : b.status === "reading" ? ` — ${Math.round(b.progress * 100)}% read` : ""}`;
 
 /** A ribbon bookmark (in progress) or a tick (finished). */
 function Marker({ book }: { book: SeriesSummary }) {
-  if (book.read === book.total && book.total > 0) {
+  if (book.status === "read") {
     return (
       <span className="absolute -right-1.5 -top-1.5 z-10 grid h-6 w-6 place-items-center rounded-full border-2 border-[var(--bg)] bg-success text-[var(--surface)] shadow-card" aria-hidden>
         <CheckIcon className="h-3.5 w-3.5" />
       </span>
     );
   }
-  if (book.progress <= 0.01) return null;
+  if (book.status === "unread") return null;
   return (
     <span
       className="absolute -top-2 right-3 z-10 h-7 w-2.5 bg-[linear-gradient(180deg,var(--reward-2),var(--reward-3))] shadow-card"
@@ -103,7 +103,7 @@ function FaceOut({ book }: { book: SeriesSummary }) {
 }
 
 function ListItem({ book }: { book: SeriesSummary }) {
-  const done = book.read === book.total && book.total > 0;
+  const done = book.status === "read";
   return (
     <Link
       to={`/series/${book.id}`}
@@ -136,7 +136,7 @@ function ListItem({ book }: { book: SeriesSummary }) {
           )}
         </div>
       </div>
-      {book.progress > 0.01 && !done && (
+      {book.status === "reading" && (
         <div className="absolute inset-x-0 bottom-0 h-[3px] bg-surface-sunken">
           <div className="h-full bg-brand" style={{ width: `${Math.round(book.progress * 100)}%` }} />
         </div>

@@ -645,6 +645,14 @@ export const storySeriesInfo = z.object({
 });
 export type StorySeriesInfo = z.infer<typeof storySeriesInfo>;
 
+/**
+ * Where the learner is with a story or book, decided by the server: "reading"
+ * once they're past the first 2%, "read" once marked read (finished, the quiz
+ * done, or "Next chapter").
+ */
+export const readingStatus = z.enum(["unread", "reading", "read"]);
+export type ReadingStatus = z.infer<typeof readingStatus>;
+
 export const storySummary = z.object({
   id: z.string(),
   /** Set when the story is a chapter of a series. */
@@ -658,9 +666,10 @@ export const storySummary = z.object({
   questions: z.number().int(),
   /** Version of the cover art (changes with it), or null when there is none. */
   cover: z.string().nullable().default(null),
-  /** How far the learner has scrolled (0–1). */
+  /** How far the learner has read (0–1); only moves forward until "Read again". */
   progress: z.number(),
   readAt: z.number().int().nullable(),
+  status: readingStatus.default("unread"),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
 });
@@ -672,6 +681,9 @@ export const storyView = z.object({
   series: storySeriesInfo.nullable().default(null),
   progress: z.number(),
   readAt: z.number().int().nullable(),
+  status: readingStatus.default("unread"),
+  /** Where the reader should reopen (0–1), or null to start at the top. */
+  resumeAt: z.number().nullable().default(null),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
 });
@@ -683,10 +695,9 @@ export const saveStoryBody = z.object({
   overwrite: z.boolean().default(false),
 });
 
+/** How far the learner has read; the server keeps the further position. */
 export const storyProgressBody = z.object({
   progress: z.number().min(0).max(1),
-  /** Mark as read (true) or unread (false); leave out to keep. */
-  read: z.boolean().optional(),
 });
 
 /** Batch lemma lookup (offline dictionary): surface form → base form. */
@@ -814,6 +825,7 @@ export const seriesChapter = z.object({
   words: z.number().int(),
   progress: z.number(),
   readAt: z.number().int().nullable(),
+  status: readingStatus.default("unread"),
   /** Continuity summary (for writers). */
   summary: z.string().nullable(),
   /** Version of the cover art (changes with it), or null when there is none. */
@@ -832,6 +844,8 @@ export const seriesSummary = z.object({
   read: z.number().int(),
   /** Share of the book read, 0–1 (finished chapters count fully). */
   progress: z.number(),
+  /** "read" once every planned chapter is read. */
+  status: readingStatus.default("unread"),
   /** Where "Continue reading" goes (null when nothing is written yet). */
   continueId: z.string().nullable(),
   /** Version of the cover art (changes with it), or null when there is none. */
@@ -987,8 +1001,13 @@ export const syncOp = z.discriminatedUnion("type", [
   z.object({ opId, type: z.literal("answer"), at: z.number().int(), data: answerBody }),
   z.object({ opId, type: z.literal("finish"), data: finishRunBody }),
   z.object({ opId, type: z.literal("sheetView"), data: sheetViewBody }),
-  /** Progress only moves forward (max of server and app); `read` sets or clears read. */
-  z.object({ opId, type: z.literal("storyProgress"), storyId: z.string().min(1), progress: z.number().min(0).max(1), read: z.boolean().optional() }),
+  /**
+   * Progress only moves forward (max of server and app). `at`: when (unix
+   * seconds); skipped as stale if the story was marked read or read again since.
+   */
+  z.object({ opId, type: z.literal("storyProgress"), storyId: z.string().min(1), progress: z.number().min(0).max(1), at: z.number().int() }),
+  /** Mark read (`read: true`) or "Read again" (false: unread, back to the start); stale when the read state changed later. */
+  z.object({ opId, type: z.literal("storyRead"), storyId: z.string().min(1), read: z.boolean(), at: z.number().int() }),
   z.object({ opId, type: z.literal("vocabSave"), data: saveVocabBody }),
   z.object({ opId, type: z.literal("vocabRemove"), word: z.string().min(1) }),
   z.object({ opId, type: z.literal("vocabStudy"), word: z.string().min(1), known: z.boolean() }),

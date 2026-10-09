@@ -71,7 +71,15 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   (edge taps, swipes, arrow keys; the questions follow on an end page);
   "scroll" uses the reader's own scroll container. Both keep an anchor (the
   paragraph at the top of the screen) across re-flows and mode switches;
-  progress is the furthest page / scroll position. Its settings are
+  progress is the furthest page / scroll position. The server owns the read
+  rules (`services/stories.ts`): progress only moves forward
+  (`PUT /api/stories/:id/progress`), `POST|DELETE /api/stories/:id/read` mark
+  read (progress to the end) or "Read again" (unread, back to 0: the only way
+  back), finishing a story's questions marks it read, and every story,
+  chapter and book comes with a `status` (unread / reading past 2% / read)
+  and stories with `resumeAt` (where to reopen, or null for the top).
+  `stories.read_state_at` orders read-state changes, so the app's older
+  queued actions come back `stale`. Its settings are
   `settings.reader` (per account). Paragraphs (blank-line blocks) are the
   read-aloud units (`speakSequence` in `lib/tts.ts`). Saved words are
   underlined with the CSS Custom Highlight API (no DOM changes), matching base

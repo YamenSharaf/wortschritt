@@ -15,7 +15,7 @@ import { finishRun, recordInSession } from "./activity";
 import { listGenerated } from "./generated";
 import { recordAttempt } from "./progress";
 import { getSettings } from "./settings";
-import { getStory } from "./stories";
+import { getStory, setStoryRead } from "./stories";
 
 /**
  * Grading lives here: the server finds the item, grades the response by the
@@ -83,5 +83,7 @@ export function finish(userId: number, setId: string, done: boolean): boolean {
   const set = findSet(userId, setId);
   if (!set) return false;
   finishRun(userId, setId, { title: set.title, total: set.items.length }, done);
+  // Finishing a story's questions means the story was read.
+  if (done && setId.startsWith(STORY)) setStoryRead(userId, setId.slice(STORY.length), true);
   return true;
 }

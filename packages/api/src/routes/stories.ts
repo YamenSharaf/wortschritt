@@ -21,7 +21,8 @@ import {
   getStory,
   listStories,
   saveStory,
-  setStoryProgress,
+  advanceStoryProgress,
+  setStoryRead,
   updateStory,
 } from "../services/stories";
 import { buildStoryContext, generateStory, StoryGenerationError } from "../services/storyGen";
@@ -101,10 +102,29 @@ export async function storyRoutes(app: FastifyInstance) {
       preHandler: requireAuth,
       schema: { tags: ["stories"], params, body: storyProgressBody, response: { 200: ok, 404: failure } },
     },
+    // The further position wins; only "Read again" moves it back.
     async (req, reply) =>
-      setStoryProgress(req.user!.id, req.params.id, req.body.progress, req.body.read)
-        ? { ok: true as const }
-        : reply.code(404).send({ error: "no such story" }),
+      advanceStoryProgress(req.user!.id, req.params.id, req.body.progress) === "missing"
+        ? reply.code(404).send({ error: "no such story" })
+        : { ok: true as const },
+  );
+
+  // Mark read (progress to the end) / "Read again" (unread, back to the start).
+  r.post(
+    "/api/stories/:id/read",
+    { preHandler: requireAuth, schema: { tags: ["stories"], params, response: { 200: ok, 404: failure } } },
+    async (req, reply) =>
+      setStoryRead(req.user!.id, req.params.id, true) === "missing"
+        ? reply.code(404).send({ error: "no such story" })
+        : { ok: true as const },
+  );
+  r.delete(
+    "/api/stories/:id/read",
+    { preHandler: requireAuth, schema: { tags: ["stories"], params, response: { 200: ok, 404: failure } } },
+    async (req, reply) =>
+      setStoryRead(req.user!.id, req.params.id, false) === "missing"
+        ? reply.code(404).send({ error: "no such story" })
+        : { ok: true as const },
   );
 
   // What story generation would send about the learner (the preview).

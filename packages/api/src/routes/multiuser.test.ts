@@ -211,7 +211,9 @@ test("stories are private: another user can't read, change or delete them", asyn
   assert.deepEqual((await anna("GET", "/api/stories")).json(), []);
   assert.equal((await anna("GET", `/api/stories/${id}`)).statusCode, 404);
   assert.equal((await anna("PUT", `/api/stories/${id}`, { ...EXAMPLE_STORY, title: "pwned" })).statusCode, 404);
-  assert.equal((await anna("PUT", `/api/stories/${id}/progress`, { progress: 1, read: true })).statusCode, 404);
+  assert.equal((await anna("PUT", `/api/stories/${id}/progress`, { progress: 1 })).statusCode, 404);
+  assert.equal((await anna("POST", `/api/stories/${id}/read`)).statusCode, 404);
+  assert.equal((await anna("DELETE", `/api/stories/${id}/read`)).statusCode, 404);
   assert.equal((await anna("DELETE", `/api/stories/${id}`)).statusCode, 404);
   assert.equal((await anna("GET", `/api/stories/${id}/translations`)).statusCode, 404);
   assert.equal(

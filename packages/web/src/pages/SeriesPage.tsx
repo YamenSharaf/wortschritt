@@ -39,7 +39,7 @@ export function SeriesPage() {
   }
   if (!view) return <p className="text-ink-muted">Loading…</p>;
 
-  const started = view.chapters.some((c) => c.progress > 0.02 || c.readAt);
+  const started = view.status !== "unread";
   const percent = Math.round(view.progress * 100);
 
   async function remove() {
@@ -131,12 +131,12 @@ export function SeriesPage() {
                     : "Not written yet"}
                 </div>
               </div>
-              {c.readAt ? (
+              {c.status === "read" ? (
                 <Pill tone="success">
                   <CheckIcon className="h-3 w-3" />
                   Read
                 </Pill>
-              ) : c.progress > 0.02 ? (
+              ) : c.status === "reading" ? (
                 <Pill tone="brand">{Math.round(c.progress * 100)}%</Pill>
               ) : null}
             </div>
