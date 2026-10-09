@@ -2,4 +2,6 @@
 <resources>
     <!-- Between tile-from (#4A90E2) and tile-to (#22589A), the launcher tile's gradient. -->
     <color name="splash_background">#3674BE</color>
+    <!-- The app background (bg token in packages/web/src/index.css), light. -->
+    <color name="app_background">#F6F7FA</color>
 </resources>

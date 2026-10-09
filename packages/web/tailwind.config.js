@@ -6,6 +6,8 @@ const v = (name) => `var(--${name})`;
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   darkMode: "media",
+  // hover: styles only where something can hover (no "stuck" hover after a tap).
+  future: { hoverOnlyWhenSupported: true },
   theme: {
     extend: {
       colors: {

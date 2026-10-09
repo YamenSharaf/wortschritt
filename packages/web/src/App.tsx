@@ -73,6 +73,9 @@ export function App() {
   return (
     <VocabProvider>
     <div className="min-h-screen">
+      {/* Behind the status bar (the app draws edge to edge): the page colour, so
+          content scrolling up never runs into the clock. Zero tall on the web. */}
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-40 h-[var(--sa-top)] bg-bg" />
       {/* A floating bar (Raycast-style): the mark left, sections centred, account right. */}
       <div className="sticky top-0 z-30 px-3 pt-[calc(var(--sa-top)+0.75rem)] sm:px-4">
         <header className="ws-bar mx-auto grid h-14 max-w-5xl grid-cols-[1fr_auto] items-center gap-3 px-3 sm:px-4 md:grid-cols-[1fr_auto_1fr]">

@@ -40,6 +40,15 @@ import { api } from "../lib/api";
 import { speakSequence, stopSpeaking, ttsSupported } from "../lib/tts";
 import { useVocab } from "../lib/vocab";
 import { IS_NATIVE } from "../lib/platform";
+import {
+  capturePageKeys,
+  getDeviceSettings,
+  setDeviceSettings,
+  setKeepAwake,
+  setSystemBarsStyle,
+  setSystemBarsVisible,
+} from "../lib/device";
+import { useBackClose, useDeviceSettings } from "../lib/useDevice";
 
 const FONTS: Record<ReaderSettings["font"], { label: string; family: string }> = {
   serif: { label: "Serif", family: '"Literata", Georgia, "Times New Roman", serif' },
@@ -337,6 +346,84 @@ function StoryReaderView() {
     setSheet(null);
   }, []);
 
+  // --- the phone (no-ops on the web) ---
+  // Its status and navigation bars come and go with the reader's own: a page
+  // turn or a tap on the page hides both (full screen), another tap shows them.
+  const barsShown = chrome || sheet !== null;
+  useEffect(() => setSystemBarsVisible(barsShown), [barsShown]);
+  useEffect(() => {
+    setKeepAwake(true);
+    return () => {
+      setKeepAwake(false);
+      setSystemBarsVisible(true);
+      setSystemBarsStyle("app");
+    };
+  }, []);
+  const dark = useDarkPage(reader.theme);
+  useEffect(() => setSystemBarsStyle(dark ? "dark" : "light"), [dark]);
+  useBackClose(sheet !== null, () => setSheet(null));
+
+  // Volume keys turn pages when this device allows it (Android keeps them otherwise).
+  const device = useDeviceSettings();
+  useEffect(() => {
+    if (!paged || !device.pageKeys) return;
+    return capturePageKeys((key) => turn((key === "VolumeDown") !== device.invertPageKeys ? 1 : -1));
+  }, [paged, device.pageKeys, device.invertPageKeys, turn]);
+
+  // Press and hold the bottom-right corner: light ↔ dark (back to the light theme you had).
+  const lightTheme = useRef<ReaderSettings["theme"]>("light");
+  const hold = useRef<{ timer: number; x: number; y: number } | null>(null);
+  const held = useRef(false);
+  const toggleDark = () => {
+    if (!dark) {
+      lightTheme.current = reader.theme;
+      changeReader({ theme: "dark" });
+    } else {
+      // Auto comes back only if it would be light now.
+      const back = lightTheme.current;
+      const autoIsDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      changeReader({ theme: back === "dark" || (back === "auto" && autoIsDark) ? "light" : back });
+    }
+  };
+  const cornerHold = {
+    onPointerDown: (e: React.PointerEvent) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      const inCorner = e.clientX > window.innerWidth * 0.8 && e.clientY > window.innerHeight * 0.85;
+      if (!inCorner || (e.target as HTMLElement).closest("a,button,input,select,textarea,label")) return;
+      const timer = window.setTimeout(() => {
+        hold.current = null;
+        held.current = true;
+        toggleDark();
+      }, 600);
+      hold.current = { timer, x: e.clientX, y: e.clientY };
+    },
+    onPointerMove: (e: React.PointerEvent) => {
+      const h = hold.current;
+      if (h && Math.hypot(e.clientX - h.x, e.clientY - h.y) > 12) {
+        window.clearTimeout(h.timer);
+        hold.current = null;
+      }
+    },
+    onPointerUp: () => {
+      if (hold.current) window.clearTimeout(hold.current.timer);
+      hold.current = null;
+    },
+    onPointerCancel: () => {
+      if (hold.current) window.clearTimeout(hold.current.timer);
+      hold.current = null;
+    },
+    // The click that ends a hold mustn't also turn the page or open a word.
+    onClickCapture: (e: React.MouseEvent) => {
+      if (!held.current) return;
+      held.current = false;
+      e.stopPropagation();
+      e.preventDefault();
+    },
+    onContextMenu: (e: React.MouseEvent) => {
+      if (held.current || hold.current) e.preventDefault();
+    },
+  };
+
   // Scroll: restore / keep the anchor, track progress, hide the bars going down.
   const scrollTo = useCallback((i: number) => {
     const sc = scrollerRef.current;
@@ -403,12 +490,20 @@ function StoryReaderView() {
       if (t.closest("input,textarea,select,[contenteditable]")) return;
       if (e.key === "Escape") setSheet(null);
       if (!paged) return;
-      if (["ArrowRight", "PageDown", " ", "AudioVolumeDown", "VolumeDown"].includes(e.key)) {
+      // Page keys (Page Up/Down, volume) follow the device's "invert" setting.
+      const flip = getDeviceSettings().invertPageKeys ? -1 : 1;
+      if (["ArrowRight", " "].includes(e.key)) {
         e.preventDefault();
         turn(1);
-      } else if (["ArrowLeft", "PageUp", "AudioVolumeUp", "VolumeUp"].includes(e.key)) {
+      } else if (e.key === "ArrowLeft") {
         e.preventDefault();
         turn(-1);
+      } else if (["PageDown", "AudioVolumeDown", "VolumeDown"].includes(e.key)) {
+        e.preventDefault();
+        turn(flip);
+      } else if (["PageUp", "AudioVolumeUp", "VolumeUp"].includes(e.key)) {
+        e.preventDefault();
+        turn(-flip);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -660,10 +755,10 @@ function StoryReaderView() {
   );
 
   return (
-    <div className="reader fixed inset-0 z-40 overflow-hidden" data-theme={reader.theme} lang="de">
+    <div className="reader fixed inset-0 z-40 overflow-hidden" data-theme={reader.theme} lang="de" {...cornerHold}>
       {/* Top bar: hides while reading; a tap on the page (not a word) brings it back. */}
       <div
-        className={`reader-bar absolute inset-x-0 top-0 z-20 transition-transform duration-200 ${
+        className={`reader-bar absolute inset-x-0 top-0 z-20 pt-[var(--sa-top)] transition-transform duration-200 ${
           chrome || sheet ? "" : "-translate-y-full"
         }`}
         lang="en"
@@ -1044,8 +1139,50 @@ function ReaderPanel({
           />
         </div>
       )}
+      {IS_NATIVE && <PageKeySettings row={row} label={label} />}
     </div>
   );
+}
+
+/** This device's page keys (kept on the device, not the account). */
+function PageKeySettings({ row, label }: { row: string; label: string }) {
+  const device = useDeviceSettings();
+  const box = "h-4 w-4 accent-[var(--brand)]";
+  return (
+    <>
+      <label className={`${row} cursor-pointer`}>
+        <span className={label}>Turn pages with the volume keys</span>
+        <input
+          type="checkbox"
+          checked={device.pageKeys}
+          onChange={(e) => setDeviceSettings({ pageKeys: e.target.checked })}
+          className={box}
+        />
+      </label>
+      <label className={`${row} cursor-pointer`}>
+        <span className={label}>Invert page keys (volume up = next page)</span>
+        <input
+          type="checkbox"
+          checked={device.invertPageKeys}
+          onChange={(e) => setDeviceSettings({ invertPageKeys: e.target.checked })}
+          className={box}
+        />
+      </label>
+    </>
+  );
+}
+
+/** Whether the reader's page is dark (its theme, or the device's with Auto). */
+function useDarkPage(theme: ReaderSettings["theme"]): boolean {
+  const query = "(prefers-color-scheme: dark)";
+  const [systemDark, setSystemDark] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const m = window.matchMedia(query);
+    const on = () => setSystemDark(m.matches);
+    m.addEventListener("change", on);
+    return () => m.removeEventListener("change", on);
+  }, []);
+  return theme === "dark" || (theme === "auto" && systemDark);
 }
 
 /**

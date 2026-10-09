@@ -470,3 +470,18 @@ body {
     transition: none;
   }
 }
+
+/* The Android app (html[data-native], set at start-up): drop web-page habits. */
+html[data-native],
+html[data-native] body {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+html[data-native] :where(img, a, button) {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+}
+html[data-native] :where(button, nav, header, [role="button"], .ws-dock, .reader-bar) {
+  -webkit-user-select: none;
+  user-select: none;
+}

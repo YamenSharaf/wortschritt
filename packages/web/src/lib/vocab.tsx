@@ -21,6 +21,7 @@ import { perfektAux } from "./forms";
 import { speak, ttsSupported } from "./tts";
 import { CheckIcon, CopyIcon, CrossIcon, LanguagesIcon, PlusIcon, SpeakerIcon } from "../components/icons";
 import { btn } from "../components/ui";
+import { useBackClose } from "./useDevice";
 
 const norm = (w: string) => w.trim().toLowerCase();
 
@@ -241,6 +242,7 @@ function WordOverlay({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+  useBackClose(true, onClose);
 
   useEffect(() => {
     let alive = true;

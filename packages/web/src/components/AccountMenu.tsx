@@ -1,4 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useBackClose } from "../lib/useDevice";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../lib/auth";
@@ -36,8 +37,9 @@ export function AccountMenu() {
   const id = useId();
   const { pathname } = useLocation();
 
-  // Close when the route changes (an item was followed).
+  // Close when the route changes (an item was followed), or on Android's back button.
   useEffect(() => setOpen(false), [pathname]);
+  useBackClose(open, () => setOpen(false));
 
   useLayoutEffect(() => {
     if (!open) return;

@@ -13,6 +13,8 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- The app's page colour (bg token), shown before the web app paints. -->
+        <item name="android:windowBackground">@color/app_background</item>
     </style>
 
 
