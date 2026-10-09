@@ -258,7 +258,7 @@ a custom connector in Claude (or any MCP client) with the URL
   them. The app is its own authorization server (discovery under
   `/.well-known/`, Dynamic Client Registration and Client ID Metadata
   Documents, PKCE S256, 1 h access tokens that only work on `/mcp`, rotating
-  30-day refresh tokens). Set `PUBLIC_URL` if the issuer URL can't be derived
+  30-day refresh tokens). Changing your password disconnects them all. Set `PUBLIC_URL` if the issuer URL can't be derived
   from the request's `Host` / `X-Forwarded-Proto`.
 - **API token:** clients that take a header instead send
   `Authorization: Bearer mdb_…`.

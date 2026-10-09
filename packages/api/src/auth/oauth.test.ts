@@ -179,20 +179,57 @@ test("full flow: register, sign in, allow, code → tokens → MCP", async () =>
   assert.ok(grants[0].lastUsedAt);
 });
 
-test("refresh rotates both tokens; the old ones stop working", async () => {
-  const res = await form("/oauth/token", { grant_type: "refresh_token", refresh_token: tokens.refresh_token, client_id: clientId });
+/** Sign in as `cookie` through the whole flow; the tokens for the MCP resource. */
+async function connect(cookie: string) {
+  const { verifier, challenge } = pkce();
+  const code = (
+    await authorize(cookie, { response_type: "code", client_id: clientId, redirect_uri: REDIRECT, code_challenge: challenge, code_challenge_method: "S256" })
+  ).searchParams.get("code")!;
+  const res = await form("/oauth/token", { grant_type: "authorization_code", code, code_verifier: verifier, client_id: clientId });
+  assert.equal(res.statusCode, 200, res.body);
+  return res.json() as { access_token: string; refresh_token: string };
+}
+const refreshWith = (refresh_token: string, client_id = clientId) =>
+  form("/oauth/token", { grant_type: "refresh_token", refresh_token, client_id });
+
+test("refresh rotates both tokens; a replaced refresh token works only within a short grace", async () => {
+  const res = await refreshWith(tokens.refresh_token);
   assert.equal(res.statusCode, 200, res.body);
   const next = res.json();
   assert.notEqual(next.refresh_token, tokens.refresh_token);
   assert.equal((await mcpList(tokens.access_token)).statusCode, 401);
   assert.equal((await mcpList(next.access_token)).statusCode, 200);
-  const reuse = await form("/oauth/token", { grant_type: "refresh_token", refresh_token: tokens.refresh_token, client_id: clientId });
-  assert.equal(reuse.json().error, "invalid_grant");
+
+  // The response got lost: the replaced token, within the grace, gets a fresh pair.
+  const retry = await refreshWith(tokens.refresh_token);
+  assert.equal(retry.statusCode, 200, retry.body);
+  const again = retry.json();
+  assert.equal((await mcpList(again.access_token)).statusCode, 200);
+  assert.equal((await mcpList(next.access_token)).statusCode, 401, "one live access token per connection");
+
   // Another client can't use it.
   const other = (await register()).client_id;
-  const stolen = await form("/oauth/token", { grant_type: "refresh_token", refresh_token: next.refresh_token, client_id: other });
-  assert.equal(stolen.json().error, "invalid_grant");
-  tokens = next;
+  assert.equal((await refreshWith(again.refresh_token, other)).json().error, "invalid_grant");
+
+  // Past the grace, a replaced token is a leak: the connection ends.
+  const { db, schema } = await import("../db/client");
+  db.update(schema.oauthGrants).set({ prevRefreshUntil: Math.floor(Date.now() / 1000) - 1 }).run();
+  const late = await refreshWith(next.refresh_token);
+  assert.equal(late.json().error, "invalid_grant");
+  assert.match(late.json().error_description, /already used/);
+  assert.equal((await mcpList(again.access_token)).statusCode, 401);
+  assert.equal((await refreshWith(again.refresh_token)).json().error, "invalid_grant");
+
+  tokens = await connect(adminCookie);
+});
+
+test("signing out with an access token ends that connection", async () => {
+  const mine = await connect(adminCookie);
+  const res = await send({ method: "POST", url: "/api/auth/logout", headers: { authorization: `Bearer ${mine.access_token}` } });
+  assert.equal(res.statusCode, 200);
+  assert.equal((await mcpList(mine.access_token)).statusCode, 401);
+  assert.equal((await refreshWith(mine.refresh_token)).json().error, "invalid_grant");
+  assert.equal((await mcpList(tokens.access_token)).statusCode, 200, "other connections stay");
 });
 
 test("bad requests: unknown client or redirect is shown, the rest goes back to the client", async () => {
@@ -318,4 +355,25 @@ test("disconnect, revoke, or disabling the user ends access", async () => {
 test("the consent page can't be framed", async () => {
   const res = await send({ method: "GET", url: "/api/health" });
   assert.equal(res.headers["x-frame-options"], "DENY");
+});
+
+test("changing the password ends every OAuth connection, not API tokens", async () => {
+  await send({ method: "PUT", url: "/api/admin/registration", headers: { cookie: adminCookie }, payload: { open: true } });
+  await send({ method: "POST", url: "/api/auth/register", payload: { username: "ben", password: "ben-password" } });
+  const ben = await login("ben", "ben-password");
+  const conn = await connect(ben);
+  const apiToken = (await send({ method: "POST", url: "/api/auth/tokens", headers: { cookie: ben }, payload: { name: "script" } })).json().token;
+  assert.equal((await mcpList(conn.access_token)).statusCode, 200);
+
+  const res = await send({
+    method: "POST",
+    url: "/api/auth/password",
+    headers: { cookie: ben },
+    payload: { currentPassword: "ben-password", newPassword: "ben-password-2" },
+  });
+  assert.equal(res.statusCode, 200, res.body);
+  assert.equal((await mcpList(conn.access_token)).statusCode, 401);
+  assert.equal((await refreshWith(conn.refresh_token)).json().error, "invalid_grant");
+  const viaToken = await send({ method: "GET", url: "/api/notes", headers: { authorization: `Bearer ${apiToken}` } });
+  assert.equal(viaToken.statusCode, 200, "a personal API token is a deliberate key; it stays");
 });

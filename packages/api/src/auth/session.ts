@@ -17,11 +17,15 @@ declare module "fastify" {
     user: AuthUser | null;
     /** How the request authenticated (set alongside `user`). */
     authVia: "session" | "token" | null;
+    /** A session extended by this request: its cookie is sent again (see renewSessionCookie). */
+    renewSession: string | null;
   }
 }
 
 const COOKIE_NAME = "mdb_session";
-const SESSION_TTL_S = 60 * 60 * 24 * 30; // 30 days
+/** A session lasts this long after its last use (extended at most once a day). */
+export const SESSION_TTL_S = 60 * 60 * 24 * 30; // 30 days
+const RENEW_EVERY_S = 60 * 60 * 24;
 
 const now = () => Math.floor(Date.now() / 1000);
 
@@ -46,6 +50,10 @@ export function startSession(reply: FastifyReply, userId: number): void {
     .set({ lastLoginAt: now() })
     .where(eq(schema.users.id, userId))
     .run();
+  setSessionCookie(reply, token);
+}
+
+function setSessionCookie(reply: FastifyReply, token: string): void {
   reply.setCookie(COOKIE_NAME, token, {
     path: "/",
     httpOnly: true,
@@ -56,7 +64,16 @@ export function startSession(reply: FastifyReply, userId: number): void {
   });
 }
 
-/** The user behind the request's session cookie, if it's valid and active. */
+/** onSend: send the cookie again for a session this request extended. */
+export function renewSessionCookie(req: FastifyRequest, reply: FastifyReply): void {
+  if (req.renewSession && !reply.getHeader("set-cookie")) setSessionCookie(reply, req.renewSession);
+}
+
+/**
+ * The user behind the request's session cookie, if it's valid and active.
+ * Using a session keeps it alive: it's extended to a full TTL again (at most
+ * once a day), so only a month without use signs you out.
+ */
 export function getSessionUser(req: FastifyRequest): AuthUser | null {
   const token = tokenFrom(req);
   if (!token) return null;
@@ -66,6 +83,7 @@ export function getSessionUser(req: FastifyRequest): AuthUser | null {
       username: schema.users.username,
       role: schema.users.role,
       disabled: schema.users.disabled,
+      expiresAt: schema.sessions.expiresAt,
     })
     .from(schema.sessions)
     .innerJoin(schema.users, eq(schema.users.id, schema.sessions.userId))
@@ -77,6 +95,13 @@ export function getSessionUser(req: FastifyRequest): AuthUser | null {
     )
     .get();
   if (!row || row.disabled) return null;
+  if (row.expiresAt - now() < SESSION_TTL_S - RENEW_EVERY_S) {
+    db.update(schema.sessions)
+      .set({ expiresAt: now() + SESSION_TTL_S })
+      .where(eq(schema.sessions.id, sessionId(token)))
+      .run();
+    req.renewSession = token;
+  }
   return { id: row.id, username: row.username, role: row.role };
 }
 

@@ -13,7 +13,7 @@ import {
 } from "fastify-type-provider-zod";
 import { seedAdminAiFromEnv } from "./assistant/config";
 import { pruneOAuth } from "./auth/oauth";
-import { pruneExpiredSessions, requireAuth } from "./auth/session";
+import { pruneExpiredSessions, renewSessionCookie, requireAuth } from "./auth/session";
 import { ensureAdminUser } from "./auth/users";
 import { ensureSchema } from "./db/client";
 import { seedDictionary } from "./db/dictSeed";
@@ -73,8 +73,10 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(rateLimit, { global: false });
   app.decorateRequest("user", null);
   app.decorateRequest("authVia", null);
+  app.decorateRequest("renewSession", null);
   // Nothing here is meant to be framed (the OAuth consent page in particular).
-  app.addHook("onSend", async (_req, reply) => {
+  app.addHook("onSend", async (req, reply) => {
+    renewSessionCookie(req, reply);
     reply.header("x-frame-options", "DENY");
     // A route may set a stricter policy (cover images do); keep it, adding framing.
     const csp = reply.getHeader("content-security-policy");

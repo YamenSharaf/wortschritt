@@ -9,6 +9,7 @@ import {
   setRegistrationBody,
   updateUserBody,
 } from "@mdb/shared";
+import { revokeUserGrants } from "../auth/oauth";
 import { endOtherSessions, requireAdmin } from "../auth/session";
 import {
   deleteUser,
@@ -81,6 +82,7 @@ export async function adminRoutes(app: FastifyInstance) {
       }
       await setPassword(req.params.id, req.body.password);
       endOtherSessions(req.params.id);
+      revokeUserGrants(req.params.id);
       return { ok: true as const };
     },
   );

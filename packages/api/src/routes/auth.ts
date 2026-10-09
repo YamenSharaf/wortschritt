@@ -19,6 +19,7 @@ import {
   requireSession,
   startSession,
 } from "../auth/session";
+import { looksLikeAccessToken, revokeAccessToken, revokeUserGrants } from "../auth/oauth";
 import { createToken, deleteToken, listTokens, MAX_TOKENS_PER_USER } from "../auth/tokens";
 import { createUser, findUserById, findUserByUsername, setPassword } from "../auth/users";
 import { registrationStatus } from "../services/registration";
@@ -71,6 +72,9 @@ export async function authRoutes(app: FastifyInstance) {
     "/api/auth/logout",
     { schema: { tags: ["auth"], response: { 200: z.object({ ok: z.literal(true) }) } } },
     async (req, reply) => {
+      // An app signs out with its access token: end that connection too.
+      const bearer = /^Bearer\s+(\S+)$/i.exec(req.headers.authorization ?? "")?.[1];
+      if (bearer && looksLikeAccessToken(bearer)) revokeAccessToken(bearer);
       endSession(req, reply);
       return { ok: true as const };
     },
@@ -123,7 +127,8 @@ export async function authRoutes(app: FastifyInstance) {
     },
   );
 
-  // Change your own password. Signs out your other sessions. Browser session
+  // Change your own password. Signs out your other sessions and every OAuth
+  // connection (apps, agents); personal API tokens stay. Browser session
   // only: an API token can't change the password.
   r.post(
     "/api/auth/password",
@@ -143,6 +148,7 @@ export async function authRoutes(app: FastifyInstance) {
       }
       await setPassword(user.id, req.body.newPassword);
       endOtherSessions(user.id, req);
+      revokeUserGrants(user.id);
       return { ok: true as const };
     },
   );

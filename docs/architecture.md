@@ -222,9 +222,15 @@ Package names: `@mdb/shared`, `@mdb/client`, `@mdb/api`, `@mdb/web`. Root script
   reverse-DNS private-use scheme such as `eu.yamen.wortschritt:/oauth/callback`,
   RFC 8252). Tokens: `mdbo_at_…` (1 h, valid only on their resource — an
   `app` token works with `authenticate()` on the REST API, an `mcp` one only
-  on `/mcp`) and `mdbo_rt_…` (30 days, rotated on each refresh); one
-  `oauth_grants` row per approval, which Settings → Connections lists and
-  deletes. Disabling or deleting the user ends access. The issuer is
+  on `/mcp`) and `mdbo_rt_…` (30 days, sliding, rotated on each refresh;
+  the replaced one still works for 2 minutes — a lost response, two
+  refreshes at once — and used later it ends the grant, since a reused
+  refresh token means a leak); one `oauth_grants` row per approval, which
+  Settings → Connections lists and deletes. Disabling or deleting the user,
+  or a password change (own or by an admin), ends access; so does
+  `POST /api/auth/logout` with that connection's access token (an app's
+  sign-out, besides `/oauth/revoke`). Browser sessions last 30 days after
+  their last use (extended at most once a day, cookie re-sent). The issuer is
   `PUBLIC_URL` or the request's forwarded origin. All responses send
   `X-Frame-Options: DENY` so the consent page can't be framed.
 - Native app (`routes/native.ts`, registered on the root instance): CORS on

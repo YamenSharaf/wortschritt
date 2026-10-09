@@ -18,7 +18,10 @@ import type { AuthUser } from "./users";
  *   endpoint) and "app" (resource <origin>/api, the REST API, for the
  *   native app). A token only works on the resource it was issued for;
  * - access tokens last 1 h; refresh tokens (30 days, sliding) rotate on
- *   every use. Codes and tokens are stored as SHA-256 only.
+ *   every use. The replaced refresh token still works for REFRESH_GRACE_S
+ *   (a response lost on a phone's network, two refreshes at once); used
+ *   after that, it ends the grant (a reused refresh token means a leak).
+ *   Codes and tokens are stored as SHA-256 only.
  */
 
 export const SCOPE = "mcp";
@@ -27,6 +30,7 @@ export const APP_SCOPE = "app";
 const CODE_TTL_S = 10 * 60;
 export const ACCESS_TTL_S = 60 * 60;
 const REFRESH_TTL_S = 30 * 24 * 60 * 60;
+export const REFRESH_GRACE_S = 2 * 60;
 const CIMD_TTL_S = 24 * 60 * 60;
 const ACCESS_PREFIX = "mdbo_at_";
 const REFRESH_PREFIX = "mdbo_rt_";
@@ -389,7 +393,8 @@ export function authenticateClient(body: Record<string, string>, authorization: 
   return client;
 }
 
-function issue(grantId: number, scope: string) {
+/** A new token pair for the grant; `replaced` is the refresh token's hash it supersedes. */
+function issue(grantId: number, scope: string, replaced?: string) {
   const access = ACCESS_PREFIX + random();
   const refresh = REFRESH_PREFIX + random();
   db.update(schema.oauthGrants)
@@ -398,6 +403,8 @@ function issue(grantId: number, scope: string) {
       accessExpiresAt: now() + ACCESS_TTL_S,
       refreshHash: hash(refresh),
       refreshExpiresAt: now() + REFRESH_TTL_S,
+      prevRefreshHash: replaced ?? null,
+      prevRefreshUntil: replaced ? now() + REFRESH_GRACE_S : null,
     })
     .where(eq(schema.oauthGrants.id, grantId))
     .run();
@@ -448,22 +455,35 @@ export function exchangeCode(client: Client, body: Record<string, string>) {
 export function refresh(client: Client, body: Record<string, string>) {
   const token = body.refresh_token;
   if (!token) throw new OAuthError("invalid_request", "refresh_token is required");
+  const h = hash(token);
   const grant = db
     .select({
       id: schema.oauthGrants.id,
       clientId: schema.oauthGrants.clientId,
       scope: schema.oauthGrants.scope,
       exp: schema.oauthGrants.refreshExpiresAt,
+      current: schema.oauthGrants.refreshHash,
+      prevUntil: schema.oauthGrants.prevRefreshUntil,
       disabled: schema.users.disabled,
     })
     .from(schema.oauthGrants)
     .innerJoin(schema.users, eq(schema.users.id, schema.oauthGrants.userId))
-    .where(eq(schema.oauthGrants.refreshHash, hash(token)))
+    .where(or(eq(schema.oauthGrants.refreshHash, h), eq(schema.oauthGrants.prevRefreshHash, h)))
     .get();
-  if (!grant || grant.clientId !== client.clientId || grant.exp < now() || grant.disabled) {
+  if (!grant || grant.clientId !== client.clientId) {
     throw new OAuthError("invalid_grant", "the refresh token is invalid or expired");
   }
-  return issue(grant.id, grant.scope);
+  if (grant.current !== h && (grant.prevUntil ?? 0) < now()) {
+    // A replaced token, past its grace: someone else may hold the new one.
+    db.delete(schema.oauthGrants).where(eq(schema.oauthGrants.id, grant.id)).run();
+    throw new OAuthError("invalid_grant", "the refresh token was already used; sign in again");
+  }
+  if (grant.exp < now() || grant.disabled) {
+    throw new OAuthError("invalid_grant", "the refresh token is invalid or expired");
+  }
+  // Within the grace, the replaced token gets a fresh pair too; the pair it
+  // missed becomes the replaced one.
+  return issue(grant.id, grant.scope, grant.current);
 }
 
 /** RFC 7009: revoke the grant behind an access or refresh token. Always "succeeds". */
@@ -474,10 +494,24 @@ export function revoke(client: Client, token: string | undefined): void {
     .where(
       and(
         eq(schema.oauthGrants.clientId, client.clientId),
-        or(eq(schema.oauthGrants.accessHash, h), eq(schema.oauthGrants.refreshHash, h)),
+        or(
+          eq(schema.oauthGrants.accessHash, h),
+          eq(schema.oauthGrants.refreshHash, h),
+          eq(schema.oauthGrants.prevRefreshHash, h),
+        ),
       ),
     )
     .run();
+}
+
+/** Sign-out from an app: end the grant behind its access token. */
+export function revokeAccessToken(token: string): void {
+  db.delete(schema.oauthGrants).where(eq(schema.oauthGrants.accessHash, hash(token))).run();
+}
+
+/** End every OAuth connection of a user (apps and agents), e.g. after a password change. */
+export function revokeUserGrants(userId: number): void {
+  db.delete(schema.oauthGrants).where(eq(schema.oauthGrants.userId, userId)).run();
 }
 
 // --- resource server ---------------------------------------------------------

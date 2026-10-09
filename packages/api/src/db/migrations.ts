@@ -730,6 +730,16 @@ export const migrations: Migration[] = [
       addColumn(db, "stories", "read_state_at", "INTEGER");
     },
   },
+  {
+    version: 18,
+    // The refresh token a grant replaced last, accepted for a short grace (a
+    // lost response, two refreshes at once); used after it, the grant ends.
+    name: "oauth-refresh-grace",
+    up(db) {
+      addColumn(db, "oauth_grants", "prev_refresh_hash", "TEXT");
+      addColumn(db, "oauth_grants", "prev_refresh_until", "INTEGER");
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

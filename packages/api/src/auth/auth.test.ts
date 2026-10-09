@@ -88,6 +88,25 @@ test("logout revokes the session server-side", async () => {
   assert.equal((await get("/api/settings", cookie)).statusCode, 401);
 });
 
+test("a session in use stays alive: extended (at most daily) and its cookie sent again", async () => {
+  const cookie = await session();
+  const { db, schema } = await import("../db/client");
+  const { SESSION_TTL_S } = await import("./session");
+  const now = () => Math.floor(Date.now() / 1000);
+  // Fresh from login: no renewal yet.
+  assert.equal((await get("/api/auth/me", cookie)).cookies.length, 0);
+  // Twenty days later (ten left), using it extends it to a full month again.
+  db.update(schema.sessions).set({ expiresAt: now() + 10 * 24 * 3600 }).run();
+  const used = await get("/api/auth/me", cookie);
+  assert.equal(used.json().authenticated, true);
+  const renewed = used.cookies.find((c) => c.name === "mdb_session");
+  assert.ok(renewed, "the cookie is sent again");
+  assert.equal(renewed.maxAge, SESSION_TTL_S);
+  const rows = db.select({ exp: schema.sessions.expiresAt }).from(schema.sessions).all();
+  assert.ok(rows.some((r) => r.exp >= now() + SESSION_TTL_S - 5));
+  assert.equal((await get("/api/auth/me", cookie)).cookies.length, 0, "not again the same day");
+});
+
 test("password change: checks current, enforces length, signs out other sessions", async () => {
   const mine = await session();
   const other = await session();

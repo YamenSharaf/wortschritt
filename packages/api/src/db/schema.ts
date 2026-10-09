@@ -277,6 +277,9 @@ export const oauthGrants = sqliteTable("oauth_grants", {
   accessExpiresAt: integer("access_expires_at").notNull(),
   refreshHash: text("refresh_hash").notNull(),
   refreshExpiresAt: integer("refresh_expires_at").notNull(),
+  /** The refresh token this grant replaced last, and until when it still works. */
+  prevRefreshHash: text("prev_refresh_hash"),
+  prevRefreshUntil: integer("prev_refresh_until"),
   createdAt: integer("created_at")
     .notNull()
     .default(sql`(unixepoch())`),
