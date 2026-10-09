@@ -12,8 +12,9 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { App } from "./App";
 import { AdminPage } from "./pages/Admin";
 import "./index.css";
-import { ApiProvider } from "@mdb/client/react";
+import { ClientProvider } from "@mdb/client/react";
 import { api } from "./lib/api";
+import { speech } from "./lib/tts";
 import { AuthProvider } from "./lib/auth";
 import { Cheatsheets } from "./pages/Cheatsheets";
 import { CheatsheetView } from "./pages/CheatsheetView";
@@ -67,10 +68,10 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ApiProvider api={api}>
+    <ClientProvider api={api} speech={speech}>
       <AuthProvider>
         <RouterProvider router={router} />
       </AuthProvider>
-    </ApiProvider>
+    </ClientProvider>
   </StrictMode>,
 );

@@ -1,30 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createElement } from "react";
-import TestRenderer, { act } from "react-test-renderer";
 import { exerciseSet, type ExerciseSet } from "@mdb/shared";
 import type { Api } from "../api";
-import { ApiProvider } from "./context";
+import { act, flush, renderHook } from "./testing";
 import { useExerciseRunner } from "./useExerciseRunner";
 import { useTutorChat } from "./useTutorChat";
-
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-
-/** Render a hook with a fake API; `current()` is its latest return value. */
-function renderHook<T>(hook: () => T, api: Partial<Api>) {
-  let value: T;
-  const Probe = () => {
-    value = hook();
-    return null;
-  };
-  let root!: TestRenderer.ReactTestRenderer;
-  act(() => {
-    root = TestRenderer.create(createElement(ApiProvider, { api: api as Api }, createElement(Probe)));
-  });
-  return { current: () => value, unmount: () => act(() => root.unmount()) };
-}
-
-const flush = () => act(async () => {});
 
 const set: ExerciseSet = exerciseSet.parse({
   id: "s",

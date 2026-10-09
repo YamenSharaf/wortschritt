@@ -7,19 +7,19 @@ import "@fontsource/atkinson-hyperlegible/700.css";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Markdown from "markdown-to-jsx";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { splitSentences, storyParagraphs, type ReaderSettings, type Story } from "@mdb/shared";
 import {
-  readerSettings as readerSettingsSchema,
-  splitSentences,
-  storyParagraphs,
-  storySetId,
-  type AnswerVerdict,
-  type ItemResponse,
-  type ExerciseItem,
-  type ReaderSettings,
-  type Settings,
-  type Story,
-  type StoryView,
-} from "@mdb/shared";
+  isSavedWord,
+  storyWordRe,
+  useAssistantEnabled,
+  useReadAloud,
+  useReaderSettings,
+  useReadingProgress,
+  useStory,
+  useStoryLemmas,
+  useStoryQuiz,
+  useStoryTranslations,
+} from "@mdb/client/react";
 import { ExerciseItemView } from "../components/ExerciseItemView";
 import {
   CheckIcon,
@@ -37,7 +37,6 @@ import {
 import { TapToTranslate } from "../components/TapToTranslate";
 import { btn, card } from "../components/ui";
 import { api } from "../lib/api";
-import { speakSequence, stopSpeaking, ttsSupported } from "../lib/tts";
 import { useVocab } from "../lib/vocab";
 
 const FONTS: Record<ReaderSettings["font"], { label: string; family: string }> = {
@@ -65,8 +64,6 @@ function germanText(el: HTMLElement | null): string {
   return copy.textContent ?? "";
 }
 
-const wordRe = /[\p{L}ß]+(?:-[\p{L}ß]+)*/gu;
-
 /** CSS Custom Highlight API (no DOM changes); missing in older browsers. */
 type HighlightRegistry = { set(name: string, h: unknown): void; delete(name: string): void };
 const highlights = (): HighlightRegistry | null =>
@@ -82,18 +79,11 @@ export function StoryReader() {
 
 function StoryReaderView() {
   const { id = "" } = useParams();
-  const [view, setView] = useState<StoryView | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [settings, setSettings] = useState<Settings | null>(null);
-  const [reader, setReader] = useState<ReaderSettings>(() => readerSettingsSchema.parse({}));
-  const [aiEnabled, setAiEnabled] = useState(false);
-  /** English lines per paragraph index (null = not translated yet). */
-  const [lines, setLines] = useState<Record<number, string[] | null>>({});
-  const [translating, setTranslating] = useState<Set<number>>(new Set());
-  const [translateError, setTranslateError] = useState<string | null>(null);
-  const [revealed, setRevealed] = useState<Set<string>>(new Set());
-  const [speaking, setSpeaking] = useState<number | null>(null);
-  const [lemmas, setLemmas] = useState<Record<string, string>>({});
+  const { view, error, showRead, markRead, readAgain: unread, nextChapter: toNextChapter } = useStory(id);
+  const { reader, change: changeReader, flush: flushSettings } = useReaderSettings();
+  const aiEnabled = useAssistantEnabled();
+  const aloud = useReadAloud();
+  const speaking = aloud.speaking;
   const articleRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<(HTMLDivElement | null)[]>([]);
   const { words: savedWords } = useVocab();
@@ -121,65 +111,15 @@ function StoryReaderView() {
   const blockPagesRef = useRef<number[]>([]);
   blockPagesRef.current = blockPages;
 
-  useEffect(() => {
-    api
-      .story(id)
-      .then(setView)
-      .catch(() => setError("This story doesn't exist (or isn't yours)."));
-    Promise.all([api.settings(), api.assistantStatus()])
-      .then(([se, st]) => {
-        setSettings(se);
-        setReader(se.reader);
-        setAiEnabled(st.enabled);
-      })
-      .catch(() => {});
-    return () => stopSpeaking();
-  }, [id]);
-
   const story = view?.story;
   const blocks = useMemo(() => (story ? storyParagraphs(story.body) : []), [story]);
 
   // --- line-by-line translations: stored ones on open; missing ones for the
   // paragraphs on screen, a few at a time, with the learner's AI.
   const translationsOn = reader.translations !== "off";
-  const hasAnyLines = Object.values(lines).some(Boolean);
-  useEffect(() => {
-    if (!story) return;
-    api
-      .storyTranslations(story.id)
-      .then((t) => setLines(Object.fromEntries(t.paragraphs.map((p) => [p.index, p.lines]))))
-      .catch(() => {});
-  }, [story]);
-  const queued = useRef(new Set<number>());
-  const flushTimer = useRef<number>();
-  const inFlight = useRef(new Set<number>());
-  const linesRef = useRef(lines);
-  linesRef.current = lines;
-  const requestLines = useCallback(
-    (indices: number[]) => {
-      if (!story || !aiEnabled || translateError) return;
-      for (const i of indices) {
-        if (linesRef.current[i] === null && !inFlight.current.has(i)) queued.current.add(i);
-      }
-      window.clearTimeout(flushTimer.current);
-      flushTimer.current = window.setTimeout(() => {
-        const batch = [...queued.current].filter((i) => !inFlight.current.has(i)).slice(0, 4);
-        queued.current.clear();
-        if (!batch.length) return;
-        batch.forEach((i) => inFlight.current.add(i));
-        setTranslating(new Set(inFlight.current));
-        api
-          .translateStory(story.id, batch)
-          .then((t) => setLines(Object.fromEntries(t.paragraphs.map((p) => [p.index, p.lines]))))
-          .catch((e) => setTranslateError(e instanceof Error ? e.message : "Couldn't translate."))
-          .finally(() => {
-            batch.forEach((i) => inFlight.current.delete(i));
-            setTranslating(new Set(inFlight.current));
-          });
-      }, 250);
-    },
-    [story, aiEnabled, translateError],
-  );
+  const tr = useStoryTranslations({ storyId: story?.id, enabled: aiEnabled });
+  const { lines, translating, revealed, request: requestLines } = tr;
+  const hasAnyLines = tr.hasAny;
   // Scroll: paragraphs as they come into view.
   useEffect(() => {
     if (!translationsOn || paged) return;
@@ -200,39 +140,13 @@ function StoryReaderView() {
   }, [translationsOn, paged, page, pageCount, blockPages, requestLines, lines]);
 
   // Base forms of the story's words, so "ging" is underlined when "gehen" is saved.
-  useEffect(() => {
-    if (!story) return;
-    const unique = [...new Set(story.body.match(wordRe) ?? [])].slice(0, 3000);
-    api.lemmas(unique).then(setLemmas).catch(() => {});
-  }, [story]);
+  const lemmas = useStoryLemmas(story?.body);
 
-  // --- reader settings: applied at once, saved to the account shortly after.
-  // A change not saved yet is saved on leaving the page, so it isn't lost.
-  const saveTimer = useRef<number>();
-  const pendingSave = useRef<Settings | null>(null);
-  const flushSave = useCallback(() => {
-    window.clearTimeout(saveTimer.current);
-    const updated = pendingSave.current;
-    pendingSave.current = null;
-    if (updated) api.saveSettings(updated, { keepalive: true }).catch(() => {});
-  }, []);
+  // A reader-settings change not saved yet is saved when the page is closing.
   useEffect(() => {
-    window.addEventListener("pagehide", flushSave);
-    return () => {
-      window.removeEventListener("pagehide", flushSave);
-      flushSave();
-    };
-  }, [flushSave]);
-  function changeReader(patch: Partial<ReaderSettings>) {
-    const next = { ...reader, ...patch };
-    setReader(next);
-    if (!settings) return;
-    const updated = { ...settings, reader: next };
-    setSettings(updated);
-    pendingSave.current = updated;
-    window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(flushSave, 600);
-  }
+    window.addEventListener("pagehide", flushSettings);
+    return () => window.removeEventListener("pagehide", flushSettings);
+  }, [flushSettings]);
 
   // --- saved-word underlines.
   useEffect(() => {
@@ -246,10 +160,9 @@ function StoryReaderView() {
     for (let node = walker.nextNode(); node; node = walker.nextNode()) {
       if (node.parentElement?.closest("[data-translation]")) continue;
       const text = node.textContent ?? "";
-      for (const m of text.matchAll(wordRe)) {
+      for (const m of text.matchAll(storyWordRe)) {
         const w = m[0];
-        const lemma = lemmas[w];
-        if (savedWords.has(w.toLowerCase()) || (lemma && savedWords.has(lemma.toLowerCase()))) {
+        if (isSavedWord(w, savedWords, lemmas)) {
           const r = document.createRange();
           r.setStart(node, m.index!);
           r.setEnd(node, m.index! + w.length);
@@ -266,8 +179,7 @@ function StoryReaderView() {
   // `anchor` is the first paragraph on screen: a re-flow (font, size, window,
   // translations) or switching pages ↔ scroll keeps you on it.
   const anchor = useRef(0);
-  const progress = useRef(0);
-  const savedProgress = useRef(0);
+  const reading = useReadingProgress(view);
   const restored = useRef(false);
   const GAP = 48;
   const step = colWidth + GAP;
@@ -298,7 +210,6 @@ function StoryReaderView() {
     reflowing.current = restored.current;
     if (!restored.current) {
       restored.current = true;
-      progress.current = savedProgress.current = view.progress;
       // The server says where to reopen (null: at the top).
       const p = view.resumeAt;
       setPage(p === null ? 0 : Math.min(count - 1, Math.floor(p * count)));
@@ -327,7 +238,7 @@ function StoryReaderView() {
     else if (page < pageCount) anchor.current = firstOnPage(blockEnds.current, page);
     // Pages turned past count as read (the page you're on doesn't yet); the
     // end page counts as all of it.
-    progress.current = Math.max(progress.current, Math.min(1, page / pageCount));
+    reading.see(page / pageCount);
   }, [paged, page, pageCount, blockPages]);
 
   const turn = useCallback((delta: number) => {
@@ -346,7 +257,6 @@ function StoryReaderView() {
     if (paged || !view || !scrollerRef.current || !articleRef.current) return;
     if (!restored.current) {
       restored.current = true;
-      progress.current = savedProgress.current = view.progress;
       const sc = scrollerRef.current;
       const el = articleRef.current;
       if (view.resumeAt !== null) {
@@ -364,7 +274,7 @@ function StoryReaderView() {
       const el = articleRef.current;
       if (el) {
         const seen = sc.scrollTop + sc.clientHeight - el.offsetTop;
-        progress.current = Math.max(progress.current, Math.min(1, Math.max(0, seen / el.offsetHeight)));
+        reading.see(seen / el.offsetHeight);
       }
       const i = blockRefs.current.findIndex((b) => b && b.offsetTop + b.offsetHeight > sc.scrollTop + 64);
       if (i >= 0) anchor.current = i;
@@ -377,21 +287,6 @@ function StoryReaderView() {
     sc.addEventListener("scroll", onScroll, { passive: true });
     return () => sc.removeEventListener("scroll", onScroll);
   }, [paged, view]);
-
-  // Save progress every couple of seconds, and on leaving.
-  useEffect(() => {
-    if (!view) return;
-    const save = () => {
-      if (Math.abs(progress.current - savedProgress.current) < 0.02) return;
-      savedProgress.current = progress.current;
-      api.storyProgress(view.story.id, Math.round(progress.current * 1000) / 1000).catch(() => {});
-    };
-    const timer = window.setInterval(save, 2000);
-    return () => {
-      window.clearInterval(timer);
-      save();
-    };
-  }, [view]);
 
   // Keyboard: arrows / space / page keys turn pages; Escape closes a sheet.
   // Volume keys too, where the device passes them to the page (most phone
@@ -458,12 +353,9 @@ function StoryReaderView() {
 
   // --- read aloud: follows along by turning pages / scrolling.
   function readFrom(start: number) {
-    const texts = blockRefs.current.slice(start).map(germanText);
-    speakSequence(texts, {
+    aloud.read(blockRefs.current.map(germanText), start, {
       rate: reader.speechRate,
-      onIndex: (i) => {
-        const idx = start + i;
-        setSpeaking(idx);
+      onParagraph: (idx) => {
         if (paged) {
           const p = blockPagesRef.current[idx];
           if (p !== undefined && p !== pageRef.current) setPage(p);
@@ -475,43 +367,24 @@ function StoryReaderView() {
           el.scrollIntoView({ behavior: "smooth", block: "center" });
         }
       },
-      onEnd: () => setSpeaking(null),
     });
   }
   function playFromView() {
     readFrom(anchor.current);
   }
-  function stop() {
-    stopSpeaking();
-    setSpeaking(null);
-  }
+  const stop = aloud.stop;
 
   const navigate = useNavigate();
-  /** "Next chapter": finishing this one counts as having read it. */
   async function nextChapter() {
-    if (!view?.series?.next) return;
-    if (!view.readAt) await markRead().catch(() => {});
-    navigate(`/stories/${view.series.next}`);
-  }
-
-  async function markRead() {
-    if (!view) return;
-    await api.markStoryRead(view.story.id);
-    showRead();
-  }
-
-  /** Reflect a read the server recorded (also after finishing the quiz). */
-  function showRead() {
-    setView((v) => (v ? { ...v, readAt: Math.floor(Date.now() / 1000), progress: 1, status: "read", resumeAt: null } : v));
+    const next = await toNextChapter();
+    if (next) navigate(`/stories/${next}`);
   }
 
   /** "Read again": unread, back to the start, here and on the server. */
   async function readAgain() {
-    if (!view) return;
-    await api.readStoryAgain(view.story.id);
+    await unread();
     anchor.current = 0;
-    progress.current = savedProgress.current = 0;
-    setView({ ...view, readAt: null, progress: 0, status: "unread", resumeAt: null });
+    reading.reset();
     if (paged) setPage(0);
     else if (scrollerRef.current) scrollerRef.current.scrollTop = 0;
   }
@@ -535,7 +408,7 @@ function StoryReaderView() {
   }
 
   const book = view.series;
-  const canSpeak = ttsSupported();
+  const canSpeak = aloud.supported;
   const atEnd = paged && page >= pageCount;
   const iconBtn =
     "grid h-9 min-w-9 place-items-center rounded-control px-2 text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/10";
@@ -592,7 +465,7 @@ function StoryReaderView() {
                 loading={translating.has(i)}
                 peek={reader.translations === "peek"}
                 revealed={revealed}
-                onReveal={(k) => setRevealed((r) => new Set(r).add(k))}
+                onReveal={tr.reveal}
                 blockKey={i}
               />
             ) : (
@@ -689,7 +562,7 @@ function StoryReaderView() {
             <button
               type="button"
               onClick={() => {
-                setTranslateError(null);
+                tr.clearError();
                 changeReader({
                   translations: reader.translations === "off" ? "peek" : reader.translations === "peek" ? "always" : "off",
                 });
@@ -759,10 +632,10 @@ function StoryReaderView() {
             )}
           </div>
         )}
-        {translationsOn && translateError && (
+        {translationsOn && tr.error && (
           <p className="mx-auto mb-2 max-w-md rounded-control bg-warning-soft px-3 py-2 text-sm text-warning">
-            {translateError}{" "}
-            <button type="button" className="underline" onClick={() => setTranslateError(null)}>
+            {tr.error}{" "}
+            <button type="button" className="underline" onClick={tr.clearError}>
               Try again
             </button>
           </p>
@@ -1118,61 +991,38 @@ function StoryQuiz({
   story: Story;
   onFinished: () => void;
 }) {
-  const [round, setRound] = useState(0);
-  const [results, setResults] = useState<Record<string, boolean>>({});
-  const recorded = useRef(-1);
-  const total = story.questions.length;
-  const correct = Object.values(results).filter(Boolean).length;
-  const done = Object.keys(results).length === total;
-  const setId = storySetId(story.id);
-
-  useEffect(() => {
-    if (!done || recorded.current === round) return;
-    recorded.current = round;
-    // The server scores the quiz from the answers it graded.
-    api.finishRun(setId, true).catch(() => {});
-    onFinished();
-  }, [done, round, setId, story.title, total, correct, results, onFinished]);
-
-  async function answer(item: ExerciseItem, response: ItemResponse): Promise<AnswerVerdict> {
-    const v = await api.answer({ setId, itemId: item.id, response });
-    setResults((r) => (item.id in r ? r : { ...r, [item.id]: v.correct }));
-    return v;
-  }
+  const quiz = useStoryQuiz(story, onFinished);
 
   return (
     <section className="mt-8">
       <div className="mb-3 flex items-baseline justify-between gap-2">
         <h2 className="text-xl font-semibold tracking-[-0.01em]">Fragen zum Text</h2>
         <span className="font-mono text-sm tabular-nums text-ink-muted">
-          {Object.keys(results).length}/{total}
+          {quiz.answered}/{quiz.total}
         </span>
       </div>
       <TapToTranslate className="space-y-3">
         {story.questions.map((q, i) => (
           <div
-            key={`${round}-${q.id}`}
+            key={`${quiz.round}-${q.id}`}
             className={`${card} p-5 text-ink`}
           >
             <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-subtle">Frage {i + 1}</p>
             <ExerciseItemView
               item={q}
-              submit={(response) => answer(q, response)}
+              submit={(response) => quiz.answer(q, response)}
             />
           </div>
         ))}
       </TapToTranslate>
-      {done && (
+      {quiz.done && (
         <div className={`${card} mt-4 flex flex-wrap items-center gap-3 p-4 text-ink`}>
           <span className="font-semibold">
-            {correct}/{total} richtig
+            {quiz.correct}/{quiz.total} richtig
           </span>
           <button
             type="button"
-            onClick={() => {
-              setResults({});
-              setRound((r) => r + 1);
-            }}
+            onClick={quiz.retry}
             className={`${btn.secondary} ${btn.sm}`}
           >
             <RetryIcon className="h-4 w-4" />

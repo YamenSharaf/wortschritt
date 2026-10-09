@@ -1,15 +1,30 @@
 import { createContext, createElement, useContext, type ReactNode } from "react";
 import type { Api } from "../api";
+import type { Speech } from "../speech";
 
-const ApiContext = createContext<Api | null>(null);
+type Client = { api: Api; speech?: Speech };
+const ClientContext = createContext<Client | null>(null);
 
-/** Makes one server's API (see createApi) available to the hooks below it. */
-export function ApiProvider({ api, children }: { api: Api; children?: ReactNode }) {
-  return createElement(ApiContext.Provider, { value: api }, children);
+/**
+ * Makes one server's API (see createApi) and the platform's speech (see
+ * createSpeech) available to the hooks below it.
+ */
+export function ClientProvider({ api, speech, children }: Client & { children?: ReactNode }) {
+  return createElement(ClientContext.Provider, { value: { api, speech } }, children);
+}
+
+function useClient(): Client {
+  const client = useContext(ClientContext);
+  if (!client) throw new Error("Hooks from @mdb/client/react must be used within ClientProvider");
+  return client;
 }
 
 export function useApi(): Api {
-  const api = useContext(ApiContext);
-  if (!api) throw new Error("useApi must be used within ApiProvider");
-  return api;
+  return useClient().api;
+}
+
+export function useSpeech(): Speech {
+  const { speech } = useClient();
+  if (!speech) throw new Error("ClientProvider was given no speech");
+  return speech;
 }

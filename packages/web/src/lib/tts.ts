@@ -97,7 +97,7 @@ const clips: ClipPlayer = {
       .then(() => undefined),
 };
 
-const speech = createSpeech({ device, clips, clipUrl: api.ttsUrl });
+export const speech = createSpeech({ device, clips, clipUrl: api.ttsUrl });
 
 /** Set by the app once it knows the server voices + chosen voice. */
 export const setServerTts = speech.setServerTts;
