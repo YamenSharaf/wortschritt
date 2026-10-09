@@ -32,6 +32,11 @@ export type ClientOptions = {
   fetch: FetchLike;
   /** Extra headers on every request, e.g. a bearer token in the app. */
   headers?: () => Record<string, string> | Promise<Record<string, string>>;
+  /**
+   * A request got 401: try to fix it (the app refreshes its token) and say
+   * whether to send it again. Each request is retried at most once.
+   */
+  onUnauthorized?: () => Promise<boolean>;
 };
 
 export class ApiError extends Error {
@@ -67,7 +72,7 @@ export type Http = {
 export function createHttp(o: ClientOptions): Http {
   const base = (o.baseUrl ?? "").replace(/\/+$/, "");
   const url = (path: string) => base + path;
-  const send = async (path: string, init: RequestInitLike = {}) => {
+  const send = async (path: string, init: RequestInitLike = {}, retry = true): Promise<ResponseLike> => {
     // Only advertise a JSON body when we actually send one — Fastify rejects an
     // empty body sent with content-type: application/json (e.g. DELETE requests).
     const headers: Record<string, string> = {
@@ -75,7 +80,11 @@ export function createHttp(o: ClientOptions): Http {
       ...(o.headers ? await o.headers() : {}),
       ...(init.headers ?? {}),
     };
-    return o.fetch(url(path), { ...init, headers });
+    const res = await o.fetch(url(path), { ...init, headers });
+    if (res.status === 401 && retry && o.onUnauthorized && (await o.onUnauthorized())) {
+      return send(path, init, false);
+    }
+    return res;
   };
   return {
     url,

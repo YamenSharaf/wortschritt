@@ -65,6 +65,9 @@ importers:
         specifier: ^3.24.1
         version: 3.25.76
     devDependencies:
+      '@mdb/client':
+        specifier: workspace:*
+        version: link:../client
       '@types/better-sqlite3':
         specifier: ^7.6.12
         version: 7.6.13

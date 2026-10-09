@@ -155,3 +155,52 @@ test("an app-scope token works on the REST API (and refreshes), but not on /mcp;
   assert.equal(prm.resource, `${ORIGIN}/api`);
   assert.deepEqual(prm.scopes_supported, ["app"]);
 });
+
+test("the app's sign-in helpers (@mdb/client) against this server: sign in, refresh, sign out", async () => {
+  const { createApi, createTokenSession, exchangeCode, fetchServerAuth, memoryStore, refreshTokens, registerApp, revokeToken } =
+    await import("@mdb/client");
+  // The app's fetch, delivered to this server in-process.
+  const fetch = async (url: string, init: { method?: string; headers?: Record<string, string>; body?: string }) => {
+    const u = new URL(url);
+    const res = await send({ method: (init.method ?? "GET") as "GET", url: u.pathname + u.search, headers: init.headers, payload: init.body });
+    return { ok: res.statusCode < 300, status: res.statusCode, statusText: res.statusMessage, body: null, json: async () => res.json() };
+  };
+
+  const auth = await fetchServerAuth(ORIGIN, fetch);
+  assert.equal(auth.tokenEndpoint, `${ORIGIN}/oauth/token`);
+  const clientId = await registerApp(auth, fetch, { redirectUri: REDIRECT, clientName: "Wortschritt" });
+
+  // The browser step (the app opens a Custom Tab); here as the signed-in user.
+  const { verifier, challenge } = pkce();
+  const params = { response_type: "code", client_id: clientId, redirect_uri: REDIRECT, code_challenge: challenge, code_challenge_method: "S256", scope: "app", state: "s" };
+  const allowed = await send({ method: "POST", url: "/api/oauth/authorize", headers: { cookie: await login() }, payload: { params, approve: true } });
+  const code = new URL(allowed.json().redirect as string).searchParams.get("code")!;
+
+  let signedOut = 0;
+  const session = createTokenSession({
+    store: memoryStore(),
+    refresh: (refreshToken) => refreshTokens(auth, fetch, { clientId, refreshToken }),
+    onSignedOut: () => void signedOut++,
+  });
+  await session.signIn(await exchangeCode(auth, fetch, { clientId, code, codeVerifier: verifier, redirectUri: REDIRECT }));
+  const api = createApi({
+    baseUrl: ORIGIN,
+    fetch,
+    headers: session.headers,
+    onUnauthorized: () => session.refreshNow(),
+  });
+  assert.deepEqual((await api.me()).user, { username: "yamen", role: "admin" });
+
+  // About to run out: refreshed first, once.
+  const first = session.current()!;
+  await session.signIn({ ...first, expiresAt: 0 });
+  await Promise.all([api.stories(), api.notes(), api.me()]);
+  assert.notEqual(session.current()!.refreshToken, first.refreshToken);
+  assert.equal((await api.me()).authenticated, true);
+
+  // Signed out on the server: the next 401's refresh fails, and the session ends.
+  await revokeToken(auth, fetch, { clientId, token: session.current()!.refreshToken });
+  await assert.rejects(api.stories(), /unauthenticated/);
+  assert.equal(session.current(), null);
+  assert.equal(signedOut, 1);
+});
