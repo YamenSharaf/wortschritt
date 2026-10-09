@@ -151,6 +151,13 @@ test("an app-scope token works on the REST API (and refreshes), but not on /mcp;
     },
   });
   assert.match(String(mismatch.json().redirect), /error=invalid_target/);
+  // The consent page names the app's scheme, since its redirect has no host.
+  const view = await send({
+    method: "GET",
+    url: `/api/oauth/authorize?${new URLSearchParams({ response_type: "code", client_id: clientId, redirect_uri: REDIRECT, code_challenge: challenge, code_challenge_method: "S256", scope: "app" })}`,
+    headers: { cookie },
+  });
+  assert.equal(view.json().client.redirectHost, "eu.yamen.wortschritt", view.body);
   const prm = (await send({ method: "GET", url: "/.well-known/oauth-protected-resource/api" })).json();
   assert.equal(prm.resource, `${ORIGIN}/api`);
   assert.deepEqual(prm.scopes_supported, ["app"]);

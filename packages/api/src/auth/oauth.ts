@@ -325,11 +325,13 @@ function redirectWith(uri: string, params: Record<string, string | undefined>): 
 }
 
 export function consentView(request: ValidRequest, user: AuthUser): OAuthRequestView {
+  const redirect = new URL(request.redirectUri);
   return {
     client: {
       name: request.client.clientName,
       uri: request.client.clientUri,
-      redirectHost: new URL(request.redirectUri).host,
+      // An app's private-use scheme (eu.yamen.wortschritt:/…) has no host; name the scheme.
+      redirectHost: redirect.host || redirect.protocol.replace(/:$/, ""),
     },
     username: user.username,
   };

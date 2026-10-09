@@ -6,6 +6,7 @@
 import { Preferences } from "@capacitor/preferences";
 import { apiVersion, type ApiVersion } from "@mdb/shared";
 import { setNativeSession } from "../platform";
+import { accessToken, refresh, signOut } from "./auth";
 import { normalizeServerUrl, versionProblem } from "./serverUrl";
 
 export type ServerConfig = { origin: string; allowLanHttp: boolean };
@@ -17,16 +18,10 @@ export function getServer(): ServerConfig | null {
   return current;
 }
 
-/** Point the API client at the server (no tokens until sign-in is wired up). */
+/** Point the API client at the server, signing in with ./auth's tokens. */
 function use(config: ServerConfig | null): void {
   current = config;
-  setNativeSession(
-    config && {
-      serverUrl: config.origin,
-      accessToken: async () => null,
-      refresh: async () => false,
-    },
-  );
+  setNativeSession(config && { serverUrl: config.origin, accessToken, refresh, signOut });
 }
 
 export async function loadServer(): Promise<ServerConfig | null> {
@@ -45,7 +40,9 @@ export async function saveServer(config: ServerConfig): Promise<void> {
   use(config);
 }
 
+/** Forget the server, signing out of it first (tokens belong to one server). */
 export async function clearServer(): Promise<void> {
+  await signOut();
   await Preferences.remove({ key: KEY });
   use(null);
 }

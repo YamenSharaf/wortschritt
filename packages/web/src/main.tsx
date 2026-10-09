@@ -79,7 +79,7 @@ const router = createBrowserRouter([
 
 async function start() {
   // The app needs its server before anything asks the API.
-  if (IS_NATIVE) await (await import("./lib/native/server")).loadServer();
+  if (IS_NATIVE) await (await import("./lib/native/bootstrap")).startNative();
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <AuthProvider>

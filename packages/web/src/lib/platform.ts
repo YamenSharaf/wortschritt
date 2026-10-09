@@ -15,14 +15,41 @@ export type NativeSession = {
   serverUrl: string;
   /** Current access token, or null when signed out. */
   accessToken: () => Promise<string | null>;
-  /** Try to get a fresh access token after a 401; true when one was obtained. */
-  refresh: () => Promise<boolean>;
+  /** After `failed` got a 401: true when there is a newer token to retry with. */
+  refresh: (failed: string | null) => Promise<boolean>;
+  /** Revoke and forget the tokens (log out). */
+  signOut: () => Promise<void>;
 };
 
 let session: NativeSession | null = null;
 
 export function setNativeSession(s: NativeSession | null): void {
   session = s;
+}
+
+/**
+ * /api/auth/me answers "signed out" rather than 401 for a refused token, so the
+ * app refreshes explicitly when it still holds tokens. True: ask again.
+ */
+export async function nativeRetryAuth(): Promise<boolean> {
+  const token = await session?.accessToken();
+  return Boolean(session && token && (await session.refresh(token)));
+}
+
+/** Log out of the native app (the web logs out with its session cookie). */
+export async function nativeSignOut(): Promise<void> {
+  await session?.signOut();
+}
+
+// Sign-in state changes made outside React (OAuth callback, a refresh token
+// the server no longer accepts), so the auth context can ask /api/auth/me again.
+const authListeners = new Set<() => void>();
+export function onAuthChanged(listener: () => void): () => void {
+  authListeners.add(listener);
+  return () => authListeners.delete(listener);
+}
+export function notifyAuthChanged(): void {
+  for (const l of authListeners) l();
 }
 
 /** The native build has a server to talk to (else it shows the connect screen). */
@@ -49,11 +76,11 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
     const headers = new Headers(init.headers);
     if (token) headers.set("authorization", `Bearer ${token}`);
     // Bearer only: the server's CORS for the app never allows credentials.
-    return fetch(apiUrl(path), { ...init, headers, credentials: "omit" });
+    return { token, res: await fetch(apiUrl(path), { ...init, headers, credentials: "omit" }) };
   };
-  const res = await send();
-  if (res.status !== 401 || !(await session.refresh())) return res;
-  return send();
+  const first = await send();
+  if (first.res.status !== 401 || !first.token || !(await session.refresh(first.token))) return first.res;
+  return (await send()).res;
 }
 
 /**

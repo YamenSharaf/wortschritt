@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { AppTitle } from "../../components/AppTitle";
 import { btn } from "../../components/ui";
 import { useAuth } from "../../lib/auth";
+import { onSignInEnded, startSignIn } from "../../lib/native/auth";
 import { clearServer } from "../../lib/native/server";
 import { hasNativeServer, nativeServerUrl } from "../../lib/platform";
 
@@ -9,9 +11,31 @@ import { hasNativeServer, nativeServerUrl } from "../../lib/platform";
 export function SignIn() {
   const navigate = useNavigate();
   const { authenticated } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(
+    () =>
+      onSignInEnded(({ error }) => {
+        setBusy(false);
+        if (error) setError(error);
+      }),
+    [],
+  );
 
   if (!hasNativeServer()) return <Navigate to="/connect" replace />;
   if (authenticated) return <Navigate to="/" replace />;
+
+  async function signIn() {
+    setError(null);
+    setBusy(true);
+    try {
+      await startSignIn();
+    } catch (e) {
+      setBusy(false);
+      setError(e instanceof Error ? e.message : "Couldn't start the sign-in.");
+    }
+  }
 
   async function changeServer() {
     await clearServer();
@@ -25,10 +49,15 @@ export function SignIn() {
           <AppTitle />
         </h1>
         <p className="mb-6 break-all text-sm text-ink-muted">{nativeServerUrl()}</p>
-        {/* Wired to OAuth (Custom Tab + PKCE) in the next step. */}
-        <button type="button" disabled className={`${btn.primary} w-full`}>
-          Sign in
+        {error && (
+          <p role="alert" className="mb-3 text-sm text-danger">
+            {error}
+          </p>
+        )}
+        <button type="button" disabled={busy} onClick={() => void signIn()} className={`${btn.primary} w-full`}>
+          {busy ? "Waiting for sign-in…" : "Sign in"}
         </button>
+        <p className="mt-2 text-center text-xs text-ink-muted">Opens your server's sign-in page.</p>
         <button
           type="button"
           onClick={() => void changeServer()}

@@ -7,6 +7,7 @@ import {
 } from "react";
 import type { AuthUserDto } from "@mdb/shared";
 import { api } from "./api";
+import { IS_NATIVE, nativeRetryAuth, nativeSignOut, onAuthChanged } from "./platform";
 
 type AuthState = {
   authenticated: boolean;
@@ -24,11 +25,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api
-      .me()
-      .then((r) => setUser(r.user))
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
+    const check = async () => {
+      let r = await api.me().catch(() => null);
+      if (IS_NATIVE && !r?.authenticated && (await nativeRetryAuth())) r = await api.me().catch(() => null);
+      setUser(r?.user ?? null);
+      setLoading(false);
+    };
+    void check();
+    // The app signs in and out outside React (OAuth redirect, expired refresh token).
+    return IS_NATIVE ? onAuthChanged(() => void check()) : undefined;
   }, []);
 
   const value: AuthState = {
@@ -44,7 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser((await api.me()).user);
     },
     logout: async () => {
-      await api.logout();
+      if (IS_NATIVE) await nativeSignOut();
+      else await api.logout();
       setUser(null);
     },
   };
