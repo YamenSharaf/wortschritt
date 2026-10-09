@@ -14,6 +14,9 @@ packages/
   client/   The API client for every frontend: endpoints, SSE streaming, media
             URLs and the speech logic. No DOM or Node APIs — the platform
             passes in fetch, auth headers, a device voice and a clip player.
+            `@mdb/client/react` holds the screens' state as hooks (running an
+            exercise set, the tutor chat, …) on an `ApiProvider`; web and app
+            render them their own way.
   web/      Vite + React + Tailwind SPA. One client of the API.
 content/    Git-versioned JSON content (exercises + cheatsheets).
 docs/       This documentation.

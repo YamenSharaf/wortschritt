@@ -4,7 +4,7 @@ import type { Note } from "@mdb/shared";
 import { SearchBox } from "../components/SearchBox";
 import { api } from "../lib/api";
 import { timeAgo } from "../lib/time";
-import { useAsync } from "../lib/useAsync";
+import { useAsync } from "@mdb/client/react";
 import { PlusIcon } from "../components/icons";
 import { Pill, btn, cardLink } from "../components/ui";
 import { SectionIcon } from "../components/SectionIcon";

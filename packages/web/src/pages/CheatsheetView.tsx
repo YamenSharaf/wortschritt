@@ -4,7 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { api, askAssistant } from "../lib/api";
 import { TapToTranslate } from "../components/TapToTranslate";
 import { TutorMarkdown } from "../components/TutorMarkdown";
-import { useAsync } from "../lib/useAsync";
+import { useAsync } from "@mdb/client/react";
 import { ChevronLeftIcon, LanguagesIcon } from "../components/icons";
 import { btn } from "../components/ui";
 

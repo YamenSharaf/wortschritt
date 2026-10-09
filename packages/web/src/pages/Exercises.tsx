@@ -8,7 +8,7 @@ import { SortControl, sortByMode, type SortMode } from "../components/SortContro
 import { Muted, PageHeader, Pill, btn, cardLink } from "../components/ui";
 import { api } from "../lib/api";
 import { timeAgo } from "../lib/time";
-import { useAsync } from "../lib/useAsync";
+import { useAsync } from "@mdb/client/react";
 
 export function Exercises() {
   const exercises = useAsync(() => api.exercises(), []);

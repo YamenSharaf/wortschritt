@@ -12,6 +12,8 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { App } from "./App";
 import { AdminPage } from "./pages/Admin";
 import "./index.css";
+import { ApiProvider } from "@mdb/client/react";
+import { api } from "./lib/api";
 import { AuthProvider } from "./lib/auth";
 import { Cheatsheets } from "./pages/Cheatsheets";
 import { CheatsheetView } from "./pages/CheatsheetView";
@@ -65,8 +67,10 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
+    <ApiProvider api={api}>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
+    </ApiProvider>
   </StrictMode>,
 );

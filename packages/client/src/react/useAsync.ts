@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 
-type State<T> =
+export type AsyncState<T> =
   | { status: "loading" }
   | { status: "error"; error: Error }
   | { status: "ready"; data: T };
 
-/** Minimal data-fetching hook — enough for a single-user app, no deps. */
-export function useAsync<T>(fn: () => Promise<T>, deps: unknown[] = []): State<T> {
-  const [state, setState] = useState<State<T>>({ status: "loading" });
+/** Minimal data-fetching hook: loading, error or the data; refetches when `deps` change. */
+export function useAsync<T>(fn: () => Promise<T>, deps: unknown[] = []): AsyncState<T> {
+  const [state, setState] = useState<AsyncState<T>>({ status: "loading" });
 
   useEffect(() => {
     let alive = true;

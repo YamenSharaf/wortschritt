@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import type { Cheatsheet } from "@mdb/shared";
 import { TapToTranslate } from "../components/TapToTranslate";
 import { api } from "../lib/api";
-import { useAsync } from "../lib/useAsync";
+import { useAsync } from "@mdb/client/react";
 import { ChevronLeftIcon, SheetsIcon, SparklesIcon } from "../components/icons";
 import { btn } from "../components/ui";
 

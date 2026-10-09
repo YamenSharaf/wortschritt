@@ -7,7 +7,7 @@ import { SectionIcon, type Section } from "../components/SectionIcon";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { timeAgo } from "../lib/time";
-import { useAsync } from "../lib/useAsync";
+import { useAsync } from "@mdb/client/react";
 import { LastRunBadge } from "./Exercises";
 
 export function Dashboard() {

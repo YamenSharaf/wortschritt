@@ -8,7 +8,7 @@ import { SearchBox } from "../components/SearchBox";
 import { SectionIcon } from "../components/SectionIcon";
 import { Muted, PageHeader, Pill, btn, cardLink } from "../components/ui";
 import { api } from "../lib/api";
-import { useAsync } from "../lib/useAsync";
+import { useAsync } from "@mdb/client/react";
 
 
 function status(s: StorySummary): { label: string; tone: "success" | "brand" } | null {

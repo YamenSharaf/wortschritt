@@ -9,7 +9,7 @@ import {
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { timeAgo } from "../lib/time";
-import { useAsync } from "../lib/useAsync";
+import { useAsync } from "@mdb/client/react";
 import {
   deviceVoices,
   getDeviceVoicePref,

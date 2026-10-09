@@ -6,7 +6,7 @@ import { SectionIcon } from "../components/SectionIcon";
 import { SortControl, sortByMode, type SortMode } from "../components/SortControl";
 import { PageHeader, Pill, btn, cardLink } from "../components/ui";
 import { api } from "../lib/api";
-import { useAsync } from "../lib/useAsync";
+import { useAsync } from "@mdb/client/react";
 
 export function Cheatsheets() {
   const sheets = useAsync(() => api.cheatsheets(), []);
