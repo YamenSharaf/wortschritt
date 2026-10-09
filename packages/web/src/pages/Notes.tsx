@@ -4,19 +4,10 @@ import type { Note } from "@mdb/shared";
 import { SearchBox } from "../components/SearchBox";
 import { api } from "../lib/api";
 import { timeAgo } from "../lib/time";
-import { useAsync } from "@mdb/client/react";
+import { filterNotes, noteCategories, noteSnippet, useAsync } from "@mdb/client/react";
 import { PlusIcon } from "../components/icons";
 import { Pill, btn, cardLink } from "../components/ui";
 import { SectionIcon } from "../components/SectionIcon";
-
-/** A short, plain-text preview of a Markdown note body. */
-function snippet(body: string): string {
-  return body
-    .replace(/[#>*_`~|-]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 160);
-}
 
 export function NotesPage() {
   const notes = useAsync(() => api.notes(), []);
@@ -27,26 +18,8 @@ export function NotesPage() {
 
   const list = notes.status === "ready" ? notes.data : [];
 
-  const categories = useMemo(() => {
-    const set = new Set<string>();
-    for (const n of list) if (n.category.trim()) set.add(n.category.trim());
-    return [...set].sort((a, b) => a.localeCompare(b));
-  }, [list]);
-
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    return list.filter((n) => {
-      if (category != null && n.category.trim() !== category) return false;
-      if (
-        needle &&
-        !n.title.toLowerCase().includes(needle) &&
-        !n.category.toLowerCase().includes(needle) &&
-        !n.body.toLowerCase().includes(needle)
-      )
-        return false;
-      return true;
-    });
-  }, [list, q, category]);
+  const categories = useMemo(() => noteCategories(list), [list]);
+  const filtered = useMemo(() => filterNotes(list, { category, query: q }), [list, q, category]);
 
   async function newNote() {
     if (creating) return;
@@ -135,7 +108,7 @@ export function NotesPage() {
 }
 
 function NoteCard({ note }: { note: Note }) {
-  const preview = snippet(note.body);
+  const preview = noteSnippet(note.body);
   return (
     <Link to={`/notes/${note.id}`} className={`${cardLink} flex items-start gap-3`}>
       <SectionIcon section="notes" />

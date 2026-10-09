@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { STORY_LENGTHS, type CefrLevel, type GenerateStoryBody, type StoryContext } from "@mdb/shared";
-import { api, ApiError, generateStory, type StoryGenerationEvent } from "../lib/api";
+import { STORY_LENGTHS, type CefrLevel } from "@mdb/shared";
+import { storyProgressText, useStoryGeneration } from "@mdb/client/react";
 import { ChevronLeftIcon, SparklesIcon } from "../components/icons";
 import { btn } from "../components/ui";
 
@@ -13,60 +13,16 @@ const IDEAS = [
   "Ein Abend mit den Nachbarn",
 ];
 
-type Ctx = GenerateStoryBody["context"];
-
 /** "Write me a story about …" — one prompt, sensible defaults, optional context. */
 export function StoryGenerate() {
   const navigate = useNavigate();
-  const [aiReady, setAiReady] = useState<boolean | null>(null);
-  const [prompt, setPrompt] = useState("");
-  const [level, setLevel] = useState<CefrLevel>("A2");
-  const [length, setLength] = useState<GenerateStoryBody["length"]>("medium");
-  const [questions, setQuestions] = useState(4);
-  const [vocabulary, setVocabulary] = useState<GenerateStoryBody["vocabulary"]>("known");
-  const [ctx, setCtx] = useState<Ctx>({ mistakes: true, vocab: true, topics: false });
-  const [preview, setPreview] = useState<StoryContext | null>(null);
-  const [progress, setProgress] = useState<StoryGenerationEvent | "starting" | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const abort = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    Promise.all([api.assistantStatus(), api.settings()])
-      .then(([st, se]) => {
-        setAiReady(st.enabled);
-        setLevel(se.level);
-      })
-      .catch(() => setAiReady(false));
-    // Everything that could be included; the checkboxes pick from it.
-    api
-      .storyContext({ mistakes: true, vocab: true, topics: true })
-      .then(setPreview)
-      .catch(() => {});
-    return () => abort.current?.abort();
-  }, []);
+  const gen = useStoryGeneration();
+  const { aiReady, prompt, setPrompt, level, setLevel, length, setLength, questions, setQuestions } = gen;
+  const { vocabulary, setVocabulary, context: ctx, setContext: setCtx, preview, progress, error, busy } = gen;
 
   async function go() {
-    setError(null);
-    setProgress("starting");
-    const c = new AbortController();
-    abort.current = c;
-    try {
-      const { id } = await generateStory(
-        { prompt: prompt.trim(), level, length, questions, vocabulary, context: ctx },
-        setProgress,
-        c.signal,
-      );
-      navigate(`/stories/${id}`);
-    } catch (e) {
-      if (c.signal.aborted) return;
-      setError(e instanceof ApiError || e instanceof Error ? e.message : "Something went wrong.");
-      setProgress(null);
-    }
-  }
-
-  function cancel() {
-    abort.current?.abort();
-    setProgress(null);
+    const id = await gen.start();
+    if (id) navigate(`/stories/${id}`);
   }
 
   if (aiReady === false) {
@@ -92,7 +48,6 @@ export function StoryGenerate() {
     );
   }
 
-  const busy = progress !== null;
   const segBtn = (active: boolean) =>
     `rounded-md px-3 py-1 text-sm ${active ? "bg-surface-raised text-ink shadow-card" : "text-ink-muted hover:text-ink"}`;
   const seg = "inline-flex rounded-control border border-line-control p-0.5 ";
@@ -227,8 +182,8 @@ export function StoryGenerate() {
       {busy ? (
         <div className="flex flex-wrap items-center gap-3 rounded-card border border-line bg-surface p-4 ">
           <span className="h-4 w-4 animate-spin rounded-full border-2 border-line-control border-t-accent" aria-hidden />
-          <span className="text-sm">{progressText(progress)}</span>
-          <button type="button" onClick={cancel} className="ml-auto text-sm text-ink-muted underline">
+          <span className="text-sm">{storyProgressText(progress)}</span>
+          <button type="button" onClick={gen.cancel} className="ml-auto text-sm text-ink-muted underline">
             Cancel
           </button>
         </div>
@@ -245,13 +200,6 @@ export function StoryGenerate() {
       )}
     </div>
   );
-}
-
-function progressText(p: StoryGenerationEvent | "starting" | null): string {
-  if (p === "starting" || p === null) return "Starting…";
-  if (p.phase === "writing") return `Writing… ${p.chars.toLocaleString()} characters`;
-  if (p.phase === "fixing") return `Fixing ${p.problems === 1 ? "a problem" : `${p.problems} problems`} in the result…`;
-  return "Checking the story…";
 }
 
 function ContextOption({
