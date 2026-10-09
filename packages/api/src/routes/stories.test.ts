@@ -88,8 +88,11 @@ test("progress and read state; reader settings are saved per account", async () 
 
 test("answers to a story's questions show up in history with the question", async () => {
   const q = EXAMPLE_STORY.questions![0]!;
-  await me("POST", "/api/attempts", { setId: `story:${ID}`, itemId: q.id, correct: false, response: "Richtig" });
-  await me("POST", "/api/runs", { setId: `story:${ID}`, setTitle: EXAMPLE_STORY.title, total: 2, answered: 2, correct: 1, results: {} });
+  assert.equal(q.type, "true_false");
+  const wrong = { type: "true_false", value: !(q as { correct: boolean }).correct };
+  const v = (await me("POST", "/api/answers", { setId: `story:${ID}`, itemId: q.id, response: wrong })).json();
+  assert.deepEqual(v, { correct: false, grading: "auto" });
+  await me("POST", "/api/runs", { setId: `story:${ID}`, done: true });
   const [m] = (await me("GET", "/api/history/mistakes")).json();
   assert.equal(m.setId, `story:${ID}`);
   assert.equal(m.setTitle, EXAMPLE_STORY.title);

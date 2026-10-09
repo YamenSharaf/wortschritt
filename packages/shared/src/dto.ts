@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { checkCoverSvg } from "./cover";
+import { itemResponse } from "./answers";
 import { cefrLevel, cheatsheet, exerciseItem, exerciseSet, series as seriesSchema, story } from "./exercises";
 
 // --- covers -------------------------------------------------------------------
@@ -257,7 +258,6 @@ export const meResponse = z.object({
   user: authUser.nullable(),
 });
 
-/** Record the result of answering one item. */
 /**
  * How an answer was judged: `auto` by the app's own checks, `ai` by the
  * learner's AI tutor, `self` by the learner (flashcards), `ungraded` = an open
@@ -274,15 +274,17 @@ export const answerVerdict = z.object({
 });
 export type AnswerVerdict = z.infer<typeof answerVerdict>;
 
-export const attemptBody = z.object({
+/**
+ * Answer one item: the server finds it (a library set, the learner's own
+ * generated items, or a story's questions as set "story:<id>"), grades it,
+ * records it and adds it to the set's current session.
+ */
+export const answerBody = z.object({
   setId: z.string().min(1),
   itemId: z.string().min(1),
-  correct: z.boolean(),
-  /** What the learner typed or chose. */
-  response: z.string().max(2000).optional(),
-  grading: answerGrading.default("auto"),
+  response: itemResponse,
 });
-export type AttemptBody = z.infer<typeof attemptBody>;
+export type AnswerBody = z.infer<typeof answerBody>;
 
 /** Payload for the "paste JSON to import" admin screen. */
 export const importBody = z.discriminatedUnion("kind", [
@@ -294,16 +296,16 @@ export type ImportBody = z.infer<typeof importBody>;
 /** Per-item correctness for one run, keyed by item id. */
 export const runResults = z.record(z.string(), z.boolean());
 
-/** Record one practice run (a pass through an exercise set). */
-export const recordRunBody = z.object({
+/**
+ * End a pass through a set: the server turns its session into a run (score
+ * and per-item results). `done`: the learner reached the end, so the session
+ * is cleared; otherwise they left early and can resume it.
+ */
+export const finishRunBody = z.object({
   setId: z.string().min(1),
-  setTitle: z.string().min(1),
-  total: z.number().int().nonnegative(),
-  answered: z.number().int().nonnegative(),
-  correct: z.number().int().nonnegative(),
-  results: runResults,
+  done: z.boolean(),
 });
-export type RecordRunBody = z.infer<typeof recordRunBody>;
+export type FinishRunBody = z.infer<typeof finishRunBody>;
 
 /** Latest-run summary for a set (no per-item detail). */
 export const runSummary = z.object({
@@ -326,14 +328,15 @@ export const exerciseProgress = z.object({
   index: z.number().int().nonnegative(),
   results: runResults,
   responses: z.record(z.string(), z.string()).default({}),
+  /** Answered items nobody could judge (open answers without a tutor). */
+  ungraded: z.array(z.string()).default([]),
   updatedAt: z.number().int(),
 });
 export type ExerciseProgress = z.infer<typeof exerciseProgress>;
 
+/** Where the learner is in a set; answers reach the session via answerBody. */
 export const saveExerciseProgressBody = z.object({
   index: z.number().int().nonnegative(),
-  results: runResults,
-  responses: z.record(z.string(), z.string()).default({}),
 });
 export type SaveExerciseProgressBody = z.infer<typeof saveExerciseProgressBody>;
 
@@ -960,8 +963,13 @@ export type SyncChanges = z.infer<typeof syncChanges>;
  */
 const opId = z.string().min(8).max(64);
 export const syncOp = z.discriminatedUnion("type", [
-  z.object({ opId, type: z.literal("attempt"), data: attemptBody }),
-  z.object({ opId, type: z.literal("run"), data: recordRunBody }),
+  /**
+   * Graded by the server's own rules (no AI tutor), like the app's offline
+   * verdict. `at`: when it was answered (unix seconds, capped at now), so it
+   * counts towards that day.
+   */
+  z.object({ opId, type: z.literal("answer"), at: z.number().int(), data: answerBody }),
+  z.object({ opId, type: z.literal("finish"), data: finishRunBody }),
   z.object({ opId, type: z.literal("sheetView"), data: sheetViewBody }),
   /** Progress only moves forward (max of server and app); `read` sets or clears read. */
   z.object({ opId, type: z.literal("storyProgress"), storyId: z.string().min(1), progress: z.number().min(0).max(1), read: z.boolean().optional() }),

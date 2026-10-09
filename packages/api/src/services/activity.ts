@@ -2,7 +2,6 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import type {
   ExerciseProgress,
   ExerciseRun,
-  RecordRunBody,
   RunSummary,
   SaveExerciseProgressBody,
   SheetView,
@@ -10,7 +9,9 @@ import type {
 } from "@mdb/shared";
 import { db, schema } from "../db/client";
 
-export function recordRun(userId: number, r: RecordRunBody): void {
+type RunRecord = Omit<ExerciseRun, "finishedAt">;
+
+function recordRun(userId: number, r: RunRecord): void {
   db.insert(schema.exerciseRuns)
     .values({
       userId,
@@ -84,6 +85,7 @@ export function getExerciseProgress(userId: number, setId: string): ExerciseProg
     index: row.position,
     results: row.results,
     responses: row.responses,
+    ungraded: row.ungraded,
     updatedAt: row.updatedAt,
   };
 }
@@ -99,37 +101,94 @@ export function listExerciseProgress(userId: number): ExerciseProgress[] {
       index: row.position,
       results: row.results,
       responses: row.responses,
+      ungraded: row.ungraded,
       updatedAt: row.updatedAt,
     }));
 }
 
-/** `at`: when it happened (unix seconds; default now), for replays from the app. */
+/** Move the learner's position in a set. `at`: when (unix seconds; default now), for replays from the app. */
 export function saveExerciseProgress(
   userId: number,
   setId: string,
   body: SaveExerciseProgressBody,
   at?: number,
 ): void {
-  const row = {
-    userId,
-    setId,
-    position: body.index,
-    results: body.results,
-    responses: body.responses,
-    ...(at === undefined ? {} : { updatedAt: at }),
-  };
   db.insert(schema.exerciseProgress)
-    .values(row)
+    .values({
+      userId,
+      setId,
+      position: body.index,
+      results: {},
+      responses: {},
+      ...(at === undefined ? {} : { updatedAt: at }),
+    })
     .onConflictDoUpdate({
       target: [schema.exerciseProgress.userId, schema.exerciseProgress.setId],
-      set: {
-        position: row.position,
-        results: row.results,
-        responses: row.responses,
-        updatedAt: at ?? sql`(unixepoch())`,
-      },
+      set: { position: body.index, updatedAt: at ?? sql`(unixepoch())` },
     })
     .run();
+}
+
+/** Add a graded answer to the set's session (starting one if needed). */
+export function recordInSession(
+  userId: number,
+  setId: string,
+  answer: { itemId: string; correct: boolean; response: string; ungraded: boolean },
+  at?: number,
+): void {
+  const current = getExerciseProgress(userId, setId);
+  const results = { ...(current?.results ?? {}), [answer.itemId]: answer.correct };
+  const responses = { ...(current?.responses ?? {}), [answer.itemId]: answer.response };
+  const ungraded = (current?.ungraded ?? []).filter((id) => id !== answer.itemId);
+  if (answer.ungraded) ungraded.push(answer.itemId);
+  db.insert(schema.exerciseProgress)
+    .values({ userId, setId, position: current?.index ?? 0, results, responses, ungraded, ...(at === undefined ? {} : { updatedAt: at }) })
+    .onConflictDoUpdate({
+      target: [schema.exerciseProgress.userId, schema.exerciseProgress.setId],
+      // A replayed older answer never moves the session's time backwards.
+      set: { results, responses, ungraded, recorded: false, updatedAt: at === undefined ? sql`(unixepoch())` : Math.max(at, current?.updatedAt ?? 0) },
+    })
+    .run();
+}
+
+/**
+ * Turn a set's session into a run: the score counts graded answers only
+ * (ungraded open answers stay out, like every accuracy figure). Skipped when
+ * nothing was answered, or nothing since this session was last recorded.
+ * `done` clears the session; otherwise the learner can resume it.
+ */
+export function finishRun(
+  userId: number,
+  setId: string,
+  set: { title: string; total: number },
+  done: boolean,
+): boolean {
+  const session = getExerciseProgress(userId, setId);
+  const recorded = db
+    .select({ recorded: schema.exerciseProgress.recorded })
+    .from(schema.exerciseProgress)
+    .where(progressKey(userId, setId))
+    .get()?.recorded;
+  if (!session || Object.keys(session.results).length === 0 || recorded) {
+    if (done && session) clearExerciseProgress(userId, setId);
+    return false;
+  }
+  const ungraded = new Set(session.ungraded);
+  const graded = Object.entries(session.results).filter(([id]) => !ungraded.has(id));
+  const run: RunRecord = {
+    setId,
+    setTitle: set.title,
+    total: set.total,
+    answered: graded.length,
+    correct: graded.filter(([, ok]) => ok).length,
+    results: session.results,
+  };
+  db.transaction(() => {
+    recordRun(userId, run);
+    if (done) clearExerciseProgress(userId, setId);
+    else db.update(schema.exerciseProgress).set({ recorded: true }).where(progressKey(userId, setId)).run();
+  });
+  return true;
 }
 
 export function clearExerciseProgress(userId: number, setId: string): void {

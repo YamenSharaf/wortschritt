@@ -683,6 +683,18 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 15,
+    // The server grades answers and keeps each set's session: which answered
+    // items nobody could judge (open answers without a tutor), so a run's
+    // score leaves them out like every other accuracy figure, and whether
+    // its answers are already in a run (leaving a set twice records once).
+    name: "server-sessions",
+    up(db) {
+      addColumn(db, "exercise_progress", "ungraded", "TEXT NOT NULL DEFAULT '[]'");
+      addColumn(db, "exercise_progress", "recorded", "INTEGER NOT NULL DEFAULT 0");
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

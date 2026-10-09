@@ -76,8 +76,8 @@ const SET = "als-oder-wenn";
 test("context: mistakes (with the right answer), weakest words first, recent topics", async () => {
   const set = (await me("GET", `/api/exercises/${SET}`)).json();
   const item = set.items[0];
-  await me("POST", "/api/attempts", { setId: SET, itemId: item.id, correct: false, response: "wann" });
-  await me("POST", "/api/runs", { setId: SET, setTitle: set.title, total: 1, answered: 1, correct: 0, results: {} });
+  await me("POST", "/api/answers", { setId: SET, itemId: item.id, response: { type: "cloze", blanks: { 1: "wann" } } });
+  await me("POST", "/api/runs", { setId: SET, done: true });
   await me("POST", "/api/vocab", { word: "Baum", display: "der Baum", translation: "tree" });
   await me("POST", "/api/vocab", { word: "Wolke", display: "die Wolke", translation: "cloud" });
   await me("POST", "/api/vocab/wolke/study", { known: false });

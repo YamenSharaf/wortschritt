@@ -56,6 +56,12 @@ export const exerciseProgress = sqliteTable("exercise_progress", {
   responses: text("responses", { mode: "json" })
     .$type<Record<string, string>>()
     .notNull(),
+  ungraded: text("ungraded", { mode: "json" })
+    .$type<string[]>()
+    .notNull()
+    .default([]),
+  /** Its answers are already in a run (until the next answer). */
+  recorded: integer("recorded", { mode: "boolean" }).notNull().default(false),
   updatedAt: integer("updated_at")
     .notNull()
     .default(sql`(unixepoch())`),

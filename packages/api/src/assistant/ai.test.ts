@@ -365,22 +365,42 @@ test("provider errors: status shown, upstream body and internals never leaked", 
   provider = () => sse(["O", "K"]);
 });
 
-test("grading: open-ended items tell the AI the answers are only examples", async () => {
+test("grading: the server asks the tutor about a free-text miss; open items say the answers are examples", async () => {
   provider = () => sse(['{"correct": true, "feedback": "Fits the task."}']);
-  const body = {
-    prompt: "Vervollständige den Satz frei.",
-    expected: ["Für mich ist es wichtig, viel zu lesen."],
-    response: "Für mich ist es wichtig, oft zu reisen.",
-  };
-  let res = await admin("POST", "/api/assistant/grade", { ...body, open: true });
-  assert.deepEqual(res.json(), { correct: true, feedback: "Fits the task." });
+  const answer = (setId: string, itemId: string, text: string) =>
+    admin("POST", "/api/answers", { setId, itemId, response: { type: "transform", text } });
+
+  const before = calls.length;
+  let res = await answer("infinitiv-zu-frei", "iz-a01", "Für mich ist es wichtig, oft zu reisen.");
+  assert.deepEqual(res.json(), { correct: true, grading: "ai", feedback: "Fits the task." });
   let user = JSON.stringify(calls.at(-1)!.body!.messages);
   assert.match(user, /Example answers \(open-ended/);
 
-  res = await admin("POST", "/api/assistant/grade", body);
+  res = await answer("perfekt-bilden", "pfd-01", "Ich habe den größten Kuchen gegessen.");
+  assert.equal(res.json().grading, "ai");
   user = JSON.stringify(calls.at(-1)!.body!.messages);
   assert.match(user, /Reference answer\(s\)/);
   assert.doesNotMatch(user, /Example answers \(open-ended/);
+
+  // A match by the item's own rules never reaches the tutor.
+  const asked = calls.length;
+  res = await answer("perfekt-bilden", "pfd-01", "Ich habe das größte Stück Kuchen gegessen.");
+  assert.deepEqual(res.json(), { correct: true, grading: "auto" });
+  assert.equal(calls.length, asked);
+  assert.equal(asked - before, 2);
+
+  // AI grading off in Settings: no tutor, the item's own rules decide.
+  const settings = (await admin("GET", "/api/settings")).json();
+  await admin("PUT", "/api/settings", { ...settings, llmGrading: false });
+  res = await answer("perfekt-bilden", "pfd-01", "Ich esse Kuchen.");
+  assert.deepEqual(res.json(), { correct: false, grading: "auto" });
+  assert.equal(calls.length, asked);
+  await admin("PUT", "/api/settings", { ...settings, llmGrading: true });
+
+  // The tutor failing falls back to the no-tutor rule.
+  provider = () => new Response("down", { status: 500 });
+  res = await answer("infinitiv-zu-frei", "iz-a01", "Für mich ist es wichtig, zu schlafen.");
+  assert.deepEqual(res.json(), { correct: true, grading: "ungraded" });
   provider = () => sse(["O", "K"]);
 });
 

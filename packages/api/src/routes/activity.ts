@@ -4,7 +4,7 @@ import { z } from "zod";
 import {
   exerciseProgress,
   exerciseRun,
-  recordRunBody,
+  finishRunBody,
   runSummary,
   saveExerciseProgressBody,
   sheetView,
@@ -17,10 +17,10 @@ import {
   latestRunForSet,
   latestRunsPerSet,
   recentSheetViews,
-  recordRun,
   recordSheetView,
   saveExerciseProgress,
 } from "../services/activity";
+import { finish } from "../services/answers";
 
 export async function activityRoutes(app: FastifyInstance) {
   const r = app.withTypeProvider<ZodTypeProvider>();
@@ -31,14 +31,15 @@ export async function activityRoutes(app: FastifyInstance) {
       preHandler: requireAuth,
       schema: {
         tags: ["activity"],
-        body: recordRunBody,
-        response: { 200: z.object({ ok: z.literal(true) }) },
+        body: finishRunBody,
+        response: { 200: z.object({ ok: z.literal(true) }), 404: z.object({ error: z.string() }) },
       },
     },
-    async (req) => {
-      recordRun(req.user!.id, req.body);
-      return { ok: true as const };
-    },
+    // The server scores the run from the answers it graded in this session.
+    async (req, reply) =>
+      finish(req.user!.id, req.body.setId, req.body.done)
+        ? { ok: true as const }
+        : reply.code(404).send({ error: "No such exercise set." }),
   );
 
   r.get(

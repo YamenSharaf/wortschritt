@@ -3,14 +3,14 @@ import { Link, useParams } from "react-router-dom";
 import {
   generateCounts,
   responseText,
-  type AnswerGrading,
+  type AnswerVerdict,
+  type ItemResponse,
   type ExerciseItem,
   type ExerciseProgress,
   type ExerciseRun,
   type ExerciseSet,
 } from "@mdb/shared";
 import { ExerciseItemView } from "../components/ExerciseItemView";
-import { gradeHere } from "../lib/grade";
 import { ArrowUpIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CrossIcon, LanguagesIcon, LightbulbIcon, RetryIcon, SparklesIcon } from "../components/icons";
 import { btn, card } from "../components/ui";
 import { TapToTranslate } from "../components/TapToTranslate";
@@ -84,7 +84,6 @@ function Runner({
   const [done, setDone] = useState(false);
   const [prevRun, setPrevRun] = useState<ExerciseRun | null>(null);
   const [assistantEnabled, setAssistantEnabled] = useState(false);
-  const [llmGrading, setLlmGrading] = useState(false);
   const [genBusy, setGenBusy] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
   const [genCount, setGenCount] = useState(5);
@@ -115,12 +114,11 @@ function Runner({
   }, []);
 
   useEffect(() => {
-    // The tutor powers the Hint / Why-wrong buttons; llmGrading additionally
-    // gates AI grading of free-text answers.
+    // The tutor powers the Hint / Why-wrong buttons (the server decides
+    // whether it also grades free-text answers).
     Promise.all([api.assistantStatus(), api.settings()])
       .then(([st, se]) => {
         setAssistantEnabled(st.enabled);
-        setLlmGrading(Boolean(st.enabled && se.llmGrading));
         setGenCount(se.generateCount);
       })
       .catch(() => {});
@@ -136,65 +134,39 @@ function Runner({
 
   const item = items[index]!;
 
-  // Persist the run once (and again if it grew, e.g. after "generate more"), so
-  // the last score survives a reload and feeds the exercise cards + dashboard.
+  // Leaving partway records a run too (the server scores it from the answers
+  // it graded, once per change), so the last score survives a reload.
   const resultsRef = useRef(results);
   resultsRef.current = results;
-  const savedCountRef = useRef(0);
-  function saveRun() {
-    const entries = Object.entries(resultsRef.current);
-    if (entries.length === 0 || entries.length <= savedCountRef.current) return;
-    savedCountRef.current = entries.length;
-    void api
-      .recordRun({
-        setId,
-        setTitle: title,
-        total: items.length,
-        answered: entries.length,
-        correct: entries.filter(([, ok]) => ok).length,
-        results: resultsRef.current,
-      })
-      .catch(() => {});
-  }
-  // Save on leave (route change unmounts this component).
-  useEffect(() => () => saveRun(), []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(
+    () => () => {
+      if (Object.keys(resultsRef.current).length > 0) void api.finishRun(setId, false).catch(() => {});
+    },
+    [], // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
-  // Persist the resume point (position + answers so far), restricted to the
-  // base set so ephemeral "generate more" items never end up saved.
-  function saveProgress(
-    i: number,
-    res: Record<string, boolean>,
-    resp: Record<string, string | undefined>,
-  ) {
-    const ids = new Set(set.items.map((x) => x.id));
-    const results = Object.fromEntries(
-      Object.entries(res).filter(([k]) => ids.has(k)),
-    );
-    const responses: Record<string, string> = {};
-    for (const [k, v] of Object.entries(resp)) {
-      if (typeof v === "string" && ids.has(k)) responses[k] = v;
-    }
-    const position = Math.min(Math.max(0, i), set.items.length - 1);
-    void api
-      .saveExerciseProgress(setId, { index: position, results, responses })
-      .catch(() => {});
+  // The resume point; the answers themselves reach the server's session as
+  // they're graded.
+  function saveProgress(i: number) {
+    const position = Math.min(Math.max(0, i), items.length - 1);
+    void api.saveExerciseProgress(setId, { index: position }).catch(() => {});
   }
 
-  function handleAnswered(correct: boolean, response?: string, grading: AnswerGrading = "auto") {
+  /** Grade on the server, then update this run's live state. */
+  async function submit(response: ItemResponse): Promise<AnswerVerdict> {
+    const v = await api.answer({ setId, itemId: item.id, response });
+    handleAnswered(v.correct, responseText(item, response));
+    return v;
+  }
+
+  function handleAnswered(correct: boolean, response: string) {
     if (answered) return;
     answeredAt.current = performance.now();
     setAnswered(true);
     setLastCorrect(correct);
     setLastResponse(response);
-    const nextResults = { ...results, [item.id]: correct };
-    const nextResponses = { ...responses, [item.id]: response };
-    setResults(nextResults);
-    setResponses(nextResponses);
-    // Fire-and-forget; a failed save shouldn't block practice.
-    void api
-      .recordAttempt({ setId, itemId: item.id, correct, response, grading })
-      .catch(() => {});
-    saveProgress(index, nextResults, nextResponses);
+    setResults((r) => ({ ...r, [item.id]: correct }));
+    setResponses((r) => ({ ...r, [item.id]: response }));
   }
 
   function goTo(i: number) {
@@ -202,13 +174,13 @@ function Runner({
     setIndex(i);
     setAnswered(false);
     setLastResponse(undefined);
-    saveProgress(i, results, responses);
+    saveProgress(i);
   }
 
   function next() {
     if (index + 1 >= items.length) {
-      saveRun();
-      void api.clearExerciseProgress(setId).catch(() => {});
+      resultsRef.current = {};
+      void api.finishRun(setId, true).catch(() => {});
       setDone(true);
     } else {
       goTo(index + 1);
@@ -436,11 +408,7 @@ function Runner({
           <ExerciseItemView
             key={item.id}
             item={item}
-            submit={async (response) => {
-              const v = await gradeHere(item, response, llmGrading);
-              handleAnswered(v.correct, responseText(item, response), v.grading);
-              return v;
-            }}
+            submit={submit}
           />
         </TapToTranslate>
       </div>

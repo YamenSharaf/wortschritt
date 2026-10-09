@@ -81,17 +81,6 @@ const askBody = z.object({
     .optional(),
 });
 
-const gradeBody = z.object({
-  prompt: z.string().max(2000).optional(),
-  expected: z.array(z.string().min(1)).min(1),
-  response: z.string().min(1).max(2000),
-  /** The sentence beginning already shown to the learner (if any). Lets the
-   *  grader accept a completion-only answer that fits the given stem. */
-  context: z.string().max(2000).optional(),
-  /** Open-ended task: `expected` are examples, not the full list. */
-  open: z.boolean().optional(),
-});
-
 const cleanupNotesBody = z.object({
   text: z.string().min(1).max(12000),
 });
@@ -128,24 +117,6 @@ function validGeneratedItem(raw: unknown, id: string): ExerciseItem | null {
     items: [item],
   });
   return set.success ? item : null;
-}
-
-function parseVerdict(content: string): { correct: boolean; feedback: string } {
-  const match = content.match(/\{[\s\S]*\}/);
-  if (match) {
-    try {
-      const o = JSON.parse(match[0]) as { correct?: unknown; feedback?: unknown };
-      if (typeof o.correct === "boolean") {
-        return { correct: o.correct, feedback: String(o.feedback ?? "") };
-      }
-    } catch {
-      /* fall through to heuristic */
-    }
-  }
-  const correct =
-    /"?correct"?\s*[:=]\s*true/i.test(content) ||
-    (/\brichtig\b/i.test(content) && !/falsch|nicht richtig/i.test(content));
-  return { correct, feedback: content.slice(0, 200).trim() };
 }
 
 /** Best-effort extraction of one JSON object from a model reply that may be
@@ -370,58 +341,6 @@ export async function assistantRoutes(app: FastifyInstance) {
         }),
       );
       return { results };
-    },
-  );
-
-  // Judge a free-text answer (used as a lenient fallback when local grading
-  // misses). Non-streaming: returns a single verdict.
-  r.post(
-    "/api/assistant/grade",
-    {
-      preHandler: requireAuth,
-      schema: {
-        tags: ["assistant"],
-        body: gradeBody,
-        response: {
-          200: z.object({ correct: z.boolean(), feedback: z.string() }),
-          502: z.object({ error: z.string() }),
-          503: z.object({ error: z.string() }),
-        },
-      },
-    },
-    async (req, reply) => {
-      const ai = getAiChain(req.user!.id);
-      if (!ai) return reply.code(503).send({ error: NOT_SET_UP });
-      const { prompt, expected, response, context, open } = req.body;
-      const system =
-        "You grade short German-learning answers. Decide if the learner's answer is acceptable German for the task, allowing valid variants (word order, punctuation, equivalent spellings) but requiring correct grammar and meaning. " +
-        "The learner is often completing a sentence whose beginning is already shown to them (given as 'Shown to the learner'). When it is, accept an answer that supplies only the missing part if, combined with that beginning, it forms a correct sentence — do NOT require the learner to retype the part they were already given. Only mark such an answer wrong if the completion itself is grammatically wrong or doesn't fit. " +
-        "When the reference answers are marked as examples, the task is open-ended: judge whether the learner's answer correctly and sensibly fulfils the task on its own merits — it does not need to resemble the examples. " +
-        "Reply with ONLY a compact JSON object: {\"correct\": boolean, \"feedback\": \"one short sentence in English\"}.";
-      const user = [
-        prompt ? `Task: ${prompt}` : null,
-        context ? `Shown to the learner (sentence beginning): ${context}` : null,
-        open
-          ? `Example answers (open-ended — any other correct answer also counts): ${expected.join(" | ")}`
-          : `Reference answer(s) (full sentence): ${expected.join(" | ")}`,
-        `Learner answer: ${response}`,
-      ]
-        .filter(Boolean)
-        .join("\n");
-
-      try {
-        const content = await collectCompletion(
-          ai,
-          [
-            { role: "system", content: system },
-            { role: "user", content: user },
-          ],
-          { temperature: 0, maxTokens: 256, onFallback: logFallback(req.log) },
-        );
-        return parseVerdict(content);
-      } catch (err) {
-        return reply.code(502).send({ error: aiErrorMessage(err, req.log, "grade") });
-      }
     },
   );
 
