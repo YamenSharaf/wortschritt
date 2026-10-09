@@ -1,5 +1,6 @@
 export * from "./exercises";
 export * from "./grading";
+export * from "./answers";
 export * from "./dto";
 export * from "./authoring";
 export * from "./reading";

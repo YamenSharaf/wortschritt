@@ -12,6 +12,7 @@ import {
   splitSentences,
   storyParagraphs,
   storySetId,
+  responseText,
   type AnswerGrading,
   type ExerciseItem,
   type ReaderSettings,
@@ -20,6 +21,7 @@ import {
   type StoryView,
 } from "@mdb/shared";
 import { ExerciseItemView } from "../components/ExerciseItemView";
+import { gradeHere } from "../lib/grade";
 import {
   CheckIcon,
   ChevronLeftIcon,
@@ -1146,8 +1148,11 @@ function StoryQuiz({
             <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-subtle">Frage {i + 1}</p>
             <ExerciseItemView
               item={q}
-              llmGrading={llmGrading}
-              onAnswered={(ok, response, grading) => answer(q, ok, response, grading)}
+              submit={async (response) => {
+                const v = await gradeHere(q, response, llmGrading);
+                answer(q, v.correct, responseText(q, response), v.grading);
+                return v;
+              }}
             />
           </div>
         ))}
