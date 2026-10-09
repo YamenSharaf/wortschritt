@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- brand/android-monochrome.svg: themed icons (Android 13+) tint this. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <group
+        android:pivotX="256"
+        android:pivotY="262"
+        android:scaleX="0.63"
+        android:scaleY="0.63"
+        android:translateY="-6">
+        <path
+            android:fillColor="#000000"
+            android:pathData="M124,404 L124,324 L212,324 L212,254 L300,254 L300,184 L388,184 L388,404 Z M141,288 a27,27 0 1,0 54,0 a27,27 0 1,0 -54,0 Z M229,218 a27,27 0 1,0 54,0 a27,27 0 1,0 -54,0 Z M317,148 a27,27 0 1,0 54,0 a27,27 0 1,0 -54,0 Z" />
+    </group>
+</vector>

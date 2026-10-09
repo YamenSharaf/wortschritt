@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Wortschritt</string>
+    <string name="title_activity_main">Wortschritt</string>
+    <string name="package_name">eu.yamen.wortschritt</string>
+    <string name="custom_url_scheme">eu.yamen.wortschritt</string>
+</resources>

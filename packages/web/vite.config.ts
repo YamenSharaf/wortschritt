@@ -11,6 +11,8 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: "dist",
+    // The app's build (VITE_TARGET=native) goes into the APK, never into the
+    // dist the server serves.
+    outDir: process.env.VITE_TARGET === "native" ? "dist-native" : "dist",
   },
 });

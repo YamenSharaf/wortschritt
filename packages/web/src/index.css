@@ -10,6 +10,10 @@ html {
 /* Wortschritt design system tokens (the design system's tokens.json).
    Light by default; dark follows the device setting. */
 :root {
+  /* Safe-area insets. The Android app (edge to edge) gets them from Capacitor's
+     SystemBars as --safe-area-inset-*, since older WebViews report env() wrong. */
+  --sa-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --sa-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   --bg: #f6f7fa;
   --surface: #ffffff;
   --surface-raised: #ffffff;

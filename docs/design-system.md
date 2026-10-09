@@ -250,7 +250,7 @@ The book and story cover: the drawn SVG cover when there is one, otherwise a gen
 
 The phone navigation: a floating pill of very subtle glass above the home indicator, with every section. Settings live in the account menu.
 
-`nav.ws-dock` sits 12px from the screen edges and 10px above the safe-area inset: a `dock-from` → `dock-to` gradient over an 18px blur with 170% saturation, a `dock-border` hairline, a `dock-highlight` top edge and a soft `dock-shadow`. Items are a 20px Lucide icon over a 10px label; the current one (`aria-current="page"`) sits in a `brand-soft` pill with `brand-ink`. Page content scrolls behind it, so pages keep 112px of bottom padding on phones.
+`nav.ws-dock` sits 12px from the screen edges and 10px above the safe-area inset (`--sa-bottom`; the header keeps `--sa-top` clear): a `dock-from` → `dock-to` gradient over an 18px blur with 170% saturation, a `dock-border` hairline, a `dock-highlight` top edge and a soft `dock-shadow`. Items are a 20px Lucide icon over a 10px label; the current one (`aria-current="page"`) sits in a `brand-soft` pill with `brand-ink`. Page content scrolls behind it, so pages keep 112px of bottom padding on phones.
 
 *In the app:* `App.tsx` (`ws-dock` in `index.css`)
 

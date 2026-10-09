@@ -94,7 +94,7 @@ export function AccountMenu() {
               id={id}
               role="dialog"
               aria-label="Account"
-              className="ws-sheet fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+10px)] z-50 p-2 md:inset-x-auto md:bottom-auto md:w-64 md:p-1.5"
+              className="ws-sheet fixed inset-x-3 bottom-[calc(var(--sa-bottom)+10px)] z-50 p-2 md:inset-x-auto md:bottom-auto md:w-64 md:p-1.5"
               style={
                 anchor && window.matchMedia("(min-width: 768px)").matches
                   ? { top: anchor.top, right: anchor.right }
