@@ -3,113 +3,13 @@
 @tailwind utilities;
 
 html {
-  color-scheme: light dark;
   -webkit-text-size-adjust: 100%;
 }
 
-/* Wortschritt design system tokens (the design system's tokens.json).
-   Light by default; dark follows the device setting. */
-:root {
-  --bg: #f6f7fa;
-  --surface: #ffffff;
-  --surface-raised: #ffffff;
-  --surface-sunken: #eef1f6;
-  --border: #e3e7ee;
-  --border-strong: #c9d0db;
-  --border-control: #838b9c;
-  --highlight: #ffffff00;
-  --ink: #0f1420;
-  --ink-muted: #566074;
-  --ink-subtle: #646d80;
-  --brand: #2b6cb0;
-  --brand-hover: #245c98;
-  --on-brand: #ffffff;
-  --brand-soft: #e8f1fb;
-  --brand-ink: #1f5a99;
-  --tile-from: #4a90e2;
-  --tile-to: #22589a;
-  --glow: #4a90e21f;
-  --reward-1: #ffd95a;
-  --reward-2: #ff8a65;
-  --reward-3: #f0508c;
-  --on-reward: #0f1420;
-  --success: #127a4b;
-  --success-soft: #e5f5ed;
-  --danger: #c2362b;
-  --danger-soft: #fbebe9;
-  --warning: #9a5b00;
-  --warning-soft: #fdf2dd;
-  --focus: #2b6cb0;
-  --on-section: #ffffff;
-  --section-practice: #2b6cb0;
-  --section-sheets: #0f8583;
-  --section-stories: #d4512a;
-  --section-vocab: #a8701a;
-  --section-notes: #6d4fd1;
-  --shadow-card: 0 1px 2px #0f14200d, 0 2px 8px #0f142008;
-  --shadow-card-hover: 0 2px 4px #0f142010, 0 8px 24px #0f14200f;
-  --shadow-pop: 0 12px 32px #0f14201f, 0 2px 6px #0f142012;
-  /* Floating header bar and tab pills (Raycast-style lit surfaces). */
-  --bar-from: #ffffffbf;
-  --bar-to: #ffffffe6;
-  --bar-highlight: #ffffff;
-  --tabs-track: #eef1f6;
-  --tabs-active-from: #ffffff;
-  --tabs-active-to: #f3f5f9;
-  --tabs-active-border: #d9dee7;
-  --dock-from: #ffffffb8;
-  --dock-to: #f6f7fa99;
-  --dock-border: #ffffffcc;
-  --dock-highlight: #ffffff;
-  --dock-shadow: #0f142021;
-  --glass-sheen: #ffffff66;
-  --glass-edge: #ffffffb3;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b0d12;
-    --surface: #12151c;
-    --surface-raised: #191d27;
-    --surface-sunken: #0e1117;
-    --border: #ffffff14;
-    --border-strong: #ffffff29;
-    --border-control: #646b7a;
-    --highlight: #ffffff0f;
-    --ink: #edf0f5;
-    --ink-muted: #9aa3b2;
-    --ink-subtle: #7d8696;
-    --brand: #5aa9f5;
-    --brand-hover: #7bbbf8;
-    --on-brand: #0b0d12;
-    --brand-soft: #5aa9f51f;
-    --brand-ink: #8ec5ff;
-    --glow: #4a90e238;
-    --success: #3dd68c;
-    --success-soft: #3dd68c1f;
-    --danger: #ff7a6e;
-    --danger-soft: #ff7a6e1f;
-    --warning: #f5b544;
-    --warning-soft: #f5b5441f;
-    --focus: #8ec5ff;
-    --shadow-card: inset 0 1px 0 #ffffff0f, 0 1px 2px #00000066;
-    --shadow-card-hover: inset 0 1px 0 #ffffff17, 0 8px 24px #00000080;
-    --shadow-pop: inset 0 1px 0 #ffffff17, 0 16px 40px #000000a6;
-    --bar-from: #121520bf;
-    --bar-to: #0c0e13e6;
-    --bar-highlight: #ffffff26;
-    --tabs-track: #0f1218;
-    --tabs-active-from: #4b5262;
-    --tabs-active-to: #1a1d25;
-    --tabs-active-border: #ffffff1a;
-    --dock-from: #1a1e28b3;
-    --dock-to: #0f121899;
-    --dock-border: #ffffff1f;
-    --dock-highlight: #ffffff1f;
-    --dock-shadow: #00000080;
-    --glass-sheen: #ffffff0d;
-    --glass-edge: #ffffff1f;
-  }
-}
+/* The design tokens (colours, shadows, effects, motion, reader themes) are
+   CSS variables in tokens.css, generated from packages/client/src/tokens.ts:
+   light or dark (the device's choice, or data-scheme on <html>), standard or
+   e-ink (data-display). Rules below use the variables, never raw values. */
 
 body {
   background-color: var(--bg);
@@ -127,8 +27,8 @@ body {
   border: 1px solid var(--border);
   border-radius: 16px;
   background: linear-gradient(137deg, var(--bar-from) 4.87%, var(--bar-to) 75.88%);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(var(--blur-bar));
+  backdrop-filter: blur(var(--blur-bar));
   box-shadow: inset 0 1px 1px var(--bar-highlight), var(--shadow-card);
 }
 
@@ -139,31 +39,24 @@ body {
 .bg-brand.text-brand-on,
 .ws-glass {
   --tint: var(--brand);
-  background-color: color-mix(in srgb, var(--tint) 14%, transparent);
+  background-color: color-mix(in srgb, var(--tint) var(--glass-fill), transparent);
   background-image: linear-gradient(180deg, var(--glass-sheen) 0%, transparent 70%);
-  border: 1px solid color-mix(in srgb, var(--tint) 34%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tint) var(--glass-border), transparent);
   color: var(--brand-ink);
-  box-shadow: inset 0 1px 0 var(--glass-edge), 0 1px 2px #0f142014;
-  -webkit-backdrop-filter: blur(10px) saturate(150%);
-  backdrop-filter: blur(10px) saturate(150%);
+  box-shadow: inset 0 1px 0 var(--glass-edge), var(--shadow-glass);
+  -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(150%);
+  backdrop-filter: blur(var(--blur-glass)) saturate(150%);
 }
 .bg-accent.text-accent-foreground:hover:not(:disabled),
 .bg-brand.text-brand-on:hover {
-  background-color: color-mix(in srgb, var(--tint) 22%, transparent);
+  background-color: color-mix(in srgb, var(--tint) var(--glass-fill-hover), transparent);
 }
 .ws-glass-icon {
-  background-color: color-mix(in srgb, var(--tint) 15%, transparent);
+  background-color: color-mix(in srgb, var(--tint) var(--glass-icon-fill), transparent);
   background-image: linear-gradient(180deg, var(--glass-sheen) 0%, transparent 70%);
-  border: 1px solid color-mix(in srgb, var(--tint) 30%, transparent);
-  color: var(--tint);
+  border: 1px solid color-mix(in srgb, var(--tint) var(--glass-icon-border), transparent);
+  color: color-mix(in srgb, var(--tint), #ffffff var(--glass-icon-lighten));
   box-shadow: inset 0 1px 0 var(--glass-edge);
-}
-@media (prefers-color-scheme: dark) {
-  .ws-glass-icon {
-    color: color-mix(in srgb, var(--tint) 55%, #ffffff);
-    background-color: color-mix(in srgb, var(--tint) 24%, transparent);
-    border-color: color-mix(in srgb, var(--tint) 45%, transparent);
-  }
 }
 
 /* Account menu: a sheet from the bottom on phones, a dropdown on wide screens. */
@@ -172,29 +65,26 @@ body {
   border: 1px solid var(--border);
   border-radius: 20px;
   box-shadow: var(--shadow-pop);
-  animation: ws-sheet-in 200ms ease-out;
+  animation: ws-sheet-in var(--motion-base) ease-out;
 }
 .ws-scrim {
-  background: rgb(8 10 16 / 0.32);
-  animation: ws-fade-in 200ms ease-out;
+  background: var(--scrim);
+  animation: ws-fade-in var(--motion-base) ease-out;
 }
 @media (min-width: 768px) {
-  .ws-sheet { border-radius: 14px; animation-name: ws-fade-in; animation-duration: 120ms; }
+  .ws-sheet { border-radius: 14px; animation-name: ws-fade-in; animation-duration: calc(var(--motion-base) * 0.6); }
   .ws-scrim { background: transparent; }
 }
 @keyframes ws-sheet-in { from { transform: translateY(12px); opacity: 0; } }
 @keyframes ws-fade-in { from { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) {
-  .ws-sheet, .ws-scrim { animation: none; }
-}
 
 /* Mobile dock: a floating pill of very subtle glass over the page. */
 .ws-dock {
   border-radius: 999px;
   border: 1px solid var(--dock-border);
   background: linear-gradient(180deg, var(--dock-from), var(--dock-to));
-  -webkit-backdrop-filter: blur(18px) saturate(170%);
-  backdrop-filter: blur(18px) saturate(170%);
+  -webkit-backdrop-filter: blur(var(--blur-dock)) saturate(170%);
+  backdrop-filter: blur(var(--blur-dock)) saturate(170%);
   box-shadow: inset 0 1px 0 var(--dock-highlight), 0 10px 30px var(--dock-shadow), 0 1px 3px var(--dock-shadow);
 }
 
@@ -219,7 +109,7 @@ body {
   letter-spacing: 0.2px;
   white-space: nowrap;
   color: var(--ink-muted);
-  transition: color 150ms ease-out, background 150ms ease-out;
+  transition: color var(--motion-fast) ease-out, background var(--motion-fast) ease-out;
 }
 .ws-tab:hover { color: var(--ink); }
 .ws-tab[aria-pressed="true"],
@@ -262,16 +152,10 @@ body {
   }
 }
 .animate-correct {
-  animation: mdb-correct 0.7s ease-out;
+  animation: mdb-correct var(--motion-celebrate) ease-out;
 }
 .animate-wrong {
-  animation: mdb-wrong 0.4s ease-in-out;
-}
-@media (prefers-reduced-motion: reduce) {
-  .animate-correct,
-  .animate-wrong {
-    animation: none;
-  }
+  animation: mdb-wrong var(--motion-feedback) ease-in-out;
 }
 
 @layer components {
@@ -324,40 +208,18 @@ body {
   }
 }
 
-/* Story reader. Its colours come from the reader theme (data-theme), not the
-   app theme, so sepia works in either mode; "auto" follows the device. */
+/* Story reader. Its colours come from the reader theme (data-theme, see
+   tokens.css), not the app theme, so sepia works in either; "auto" follows
+   the app. */
 .reader {
-  --r-bg: 255 255 255;
-  --r-fg: 30 41 59;
-  --r-muted: 100 116 139;
-  --r-rule: 226 232 240;
-  --r-mark: 37 99 235;
   background: rgb(var(--r-bg));
   color: rgb(var(--r-fg));
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
 }
-.reader[data-theme="dark"] {
-  --r-bg: 18 21 28;
-  --r-fg: 237 240 245;
-  --r-muted: 154 163 178;
-  --r-rule: 44 50 62;
-  --r-mark: 142 197 255;
-}
-@media (prefers-color-scheme: dark) {
-  .reader[data-theme="auto"] {
-    --r-bg: 18 21 28;
-    --r-fg: 237 240 245;
-    --r-muted: 154 163 178;
-    --r-rule: 44 50 62;
-    --r-mark: 142 197 255;
-  }
-}
-.reader[data-theme="sepia"] {
-  --r-bg: 248 241 227;
-  --r-fg: 67 52 34;
-  --r-muted: 128 108 84;
-  --r-rule: 224 209 183;
-  --r-mark: 180 110 20;
+/* A hover / pressed wash in the reader's own colours. */
+.reader-hover:hover,
+.reader-pressed {
+  background: rgb(var(--r-fg) / 0.08);
 }
 .reader-muted {
   color: rgb(var(--r-muted));
@@ -397,7 +259,7 @@ body {
 }
 .reader-block {
   border-radius: 0.5rem;
-  transition: background-color 0.2s;
+  transition: background-color var(--motion-base);
 }
 .reader-block.is-speaking {
   background: rgb(var(--r-mark) / 0.1);
@@ -405,7 +267,7 @@ body {
 }
 /* Saved words (CSS Custom Highlight API; ignored where unsupported). */
 ::highlight(saved-vocab) {
-  text-decoration: underline dotted rgb(14 165 233 / 0.85);
+  text-decoration: underline dotted rgb(var(--r-vocab) / 0.85);
   text-decoration-thickness: 2px;
   text-underline-offset: 4px;
 }
@@ -421,10 +283,10 @@ body {
   font-size: 0.78em;
   line-height: 1.45;
   color: rgb(var(--r-muted));
-  transition: filter 0.2s;
+  transition: filter var(--motion-base);
 }
 .reader-translation.is-hidden {
-  filter: blur(5px);
+  filter: blur(var(--peek-blur));
   cursor: pointer;
   user-select: none;
 }
@@ -433,7 +295,7 @@ body {
   width: 60%;
   border-radius: 0.4em;
   background: rgb(var(--r-rule));
-  animation: reader-pulse 1.2s ease-in-out infinite;
+  animation: reader-pulse var(--motion-pulse) ease-in-out infinite;
 }
 @keyframes reader-pulse {
   50% {
@@ -444,12 +306,12 @@ body {
 /* Full-screen reader: the bar takes the page colour; pages are CSS columns. */
 .reader-bar {
   background: rgb(var(--r-bg) / 0.96);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(var(--blur-reader-bar));
   box-shadow: 0 1px 0 rgb(var(--r-rule));
 }
 .reader-flow {
   column-fill: auto;
-  transition: transform 0.25s ease;
+  transition: transform var(--motion-page) ease;
 }
 .reader-flow .reader-text :where(p) {
   orphans: 2;
@@ -460,9 +322,4 @@ body {
 }
 .reader.fixed {
   box-shadow: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .reader-flow {
-    transition: none;
-  }
 }

@@ -411,7 +411,7 @@ function StoryReaderView() {
   const canSpeak = aloud.supported;
   const atEnd = paged && page >= pageCount;
   const iconBtn =
-    "grid h-9 min-w-9 place-items-center rounded-control px-2 text-sm transition-colors hover:bg-black/5 dark:hover:bg-white/10";
+    "grid h-9 min-w-9 place-items-center rounded-control px-2 text-sm transition-colors reader-hover";
   const typography: React.CSSProperties = {
     fontFamily: FONTS[reader.font].family,
     fontSize: `${reader.size}px`,
@@ -543,7 +543,7 @@ function StoryReaderView() {
         <div className="mx-auto flex h-12 max-w-4xl items-center gap-1 px-2">
           <Link
             to={book ? `/series/${book.id}` : "/stories"}
-            className="reader-muted mr-auto flex min-w-0 items-center gap-1 rounded-control px-2 py-1.5 text-sm font-medium transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+            className="reader-muted mr-auto flex min-w-0 items-center gap-1 rounded-control px-2 py-1.5 text-sm font-medium transition-colors reader-hover"
           >
             <ChevronLeftIcon className="h-4 w-4 shrink-0" />
             <span className="truncate">{book ? book.title : "Stories"}</span>
@@ -567,7 +567,7 @@ function StoryReaderView() {
                   translations: reader.translations === "off" ? "peek" : reader.translations === "peek" ? "always" : "off",
                 });
               }}
-              className={`${iconBtn} font-medium ${translationsOn ? "bg-black/5 dark:bg-white/10" : ""}`}
+              className={`${iconBtn} font-medium ${translationsOn ? "reader-pressed" : ""}`}
               title="English line by line: off → peek (tap to reveal) → always"
             >
               <span className="inline-flex items-center gap-1">
@@ -580,7 +580,7 @@ function StoryReaderView() {
             <button
               type="button"
               onClick={() => setSheet((s) => (s === "glossary" ? null : "glossary"))}
-              className={`${iconBtn} ${sheet === "glossary" ? "bg-black/5 dark:bg-white/10" : ""}`}
+              className={`${iconBtn} ${sheet === "glossary" ? "reader-pressed" : ""}`}
               aria-label="Glossary"
               title="Glossary"
             >
@@ -590,7 +590,7 @@ function StoryReaderView() {
           <button
             type="button"
             onClick={() => setSheet((s) => (s === "settings" ? null : "settings"))}
-            className={`${iconBtn} ${sheet === "settings" ? "bg-black/5 dark:bg-white/10" : ""}`}
+            className={`${iconBtn} ${sheet === "settings" ? "reader-pressed" : ""}`}
             aria-expanded={sheet === "settings"}
             aria-label="Text settings"
             title="Text settings"

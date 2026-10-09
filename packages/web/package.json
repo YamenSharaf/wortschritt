@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "tokens": "tsx scripts/tokens.ts",
+    "test": "tsx scripts/tokens.ts --check"
   },
   "dependencies": {
     "@fontsource/atkinson-hyperlegible": "^5.3.0",
@@ -31,6 +33,7 @@
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vite": "^6.0.7"
   }

@@ -8,7 +8,8 @@ A small multi-user, self-hosted German-learning app. **Read the docs before work
   new exercise type or AI feature, config, theming, deploy.
 - **[docs/design-system.md](docs/design-system.md)** — the visual language:
   tokens, type, icons, layout and every component. Read it before UI work and
-  keep it in step with `packages/web/src/index.css`.
+  keep it in step with the tokens (`packages/client/src/tokens.ts`, generated
+  into `packages/web/src/tokens.css`) and `packages/web/src/index.css`.
 
 ## Core principle
 

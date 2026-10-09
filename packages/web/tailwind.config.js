@@ -1,11 +1,14 @@
 /** @type {import('tailwindcss').Config} */
-// Colours, fonts, radii and shadows come from the Wortschritt design system
-// (CSS variables in src/index.css). Light and dark follow the device setting.
+// Colours, fonts, radii, shadows and motion come from the design tokens
+// (packages/client/src/tokens.ts): colours and shadows as the CSS variables in
+// src/tokens.css, so they follow the scheme (light/dark) and display (e-ink).
+import { fonts, radii } from "@mdb/client/tokens";
+
 const v = (name) => `var(--${name})`;
+const px = (n) => `${n}px`;
 
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
-  darkMode: "media",
   theme: {
     extend: {
       colors: {
@@ -52,25 +55,20 @@ export default {
         },
         focus: v("focus"),
       },
-      fontFamily: {
-        sans: ['"Geist Sans"', '"Segoe UI"', "system-ui", "sans-serif"],
-        mono: ['"Geist Mono"', "ui-monospace", '"SF Mono"', "Menlo", "monospace"],
-        // Learning content uses the same face as the interface.
-        content: ['"Geist Sans"', '"Segoe UI"', "system-ui", "sans-serif"],
-        // Notes use Lato so they read distinctly from the rest of the app.
-        note: ['"Lato"', "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],
-      },
+      fontFamily: fonts,
       borderRadius: {
-        chip: "6px",
-        control: "10px",
-        card: "14px",
-        panel: "20px",
+        chip: px(radii.chip),
+        control: px(radii.control),
+        card: px(radii.card),
+        panel: px(radii.panel),
       },
       boxShadow: {
         card: v("shadow-card"),
         "card-hover": v("shadow-card-hover"),
         pop: v("shadow-pop"),
       },
+      // Transitions last --motion-fast: 0 on e-ink and with reduced motion.
+      transitionDuration: { DEFAULT: v("motion-fast") },
     },
   },
   plugins: [],

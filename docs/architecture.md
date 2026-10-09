@@ -401,12 +401,14 @@ registration · 3 per-user AI settings and instance settings.
 
 ## Theming and navigation
 
-Design tokens are CSS variables in `packages/web/src/index.css`: light values on
-`:root`, dark ones under `@media (prefers-color-scheme: dark)`, so the theme
-follows the device (Tailwind `darkMode: "media"`). `tailwind.config.js` maps the
-colours (`bg-surface`, `text-ink-muted`, `bg-brand`, …) to those variables, so
-Tailwind opacity modifiers don't work on them; use `color-mix` in CSS instead.
-The glass styles (`ws-bar` header, `ws-tabs`/`ws-tab` pills, `ws-dock`,
+Design tokens live in `packages/client/src/tokens.ts` (colours, shadows,
+effects, motion, radii, fonts, reader themes) for the web and the app alike.
+`pnpm --filter @mdb/web tokens` writes them to `packages/web/src/tokens.css` as
+CSS variables; never edit that file, and `pnpm test` fails when it is stale.
+`tailwind.config.js` maps the colours (`bg-surface`, `text-ink-muted`,
+`bg-brand`, …) to those variables, so Tailwind opacity modifiers don't work on
+them; use `color-mix` in CSS instead. Component styles in `index.css` use the
+variables only (blurs, glass mixes and durations too). The glass styles (`ws-bar` header, `ws-tabs`/`ws-tab` pills, `ws-dock`,
 `ws-glass-icon`, glass primary buttons, `ws-sheet`) live there too. Icons are
 Lucide through the wrappers in `components/icons.tsx` (1.75 stroke). The
 rules, every token and the components are in
