@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState } from "react";
+import { lazy, Suspense, useEffect, useReducer, useState } from "react";
 import {
   generateCounts,
   MIN_PASSWORD_LENGTH,
@@ -24,6 +24,28 @@ import { TabPills } from "../components/TabPills";
 import { AiSettings } from "./AiSettings";
 import { SpeakerIcon } from "../components/icons";
 import { btn } from "../components/ui";
+
+// Inlined at build time so the web build leaves the app's screens out.
+const IS_NATIVE = import.meta.env.VITE_TARGET === "native";
+const ServerSettings = IS_NATIVE
+  ? lazy(() => import("./native/ServerSettings").then((m) => ({ default: m.ServerSettings })))
+  : () => null;
+
+/** For what only a browser session may do (the app's token can't). */
+function UseTheWebApp({ title, what }: { title: string; what: string }) {
+  return (
+    <section className="space-y-2">
+      <h2 className="text-xl font-semibold tracking-[-0.01em]">{title}</h2>
+      <p className="text-sm text-ink-muted">
+        {what} in the web app:{" "}
+        <a href={apiUrl("/settings/account")} target="_blank" rel="noreferrer" className="underline">
+          open Wortschritt in the browser
+        </a>
+        .
+      </p>
+    </section>
+  );
+}
 
 const SETTINGS_TABS = [
   { value: "learning", label: "Learning" },
@@ -64,8 +86,14 @@ function Connections() {
         <h2 className="text-xl font-semibold tracking-[-0.01em]">AI tutor</h2>
         <AiSettings />
       </section>
-      <ConnectedApps />
-      <ApiTokens />
+      {IS_NATIVE ? (
+        <UseTheWebApp title="Connected apps and API tokens" what="Disconnect apps and manage API tokens" />
+      ) : (
+        <>
+          <ConnectedApps />
+          <ApiTokens />
+        </>
+      )}
     </div>
   );
 }
@@ -323,47 +351,56 @@ function Account() {
         {user?.role === "admin" && " (admin)"}
       </p>
       <DisplayName />
-      <form onSubmit={changePassword} className="space-y-4">
-        <h2 className="text-xl font-semibold tracking-[-0.01em]">Change password</h2>
-        <Field label="Current password">
-          <input
-            type="password"
-            autoComplete="current-password"
-            value={current}
-            onChange={(e) => setCurrent(e.target.value)}
-            className="input"
-          />
-        </Field>
-        <Field label={`New password (at least ${MIN_PASSWORD_LENGTH} characters)`}>
-          <input
-            type="password"
-            autoComplete="new-password"
-            minLength={MIN_PASSWORD_LENGTH}
-            value={next}
-            onChange={(e) => setNext(e.target.value)}
-            className="input"
-          />
-        </Field>
-        <Field label="Confirm new password">
-          <input
-            type="password"
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            className="input"
-          />
-        </Field>
-        <button
-          type="submit"
-          disabled={busy || !current || next.length < MIN_PASSWORD_LENGTH}
-          className={`${btn.primary}`}
-        >
-          {busy ? "…" : "Change password"}
-        </button>
-        {message && (
-          <p className={`text-sm ${message.ok ? "text-success" : "text-danger"}`}>{message.text}</p>
-        )}
-      </form>
+      {IS_NATIVE && (
+        <Suspense>
+          <ServerSettings />
+        </Suspense>
+      )}
+      {IS_NATIVE ? (
+        <UseTheWebApp title="Change password" what="Change your password" />
+      ) : (
+        <form onSubmit={changePassword} className="space-y-4">
+          <h2 className="text-xl font-semibold tracking-[-0.01em]">Change password</h2>
+          <Field label="Current password">
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={current}
+              onChange={(e) => setCurrent(e.target.value)}
+              className="input"
+            />
+          </Field>
+          <Field label={`New password (at least ${MIN_PASSWORD_LENGTH} characters)`}>
+            <input
+              type="password"
+              autoComplete="new-password"
+              minLength={MIN_PASSWORD_LENGTH}
+              value={next}
+              onChange={(e) => setNext(e.target.value)}
+              className="input"
+            />
+          </Field>
+          <Field label="Confirm new password">
+            <input
+              type="password"
+              autoComplete="new-password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              className="input"
+            />
+          </Field>
+          <button
+            type="submit"
+            disabled={busy || !current || next.length < MIN_PASSWORD_LENGTH}
+            className={`${btn.primary}`}
+          >
+            {busy ? "…" : "Change password"}
+          </button>
+          {message && (
+            <p className={`text-sm ${message.ok ? "text-success" : "text-danger"}`}>{message.text}</p>
+          )}
+        </form>
+      )}
     </div>
   );
 }
