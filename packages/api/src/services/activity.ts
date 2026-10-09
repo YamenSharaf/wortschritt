@@ -88,10 +88,27 @@ export function getExerciseProgress(userId: number, setId: string): ExerciseProg
   };
 }
 
+export function listExerciseProgress(userId: number): ExerciseProgress[] {
+  return db
+    .select()
+    .from(schema.exerciseProgress)
+    .where(eq(schema.exerciseProgress.userId, userId))
+    .all()
+    .map((row) => ({
+      setId: row.setId,
+      index: row.position,
+      results: row.results,
+      responses: row.responses,
+      updatedAt: row.updatedAt,
+    }));
+}
+
+/** `at`: when it happened (unix seconds; default now), for replays from the app. */
 export function saveExerciseProgress(
   userId: number,
   setId: string,
   body: SaveExerciseProgressBody,
+  at?: number,
 ): void {
   const row = {
     userId,
@@ -99,6 +116,7 @@ export function saveExerciseProgress(
     position: body.index,
     results: body.results,
     responses: body.responses,
+    ...(at === undefined ? {} : { updatedAt: at }),
   };
   db.insert(schema.exerciseProgress)
     .values(row)
@@ -108,7 +126,7 @@ export function saveExerciseProgress(
         position: row.position,
         results: row.results,
         responses: row.responses,
-        updatedAt: sql`(unixepoch())`,
+        updatedAt: at ?? sql`(unixepoch())`,
       },
     })
     .run();

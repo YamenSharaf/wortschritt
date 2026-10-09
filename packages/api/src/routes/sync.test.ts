@@ -55,6 +55,12 @@ type Changes = {
   notes: { id: string; title: string; body: string; updatedAt: number }[];
   settings: unknown;
   deleted: Record<"stories" | "series" | "vocab" | "groups" | "notes", string[]>;
+  stats: {
+    progress: { totalAnswered: number; answeredToday: number };
+    runs: { setId: string }[];
+    sheetViews: { sheetId: string }[];
+    exerciseProgress: { setId: string; index: number; updatedAt: number }[];
+  };
 };
 const changes = async (who: Client, since?: string, library?: string) => {
   const q = new URLSearchParams({ ...(since ? { since } : {}), ...(library ? { library } : {}) });
@@ -65,7 +71,7 @@ const changes = async (who: Client, since?: string, library?: string) => {
 const push = async (who: Client, ops: unknown[]) => {
   const res = await who("POST", "/api/sync/push", { ops });
   assert.equal(res.statusCode, 200, res.body);
-  return res.json().results as { opId: string; ok: boolean; duplicate: boolean; error?: string; noteId?: string; conflict?: boolean }[];
+  return res.json().results as { opId: string; ok: boolean; duplicate: boolean; error?: string; noteId?: string; conflict?: boolean; stale?: boolean }[];
 };
 
 let cursor = "";
@@ -205,6 +211,56 @@ test("private: another user's sync and pushes never touch your data", async () =
   // Op ids are per user: the same id from me is a new op.
   const mine = await push(me, [{ opId: "anna-op-1", type: "storyProgress", storyId: EXAMPLE_STORY.id, progress: 0.95 }]);
   assert.equal(mine[0]!.duplicate, false);
+});
+
+test("stats: every pull carries the server's numbers, the same as the web's", async () => {
+  await push(me, [
+    { opId: "op-stats-attempt", type: "attempt", data: { setId: "stats-set", itemId: "a", correct: true } },
+    { opId: "op-stats-run", type: "run", data: { setId: "stats-set", setTitle: "Stats", total: 2, answered: 2, correct: 1, results: { a: true, b: false } } },
+    { opId: "op-stats-sheet", type: "sheetView", data: { sheetId: "stats-sheet", title: "Stats sheet" } },
+  ]);
+  const full = await changes(me);
+  assert.deepEqual(full.stats.progress, (await me("GET", "/api/progress")).json());
+  assert.deepEqual(full.stats.runs, (await me("GET", "/api/runs")).json());
+  assert.equal(full.stats.sheetViews[0]!.sheetId, "stats-sheet");
+  // Nothing else changed: the stats still come, current.
+  const quiet = await changes(me, full.cursor, full.library!.version);
+  assert.equal(quiet.notes.length + quiet.stories.length, 0);
+  assert.deepEqual(quiet.stats, full.stats);
+  // The app never adds answers up itself: a pushed answer shows up in the next pull.
+  await push(me, [{ opId: "op-stats-attempt-2", type: "attempt", data: { setId: "stats-set", itemId: "b", correct: true } }]);
+  const after = await changes(me, quiet.cursor, full.library!.version);
+  assert.equal(after.stats.progress.totalAnswered, full.stats.progress.totalAnswered + 1);
+  assert.equal(after.stats.progress.answeredToday, full.stats.progress.answeredToday + 1);
+});
+
+test("push: where you stopped in a set; the newest position wins", async () => {
+  const now = Math.floor(Date.now() / 1000);
+  const saved = (index: number) => ({ index, results: { a: true }, responses: { a: "x" } });
+  const position = async () => (await changes(me)).stats.exerciseProgress.find((p) => p.setId === "resume-set");
+
+  let r = await push(me, [{ opId: "op-pos-1", type: "exerciseProgressSave", setId: "resume-set", at: now - 100, data: saved(3) }]);
+  assert.deepEqual([r[0]!.ok, r[0]!.stale], [true, undefined]);
+  assert.deepEqual([(await position())?.index, (await position())?.updatedAt], [3, now - 100]);
+
+  // Practised further on the web; an older save from the phone doesn't undo it.
+  await me("PUT", "/api/exercise-progress/resume-set", saved(7));
+  r = await push(me, [{ opId: "op-pos-2", type: "exerciseProgressSave", setId: "resume-set", at: now - 50, data: saved(4) }]);
+  assert.deepEqual([r[0]!.ok, r[0]!.stale], [true, true]);
+  assert.equal((await position())?.index, 7);
+  r = await push(me, [{ opId: "op-pos-2", type: "exerciseProgressSave", setId: "resume-set", at: now - 50, data: saved(4) }]);
+  assert.deepEqual([r[0]!.duplicate, r[0]!.stale], [true, true], "a replay returns the first result");
+
+  // A clock ahead of the server's can't push a save into the future.
+  await push(me, [{ opId: "op-pos-3", type: "exerciseProgressSave", setId: "resume-set", at: now + 86_400, data: saved(8) }]);
+  const p = await position();
+  assert.equal(p?.index, 8);
+  assert.ok(p!.updatedAt <= Math.floor(Date.now() / 1000));
+
+  // Finishing the set clears it.
+  r = await push(me, [{ opId: "op-pos-4", type: "exerciseProgressClear", setId: "resume-set", at: Math.floor(Date.now() / 1000) }]);
+  assert.equal(r[0]!.ok, true);
+  assert.equal(await position(), undefined);
 });
 
 test("a cursor older than the kept log gets a full snapshot", async () => {

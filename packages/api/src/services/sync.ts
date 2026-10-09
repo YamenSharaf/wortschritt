@@ -1,12 +1,21 @@
 import { createHash } from "node:crypto";
 import { and, eq, lt, sql } from "drizzle-orm";
-import type { SyncChanges, SyncOp, SyncPushResult, SyncStory } from "@mdb/shared";
+import type { SyncChanges, SyncOp, SyncPushResult, SyncStats, SyncStory } from "@mdb/shared";
 import { builtInIds, loadCheatsheets, loadExerciseSets } from "../content/loader";
 import { db, schema } from "../db/client";
-import { recordRun, recordSheetView } from "./activity";
+import {
+  clearExerciseProgress,
+  getExerciseProgress,
+  latestRunsPerSet,
+  listExerciseProgress,
+  recentSheetViews,
+  recordRun,
+  recordSheetView,
+  saveExerciseProgress,
+} from "./activity";
 import { getStoredCover, coverVersion } from "./covers";
 import { createNote, getNote, listNotes, removeNote, updateNote } from "./notes";
-import { recordAttempt } from "./progress";
+import { getProgressSummary, recordAttempt } from "./progress";
 import { getSeriesView, listSeries } from "./series";
 import { getSettings } from "./settings";
 import { getStory, listStories, setStoryProgress } from "./stories";
@@ -19,7 +28,9 @@ import { getVocab, listGroups, listVocab, recordStudy, removeVocab, upsertVocab 
  * a sync returns the current state of each item changed since the app's
  * cursor, or marks it deleted when it's gone. The shared library is small,
  * so it's sent whole whenever its version differs. Push: actions the app did
- * offline, applied once per op id (sync_ops) and merged safely.
+ * offline, applied once per op id (sync_ops) and merged safely. Stats (the
+ * daily goal, latest runs, where you stopped) are computed here and sent on
+ * every pull, so the app shows them without any logic of its own.
  */
 
 const PAGE = 1000;
@@ -59,6 +70,18 @@ function syncStory(userId: number, id: string): SyncStory | null {
   };
 }
 
+const SHEET_VIEWS = 50;
+
+/** The learner's numbers as the web shows them, computed now. */
+function stats(userId: number): SyncStats {
+  return {
+    progress: getProgressSummary(userId),
+    runs: latestRunsPerSet(userId),
+    sheetViews: recentSheetViews(userId, SHEET_VIEWS),
+    exerciseProgress: listExerciseProgress(userId),
+  };
+}
+
 const emptyDeleted = (): SyncChanges["deleted"] => ({ stories: [], series: [], vocab: [], groups: [], notes: [] });
 
 /** Everything this learner has, for a first sync (or one after a long time offline). */
@@ -75,6 +98,7 @@ function snapshot(userId: number, cursor: number): SyncChanges {
     notes: listNotes(userId),
     settings: getSettings(userId),
     deleted: emptyDeleted(),
+    stats: stats(userId),
   };
 }
 
@@ -104,6 +128,7 @@ export function syncChanges(userId: number, since: number | null, libraryVersion
     notes: [],
     settings: null,
     deleted: emptyDeleted(),
+    stats: stats(userId),
   };
   const lib = library();
   if (lib.version !== libraryVersion) out.library = lib;
@@ -219,6 +244,16 @@ function apply(userId: number, op: SyncOp): Omit<Result, "opId" | "duplicate"> {
     case "noteDelete":
       removeNote(userId, op.id);
       return { ok: true };
+    case "exerciseProgressSave":
+    case "exerciseProgressClear": {
+      // A clock ahead of the server's can't make an old action win later.
+      const at = Math.min(op.at, Math.floor(Date.now() / 1000));
+      const current = getExerciseProgress(userId, op.setId);
+      if (current && current.updatedAt > at) return { ok: true, stale: true };
+      if (op.type === "exerciseProgressSave") saveExerciseProgress(userId, op.setId, op.data, at);
+      else clearExerciseProgress(userId, op.setId);
+      return { ok: true };
+    }
   }
 }
 

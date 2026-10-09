@@ -329,6 +329,21 @@ test("sync is private: changes and pushed actions stay with their user", async (
   assert.equal((await anna("GET", `/api/notes/${annaNote.id}`)).statusCode, 200, "not deletable by someone else");
 });
 
+test("sync stats are private: numbers and set positions stay with their user", async () => {
+  const now = Math.floor(Date.now() / 1000);
+  await anna("POST", "/api/sync/push", { ops: [
+    { opId: "anna-stats-run", type: "run", data: { setId: "anna-set", setTitle: "Anna", total: 1, answered: 1, correct: 1, results: { a: true } } },
+    { opId: "anna-stats-pos", type: "exerciseProgressSave", setId: "anna-set", at: now, data: { index: 2, results: {}, responses: {} } },
+  ] });
+  const mine = (await admin("GET", "/api/sync/changes")).json() as { stats: { runs: { setId: string }[]; exerciseProgress: { setId: string }[] } };
+  assert.ok(!mine.stats.runs.some((r) => r.setId === "anna-set"));
+  assert.ok(!mine.stats.exerciseProgress.some((p) => p.setId === "anna-set"));
+  // Clearing a set id from my account doesn't touch Anna's position.
+  await admin("POST", "/api/sync/push", { ops: [{ opId: "admin-clear-anna", type: "exerciseProgressClear", setId: "anna-set", at: now + 1 }] });
+  const hers = (await anna("GET", "/api/sync/changes")).json() as { stats: { exerciseProgress: { setId: string; index: number }[] } };
+  assert.equal(hers.stats.exerciseProgress.find((p) => p.setId === "anna-set")?.index, 2);
+});
+
 test("admin: deleting a user deletes their data but keeps their imports", async () => {
   const users = (await admin("GET", "/api/admin/users")).json() as { id: number; username: string }[];
   const annaId = users.find((u) => u.username === "anna")!.id;
