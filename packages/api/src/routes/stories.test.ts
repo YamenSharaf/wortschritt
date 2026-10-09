@@ -76,6 +76,7 @@ test("progress and read state; reader settings are saved per account", async () 
   await me("PUT", `/api/stories/${ID}/progress`, { progress: 0.3 });
   let v = await view();
   assert.deepEqual([v.progress, v.status, v.resumeAt], [0.5, "reading", 0.5]);
+  assert.ok(v.minutes >= 1, "reading time from the server");
   await me("PUT", `/api/stories/${ID}/progress`, { progress: 0.99 });
   assert.equal((await view()).resumeAt, null, "nearly done: reopen at the top");
 

@@ -320,6 +320,11 @@ export const generateMoreResult = z.object({
 export type GenerateMoreResult = z.infer<typeof generateMoreResult>;
 
 /** Latest-run summary for a set (no per-item detail). */
+/** What a set id points at: a library exercise set, or a story's questions ("story:<id>"). */
+export const setKind = z.enum(["exercise", "story"]);
+/** How a score reads, decided by the server: good ≥ 80%, ok ≥ 50%, weak below. */
+export const scoreTier = z.enum(["good", "ok", "weak"]);
+
 export const runSummary = z.object({
   setId: z.string(),
   setTitle: z.string(),
@@ -327,6 +332,9 @@ export const runSummary = z.object({
   answered: z.number().int(),
   correct: z.number().int(),
   finishedAt: z.number().int(),
+  kind: setKind.default("exercise"),
+  /** Null when nothing graded was answered. */
+  tier: scoreTier.nullable().default(null),
 });
 export type RunSummary = z.infer<typeof runSummary>;
 
@@ -527,6 +535,20 @@ export const progressSummary = z.object({
   totalCorrect: z.number().int(),
   answeredToday: z.number().int(),
   dailyGoal: z.number().int(),
+  /** Answers still needed today (0 once the goal is met). */
+  goalLeft: z.number().int().default(0),
+  /** Today's goal reached, 0–100. */
+  goalPercent: z.number().int().default(0),
+  /** Share of graded answers that were right, 0–100; null before any. */
+  accuracy: z.number().int().nullable().default(null),
+  /**
+   * Where "Continue practice" goes: the most recently touched of an
+   * unfinished set (resume) and the last finished run's set; null before any.
+   */
+  continue: z
+    .object({ setId: z.string(), title: z.string(), kind: setKind, resume: z.boolean() })
+    .nullable()
+    .default(null),
   perSet: z.array(
     z.object({
       setId: z.string(),
@@ -663,6 +685,8 @@ export const storySummary = z.object({
   level: cefrLevel,
   tags: z.array(z.string()),
   words: z.number().int(),
+  /** Reading time at a learner's pace (about 120 words a minute), at least 1. */
+  minutes: z.number().int().default(1),
   questions: z.number().int(),
   /** Version of the cover art (changes with it), or null when there is none. */
   cover: z.string().nullable().default(null),
@@ -679,6 +703,8 @@ export const storyView = z.object({
   story,
   /** The book this story is a chapter of. */
   series: storySeriesInfo.nullable().default(null),
+  /** Reading time at a learner's pace (about 120 words a minute), at least 1. */
+  minutes: z.number().int().default(1),
   progress: z.number(),
   readAt: z.number().int().nullable(),
   status: readingStatus.default("unread"),
@@ -823,6 +849,8 @@ export const seriesChapter = z.object({
   title: z.string(),
   level: cefrLevel.nullable(),
   words: z.number().int(),
+  /** Reading time (0 when not written yet). */
+  minutes: z.number().int().default(0),
   progress: z.number(),
   readAt: z.number().int().nullable(),
   status: readingStatus.default("unread"),

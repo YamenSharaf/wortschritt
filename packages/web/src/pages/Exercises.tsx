@@ -95,13 +95,8 @@ export function Exercises() {
 /** "Last: 15/21" pill, tinted by accuracy; nothing if never attempted. */
 export function LastRunBadge({ run }: { run?: RunSummary }) {
   if (!run) return null;
-  const pct = run.answered ? run.correct / run.answered : 0;
-  const tone =
-    pct >= 0.8
-      ? "text-success"
-      : pct >= 0.5
-        ? "text-warning"
-        : "text-danger";
+  // The server says how the score reads.
+  const tone = run.tier === "good" ? "text-success" : run.tier === "ok" ? "text-warning" : "text-danger";
   return (
     <span
       className="shrink-0 whitespace-nowrap text-xs text-ink-subtle"

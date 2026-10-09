@@ -66,7 +66,6 @@ function germanText(el: HTMLElement | null): string {
 }
 
 const wordRe = /[\p{L}ß]+(?:-[\p{L}ß]+)*/gu;
-const minutes = (words: number) => Math.max(1, Math.round(words / 120));
 
 /** CSS Custom Highlight API (no DOM changes); missing in older browsers. */
 type HighlightRegistry = { set(name: string, h: unknown): void; delete(name: string): void };
@@ -139,7 +138,6 @@ function StoryReaderView() {
 
   const story = view?.story;
   const blocks = useMemo(() => (story ? storyParagraphs(story.body) : []), [story]);
-  const wordTotal = useMemo(() => (story ? (story.body.match(wordRe) ?? []).length : 0), [story]);
 
   // --- line-by-line translations: stored ones on open; missing ones for the
   // paragraphs on screen, a few at a time, with the learner's AI.
@@ -559,7 +557,7 @@ function StoryReaderView() {
           <h1 className="text-[1.45em] font-semibold leading-tight">{story.title}</h1>
           <p className="reader-muted mt-1 font-sans text-xs" lang="en">
             {story.subtitle ? `${story.subtitle} · ` : ""}
-            {story.level} · {minutes(wordTotal)} min
+            {story.level} · {view.minutes} min
             {view.readAt ? " · read" : ""}
           </p>
         </header>

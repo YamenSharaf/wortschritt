@@ -3,6 +3,7 @@ import { and, asc, desc, eq, notInArray, sql } from "drizzle-orm";
 import { storyParagraphs, story as storySchema, type ExerciseItem, type ReadingStatus, type Story, type StorySeriesInfo, type StorySummary, type StoryView } from "@mdb/shared";
 import { db, schema } from "../db/client";
 import { coverVersion } from "./covers";
+import { readingMinutes } from "./rules";
 
 /**
  * Stories are private: every query is scoped to the learner. The JSON is
@@ -78,6 +79,7 @@ export function listStories(userId: number): StorySummary[] {
       level: s.level,
       tags: s.tags,
       words: wordCount(s.body),
+      minutes: readingMinutes(wordCount(s.body)),
       questions: s.questions.length,
       cover: coverVersion(row.cover),
       progress: row.progress,
@@ -97,6 +99,7 @@ export function getStory(userId: number, id: string): StoryView | null {
   return {
     story: s,
     series: row.seriesId && row.chapter ? seriesInfo(userId, row.seriesId, row.chapter) : null,
+    minutes: readingMinutes(wordCount(s.body)),
     progress: row.progress,
     readAt: row.readAt,
     status: readingStatus(row.progress, row.readAt),

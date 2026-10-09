@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import type { RunSummary } from "@mdb/shared";
+import { storySetId, type RunSummary } from "@mdb/shared";
 import { PlayIcon } from "../components/icons";
 import { Pill, SectionHeading, btn, cardLink } from "../components/ui";
 import { SectionIcon, type Section } from "../components/SectionIcon";
@@ -28,8 +28,10 @@ export function Dashboard() {
   const name =
     (settings.status === "ready" && settings.data.displayName.trim()) || user?.username || "";
   const p = progress.status === "ready" ? progress.data : null;
-  const left = p ? Math.max(0, p.dailyGoal - p.answeredToday) : 0;
-  const continueTo = recentRuns[0] ? runHref(recentRuns[0].setId) : "/exercises";
+  const left = p?.goalLeft ?? 0;
+  // The server picks it: an unfinished set first, else the last run's set.
+  const next = p?.continue ?? null;
+  const continueTo = next ? setHref(next.setId, next.kind) : "/exercises";
 
   return (
     <div className="space-y-10">
@@ -60,7 +62,7 @@ export function Dashboard() {
                 className={btn.primary}
               >
                 <PlayIcon className="h-4 w-4" />
-                {recentRuns[0] ? "Continue practice" : "Start practising"}
+                {next ? "Continue practice" : "Start practising"}
               </Link>
               <Link
                 to="/vocab/study"
@@ -70,7 +72,7 @@ export function Dashboard() {
               </Link>
             </div>
           </div>
-          {p && <GoalRing done={p.answeredToday} goal={p.dailyGoal} total={p.totalAnswered} correct={p.totalCorrect} />}
+          {p && <GoalRing done={p.answeredToday} goal={p.dailyGoal} percent={p.goalPercent} accuracy={p.accuracy} total={p.totalAnswered} />}
         </div>
       </section>
 
@@ -81,8 +83,8 @@ export function Dashboard() {
               {recentRuns.map((r) => (
                 <Row
                   key={r.setId}
-                  to={runHref(r.setId)}
-                  section={r.setId.startsWith("story:") ? "stories" : "practice"}
+                  to={setHref(r.setId, r.kind)}
+                  section={r.kind === "story" ? "stories" : "practice"}
                   title={r.setTitle}
                   meta={timeAgo(r.finishedAt)}
                   end={<LastRunBadge run={r} />}
@@ -166,8 +168,7 @@ function greeting(): string {
 }
 
 /** The daily goal in the reward gradient, with all-time numbers under it. */
-function GoalRing({ done, goal, total, correct }: { done: number; goal: number; total: number; correct: number }) {
-  const pct = Math.min(100, Math.round((done / goal) * 100));
+function GoalRing({ done, goal, percent: pct, accuracy, total }: { done: number; goal: number; percent: number; accuracy: number | null; total: number }) {
   return (
     <div className="flex items-center gap-4">
       <div
@@ -191,7 +192,7 @@ function GoalRing({ done, goal, total, correct }: { done: number; goal: number; 
         </div>
         <div className="text-ink-muted">
           <dt className="inline">Accuracy </dt>
-          <dd className="inline tabular-nums">{total ? `${Math.round((correct / total) * 100)}%` : "—"}</dd>
+          <dd className="inline tabular-nums">{accuracy === null ? "—" : `${accuracy}%`}</dd>
         </div>
         <div className="text-ink-muted">
           <dd className="inline tabular-nums">{total}</dd>
@@ -226,7 +227,7 @@ function Row({ to, section, title, meta, end }: { to: string; section: Section; 
   );
 }
 
-/** A run's page: an exercise set, or a story whose questions were answered. */
-function runHref(setId: string): string {
-  return setId.startsWith("story:") ? `/stories/${setId.slice(6)}` : `/exercises/${setId}`;
+/** A set's page: an exercise set, or a story whose questions were answered. */
+function setHref(setId: string, kind: RunSummary["kind"]): string {
+  return kind === "story" ? `/stories/${setId.slice(storySetId("").length)}` : `/exercises/${setId}`;
 }

@@ -8,8 +8,9 @@ import type {
   SheetViewBody,
 } from "@mdb/shared";
 import { db, schema } from "../db/client";
+import { scoreTier, setKind } from "./rules";
 
-type RunRecord = Omit<ExerciseRun, "finishedAt">;
+type RunRecord = Omit<ExerciseRun, "finishedAt" | "kind" | "tier">;
 
 function recordRun(userId: number, r: RunRecord): void {
   db.insert(schema.exerciseRuns)
@@ -41,8 +42,13 @@ export function latestRunsPerSet(userId: number, limit?: number): RunSummary[] {
     ) g ON r.id = g.mid
     ORDER BY r.finished_at DESC, r.id DESC
     ${limit ? sql`LIMIT ${limit}` : sql``}
-  `) as RunSummary[];
-  return rows;
+  `) as Omit<RunSummary, "kind" | "tier">[];
+  return rows.map(withRules);
+}
+
+/** A run with the server's reading of it: what the set is, and how the score reads. */
+export function withRules<T extends Omit<RunSummary, "kind" | "tier">>(r: T): T & Pick<RunSummary, "kind" | "tier"> {
+  return { ...r, kind: setKind(r.setId), tier: scoreTier(r.correct, r.answered) };
 }
 
 /** The latest run for one set, including per-item results. */
@@ -57,7 +63,7 @@ export function latestRunForSet(userId: number, setId: string): ExerciseRun | nu
     .limit(1)
     .get();
   if (!row) return null;
-  return {
+  return withRules({
     setId: row.setId,
     setTitle: row.setTitle,
     total: row.total,
@@ -65,7 +71,7 @@ export function latestRunForSet(userId: number, setId: string): ExerciseRun | nu
     correct: row.correct,
     finishedAt: row.finishedAt,
     results: row.results,
-  };
+  });
 }
 
 // --- resumable exercise position ------------------------------------------

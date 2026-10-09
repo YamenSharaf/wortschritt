@@ -85,6 +85,13 @@ test("progress: ungraded answers count for today, not for accuracy", async () =>
   assert.equal(p.answeredToday, 6);
   assert.equal(p.totalAnswered, 5);
   assert.equal(p.totalCorrect, 1);
+  // The server's reading of them, so no client recomputes it.
+  assert.equal(p.goalLeft, Math.max(0, p.dailyGoal - 6));
+  assert.equal(p.goalPercent, Math.min(100, Math.round((6 / p.dailyGoal) * 100)));
+  assert.equal(p.accuracy, 20);
+  // Nothing finished yet: continue with an unfinished set, resumed.
+  assert.ok(["als-oder-wenn", "infinitiv-zu-frei"].includes(p.continue.setId));
+  assert.deepEqual([p.continue.kind, p.continue.resume], ["exercise", true]);
 });
 
 test("mistakes: unresolved by default, with the item and the wrong answers", async () => {
@@ -105,11 +112,23 @@ test("mistakes: unresolved by default, with the item and the wrong answers", asy
 
 test("set history: per-item totals in set order, and runs", async () => {
   // The server scores the run from the answers in this session.
+  await new Promise((r) => setTimeout(r, 1100)); // a later second than the open sets
   assert.equal((await admin("POST", "/api/runs", { setId: SET, done: true })).statusCode, 200);
   assert.equal((await admin("POST", "/api/runs", { setId: SET, done: true })).statusCode, 200, "nothing left to record");
   const h = (await admin("GET", `/api/history/sets/${SET}`)).json();
   assert.equal(h.runs.length, 1);
   assert.deepEqual([h.runs[0].answered, h.runs[0].correct, h.runs[0].total], [3, 1, itemIds.length]);
+  const [run] = (await admin("GET", "/api/runs")).json();
+  assert.deepEqual([run.kind, run.tier], ["exercise", "weak"], "1 of 3: weak");
+
+  // Continue: the finished run is newer than the open set from before…
+  let next = (await admin("GET", "/api/progress")).json().continue;
+  assert.deepEqual([next.setId, next.resume], [SET, false]);
+  // …until another set is left unfinished: that one is resumed.
+  await new Promise((r) => setTimeout(r, 1100));
+  await admin("POST", "/api/answers", { setId: "wann-als-wenn", itemId: (await admin("GET", "/api/exercises/wann-als-wenn")).json().items[0].id, response: { type: "cloze", blanks: { 1: "x" } } });
+  next = (await admin("GET", "/api/progress")).json().continue;
+  assert.deepEqual([next.setId, next.kind, next.resume], ["wann-als-wenn", "exercise", true]);
   assert.deepEqual(h.items.map((i: { itemId: string }) => i.itemId), itemIds.slice(0, 3));
   assert.deepEqual(h.items[1], { itemId: itemIds[1], attempts: 2, correct: 1, lastResult: true, lastResponse: "Als" });
 });
@@ -124,7 +143,7 @@ test("activity: days and events, including vocab reviews and notes", async () =>
   const v = (await admin("GET", "/api/history/activity")).json();
   assert.equal(v.timezone, "UTC");
   assert.equal(v.days.length, 1);
-  assert.deepEqual({ ...v.days[0], date: undefined }, { date: undefined, answered: 6, correct: 1, wordsAdded: 1, wordsReviewed: 2 });
+  assert.deepEqual({ ...v.days[0], date: undefined }, { date: undefined, answered: 7, correct: 1, wordsAdded: 1, wordsReviewed: 2 });
   assert.deepEqual(
     v.events.map((e: { kind: string }) => e.kind).sort(),
     ["note_created", "run", "sheet_viewed", "word_added"],
