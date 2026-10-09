@@ -41,6 +41,7 @@ import { speakSequence, stopSpeaking, ttsSupported } from "../lib/tts";
 import { useVocab } from "../lib/vocab";
 import { IS_NATIVE } from "../lib/platform";
 import {
+  appBarsStyle,
   capturePageKeys,
   getDeviceSettings,
   setDeviceSettings,
@@ -356,15 +357,31 @@ function StoryReaderView() {
     return () => {
       setKeepAwake(false);
       setSystemBarsVisible(true);
-      setSystemBarsStyle("app");
+      setSystemBarsStyle(appBarsStyle());
     };
   }, []);
-  const dark = useDarkPage(reader.theme);
+  // Volume keys turn pages when this device allows it (Android keeps them otherwise).
+  const device = useDeviceSettings();
+  const eink = device.eink !== "off";
+  const dark = useDarkPage(reader.theme, device.eink);
   useEffect(() => setSystemBarsStyle(dark ? "dark" : "light"), [dark]);
   useBackClose(sheet !== null, () => setSheet(null));
 
-  // Volume keys turn pages when this device allows it (Android keeps them otherwise).
-  const device = useDeviceSettings();
+  // E-ink: every N page turns, one frame of solid ink makes the screen redraw fully.
+  const [flash, setFlash] = useState(false);
+  const turns = useRef(0);
+  useEffect(() => {
+    if (!eink || !device.einkRefresh || !paged) return;
+    turns.current += 1;
+    if (turns.current > 1 && (turns.current - 1) % device.einkRefresh === 0) setFlash(true);
+    // Counts page changes only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+  useEffect(() => {
+    if (!flash) return;
+    const t = window.setTimeout(() => setFlash(false), 250);
+    return () => window.clearTimeout(t);
+  }, [flash]);
   useEffect(() => {
     if (!paged || !device.pageKeys) return;
     return capturePageKeys((key) => turn((key === "VolumeDown") !== device.invertPageKeys ? 1 : -1));
@@ -375,6 +392,8 @@ function StoryReaderView() {
   const hold = useRef<{ timer: number; x: number; y: number } | null>(null);
   const held = useRef(false);
   const toggleDark = () => {
+    // E-ink mode has its own light and dark (the whole app switches).
+    if (eink) return setDeviceSettings({ eink: device.eink === "dark" ? "light" : "dark" });
     if (!dark) {
       lightTheme.current = reader.theme;
       changeReader({ theme: "dark" });
@@ -756,6 +775,7 @@ function StoryReaderView() {
 
   return (
     <div className="reader fixed inset-0 z-40 overflow-hidden" data-theme={reader.theme} lang="de" {...cornerHold}>
+      {flash && <div className="eink-flash" aria-hidden />}
       {/* Top bar: hides while reading; a tap on the page (not a word) brings it back. */}
       <div
         className={`reader-bar absolute inset-x-0 top-0 z-20 pt-[var(--sa-top)] transition-transform duration-200 ${
@@ -1024,6 +1044,7 @@ function ReaderPanel({
 }) {
   const row = "flex flex-wrap items-center justify-between gap-2";
   const label = "text-sm text-ink-muted";
+  const device = useDeviceSettings();
   const stepBtn =
     "grid h-8 w-8 place-items-center rounded-control border border-line-control bg-surface text-ink transition-colors hover:bg-surface-sunken";
   return (
@@ -1083,6 +1104,19 @@ function ReaderPanel({
           onChange={(width) => onChange({ width })}
         />
       </div>
+      {device.eink !== "off" ? (
+        <div className={row}>
+          <span className={label}>E-ink</span>
+          <Segmented
+            value={device.eink}
+            options={[
+              { id: "light", label: "Light" },
+              { id: "dark", label: "Dark" },
+            ]}
+            onChange={(eink) => setDeviceSettings({ eink })}
+          />
+        </div>
+      ) : (
       <div className={row}>
         <span className={label}>Theme</span>
         <div className="flex gap-2">
@@ -1102,6 +1136,7 @@ function ReaderPanel({
           ))}
         </div>
       </div>
+      )}
       <label className={`${row} cursor-pointer`}>
         <span className={label}>Underline words I've saved</span>
         <input
@@ -1172,8 +1207,8 @@ function PageKeySettings({ row, label }: { row: string; label: string }) {
   );
 }
 
-/** Whether the reader's page is dark (its theme, or the device's with Auto). */
-function useDarkPage(theme: ReaderSettings["theme"]): boolean {
+/** Whether the reader's page is dark (e-ink mode's choice, its theme, or the device's with Auto). */
+function useDarkPage(theme: ReaderSettings["theme"], eink: "off" | "light" | "dark"): boolean {
   const query = "(prefers-color-scheme: dark)";
   const [systemDark, setSystemDark] = useState(() => window.matchMedia(query).matches);
   useEffect(() => {
@@ -1182,6 +1217,7 @@ function useDarkPage(theme: ReaderSettings["theme"]): boolean {
     m.addEventListener("change", on);
     return () => m.removeEventListener("change", on);
   }, []);
+  if (eink !== "off") return eink === "dark";
   return theme === "dark" || (theme === "auto" && systemDark);
 }
 

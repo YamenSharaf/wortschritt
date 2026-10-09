@@ -28,6 +28,11 @@ export function setSystemBarsStyle(style: "light" | "dark" | "app"): void {
   call((m) => m.setBarsStyle(style));
 }
 
+/** The bars' style outside the reader: e-ink mode's light or dark, else the app's theme. */
+export function appBarsStyle(): "light" | "dark" | "app" {
+  return settings.eink === "off" ? "app" : settings.eink;
+}
+
 /** Keep the screen on (while reading). */
 export function setKeepAwake(on: boolean): void {
   call((m) => m.setKeepAwake(on));
@@ -83,8 +88,12 @@ export type DeviceSettings = {
   pageKeys: boolean;
   /** Volume up = next page. */
   invertPageKeys: boolean;
+  /** E-ink display: a flat, still, black-and-white app, light or dark. */
+  eink: "off" | "light" | "dark";
+  /** E-ink: flash the screen every this many page turns to clear ghosting (0 = never). */
+  einkRefresh: number;
 };
-const DEFAULTS: DeviceSettings = { pageKeys: false, invertPageKeys: false };
+const DEFAULTS: DeviceSettings = { pageKeys: false, invertPageKeys: false, eink: "off", einkRefresh: 0 };
 const KEY = "device-settings";
 
 let settings: DeviceSettings = DEFAULTS;
@@ -93,6 +102,14 @@ const listeners = new Set<(s: DeviceSettings) => void>();
 /** Native start-up hands in what Preferences holds (localStorage can be cleared by the OS). */
 export function hydrateDeviceSettings(json: string | null): void {
   settings = parse(json);
+  applyEink();
+}
+
+/** E-ink mode is CSS on <html data-eink="light|dark"> (index.css). */
+function applyEink(): void {
+  const root = document.documentElement;
+  if (settings.eink === "off") delete root.dataset.eink;
+  else root.dataset.eink = settings.eink;
 }
 
 function parse(json: string | null): DeviceSettings {
@@ -109,6 +126,7 @@ if (!NATIVE) {
   } catch {
     /* storage blocked: defaults */
   }
+  applyEink();
 }
 
 export function getDeviceSettings(): DeviceSettings {
@@ -117,6 +135,7 @@ export function getDeviceSettings(): DeviceSettings {
 
 export function setDeviceSettings(patch: Partial<DeviceSettings>): void {
   settings = { ...settings, ...patch };
+  applyEink();
   const json = JSON.stringify(settings);
   if (native) call((m) => m.saveDeviceSettings(json));
   else {

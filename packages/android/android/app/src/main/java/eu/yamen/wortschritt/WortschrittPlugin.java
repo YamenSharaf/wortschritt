@@ -1,6 +1,7 @@
 package eu.yamen.wortschritt;
 
 import android.graphics.Color;
+import android.os.Build;
 import android.view.KeyEvent;
 import android.view.Window;
 import android.view.WindowManager;
@@ -39,6 +40,15 @@ public class WortschrittPlugin extends Plugin {
             settings.setSupportZoom(false);
             settings.setBuiltInZoomControls(false);
         });
+    }
+
+    /** Who made the device: a Boox says ONYX, and starts in e-ink mode. */
+    @PluginMethod
+    public void info(PluginCall call) {
+        JSObject result = new JSObject();
+        result.put("manufacturer", Build.MANUFACTURER);
+        result.put("model", Build.MODEL);
+        call.resolve(result);
     }
 
     @PluginMethod

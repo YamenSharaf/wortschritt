@@ -7,9 +7,10 @@ import { App } from "@capacitor/app";
 import { registerPlugin, SystemBars, SystemBarsStyle } from "@capacitor/core";
 import { Preferences } from "@capacitor/preferences";
 import type { PluginListenerHandle } from "@capacitor/core";
-import { closeTopSheet, hydrateDeviceSettings, type PageKey } from "../device";
+import { closeTopSheet, hydrateDeviceSettings, setDeviceSettings, type PageKey } from "../device";
 
 interface WortschrittPlugin {
+  info(): Promise<{ manufacturer: string; model: string }>;
   setKeepAwake(options: { on: boolean }): Promise<void>;
   setPageKeys(options: { on: boolean }): Promise<void>;
   addListener(event: "pageKey", listener: (e: { key: PageKey }) => void): Promise<PluginListenerHandle>;
@@ -47,7 +48,13 @@ export async function saveDeviceSettings(json: string): Promise<void> {
 
 /** Start-up: device settings, and the back button (close a sheet, go back, or leave from Home). */
 export async function startDevice(): Promise<void> {
-  hydrateDeviceSettings((await Preferences.get({ key: SETTINGS_KEY })).value);
+  const stored = (await Preferences.get({ key: SETTINGS_KEY })).value;
+  hydrateDeviceSettings(stored);
+  // A Boox (Onyx) starts in e-ink mode until the learner chooses otherwise.
+  if (!stored?.includes('"eink"')) {
+    const { manufacturer } = await Wortschritt.info().catch(() => ({ manufacturer: "" }));
+    if (/onyx/i.test(manufacturer)) setDeviceSettings({ eink: "light", einkRefresh: 10 });
+  }
   void App.addListener("backButton", ({ canGoBack }) => {
     if (closeTopSheet()) return;
     if (canGoBack && window.location.pathname !== "/") window.history.back();

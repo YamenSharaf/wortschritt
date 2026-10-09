@@ -11,6 +11,8 @@ import { useAuth } from "../lib/auth";
 import { timeAgo } from "../lib/time";
 import { useAsync } from "../lib/useAsync";
 import { apiUrl } from "../lib/platform";
+import { setDeviceSettings } from "../lib/device";
+import { useDeviceSettings } from "../lib/useDevice";
 import {
   deviceVoices,
   getDeviceVoicePref,
@@ -193,7 +195,57 @@ function Learning() {
         </button>
         {saved && <span className="ml-3 text-sm text-success">Saved</span>}
       </div>
+      <ThisDevice />
     </div>
+  );
+}
+
+const EINK_OPTIONS = [
+  { value: "off", label: "Off" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+] as const;
+const REFRESH_OPTIONS = [
+  { value: "0", label: "Never" },
+  { value: "5", label: "5" },
+  { value: "10", label: "10" },
+  { value: "20", label: "20" },
+] as const;
+
+/** Settings for this screen only (kept on the device; they apply at once). */
+function ThisDevice() {
+  const device = useDeviceSettings();
+  return (
+    <section className="mt-10 space-y-4">
+      <h2 className="text-xl font-semibold tracking-[-0.01em]">This device</h2>
+      <div className="space-y-2">
+        <p className="text-sm font-medium">E-ink display</p>
+        <TabPills
+          label="E-ink display"
+          size="sm"
+          value={device.eink}
+          onChange={(eink) => setDeviceSettings({ eink })}
+          options={EINK_OPTIONS}
+        />
+        <p className="text-xs text-ink-subtle">
+          For e-readers like a Boox: black and white, no glass or motion, instant page turns. In the reader,
+          hold the bottom-right corner to switch between light and dark.
+        </p>
+      </div>
+      {device.eink !== "off" && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium">Full refresh every … pages</p>
+          <TabPills
+            label="Full refresh"
+            size="sm"
+            value={String(device.einkRefresh) as (typeof REFRESH_OPTIONS)[number]["value"]}
+            onChange={(n) => setDeviceSettings({ einkRefresh: Number(n) })}
+            options={REFRESH_OPTIONS}
+          />
+          <p className="text-xs text-ink-subtle">Flashes the screen once to clear ghosting while you read.</p>
+        </div>
+      )}
+    </section>
   );
 }
 

@@ -14,6 +14,8 @@ import {
   VocabIcon,
 } from "./components/icons";
 import { setServerTts } from "./lib/tts";
+import { appBarsStyle, setSystemBarsStyle } from "./lib/device";
+import { useDeviceSettings } from "./lib/useDevice";
 import { VocabProvider } from "./lib/vocab";
 
 const navItems = [
@@ -34,6 +36,10 @@ export function App() {
   useEffect(() => {
     if (!immersive && document.fullscreenElement) void document.exitFullscreen().catch(() => {});
   }, [immersive]);
+
+  // Status bar icons: e-ink mode's light or dark, else the app's theme.
+  const { eink } = useDeviceSettings();
+  useEffect(() => setSystemBarsStyle(appBarsStyle()), [eink]);
 
   // Wire up the server voice (if one is chosen and available).
   useEffect(() => {
