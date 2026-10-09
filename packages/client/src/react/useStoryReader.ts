@@ -83,7 +83,7 @@ export function useReaderSettings() {
   const api = useApi();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [reader, setReader] = useState<ReaderSettings>(() => readerSettingsSchema.parse({}));
-  const saveTimer = useRef<TimerId>();
+  const saveTimer = useRef<TimerId | undefined>(undefined);
   const pending = useRef<Settings | null>(null);
 
   useEffect(() => {
@@ -131,7 +131,7 @@ export function useStoryTranslations({ storyId, enabled }: { storyId?: string; e
   const [error, setError] = useState<string | null>(null);
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const queued = useRef(new Set<number>());
-  const flushTimer = useRef<TimerId>();
+  const flushTimer = useRef<TimerId | undefined>(undefined);
   const inFlight = useRef(new Set<number>());
   const linesRef = useRef(lines);
   linesRef.current = lines;

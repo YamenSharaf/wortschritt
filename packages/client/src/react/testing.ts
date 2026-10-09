@@ -7,6 +7,14 @@ import { ClientProvider } from "./context";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+// React 19 deprecates react-test-renderer for apps' UI tests; here it only
+// runs hooks without a DOM (which is the point), so drop just that notice.
+const consoleError = console.error;
+console.error = (...args: unknown[]) => {
+  if (typeof args[0] === "string" && args[0].includes("react-test-renderer is deprecated")) return;
+  consoleError(...args);
+};
+
 /** Render a hook with a fake API (and speech); `current()` is its latest return value. */
 export function renderHook<T>(hook: () => T, api: Partial<Api>, speech?: Partial<Speech>) {
   let value: T;

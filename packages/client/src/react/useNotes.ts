@@ -88,7 +88,7 @@ export function useNoteEditor(id: string) {
   const [undoBody, setUndoBody] = useState<string | null>(null);
   const [savingSheet, setSavingSheet] = useState(false);
   const ready = useRef(false);
-  const saveTimer = useRef<TimerId>();
+  const saveTimer = useRef<TimerId | undefined>(undefined);
   /** The fields as last loaded or saved: only a difference is saved. */
   const saved = useRef("");
 
