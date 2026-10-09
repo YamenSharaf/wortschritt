@@ -3,6 +3,7 @@ import type {
   TtsAdminSettings,
   AnswerBody,
   AnswerVerdict,
+  GenerateMoreResult,
   ApiTokenView,
   ImportedItem,
   OAuthGrantView,
@@ -387,20 +388,16 @@ export const api = {
   // assistant
   assistantStatus: () =>
     req<{ enabled: boolean; model: string }>("/api/assistant/status"),
-  generateMore: (body: {
-    count?: number;
-    set: {
-      title: string;
-      level: string;
-      tags: string[];
-      types: string[];
-      samples: ExerciseItem[];
-    };
-  }) =>
-    req<{ items: ExerciseItem[]; received: number }>("/api/assistant/generate", {
+  /** The server writes more items for the set and keeps them for this learner. */
+  generateMore: (setId: string, count: number) =>
+    req<GenerateMoreResult>(`/api/exercises/${encodeURIComponent(setId)}/generate`, {
       method: "POST",
-      body: JSON.stringify(body),
+      body: JSON.stringify({ count }),
     }),
+  generatedItems: (setId: string) =>
+    req<ExerciseItem[]>(`/api/exercises/${encodeURIComponent(setId)}/generated`),
+  removeGeneratedItems: (setId: string) =>
+    req<{ removed: number }>(`/api/exercises/${encodeURIComponent(setId)}/generated`, { method: "DELETE" }),
 };
 
 /**

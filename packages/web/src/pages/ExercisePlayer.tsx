@@ -29,8 +29,10 @@ export function ExercisePlayer() {
   const set = useAsync(() => api.exercise(id!), [id]);
   // Resume where the learner left off (null if none / on error).
   const progress = useAsync(() => api.exerciseProgress(id!).catch(() => null), [id]);
+  // Items the server generated for this learner earlier ("generate more").
+  const extra = useAsync(() => api.generatedItems(id!).catch(() => []), [id]);
 
-  if (set.status === "loading" || progress.status === "loading")
+  if (set.status === "loading" || progress.status === "loading" || extra.status === "loading")
     return <p className="text-ink-muted">Loading…</p>;
   if (set.status === "error")
     return (
@@ -46,6 +48,7 @@ export function ExercisePlayer() {
   return (
     <Runner
       set={set.data}
+      extra={extra.status === "ready" ? extra.data : []}
       initial={progress.status === "ready" ? progress.data : null}
     />
   );
@@ -53,22 +56,24 @@ export function ExercisePlayer() {
 
 function Runner({
   set,
+  extra,
   initial,
 }: {
   set: ExerciseSet;
+  extra: ExerciseItem[];
   initial: ExerciseProgress | null;
 }) {
   const setId = set.id;
   const title = set.title;
-  const [items, setItems] = useState<ExerciseItem[]>(set.items);
+  const [items, setItems] = useState<ExerciseItem[]>(() => [...set.items, ...extra]);
   const [index, setIndex] = useState(() =>
-    initial ? Math.min(Math.max(0, initial.index), set.items.length - 1) : 0,
+    initial ? Math.min(Math.max(0, initial.index), set.items.length + extra.length - 1) : 0,
   );
   // Per-item correctness / responses for THIS run, keyed by item id. Drives the
   // live score, the question navigator, and the run recorded at the end.
   const [results, setResults] = useState<Record<string, boolean>>(() => {
     if (!initial) return {};
-    const ids = new Set(set.items.map((i) => i.id));
+    const ids = new Set([...set.items, ...extra].map((i) => i.id));
     return Object.fromEntries(
       Object.entries(initial.results).filter(([k]) => ids.has(k)),
     );
@@ -192,16 +197,8 @@ function Runner({
     setGenError(null);
     const startAt = items.length;
     try {
-      const res = await api.generateMore({
-        count: genCount,
-        set: {
-          title: set.title,
-          level: set.level,
-          tags: set.tags,
-          types: [...new Set(set.items.map((i) => i.type))],
-          samples: set.items.slice(0, 3),
-        },
-      });
+      // The server writes them (learning from your mistakes) and keeps them.
+      const res = await api.generateMore(setId, genCount);
       if (res.items.length === 0) {
         setGenError(
           res.received > 0
@@ -222,6 +219,13 @@ function Runner({
     } finally {
       setGenBusy(false);
     }
+  }
+
+  const extraCount = items.length - set.items.length;
+  async function removeExtras() {
+    await api.removeGeneratedItems(setId);
+    setItems(set.items);
+    setIndex((i) => Math.min(i, set.items.length - 1));
   }
 
   // Once an item is resolved, Enter advances — unless you're typing in a live
@@ -325,6 +329,14 @@ function Runner({
               </p>
             )}
           </div>
+        )}
+        {extraCount > 0 && (
+          <p className="mb-4 text-sm text-ink-muted">
+            This set includes {extraCount} extra {extraCount === 1 ? "exercise" : "exercises"} generated for you.{" "}
+            <button type="button" onClick={() => void removeExtras().catch(() => {})} className="font-medium text-brand-ink underline underline-offset-2">
+              Remove {extraCount === 1 ? "it" : "them"}
+            </button>
+          </p>
         )}
         <Link
           to="/exercises"

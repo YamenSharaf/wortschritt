@@ -15,6 +15,7 @@ import {
 import { getStoredCover, coverVersion } from "./covers";
 import { createNote, getNote, listNotes, removeNote, updateNote } from "./notes";
 import { AnswerError, answerOffline, finish } from "./answers";
+import { allGenerated, listGenerated } from "./generated";
 import { getProgressSummary } from "./progress";
 import { getSeriesView, listSeries } from "./series";
 import { getSettings } from "./settings";
@@ -40,7 +41,7 @@ const LOG_DAYS = 90;
 const OPS_DAYS = 30;
 const HORIZON_KEY = "sync.horizon";
 
-type Kind = "story" | "series" | "vocab" | "group" | "note" | "settings";
+type Kind = "story" | "series" | "vocab" | "group" | "note" | "settings" | "generated";
 
 function horizon(): number {
   const row = db.select().from(schema.appSettings).where(eq(schema.appSettings.key, HORIZON_KEY)).get();
@@ -85,7 +86,7 @@ function stats(userId: number): SyncStats {
   };
 }
 
-const emptyDeleted = (): SyncChanges["deleted"] => ({ stories: [], series: [], vocab: [], groups: [], notes: [] });
+const emptyDeleted = (): SyncChanges["deleted"] => ({ stories: [], series: [], vocab: [], groups: [], notes: [], generated: [] });
 
 /** Everything this learner has, for a first sync (or one after a long time offline). */
 function snapshot(userId: number, cursor: number): SyncChanges {
@@ -99,6 +100,7 @@ function snapshot(userId: number, cursor: number): SyncChanges {
     vocab: listVocab(userId),
     groups: listGroups(userId),
     notes: listNotes(userId),
+    generated: [...allGenerated(userId)].map(([setId, items]) => ({ setId, items })),
     settings: getSettings(userId),
     deleted: emptyDeleted(),
     stats: stats(userId),
@@ -129,6 +131,7 @@ export function syncChanges(userId: number, since: number | null, libraryVersion
     vocab: [],
     groups: [],
     notes: [],
+    generated: [],
     settings: null,
     deleted: emptyDeleted(),
     stats: stats(userId),
@@ -176,6 +179,12 @@ export function syncChanges(userId: number, since: number | null, libraryVersion
       case "settings":
         out.settings = getSettings(userId);
         break;
+      case "generated": {
+        const items = listGenerated(userId, itemId);
+        if (items.length > 0) out.generated.push({ setId: itemId, items });
+        else out.deleted.generated.push(itemId);
+        break;
+      }
     }
   }
   for (const id of seriesIds) {

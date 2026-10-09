@@ -63,7 +63,8 @@ guide the tutor's "generate more items" uses.
 - When the learner's input isn't the exact canonical form (a miss, or a lenient
   accept), the app reveals `accept[0]` so they see the correct spelling.
 - **AI grading** (`transform` and `sentence_build` only — cloze blanks are
-  always graded locally): on a local miss, if the learner has an AI tutor set up
+  always graded by their `accept` list): the server grades every answer; on a
+  miss, if the learner has an AI tutor set up
   and the `llmGrading` setting on (the default), the tutor judges the answer,
   using `accept` as reference answers.
 - **`open`** — for open-ended tasks with many correct answers (free
