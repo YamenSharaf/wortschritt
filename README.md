@@ -201,7 +201,7 @@ user (a `user_id` column, deleted together with the user); content is shared.
 | `api_tokens` | personal API tokens (SHA-256 only) |
 | `oauth_clients`, `oauth_codes`, `oauth_grants` | MCP sign-ins: registered apps, one-time codes, granted access (SHA-256 only) |
 | `app_settings` | instance-wide settings, e.g. when self-registration closes |
-| `settings` | per user: display name, CEFR level, daily goal, theme, AI grading on/off, "generate more" batch size |
+| `settings` | per user: display name, CEFR level, daily goal, AI grading on/off, "generate more" batch size |
 | `attempts` | one row per answered item: right/wrong, what was answered, how it was graded (the log progress and history are derived from) |
 | `exercise_runs` | one row per completed pass through an exercise set |
 | `exercise_progress` | resumable position + answers for an unfinished set |

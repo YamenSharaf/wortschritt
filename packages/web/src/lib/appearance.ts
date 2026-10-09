@@ -20,6 +20,10 @@ export function applyAppearance(scheme: Scheme, display: Display) {
 /** Whether this device shows the e-ink look. */
 export const isEink = () => document.documentElement.dataset.display === "eink";
 
+/** How to scroll from code: instantly on e-ink (a glide smears) and with reduced motion. */
+export const scrollBehavior = (): ScrollBehavior =>
+  isEink() || window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+
 /** The scheme and display chosen on this device; changing one applies it at once. */
 export function useAppearance() {
   const [scheme, setScheme] = usePreference(preferences.colorScheme);

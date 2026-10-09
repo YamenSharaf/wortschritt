@@ -37,7 +37,7 @@ import {
 import { TapToTranslate } from "../components/TapToTranslate";
 import { btn, card } from "../components/ui";
 import { api } from "../lib/api";
-import { isEink } from "../lib/appearance";
+import { isEink, scrollBehavior } from "../lib/appearance";
 import { useVocab } from "../lib/vocab";
 
 const FONTS: Record<ReaderSettings["font"], { label: string; family: string }> = {
@@ -365,7 +365,7 @@ function StoryReaderView() {
         const sc = scrollerRef.current;
         const el = blockRefs.current[idx];
         if (sc && el && (el.offsetTop < sc.scrollTop + 64 || el.offsetTop + el.offsetHeight > sc.scrollTop + sc.clientHeight - 48)) {
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
         }
       },
     });

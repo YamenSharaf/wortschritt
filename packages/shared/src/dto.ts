@@ -47,7 +47,6 @@ export const settingsSchema = z.object({
   displayName: z.string().min(1).default("Learner"),
   level: cefrLevel.default("A1"),
   dailyGoal: z.number().int().min(1).max(500).default(20),
-  theme: z.enum(["light", "dark", "system"]).default("system"),
   /** Let the AI tutor grade free-text answers (only used when it's configured). */
   llmGrading: z.boolean().default(true),
   /** Default batch size for "generate N more" on the exercise-done screen. */
