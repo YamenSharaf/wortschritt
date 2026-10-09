@@ -45,6 +45,7 @@ import type {
   WordDetails,
   WordLookup,
 } from "@mdb/shared";
+import { apiFetch } from "./platform";
 
 /** Pull the grammatical forms out of an AI word lookup for persisting. */
 export function formsFromLookup(d: WordLookup): VocabFormsInput | undefined {
@@ -64,7 +65,7 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     ...(init?.body != null ? { "content-type": "application/json" } : {}),
     ...((init?.headers as Record<string, string>) ?? {}),
   };
-  const res = await fetch(path, { credentials: "same-origin", ...init, headers });
+  const res = await apiFetch(path, { ...init, headers });
   if (res.status === 401) throw new ApiError(401, "unauthenticated");
   if (!res.ok) {
     let message = res.statusText;
