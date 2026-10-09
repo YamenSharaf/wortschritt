@@ -1,3 +1,5 @@
+import { useAuthedUrl } from "../lib/useAuthedUrl";
+
 /**
  * A story's, chapter's or book's cover (its drawn art, or a cover generated
  * from the title). The URL carries the art's version, so it caches well.
@@ -18,9 +20,12 @@ export function Cover({
   className?: string;
 }) {
   const v = version ?? `g-${fallbackKey}`;
+  const src = useAuthedUrl(
+    `/api/${kind === "series" ? "series" : "stories"}/${id}/cover.svg?v=${encodeURIComponent(v)}`,
+  );
   return (
     <img
-      src={`/api/${kind === "series" ? "series" : "stories"}/${id}/cover.svg?v=${encodeURIComponent(v)}`}
+      src={src ?? undefined}
       alt=""
       loading="lazy"
       draggable={false}

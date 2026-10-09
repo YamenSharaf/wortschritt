@@ -6,6 +6,7 @@ import { CoverUpload } from "../components/CoverUpload";
 import { CheckIcon, ChevronLeftIcon, DownloadIcon, PlayIcon, TrashIcon } from "../components/icons";
 import { Pill, btn } from "../components/ui";
 import { api } from "../lib/api";
+import { IS_NATIVE } from "../lib/platform";
 
 /** A book: what it's about, how far you are, and its chapters. */
 export function SeriesPage() {
@@ -164,7 +165,7 @@ export function SeriesPage() {
         Books are written by an AI agent connected via MCP (ask it to continue this one with its next chapters).
       </p>
       <div className="flex flex-wrap gap-2">
-        {view.written > 0 && (
+        {view.written > 0 && !IS_NATIVE && (
           <a
             href={`/api/series/${view.id}/epub`}
             download

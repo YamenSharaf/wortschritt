@@ -4,6 +4,8 @@
  * synthesis. If the server clip fails to play, it falls back too.
  */
 
+import { apiFetch, authedUrl } from "./platform";
+
 type ServerTts = { enabled: boolean; voice: string };
 let serverTts: ServerTts = { enabled: false, voice: "" };
 
@@ -102,15 +104,35 @@ function speakDevice(text: string, lang: string) {
 
 let audio: HTMLAudioElement | null = null;
 function speakServer(text: string, voice: string, onFail: () => void) {
+  if (audio) audio.pause();
+  playClip(clipUrl(text, voice)).catch(onFail);
+}
+
+/**
+ * Play a clip from the server and resolve when it ends. The URL comes from
+ * `authedUrl` (the native build can't load /api/tts straight into <audio>).
+ */
+async function playClip(path: string, rate = 1): Promise<void> {
+  const { url, release } = await authedUrl(path);
   try {
-    if (audio) audio.pause();
-    const url = `/api/tts?voice=${encodeURIComponent(voice)}&text=${encodeURIComponent(text)}`;
-    audio = new Audio(url);
-    audio.onerror = onFail;
-    void audio.play().catch(onFail);
-  } catch {
-    onFail();
+    await new Promise<void>((resolve, reject) => {
+      const a = new Audio(url);
+      audio = a;
+      a.playbackRate = rate;
+      a.onended = () => resolve();
+      // A stopped clip never ends; let it go too.
+      a.onpause = () => a.ended || resolve();
+      a.onerror = () => reject(new Error("clip failed"));
+      a.play().catch(reject);
+    });
+  } finally {
+    release();
   }
+}
+
+/** Play a sample of a server voice (the admin's voice test). */
+export function playSample(voice: string, text: string): Promise<void> {
+  return playClip(clipUrl(text, voice));
 }
 
 export function speak(text: string, lang = "de-DE"): void {
@@ -187,20 +209,13 @@ function prefetchServer(text: string, voice: string): void {
   const url = clipUrl(text, voice);
   if (prefetched.has(url)) return;
   prefetched.add(url);
-  void fetch(url, { credentials: "same-origin" })
+  void apiFetch(url)
     .then((r) => r.arrayBuffer())
     .catch(() => prefetched.delete(url));
 }
 
 function playServer(text: string, voice: string, rate: number): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const a = new Audio(clipUrl(text, voice));
-    audio = a;
-    a.playbackRate = rate;
-    a.onended = () => resolve();
-    a.onerror = () => reject(new Error("clip failed"));
-    a.play().catch(reject);
-  });
+  return playClip(clipUrl(text, voice), rate);
 }
 
 /**

@@ -39,6 +39,7 @@ import { btn, card } from "../components/ui";
 import { api } from "../lib/api";
 import { speakSequence, stopSpeaking, ttsSupported } from "../lib/tts";
 import { useVocab } from "../lib/vocab";
+import { IS_NATIVE } from "../lib/platform";
 
 const FONTS: Record<ReaderSettings["font"], { label: string; family: string }> = {
   serif: { label: "Serif", family: '"Literata", Georgia, "Times New Roman", serif' },
@@ -742,13 +743,15 @@ function StoryReaderView() {
               <>
                 <ReaderPanel value={reader} onChange={changeReader} canSpeak={canSpeak} canTranslate={aiEnabled || hasAnyLines} />
                 <div className="reader-muted flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                  <a
-                    href={book ? `/api/series/${book.id}/epub` : `/api/stories/${story.id}/epub`}
-                    download
-                    className="underline"
-                  >
-                    Download {book ? "the book" : "this story"} as EPUB
-                  </a>
+                  {!IS_NATIVE && (
+                    <a
+                      href={book ? `/api/series/${book.id}/epub` : `/api/stories/${story.id}/epub`}
+                      download
+                      className="underline"
+                    >
+                      Download {book ? "the book" : "this story"} as EPUB
+                    </a>
+                  )}
                   <Link to={`/stories/${story.id}/edit`} className="underline">
                     Edit this story
                   </Link>

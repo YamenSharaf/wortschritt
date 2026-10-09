@@ -45,3 +45,16 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   if (res.status !== 401 || !(await session.refresh())) return res;
   return send();
 }
+
+/**
+ * A URL an <img> or <audio> can load for an API path. Those can't send a bearer
+ * token, so the native build fetches the file itself and hands back a blob URL;
+ * call `release` when done with it. On the web it's the path, as before.
+ */
+export async function authedUrl(path: string): Promise<{ url: string; release: () => void }> {
+  if (!IS_NATIVE) return { url: path, release: () => {} };
+  const res = await apiFetch(path);
+  if (!res.ok) throw new Error(`${res.status} ${path}`);
+  const url = URL.createObjectURL(await res.blob());
+  return { url, release: () => URL.revokeObjectURL(url) };
+}

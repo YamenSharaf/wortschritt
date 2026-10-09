@@ -10,6 +10,7 @@ import { api, ApiError } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { timeAgo } from "../lib/time";
 import { useAsync } from "../lib/useAsync";
+import { apiUrl } from "../lib/platform";
 import {
   deviceVoices,
   getDeviceVoicePref,
@@ -485,7 +486,7 @@ function ApiTokens() {
       <p className="text-sm text-ink-muted">
         For scripts and integrations: send <code>Authorization: Bearer &lt;token&gt;</code>. A
         token can do everything you can, except manage tokens or change your password. API docs:{" "}
-        <a href="/api/docs" className="underline" target="_blank" rel="noreferrer">
+        <a href={apiUrl("/api/docs")} className="underline" target="_blank" rel="noreferrer">
           /api/docs
         </a>
         .
