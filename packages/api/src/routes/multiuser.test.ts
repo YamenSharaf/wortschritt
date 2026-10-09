@@ -146,13 +146,11 @@ test("learner data is private: another user can't read or change it", async () =
   const group = (await admin("POST", "/api/vocab-groups", { name: "Wohnen" })).json();
   await admin("POST", `/api/vocab-groups/${group.id}/words`, { word: "haus" });
   const note = (await admin("POST", "/api/notes", { title: "Dativ", body: "mit + Dativ" })).json();
-  await admin("POST", "/api/attempts", { setId: "perfekt-bilden", itemId: "p1", correct: true });
-  await admin("POST", "/api/runs", {
-    setId: "perfekt-bilden", setTitle: "Perfekt", total: 1, answered: 1, correct: 1,
-    results: { p1: true },
-  });
+  const answerPfd = (text: string) => ({ setId: "perfekt-bilden", itemId: "pfd-01", response: { type: "transform", text } });
+  assert.equal((await admin("POST", "/api/answers", answerPfd("Ich habe das größte Stück Kuchen gegessen."))).json().correct, true);
+  await admin("POST", "/api/runs", { setId: "perfekt-bilden", done: false });
   await admin("POST", "/api/sheet-views", { sheetId: "perfekt", title: "Perfekt" });
-  await admin("PUT", "/api/exercise-progress/perfekt-bilden", { index: 3, results: {} });
+  await admin("PUT", "/api/exercise-progress/perfekt-bilden", { index: 3 });
   const settings = (await admin("GET", "/api/settings")).json();
   await admin("PUT", "/api/settings", { ...settings, displayName: "Yamen" });
 
@@ -181,6 +179,9 @@ test("learner data is private: another user can't read or change it", async () =
   await anna("DELETE", `/api/vocab-groups/${group.id}/words/haus`);
   await anna("DELETE", `/api/vocab-groups/${group.id}`);
   await anna("DELETE", "/api/exercise-progress/perfekt-bilden");
+  // Her answers to the same set go to her own session and history.
+  await anna("POST", "/api/answers", answerPfd("Ich esse Kuchen."));
+  await anna("POST", "/api/runs", { setId: "perfekt-bilden", done: true });
   // The same word saved by anna is her own copy.
   await anna("POST", "/api/vocab", { word: "haus", translation: "home (anna)" });
   await anna("POST", "/api/vocab/haus/study", { known: false });
@@ -195,7 +196,9 @@ test("learner data is private: another user can't read or change it", async () =
   assert.equal(groups[0].count, 1, "anna's 'katze' didn't land in yamen's group");
   assert.equal((await admin("GET", `/api/notes/${note.id}`)).json().title, "Dativ");
   assert.equal((await admin("GET", "/api/progress")).json().totalAnswered, 1);
-  assert.equal((await admin("GET", "/api/exercise-progress/perfekt-bilden")).json().index, 3);
+  const session = (await admin("GET", "/api/exercise-progress/perfekt-bilden")).json();
+  assert.deepEqual([session.index, session.results], [3, { "pfd-01": true }]);
+  assert.equal((await admin("GET", "/api/runs/perfekt-bilden")).json().correct, 1);
   assert.equal((await admin("GET", "/api/settings")).json().displayName, "Yamen");
   assert.equal((await anna("GET", "/api/vocab/haus")).json().translation, "home (anna)");
 });
@@ -332,11 +335,12 @@ test("sync is private: changes and pushed actions stay with their user", async (
 test("sync stats are private: numbers and set positions stay with their user", async () => {
   const now = Math.floor(Date.now() / 1000);
   await anna("POST", "/api/sync/push", { ops: [
-    { opId: "anna-stats-run", type: "run", data: { setId: "anna-set", setTitle: "Anna", total: 1, answered: 1, correct: 1, results: { a: true } } },
-    { opId: "anna-stats-pos", type: "exerciseProgressSave", setId: "anna-set", at: now, data: { index: 2, results: {}, responses: {} } },
+    { opId: "anna-stats-answer", type: "answer", at: now, data: { setId: "als-oder-wenn", itemId: "aw-01", response: { type: "cloze", blanks: { 1: "als" } } } },
+    { opId: "anna-stats-run", type: "finish", data: { setId: "als-oder-wenn", done: true } },
+    { opId: "anna-stats-pos", type: "exerciseProgressSave", setId: "anna-set", at: now, data: { index: 2 } },
   ] });
   const mine = (await admin("GET", "/api/sync/changes")).json() as { stats: { runs: { setId: string }[]; exerciseProgress: { setId: string }[] } };
-  assert.ok(!mine.stats.runs.some((r) => r.setId === "anna-set"));
+  assert.ok(!mine.stats.runs.some((r) => r.setId === "als-oder-wenn"));
   assert.ok(!mine.stats.exerciseProgress.some((p) => p.setId === "anna-set"));
   // Clearing a set id from my account doesn't touch Anna's position.
   await admin("POST", "/api/sync/push", { ops: [{ opId: "admin-clear-anna", type: "exerciseProgressClear", setId: "anna-set", at: now + 1 }] });

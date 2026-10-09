@@ -52,22 +52,32 @@ test("answers are logged with what was answered and how it was graded", async ()
   admin = await session("yamen", "admin-password");
   itemIds = ((await admin("GET", `/api/exercises/${SET}`)).json().items as { id: string }[]).map((i) => i.id);
   const [a, b, c] = itemIds as [string, string, string];
-  const post = (itemId: string, correct: boolean, response: string, grading = "auto") =>
-    admin("POST", "/api/attempts", { setId: SET, itemId, correct, response, grading });
-  await post(a, false, "wenn");
-  await post(a, false, "wann");
-  await post(b, false, "wenn");
-  await post(b, true, "als"); // fixed since
-  await post(c, true, "Ich lerne jeden Tag.", "ungraded");
-  // Older clients send no response or grading.
-  assert.equal((await admin("POST", "/api/attempts", { setId: SET, itemId: c, correct: false })).statusCode, 200);
+  // The server grades: each of these gaps expects "als".
+  const post = async (itemId: string, text: string, correct: boolean) => {
+    const res = await admin("POST", "/api/answers", { setId: SET, itemId, response: { type: "cloze", blanks: { 1: text } } });
+    assert.equal(res.statusCode, 200, res.body);
+    assert.deepEqual(res.json(), { correct, grading: "auto" });
+  };
+  await post(a, "wenn", false);
+  await post(a, "wann", false);
+  await post(b, "wenn", false);
+  await post(b, "Als", true); // fixed since (case doesn't matter here)
+  await post(c, "wenn", false);
+  // An open answer with no AI tutor set up: no verdict.
+  const open = await admin("POST", "/api/answers", {
+    setId: "infinitiv-zu-frei", itemId: "iz-a01", response: { type: "transform", text: "Für mich ist es wichtig, viel zu reisen." },
+  });
+  assert.deepEqual(open.json(), { correct: true, grading: "ungraded" });
 
   const { db, schema } = await import("../db/client");
   const rows = db.select().from(schema.attempts).all();
   assert.deepEqual(
     rows.map((r) => [r.response, r.grading]),
-    [["wenn", "auto"], ["wann", "auto"], ["wenn", "auto"], ["als", "auto"], ["Ich lerne jeden Tag.", "ungraded"], [null, "auto"]],
+    [["wenn", "auto"], ["wann", "auto"], ["wenn", "auto"], ["Als", "auto"], ["wenn", "auto"], ["Für mich ist es wichtig, viel zu reisen.", "ungraded"]],
   );
+  // Unknown items, and answers of the wrong shape, are refused.
+  assert.equal((await admin("POST", "/api/answers", { setId: SET, itemId: "nope", response: { type: "cloze", blanks: {} } })).statusCode, 404);
+  assert.equal((await admin("POST", "/api/answers", { setId: SET, itemId: a, response: { type: "true_false", value: true } })).statusCode, 404);
 });
 
 test("progress: ungraded answers count for today, not for accuracy", async () => {
@@ -94,12 +104,14 @@ test("mistakes: unresolved by default, with the item and the wrong answers", asy
 });
 
 test("set history: per-item totals in set order, and runs", async () => {
-  await admin("POST", "/api/runs", { setId: SET, setTitle: "Als oder wenn", total: 3, answered: 3, correct: 1, results: {} });
+  // The server scores the run from the answers in this session.
+  assert.equal((await admin("POST", "/api/runs", { setId: SET, done: true })).statusCode, 200);
+  assert.equal((await admin("POST", "/api/runs", { setId: SET, done: true })).statusCode, 200, "nothing left to record");
   const h = (await admin("GET", `/api/history/sets/${SET}`)).json();
   assert.equal(h.runs.length, 1);
-  assert.equal(h.runs[0].correct, 1);
+  assert.deepEqual([h.runs[0].answered, h.runs[0].correct, h.runs[0].total], [3, 1, itemIds.length]);
   assert.deepEqual(h.items.map((i: { itemId: string }) => i.itemId), itemIds.slice(0, 3));
-  assert.deepEqual(h.items[1], { itemId: itemIds[1], attempts: 2, correct: 1, lastResult: true, lastResponse: "als" });
+  assert.deepEqual(h.items[1], { itemId: itemIds[1], attempts: 2, correct: 1, lastResult: true, lastResponse: "Als" });
 });
 
 test("activity: days and events, including vocab reviews and notes", async () => {
@@ -117,7 +129,7 @@ test("activity: days and events, including vocab reviews and notes", async () =>
     v.events.map((e: { kind: string }) => e.kind).sort(),
     ["note_created", "run", "sheet_viewed", "word_added"],
   );
-  assert.equal(v.events.find((e: { kind: string }) => e.kind === "run").detail, "1/3");
+  assert.equal(v.events.find((e: { kind: string }) => e.kind === "run").detail, `1/${itemIds.length}`);
   assert.deepEqual((await admin("GET", "/api/history/activity?from=2020-01-01&to=2020-01-31")).json().days, []);
   assert.equal((await admin("GET", "/api/history/activity?from=yesterday")).statusCode, 400);
 

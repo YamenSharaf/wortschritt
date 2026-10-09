@@ -1,7 +1,8 @@
 import type {
   AdminUser,
   TtsAdminSettings,
-  AttemptBody,
+  AnswerBody,
+  AnswerVerdict,
   ApiTokenView,
   ImportedItem,
   OAuthGrantView,
@@ -20,7 +21,6 @@ import type {
   ImportBody,
   Note,
   ProgressSummary,
-  RecordRunBody,
   SaveNoteBody,
   RunSummary,
   SaveExerciseProgressBody,
@@ -251,8 +251,9 @@ export const api = {
 
   // progress
   progress: () => req<ProgressSummary>("/api/progress"),
-  recordAttempt: (body: AttemptBody) =>
-    req<{ ok: true }>("/api/attempts", {
+  /** The server grades the answer, records it and returns the verdict. */
+  answer: (body: AnswerBody) =>
+    req<AnswerVerdict>("/api/answers", {
       method: "POST",
       body: JSON.stringify(body),
     }),
@@ -261,10 +262,11 @@ export const api = {
   runs: (limit?: number) =>
     req<RunSummary[]>(`/api/runs${limit ? `?limit=${limit}` : ""}`),
   run: (setId: string) => req<ExerciseRun | null>(`/api/runs/${setId}`),
-  recordRun: (body: RecordRunBody) =>
+  /** End a pass through a set; the server scores it from its session. */
+  finishRun: (setId: string, done: boolean) =>
     req<{ ok: true }>("/api/runs", {
       method: "POST",
-      body: JSON.stringify(body),
+      body: JSON.stringify({ setId, done }),
     }),
   exerciseProgress: (setId: string) =>
     req<ExerciseProgress | null>(
@@ -385,17 +387,6 @@ export const api = {
   // assistant
   assistantStatus: () =>
     req<{ enabled: boolean; model: string }>("/api/assistant/status"),
-  gradeAnswer: (body: {
-    prompt?: string;
-    expected: string[];
-    response: string;
-    context?: string;
-    open?: boolean;
-  }) =>
-    req<{ correct: boolean; feedback: string }>("/api/assistant/grade", {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
   generateMore: (body: {
     count?: number;
     set: {

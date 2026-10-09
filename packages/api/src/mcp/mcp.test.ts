@@ -338,8 +338,8 @@ test("progress and history", async () => {
   const item = set.items[0];
   const cookie = await login("anna", "anna-password");
   await app.inject({
-    method: "POST", url: "/api/attempts", headers: { cookie, "cf-connecting-ip": `198.51.100.${++ip}` },
-    payload: { setId: set.id, itemId: item.id, correct: false, response: "wenn" },
+    method: "POST", url: "/api/answers", headers: { cookie, "cf-connecting-ip": `198.51.100.${++ip}` },
+    payload: { setId: set.id, itemId: item.id, response: { type: "cloze", blanks: { 1: "wenn" } } },
   });
   // …and an agent sees it, with the item to build practice from.
   const [m] = await anna.ok("get_mistakes");

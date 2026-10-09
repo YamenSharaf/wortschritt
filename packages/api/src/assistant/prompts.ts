@@ -245,3 +245,29 @@ export function buildSentenceTranslation(ctx: { level: string; paragraphs: strin
     'You get {"paragraphs":[["Satz", …], …]}; reply ONLY with {"paragraphs":[["Sentence", …], …]} — exactly the same number of paragraphs and, in each, exactly one English string per German sentence, in order. No prose, no code fences.';
   return { system, user: JSON.stringify({ paragraphs: ctx.paragraphs }) };
 }
+
+/** Judge one free-text answer that the item's own rules didn't accept. */
+export function buildGradeMessages(ctx: {
+  prompt?: string;
+  context?: string;
+  expected: string[];
+  response: string;
+  open: boolean;
+}): { system: string; user: string } {
+  const system =
+    "You grade short German-learning answers. Decide if the learner's answer is acceptable German for the task, allowing valid variants (word order, punctuation, equivalent spellings) but requiring correct grammar and meaning. " +
+    "The learner is often completing a sentence whose beginning is already shown to them (given as 'Shown to the learner'). When it is, accept an answer that supplies only the missing part if, combined with that beginning, it forms a correct sentence — do NOT require the learner to retype the part they were already given. Only mark such an answer wrong if the completion itself is grammatically wrong or doesn't fit. " +
+    "When the reference answers are marked as examples, the task is open-ended: judge whether the learner's answer correctly and sensibly fulfils the task on its own merits — it does not need to resemble the examples. " +
+    "Reply with ONLY a compact JSON object: {\"correct\": boolean, \"feedback\": \"one short sentence in English\"}.";
+  const user = [
+    ctx.prompt ? `Task: ${ctx.prompt}` : null,
+    ctx.context ? `Shown to the learner (sentence beginning): ${ctx.context}` : null,
+    ctx.open
+      ? `Example answers (open-ended — any other correct answer also counts): ${ctx.expected.join(" | ")}`
+      : `Reference answer(s) (full sentence): ${ctx.expected.join(" | ")}`,
+    `Learner answer: ${ctx.response}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+  return { system, user };
+}

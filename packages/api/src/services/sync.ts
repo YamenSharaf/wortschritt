@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { and, eq, lt, sql } from "drizzle-orm";
-import type { SyncChanges, SyncOp, SyncPushResult, SyncStats, SyncStory } from "@mdb/shared";
+import { storySetId, type SyncChanges, type SyncOp, type SyncPushResult, type SyncStats, type SyncStory } from "@mdb/shared";
 import { builtInIds, loadCheatsheets, loadExerciseSets } from "../content/loader";
 import { db, schema } from "../db/client";
 import {
@@ -9,13 +9,13 @@ import {
   latestRunsPerSet,
   listExerciseProgress,
   recentSheetViews,
-  recordRun,
   recordSheetView,
   saveExerciseProgress,
 } from "./activity";
 import { getStoredCover, coverVersion } from "./covers";
 import { createNote, getNote, listNotes, removeNote, updateNote } from "./notes";
-import { getProgressSummary, recordAttempt } from "./progress";
+import { AnswerError, answerOffline, finish } from "./answers";
+import { getProgressSummary } from "./progress";
 import { getSeriesView, listSeries } from "./series";
 import { getSettings } from "./settings";
 import { getStory, listStories, setStoryProgress } from "./stories";
@@ -28,7 +28,9 @@ import { getVocab, listGroups, listVocab, recordStudy, removeVocab, upsertVocab 
  * a sync returns the current state of each item changed since the app's
  * cursor, or marks it deleted when it's gone. The shared library is small,
  * so it's sent whole whenever its version differs. Push: actions the app did
- * offline, applied once per op id (sync_ops) and merged safely. Stats (the
+ * offline, applied once per op id (sync_ops) and merged safely; answers are
+ * graded here by the item's own rules (no AI tutor, like the app's offline
+ * verdict). Stats (the
  * daily goal, latest runs, where you stopped) are computed here and sent on
  * every pull, so the app shows them without any logic of its own.
  */
@@ -78,7 +80,8 @@ function stats(userId: number): SyncStats {
     progress: getProgressSummary(userId),
     runs: latestRunsPerSet(userId),
     sheetViews: recentSheetViews(userId, SHEET_VIEWS),
-    exerciseProgress: listExerciseProgress(userId),
+    // Practice sets only: a story's quiz session isn't something to resume.
+    exerciseProgress: listExerciseProgress(userId).filter((p) => !p.setId.startsWith(storySetId(""))),
   };
 }
 
@@ -190,12 +193,17 @@ type Result = SyncPushResult["results"][number];
 
 function apply(userId: number, op: SyncOp): Omit<Result, "opId" | "duplicate"> {
   switch (op.type) {
-    case "attempt":
-      recordAttempt(userId, op.data);
-      return { ok: true };
-    case "run":
-      recordRun(userId, op.data);
-      return { ok: true };
+    case "answer":
+      try {
+        answerOffline(userId, op.data, Math.min(op.at, Math.floor(Date.now() / 1000)));
+        return { ok: true };
+      } catch (err) {
+        // Gone or mismatched for good: report it rather than retry forever.
+        if (err instanceof AnswerError) return { ok: false, error: err.message };
+        throw err;
+      }
+    case "finish":
+      return finish(userId, op.data.setId, op.data.done) ? { ok: true } : { ok: false, error: "No such exercise set." };
     case "sheetView":
       recordSheetView(userId, op.data);
       return { ok: true };

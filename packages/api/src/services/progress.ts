@@ -1,18 +1,24 @@
 import { and, eq, sql } from "drizzle-orm";
-import type { AttemptBody, ProgressSummary } from "@mdb/shared";
+import type { AnswerGrading, ProgressSummary } from "@mdb/shared";
 import { db, schema } from "../db/client";
 import { getSettings } from "./settings";
 import { getTimezone, startOfDay } from "./timezone";
 
-export function recordAttempt(userId: number, a: AttemptBody): void {
+/** Store one graded answer (services/answers.ts does the grading). */
+export function recordAttempt(
+  userId: number,
+  a: { setId: string; itemId: string; correct: boolean; response: string; grading: AnswerGrading },
+  at?: number,
+): void {
   db.insert(schema.attempts)
     .values({
       userId,
       setId: a.setId,
       itemId: a.itemId,
       correct: a.correct,
-      response: a.response ?? null,
+      response: a.response,
       grading: a.grading,
+      ...(at === undefined ? {} : { answeredAt: new Date(at * 1000) }),
     })
     .run();
 }

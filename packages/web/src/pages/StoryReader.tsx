@@ -12,8 +12,8 @@ import {
   splitSentences,
   storyParagraphs,
   storySetId,
-  responseText,
-  type AnswerGrading,
+  type AnswerVerdict,
+  type ItemResponse,
   type ExerciseItem,
   type ReaderSettings,
   type Settings,
@@ -21,7 +21,6 @@ import {
   type StoryView,
 } from "@mdb/shared";
 import { ExerciseItemView } from "../components/ExerciseItemView";
-import { gradeHere } from "../lib/grade";
 import {
   CheckIcon,
   ChevronLeftIcon,
@@ -88,7 +87,6 @@ function StoryReaderView() {
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [reader, setReader] = useState<ReaderSettings>(() => readerSettingsSchema.parse({}));
-  const [llmGrading, setLlmGrading] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
   /** English lines per paragraph index (null = not translated yet). */
   const [lines, setLines] = useState<Record<number, string[] | null>>({});
@@ -133,7 +131,6 @@ function StoryReaderView() {
       .then(([se, st]) => {
         setSettings(se);
         setReader(se.reader);
-        setLlmGrading(Boolean(st.enabled && se.llmGrading));
         setAiEnabled(st.enabled);
       })
       .catch(() => {});
@@ -641,7 +638,7 @@ function StoryReaderView() {
         )}
       </div>
       {story.questions.length > 0 && (
-        <StoryQuiz story={story} llmGrading={llmGrading} onFinished={() => !view.readAt && void markRead(true)} />
+        <StoryQuiz story={story} onFinished={() => !view.readAt && void markRead(true)} />
       )}
     </div>
   );
@@ -1101,11 +1098,9 @@ function TranslatedBlock({
 /** Comprehension questions; answers go into history as set "story:<id>". */
 function StoryQuiz({
   story,
-  llmGrading,
   onFinished,
 }: {
   story: Story;
-  llmGrading: boolean;
   onFinished: () => void;
 }) {
   const [round, setRound] = useState(0);
@@ -1119,16 +1114,15 @@ function StoryQuiz({
   useEffect(() => {
     if (!done || recorded.current === round) return;
     recorded.current = round;
-    api
-      .recordRun({ setId, setTitle: story.title, total, answered: total, correct, results })
-      .catch(() => {});
+    // The server scores the quiz from the answers it graded.
+    api.finishRun(setId, true).catch(() => {});
     onFinished();
   }, [done, round, setId, story.title, total, correct, results, onFinished]);
 
-  function answer(item: ExerciseItem, ok: boolean, response?: string, grading: AnswerGrading = "auto") {
-    if (item.id in results) return;
-    setResults((r) => ({ ...r, [item.id]: ok }));
-    void api.recordAttempt({ setId, itemId: item.id, correct: ok, response, grading }).catch(() => {});
+  async function answer(item: ExerciseItem, response: ItemResponse): Promise<AnswerVerdict> {
+    const v = await api.answer({ setId, itemId: item.id, response });
+    setResults((r) => (item.id in r ? r : { ...r, [item.id]: v.correct }));
+    return v;
   }
 
   return (
@@ -1148,11 +1142,7 @@ function StoryQuiz({
             <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-subtle">Frage {i + 1}</p>
             <ExerciseItemView
               item={q}
-              submit={async (response) => {
-                const v = await gradeHere(q, response, llmGrading);
-                answer(q, v.correct, responseText(q, response), v.grading);
-                return v;
-              }}
+              submit={(response) => answer(q, response)}
             />
           </div>
         ))}

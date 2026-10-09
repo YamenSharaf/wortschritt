@@ -143,17 +143,21 @@ test("the library is resent when it changes", async () => {
   assert.notEqual(c.library!.version, libraryVersion);
 });
 
+const SET = "sync-test-set";
+const mc = (choice: number) => ({ setId: SET, itemId: "q1", response: { type: "multiple_choice", choice } });
+const nowS = () => Math.floor(Date.now() / 1000);
+
 test("push: applied once per op id; progress only moves forward; answers are recorded", async () => {
   await me("PUT", `/api/stories/${EXAMPLE_STORY.id}/progress`, { progress: 0.6 });
   const r1 = await push(me, [
     { opId: "op-progress-1", type: "storyProgress", storyId: EXAMPLE_STORY.id, progress: 0.3 },
-    { opId: "op-attempt-1", type: "attempt", data: { setId: "sync-test-set", itemId: EXAMPLE_SET.items![0]!.id, correct: true } },
+    { opId: "op-attempt-1", type: "answer", at: nowS(), data: mc(1) },
   ]);
   assert.deepEqual(r1.map((r) => [r.ok, r.duplicate]), [[true, false], [true, false]]);
   assert.equal((await me("GET", `/api/stories/${EXAMPLE_STORY.id}`)).json().progress, 0.6, "the further position wins");
 
   const before = (await me("GET", "/api/progress")).json();
-  const r2 = await push(me, [{ opId: "op-attempt-1", type: "attempt", data: { setId: "sync-test-set", itemId: EXAMPLE_SET.items![0]!.id, correct: true } }]);
+  const r2 = await push(me, [{ opId: "op-attempt-1", type: "answer", at: nowS(), data: mc(1) }]);
   assert.deepEqual(r2.map((r) => [r.ok, r.duplicate]), [[true, true]]);
   assert.deepEqual((await me("GET", "/api/progress")).json(), before, "a replay isn't counted twice");
 
@@ -214,11 +218,16 @@ test("private: another user's sync and pushes never touch your data", async () =
 });
 
 test("stats: every pull carries the server's numbers, the same as the web's", async () => {
-  await push(me, [
-    { opId: "op-stats-attempt", type: "attempt", data: { setId: "stats-set", itemId: "a", correct: true } },
-    { opId: "op-stats-run", type: "run", data: { setId: "stats-set", setTitle: "Stats", total: 2, answered: 2, correct: 1, results: { a: true, b: false } } },
+  // Answered offline: the server grades them by the item's own rules and scores the run.
+  const r = await push(me, [
+    { opId: "op-stats-wrong", type: "answer", at: nowS(), data: { setId: SET, itemId: "q2", response: { type: "cloze", blanks: { 1: "stehe", 2: "an" } } } },
+    { opId: "op-stats-run", type: "finish", data: { setId: SET, done: true } },
     { opId: "op-stats-sheet", type: "sheetView", data: { sheetId: "stats-sheet", title: "Stats sheet" } },
+    { opId: "op-stats-gone", type: "answer", at: nowS(), data: { setId: SET, itemId: "nope", response: { type: "multiple_choice", choice: 0 } } },
   ]);
+  assert.deepEqual(r.map((x) => x.ok), [true, true, true, false], "an answer to an unknown item is refused, not retried");
+  const run = (await me("GET", `/api/runs/${SET}`)).json();
+  assert.deepEqual([run.answered, run.correct, run.results], [2, 1, { q1: true, q2: false }]);
   const full = await changes(me);
   assert.deepEqual(full.stats.progress, (await me("GET", "/api/progress")).json());
   assert.deepEqual(full.stats.runs, (await me("GET", "/api/runs")).json());
@@ -228,7 +237,7 @@ test("stats: every pull carries the server's numbers, the same as the web's", as
   assert.equal(quiet.notes.length + quiet.stories.length, 0);
   assert.deepEqual(quiet.stats, full.stats);
   // The app never adds answers up itself: a pushed answer shows up in the next pull.
-  await push(me, [{ opId: "op-stats-attempt-2", type: "attempt", data: { setId: "stats-set", itemId: "b", correct: true } }]);
+  await push(me, [{ opId: "op-stats-again", type: "answer", at: nowS(), data: mc(1) }]);
   const after = await changes(me, quiet.cursor, full.library!.version);
   assert.equal(after.stats.progress.totalAnswered, full.stats.progress.totalAnswered + 1);
   assert.equal(after.stats.progress.answeredToday, full.stats.progress.answeredToday + 1);
@@ -236,7 +245,7 @@ test("stats: every pull carries the server's numbers, the same as the web's", as
 
 test("push: where you stopped in a set; the newest position wins", async () => {
   const now = Math.floor(Date.now() / 1000);
-  const saved = (index: number) => ({ index, results: { a: true }, responses: { a: "x" } });
+  const saved = (index: number) => ({ index });
   const position = async () => (await changes(me)).stats.exerciseProgress.find((p) => p.setId === "resume-set");
 
   let r = await push(me, [{ opId: "op-pos-1", type: "exerciseProgressSave", setId: "resume-set", at: now - 100, data: saved(3) }]);
@@ -256,6 +265,16 @@ test("push: where you stopped in a set; the newest position wins", async () => {
   const p = await position();
   assert.equal(p?.index, 8);
   assert.ok(p!.updatedAt <= Math.floor(Date.now() / 1000));
+
+  // Offline, answers come before the position that follows them: both apply.
+  r = await push(me, [
+    { opId: "op-pos-fresh", type: "exerciseProgressClear", setId: SET, at: nowS() },
+    { opId: "op-pos-answer", type: "answer", at: now - 30, data: mc(0) },
+    { opId: "op-pos-after", type: "exerciseProgressSave", setId: SET, at: now - 20, data: saved(1) },
+  ]);
+  assert.deepEqual(r.map((x) => [x.ok, x.stale]), [[true, undefined], [true, undefined], [true, undefined]]);
+  const s = (await changes(me)).stats.exerciseProgress.find((p) => p.setId === SET);
+  assert.deepEqual([s?.index, s?.updatedAt], [1, now - 20]);
 
   // Finishing the set clears it.
   r = await push(me, [{ opId: "op-pos-4", type: "exerciseProgressClear", setId: "resume-set", at: Math.floor(Date.now() / 1000) }]);
