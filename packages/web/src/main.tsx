@@ -6,7 +6,7 @@ import "@fontsource/geist-mono/500.css";
 import "./fonts/libron/libron.css";
 import "@fontsource/lato/400.css";
 import "@fontsource/lato/700.css";
-import { StrictMode } from "react";
+import { lazy, StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { App } from "./App";
@@ -32,8 +32,22 @@ import { StoryGenerate } from "./pages/StoryGenerate";
 import { StoryReader } from "./pages/StoryReader";
 import { VocabPage } from "./pages/Vocab";
 
+// Inlined at build time (not IS_NATIVE from lib/platform) so the web build
+// drops the app's screens and Capacitor entirely.
+const IS_NATIVE = import.meta.env.VITE_TARGET === "native";
+
+/** The app's own screens (connect to a server, sign in through OAuth). */
+function nativeRoutes() {
+  const Connect = lazy(() => import("./pages/native/Connect").then((m) => ({ default: m.Connect })));
+  const SignIn = lazy(() => import("./pages/native/SignIn").then((m) => ({ default: m.SignIn })));
+  return [
+    { path: "/connect", element: <Suspense><Connect /></Suspense> },
+    { path: "/login", element: <Suspense><SignIn /></Suspense> },
+  ];
+}
+
 const router = createBrowserRouter([
-  { path: "/login", element: <Login /> },
+  ...(IS_NATIVE ? nativeRoutes() : [{ path: "/login", element: <Login /> }]),
   { path: "/oauth/authorize", element: <OAuthConsent /> },
   {
     path: "/",
@@ -63,10 +77,15 @@ const router = createBrowserRouter([
   },
 ]);
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
-  </StrictMode>,
-);
+async function start() {
+  // The app needs its server before anything asks the API.
+  if (IS_NATIVE) await (await import("./lib/native/server")).loadServer();
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
+    </StrictMode>,
+  );
+}
+void start();

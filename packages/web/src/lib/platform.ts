@@ -25,6 +25,16 @@ export function setNativeSession(s: NativeSession | null): void {
   session = s;
 }
 
+/** The native build has a server to talk to (else it shows the connect screen). */
+export function hasNativeServer(): boolean {
+  return session !== null;
+}
+
+/** The server the native build talks to, for display. */
+export function nativeServerUrl(): string | null {
+  return session?.serverUrl ?? null;
+}
+
 /** Absolute URL for an API path: unchanged on the web, on the server natively. */
 export function apiUrl(path: string): string {
   return IS_NATIVE && session ? session.serverUrl + path : path;

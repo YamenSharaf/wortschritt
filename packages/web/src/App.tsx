@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Navigate, NavLink, Outlet, useMatch } from "react-router-dom";
 import { api } from "./lib/api";
 import { useAuth } from "./lib/auth";
+import { hasNativeServer, IS_NATIVE } from "./lib/platform";
 import { AccountMenu } from "./components/AccountMenu";
 import { AppTitle } from "./components/AppTitle";
 import {
@@ -47,6 +48,9 @@ export function App() {
       .catch(() => {});
   }, [authenticated]);
 
+  if (IS_NATIVE && !hasNativeServer()) {
+    return <Navigate to="/connect" replace />;
+  }
   if (loading) {
     return (
       <div className="grid min-h-screen place-items-center text-ink-muted">
