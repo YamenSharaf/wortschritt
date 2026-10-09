@@ -358,7 +358,8 @@ Tailwind opacity modifiers don't work on them; use `color-mix` in CSS instead.
 The glass styles (`ws-bar` header, `ws-tabs`/`ws-tab` pills, `ws-dock`,
 `ws-glass-icon`, glass primary buttons, `ws-sheet`) live there too. Icons are
 Lucide through the wrappers in `components/icons.tsx` (1.75 stroke). The
-Wortschritt design system canvas documents the same tokens and components.
+rules, every token and the components are in
+[design-system.md](design-system.md).
 
 Navigation: the section links (header on wide screens, the dock on phones) and
 the account menu (`components/AccountMenu.tsx`, the initial at the top right),

@@ -6,6 +6,9 @@ A small multi-user, self-hosted German-learning app. **Read the docs before work
   new exercises and cheat sheets (the JSON schemas, every item type, grading).
 - **[docs/architecture.md](docs/architecture.md)** — app structure, how to add a
   new exercise type or AI feature, config, theming, deploy.
+- **[docs/design-system.md](docs/design-system.md)** — the visual language:
+  tokens, type, icons, layout and every component. Read it before UI work and
+  keep it in step with `packages/web/src/index.css`.
 
 ## Core principle
 
@@ -52,5 +55,5 @@ packages/shared  Zod schemas + types + grading (the contract)
 packages/api     Fastify + SQLite + AI proxy; serves the SPA in prod
 packages/web     React + Tailwind SPA
 content/         git-versioned exercises + cheatsheets (JSON)
-docs/            the two guides above
+docs/            the guides above
 ```

@@ -1,0 +1,400 @@
+# Wortschritt design system
+
+The visual language of the web app (and of the Android app, which wraps it).
+The code is the source of truth: tokens are CSS variables in
+`packages/web/src/index.css` (light on `:root`, dark under
+`prefers-color-scheme: dark`), mapped to Tailwind colours in
+`packages/web/tailwind.config.js`. This document mirrors the owner's design
+system canvas so anyone working on the UI can read it. When you change the UI's
+look, update both the code and this file.
+
+Wortschritt is a calm, precise study tool for learning German, with one bright idea: progress feels like climbing steps. The interface stays quiet (hairline borders, cool neutrals, one blue) so the colourful parts mean something: the section icons that tell you where you are, and the warm reward gradient that tells you you're getting better.
+
+Light and dark are equal citizens. The app follows the device setting automatically; there is no theme switch. Every token below has a value for both themes, and every pair of text and ground meets 4.5:1 in both.
+
+## Principles
+
+- **Quiet chrome, loud progress.** Neutrals and hairlines carry the structure. Colour is reserved for section identity (`section-*`), the primary action (`brand`) and achievement (`reward-1` → `reward-3`).
+- **Borders, not boxes of shadow.** A 1px `border` hairline separates things; shadows only lift what floats (`shadow-pop`) or what you can open (`shadow-card-hover`).
+- **Subtle glass for what floats or acts.** The header bar, the phone dock, primary buttons and section icons are translucent tints with a `glass-sheen` gradient and a `glass-edge` top highlight. Never glossy, never a solid colour block.
+- **One action per view.** Each screen has at most one `ws-btn--primary`.
+- **German is the content, English is the interface.** UI copy is English; everything the learner reads to learn is German at their level.
+
+## Content and voice
+
+- Plain, short, encouraging without cheerleading: *You have 3 answers left to reach today's goal.* Not *Amazing job!!*
+- Sentence case everywhere: buttons (*Continue practice*), titles, menu items. Capitals only for `eyebrow` labels (*TODAY*), written in capitals in the copy.
+- Address the learner as *you*. The greeting on Home uses German (*Guten Morgen*, *Guten Abend*) with their name.
+- Feedback words are fixed: *Correct.*, *Almost.*, *Not quite.*, then the explanation.
+- No emoji in the interface. Icons do that job.
+
+## Colour
+
+- Page ground is `bg`; cards, the header and sheets are `surface`; popovers and the word popup are `surface-raised`; fields and tracks are `surface-sunken`.
+- Text is `ink`, secondary text `ink-muted`, timestamps and placeholders `ink-subtle`. Links and brand-coloured text are `brand-ink`.
+- The primary button is glass: a 14% tint of `brand` with a 34% `brand` hairline and `brand-ink` text. Solid `brand` (with `on-brand` text) is for the selected switch, progress and selection states. `brand-soft` marks the current dock item, open tutor chips and the learner's chat bubbles.
+- The reward gradient (`reward-1` yellow → `reward-2` coral → `reward-3` pink, text `on-reward`) is only for achievement: the daily goal, streaks, mastered sets, a correct-answer moment. Never on buttons or plain progress.
+- Grading uses `success`, `warning` and `danger` on their `-soft` grounds, always with an icon and a word, never colour alone.
+- Each section owns a colour for its glass icon: Practice `section-practice`, Cheat sheets `section-sheets`, Stories `section-stories`, Vocab `section-vocab`, Notes `section-notes`. The colour tints the squircle and draws the glyph.
+- Floating chrome has its own tokens: the header bar (`bar-from` → `bar-to`, `bar-highlight`), the tab pills (`tabs-track`, `tabs-active-from` → `tabs-active-to`, `tabs-active-border`) and the phone dock (`dock-from` → `dock-to`, `dock-border`, `dock-highlight`, `dock-shadow`).
+- One `glow` per page at most, behind the hero, in the top-right corner. The app-icon gradient (`tile-from` → `tile-to`) appears only in the icon and splash screen.
+
+## Type
+
+- Interface: Geist (`font-sans`), bundled with the app via `@fontsource` (no font requests to third parties). Styles: `display` (one per page), `title-1` page titles, `title-2` section headings, `headline` card titles, `body`, `body-sm` descriptions, `caption` meta, `eyebrow` labels.
+- Keyboard chips and tabular numbers: Geist Mono (`font-mono`, style `kbd`).
+- Reading: Libron (`font-reading`, style `reading` 19/30) for story and book text, with `reading-gloss` for the English line. People can switch the reader to serif, sans or a readable face; Libron is the default.
+- Headings get `text-wrap: balance`; running text stays under about 65 characters wide (34em in the reader).
+
+## Space, shape and depth
+
+- Spacing steps: `space-1` 4 · `space-2` 8 · `space-3` 12 · `space-4` 16 · `space-5` 20 · `space-6` 24 · `space-8` 32 · `space-12` 48. Page gutter `space-4`; card padding `space-5`; between sections `space-8`.
+- Radii: `radius-sm` chips and kbd, `radius-md` buttons, inputs and section icons, `radius-lg` cards and popovers, `radius-xl` hero panels, sheets, flashcards and book covers, `radius-pill` pills and progress.
+- Depth: `shadow-card` at rest, `shadow-card-hover` with `border-strong` on hover, `shadow-pop` for anything floating. In dark mode the shadows include a faint inner top highlight instead of getting heavier.
+
+## Layout and navigation
+
+- **Header**: a floating bar 12–16px from the edges with 16px corners: mark and name left, section links centred as plain text, the account button right.
+- **Account menu**: everything that isn't learning content: Settings (Learning, Account, Connections), Administration for admins, and log out. A dropdown on wide screens, a sheet from the bottom on phones. Import is a button on Practice and Cheat sheets, not a setting.
+- **Tab pills** for in-page sections and view toggles (Settings, Recent / A–Z, Covers / List). The active pill is lit from above.
+- **Dock** on phones: a floating glass pill with every section, above the home indicator. Pages keep 112px of bottom padding so nothing hides behind it.
+- **Exercises** stack labelled layers, not boxes: TASK, a quoted context line, a word bank of dashed chips, the gaps, one result row, then WHY under a hairline.
+- **Tutor**: Hint, Translate and Why was I wrong? are chips under the exercise; one panel holds the answer as prose and follow-ups as a chat with a round send button.
+
+## Motion
+
+- Colour changes on hover and press take `duration-fast` (120ms); popovers, sheets and card lift take `duration-base` (200ms), ease-out.
+- Cards lift by 1px on hover. Nothing bounces, nothing loops.
+- Under `prefers-reduced-motion`, drop transitions and the lift.
+
+## States and accessibility
+
+- Focus: a 2px solid `focus` ring, offset 2px, on every interactive element (3:1 or more on every surface in both themes).
+- Controls at rest use `border-control` (3:1); decorative hairlines use `border`.
+- Disabled controls drop to 45% opacity and keep their label.
+- Touch targets are at least 40px (buttons) and 44px in the Android app.
+
+## Iconography
+
+- Lucide, drawn thin: 24px grid, 1.75 stroke, round caps and joins, `currentColor`. 16px in buttons, 18px in section icons and feedback rows, 20px in the dock, 12px in pills. Use the app's wrappers (`components/icons.tsx`) so the stroke stays consistent.
+- Section icons: Home `house`, Practice `pen-line`, Cheat sheets `file-text`, Stories `book-open`, Vocab `layers`, Notes `notebook-pen`. Account menu: Learning `graduation-cap`, Account `user-round`, Connections `plug`, Administration `shield-check`, Log out `log-out`; Import `import`. The tutor is `sparkles`; hints `lightbulb`; translate `languages`.
+- The logo is the Wortschritt mark (`brand/wortschritt-mark.svg`): blue steps with three dots climbing them. Next to the name it sits at 24px. The app icon (`brand/wortschritt-icon-rounded.svg`; Android layers also in `brand/`) is the white mark on the blue tile gradient and is for launchers and install prompts only.
+
+
+## Tokens
+
+### Colour
+
+Every colour has a light and a dark value; one value means both themes.
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `bg` | `#f6f7fa` | `#0b0d12` | Page background behind everything. Cool off-white in light, blue-black ink in dark. |
+| `surface` | `#ffffff` | `#12151c` | Cards, the header bar, sheets and dialogs sitting on `bg`. |
+| `surface-raised` | `#ffffff` | `#191d27` | Popovers, menus, the word popup, and a card while hovered in dark mode. |
+| `surface-sunken` | `#eef1f6` | `#0e1117` | Input fills, progress tracks, segmented-control track, code and kbd chips. |
+| `border` | `#e3e7ee` | `#ffffff14` | The 1px hairline around cards, inputs and the header. Never thicker. |
+| `border-strong` | `#c9d0db` | `#ffffff29` | Card hairline on hover; dividers between list rows. Decorative only, so it may sit under 3:1. |
+| `border-control` | `#838b9c` | `#646b7a` | Borders of inputs, checkboxes and the switch track at rest: 3:1 on `surface`, `surface-sunken` and `bg` in both themes, so controls are findable without a fill. |
+| `highlight` | `#ffffff00` | `#ffffff0f` | The faint inner top highlight on cards in dark mode (inset 0 1px). Invisible in light. |
+| `ink` | `#0f1420` | `#edf0f5` | Primary text and icons on `bg`, `surface`, `surface-raised` and `surface-sunken`. |
+| `ink-muted` | `#566074` | `#9aa3b2` | Secondary text: descriptions, meta lines, inactive nav. Reads 4.5:1+ on every surface in both themes. |
+| `ink-subtle` | `#646d80` | `#7d8696` | Tertiary text: timestamps, counts, placeholder text, eyebrow labels. 4.5:1 on `bg`, `surface` and `surface-sunken` in both themes. |
+| `brand` | `#2b6cb0` | `#5aa9f5` | The brand blue. The primary button is a glass tint of it (`brand` at 14% over the page, a 34% hairline, `glass-edge` highlight) with `brand-ink` text; solid `brand` fills only the selected switch and small markers. |
+| `brand-hover` | `#245c98` | `#7bbbf8` | Primary action fill on hover and press. |
+| `on-brand` | `#ffffff` | `#0b0d12` | Text on a solid `brand` fill (the switch knob, the send button). Glass buttons use `brand-ink` instead. |
+| `brand-soft` | `#e8f1fb` | `#5aa9f51f` | Selected nav item, selected option, info pill backgrounds. Text on it: `brand-ink`. |
+| `brand-ink` | `#1f5a99` | `#8ec5ff` | Links and brand-coloured text on `surface`, `bg` and `brand-soft`. |
+| `tile-from` | `#4a90e2` | `#4a90e2` | Top-left stop of the app-icon tile gradient; also the hero glow hue. Same in both themes. |
+| `tile-to` | `#22589a` | `#22589a` | Bottom-right stop of the app-icon tile gradient. Same in both themes. |
+| `glow` | `#4a90e21f` | `#4a90e238` | Soft radial glow behind a page's hero area (one per page, never behind body text). |
+| `reward-1` | `#ffd95a` | `#ffd95a` | Reward gradient stop 1 (yellow): progress fills, streaks, the daily goal, a correct-answer burst. Never for actions. |
+| `reward-2` | `#ff8a65` | `#ff8a65` | Reward gradient stop 2 (coral). |
+| `reward-3` | `#f0508c` | `#f0508c` | Reward gradient stop 3 (pink). |
+| `on-reward` | `#0f1420` | `#0f1420` | Text on a reward fill (both themes). |
+| `success` | `#127a4b` | `#3dd68c` | Correct answers and saved states: text and icons on `surface`. Always paired with a word or a check icon. |
+| `success-soft` | `#e5f5ed` | `#3dd68c1f` | Background of a correct-answer row or success notice; text on it `success`. |
+| `danger` | `#c2362b` | `#ff7a6e` | Wrong answers, destructive actions, errors: text and icons on `surface`. Always paired with a word or a cross icon. |
+| `danger-soft` | `#fbebe9` | `#ff7a6e1f` | Background of a wrong-answer row or error notice; text on it `danger`. |
+| `warning` | `#9a5b00` | `#f5b544` | Almost-right answers (a typo, missing umlaut), warnings. Text on `surface`; pair with a word. |
+| `warning-soft` | `#fdf2dd` | `#f5b5441f` | Background of an almost-right row; text on it `warning`. |
+| `focus` | `#2b6cb0` | `#8ec5ff` | The 2px focus ring (offset 2px) on every interactive element. 3:1+ on every surface in both themes. |
+| `glass-sheen` | `#ffffff66` | `#ffffff0d` | Top-down sheen on glass buttons and section icons (a gradient from this to transparent). |
+| `glass-edge` | `#ffffffb3` | `#ffffff1f` | The 1px inner highlight along the top edge of glass buttons and icons. |
+| `bar-from` | `#ffffffbf` | `#121520bf` | Floating header bar: translucent gradient start (top-left), over a 12px backdrop blur. |
+| `bar-to` | `#ffffffe6` | `#0c0e13e6` | Floating header bar: gradient end (bottom-right). |
+| `bar-highlight` | `#ffffff` | `#ffffff26` | Inner top highlight of the floating header bar. |
+| `tabs-track` | `#eef1f6` | `#0f1218` | Track behind tab pills (Settings sections, Recent/A–Z, Covers/List, reader options). |
+| `tabs-active-from` | `#ffffff` | `#4b5262` | Active tab pill: centre of the radial 'lit from above' fill. |
+| `tabs-active-to` | `#f3f5f9` | `#1a1d25` | Active tab pill: edge of the radial fill. |
+| `tabs-active-border` | `#d9dee7` | `#ffffff1a` | Hairline around the active tab pill. |
+| `dock-from` | `#ffffffb8` | `#1a1e28b3` | Mobile dock glass: gradient top, over an 18px blur with 170% saturation. |
+| `dock-to` | `#f6f7fa99` | `#0f121899` | Mobile dock glass: gradient bottom. |
+| `dock-border` | `#ffffffcc` | `#ffffff1f` | Mobile dock hairline. |
+| `dock-highlight` | `#ffffff` | `#ffffff1f` | Mobile dock inner top highlight. |
+| `dock-shadow` | `#0f142021` | `#00000080` | Mobile dock drop shadow. |
+| `on-section` | `#ffffff` | `#ffffff` | Kept for solid section fills (none in the app today). Section icons are glass: the glyph takes the section colour itself. |
+| `section-practice` | `#2b6cb0` | `#2b6cb0` | Section colour for Practice: the glass icon tint (15% fill, 30% hairline in light; 24%/45% in dark) and its glyph (lightened 45% toward white in dark mode). |
+| `section-sheets` | `#0f8583` | `#0f8583` | Section colour for Cheat sheets: the glass icon tint (15% fill, 30% hairline in light; 24%/45% in dark) and its glyph (lightened 45% toward white in dark mode). |
+| `section-stories` | `#d4512a` | `#d4512a` | Section colour for Stories and books: the glass icon tint (15% fill, 30% hairline in light; 24%/45% in dark) and its glyph (lightened 45% toward white in dark mode). |
+| `section-vocab` | `#a8701a` | `#a8701a` | Section colour for Vocab and flashcards: the glass icon tint (15% fill, 30% hairline in light; 24%/45% in dark) and its glyph (lightened 45% toward white in dark mode). |
+| `section-notes` | `#6d4fd1` | `#6d4fd1` | Section colour for Notes: the glass icon tint (15% fill, 30% hairline in light; 24%/45% in dark) and its glyph (lightened 45% toward white in dark mode). |
+
+### Type
+
+Families: sans `Geist, "Geist Sans", "Segoe UI", system-ui, sans-serif`; mono `"Geist Mono", ui-monospace, "SF Mono", Menlo, monospace`; reading `Libron, Charter, Georgia, serif`.
+
+| Style | Family | Size / line | Weight | Tracking | Use |
+|---|---|---|---|---|---|
+| `display` | sans | 40px / 44px | 650 | -0.025em | One per page at most: the Home greeting or a book title on its page. |
+| `title-1` | sans | 28px / 34px | 600 | -0.02em | Page titles. |
+| `title-2` | sans | 20px / 28px | 600 | -0.01em | Section headings and card titles on big cards. |
+| `headline` | sans | 16px / 24px | 600 | -0.005em | Card titles, list item titles, dialog titles. |
+| `body` | sans | 15px / 24px | 400 | 0 | Default UI text and explanations. |
+| `body-sm` | sans | 14px / 20px | 400 | 0 | Descriptions under titles, meta lines, form hints. |
+| `caption` | sans | 12px / 16px | 500 | 0.01em | Timestamps, counts, pill text. |
+| `eyebrow` | sans | 11px / 16px | 600 | 0.08em | Uppercase section labels above a group. Write the text in capitals in the copy. |
+| `kbd` | mono | 12px / 16px | 500 | 0 | Keyboard shortcut chips and tabular figures in stats. |
+| `reading` | reading | 19px / 30px | 400 | 0 | Story and book text in the reader. The reader lets people switch to serif, sans or a readable face; Libron is the default. |
+| `reading-gloss` | reading | 15px / 22px | 400 | 0 | The English line under a German line in the reader, in `ink-muted`. |
+
+### Spacing
+
+| Token | Value | Use |
+|---|---|---|
+| `space-1` | 4px | Icon-to-label gap inside pills and kbd chips. |
+| `space-2` | 8px | Gap between a button's icon and label; between pills. |
+| `space-3` | 12px | Gap inside list rows; input vertical padding. |
+| `space-4` | 16px | Card padding on phones; page side gutter; gap between cards. |
+| `space-5` | 20px | Card padding on wider screens. |
+| `space-6` | 24px | Gap between sections inside a page. |
+| `space-8` | 32px | Gap between page sections; top of page under the header. |
+| `space-12` | 48px | Hero padding on Home and book pages. |
+
+### Radius
+
+| Token | Value | Use |
+|---|---|---|
+| `radius-sm` | 6px | Pills' inner chips, kbd chips, checkboxes, small icon tiles (24px). |
+| `radius-md` | 10px | Buttons, inputs, segmented controls, list rows, section icons (32–40px). |
+| `radius-lg` | 14px | Cards, the word popup, menus. |
+| `radius-xl` | 20px | Hero panels, sheets and dialogs, book covers in the grid. |
+| `radius-pill` | 999px | Pills, progress bars, the switch. |
+
+### Motion
+
+| Token | Value | Use |
+|---|---|---|
+| `duration-fast` | 120ms | Hover and press colour changes. |
+| `duration-base` | 200ms | Popovers, sheet open, card lift. Use ease-out; none under prefers-reduced-motion. |
+
+### Shadow
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `shadow-card` | `0 1px 2px #0f14200d, 0 2px 8px #0f142008` | `inset 0 1px 0 #ffffff0f, 0 1px 2px #00000066` | Cards at rest. |
+| `shadow-card-hover` | `0 2px 4px #0f142010, 0 8px 24px #0f14200f` | `inset 0 1px 0 #ffffff17, 0 8px 24px #00000080` | Cards on hover (with `border-strong`). |
+| `shadow-pop` | `0 12px 32px #0f14201f, 0 2px 6px #0f142012` | `inset 0 1px 0 #ffffff17, 0 16px 40px #000000a6` | Popovers, menus, the word popup, dialogs. |
+
+## Components
+
+Class names like `ws-btn--primary` come from the canvas's reference stylesheet; the app builds the same things with Tailwind and the classes in `index.css`. *In the app* says where each one lives.
+
+### AccountMenu
+
+The account button at the right of the header, and the menu it opens: everything that isn't learning content.
+
+- **Button** (`ws-avatar`): the learner's initial in a 36px glass circle tinted with `brand`, with `aria-label="Account menu"` and `aria-expanded`.
+- **Menu** (`ws-menu`): `surface-raised`, a hairline, `radius-lg` and `shadow-pop`, 256px wide, 8px under the button and aligned to its right edge. It holds who you are (name and *Admin* or *Learner*), a **SETTINGS** group (Learning, Account, Connections), **Administration** for admins only, and **Log out** set apart under a hairline. The current page is marked with `aria-current` and gets `surface-sunken`.
+- **On phones** the same menu is a sheet from the bottom (`ws-menu--sheet`, `radius-xl`, 12px from the edges and above the home indicator) over a dimmed page.
+
+It opens by click, closes on Escape, a click outside or when a link is followed, and moves focus into the menu and back to the button. Don't put content actions here (Import lives on Practice and Cheat sheets), and keep it to links and Log out: no toggles or forms.
+
+*In the app:* `components/AccountMenu.tsx` (`ws-sheet`, `ws-scrim` in `index.css`)
+
+### Button
+
+Buttons start an action: one `ws-btn--primary` per view, everything else secondary or ghost.
+
+**Use**
+- `ws-btn--primary` is glass: a 14% tint of `brand` with a 34% `brand` hairline, a `glass-sheen` gradient, a `glass-edge` top highlight and a light backdrop blur; the label is `brand-ink`. Hover deepens the tint to 22%. Use it for the one action the view is for: *Continue practice*, *Check answer*, *Save*.
+- `ws-btn--secondary` (`surface`, a `border-control` hairline, the `glass-edge` highlight) for other actions; `ws-btn--ghost` for low-weight ones (*Skip*, *Cancel*).
+- `ws-btn--danger` only for destructive actions, and confirm them in the page.
+- `ws-btn--sm` (32px) in dense rows; `ws-btn--icon` for icon-only buttons, which need an `aria-label`.
+
+**The consumer provides** a `<button type="button">` (or `<a>` for navigation, never underlined) with a verb label in sentence case and an optional 16px Lucide icon before it.
+
+**Don't** use two primary buttons side by side, fill a button with solid `brand`, a `section-*` or a reward colour, or write labels in capitals.
+
+*In the app:* `btn` in `components/ui.tsx`; glass primary via the rule in `index.css`
+
+### Card
+
+The container for one item in a list or grid: a set, a sheet, a book, a note.
+
+`ws-card` is `surface` with a 1px `border` hairline, `radius-lg` and `shadow-card`. A card that opens something is an `<a class="ws-card ws-card-link">`: on hover the hairline becomes `border-strong`, the shadow `shadow-card-hover`, and it lifts 1px.
+
+**Inside**: `ws-card__head` (a SectionIcon + `ws-card__title` + `ws-card__meta`) and an optional `ws-card__foot` with pills or a progress bar. Keep one link per card; don't nest buttons inside a linked card.
+
+**Don't** add coloured left borders, gradients or a second shadow. Cards in a grid share the same height rules: let content set the height.
+
+*In the app:* `card` / `cardLink` in `components/ui.tsx`
+
+### Cover
+
+The book and story cover: the drawn SVG cover when there is one, otherwise a generated pattern from the title.
+
+*In the app:* `components/Cover.tsx`, `components/Bookshelf.tsx`
+
+### Dock
+
+The phone navigation: a floating pill of very subtle glass above the home indicator, with every section. Settings live in the account menu.
+
+`nav.ws-dock` sits 12px from the screen edges and 10px above the safe-area inset: a `dock-from` → `dock-to` gradient over an 18px blur with 170% saturation, a `dock-border` hairline, a `dock-highlight` top edge and a soft `dock-shadow`. Items are a 20px Lucide icon over a 10px label; the current one (`aria-current="page"`) sits in a `brand-soft` pill with `brand-ink`. Page content scrolls behind it, so pages keep 112px of bottom padding on phones.
+
+*In the app:* `App.tsx` (`ws-dock` in `index.css`)
+
+### ExerciseItem
+
+One exercise prompt with its helpers, answer gaps and the result after checking. Helpers are labelled layers, not boxes.
+
+- **Task**: an `eyebrow` label "TASK" over the instruction in `ink-muted` (`ws-task`).
+- **Context**: the premise sentence as a quoted line (`ws-context`): a quote mark in `ink-subtle`, text in `ink-muted`, no box.
+- **Word bank**: a hint like "Wörter: ich · sich · waschen" becomes dashed chips (`ws-wordbank`) under its own label; any other hint is a line with a lightbulb.
+- **Gaps** (`ws-gap`): small inline fields like Input; while typing `ws-gap--active` adds a `brand-soft` halo and a faint `glow`. After checking: `--correct`, `--almost` or `--wrong` (learner's text struck through, the right one beside it in `ink`).
+- **Result**: one `ws-feedback` row (*Correct.* / *Almost.* / *Not quite.* with its icon), then a **WHY** section under a hairline (`ws-why`).
+
+Never show the accepted answer before the learner has answered.
+
+*In the app:* `components/ExerciseItemView.tsx`
+
+### Flashcard
+
+One vocab card in a review session: the German word large, its article above, the English below.
+
+`ws-flash` is `surface`, `radius-xl`, `shadow-card-hover`. The word uses 34px semibold, the article `ink-subtle`, the gloss `ink-muted`; a pronounce button sits under them. Below the card: *Again* (secondary) and *Got it* (primary). On the front side, show only the article and word; reveal the gloss on flip (Space on desktop, tap on phones).
+
+*In the app:* `pages/Flashcards.tsx`
+
+### Header
+
+A floating bar at the top of every page: the mark and name on the left, the sections centred, the account button on the right.
+
+`header.ws-header` floats 12–16px in from the page edges with 16px corners, a `border` hairline, a translucent `bar-from` → `bar-to` gradient over a 12px blur, and a `bar-highlight` along its top edge. Section links are plain text in `ink-muted`; the current one (`aria-current="page"`) gets `surface-sunken` behind `ink`. The account button (`ws-avatar`) opens the AccountMenu.
+
+On phones the sections move to the Dock and only the mark and the account button stay in the bar.
+
+*In the app:* `App.tsx` (`ws-bar` in `index.css`)
+
+### Hero
+
+The opening panel of Home (and of a book's page): a greeting or title, one sentence, one primary action.
+
+`section.ws-hero` is `surface` with `radius-xl`, a hairline, and one soft `glow` in the top-right corner. Inside: an `eyebrow` label, a `display` heading, a sentence in `ink-muted` and the view's primary button.
+
+Only one hero per page, and only on Home and book pages. Size it to its content, never to the viewport.
+
+*In the app:* `pages/Dashboard.tsx`, `pages/SeriesPage.tsx`
+
+### Input
+
+A single-line text field with a label above and an optional hint or error below.
+
+**Structure**: `ws-field` > `label.ws-label` + `input.ws-input` + `span.ws-hint`. The field sits on `surface-sunken` with a `border-control` border (3:1, so it is findable without the fill) and turns `surface` while focused.
+
+**Errors**: set `aria-invalid="true"` and point `aria-describedby` at a `ws-hint ws-hint--error` that says what to type, not just that it is wrong.
+
+**Answer inputs** in exercises use the same field; grading feedback goes in an Exercise item's feedback row, not in the hint.
+
+*In the app:* the `input` class in `index.css`; `components/SearchBox.tsx`
+
+### Kbd
+
+A keyboard-shortcut chip: shows the key next to the action it triggers.
+
+Use `<kbd class="ws-kbd">` for each key, after the action's name in `ink-muted`. One key per chip; a combination is two chips side by side. Show shortcuts only where a keyboard exists (desktop web), never in the Android app.
+
+*In the app:* `pages/Flashcards.tsx` (arrow-key hints)
+
+### Pill
+
+Short metadata or a status, read at a glance: level, count, due, correct/almost/wrong, streak.
+
+- Neutral `ws-pill` for facts (*A2*, *12 items*).
+- `ws-pill--brand` for something that wants attention (*Due today*).
+- `ws-pill--success`, `--warning`, `--danger` for grading results, always with the check, alert or cross icon and a word, never colour alone.
+- `ws-pill--reward` (the yellow→coral→pink gradient, `on-reward` text) only for achievements: streaks, goals met.
+
+One or two words. No pills inside running text.
+
+*In the app:* `Pill` in `components/ui.tsx`
+
+### Progress
+
+Shows how far along something is: the daily goal, a set, a book.
+
+- **Reward progress** (the daily goal, a streak, a set being mastered) fills with the reward gradient (`reward-1` → `reward-3`): `ws-progress` or the `ws-ring` (set `--p` to the percent).
+- **Plain progress** (reading position in a book, an import) uses `ws-progress--brand`.
+- The track is `surface-sunken`. Always give the number in text too (*12 of 20 answers*, *34%*), and `role="progressbar"` with values.
+
+*In the app:* the daily-goal ring in `pages/Dashboard.tsx` (a `conic-gradient` of the reward stops); reading progress bars in `pages/Stories.tsx` and `components/Bookshelf.tsx`
+
+### Reader
+
+The story and book reader: German text in the reading face, optional English line by line, and the word popup.
+
+- Text: `reading` style (Libron 19/30, `font-reading`), at most 34em wide, on `surface`.
+- English lines: `reading-gloss` (italic 15/22) in `ink-muted`, under each German line when *English line by line* is on.
+- A tapped word gets `ws-word` (`brand-soft` behind `brand-ink`); its definition opens in a `ws-popover` (`surface-raised`, `shadow-pop`, `radius-lg`) with the lemma, grammar line and *Save word*.
+
+Full-screen reading keeps the same tokens; only the chrome hides.
+
+*In the app:* `pages/StoryReader.tsx`, `components/TapToTranslate.tsx`
+
+### SectionIcon
+
+The tinted glass squircle that identifies a section: Practice, Cheat sheets, Stories, Vocab, Notes.
+
+`span.ws-sicon.ws-sicon--<section>` holding a Lucide icon (1.75 stroke). The fill is a 15% tint of the section colour with a 30% hairline, a `glass-sheen` gradient and a `glass-edge` highlight; the glyph takes the section colour. In dark mode the tint rises to 24% / 45% and the glyph is lightened 45% toward white so it stays visible. 36px in cards, 28px in list rows, `ws-sicon--lg` (48px) in empty states and section headers.
+
+Icons: Practice `pen-line`, Cheat sheets `file-text`, Stories `book-open`, Vocab `layers`, Notes `notebook-pen`.
+
+**Don't** invent new section colours for single items, put text inside the squircle, or use the section colours for buttons.
+
+*In the app:* `components/SectionIcon.tsx` (`ws-glass-icon` in `index.css`)
+
+### SegmentedControl
+
+Picks one of two to five short options that change a view immediately (reader layout, reading font, a list/grid toggle).
+
+Wrap `<button aria-pressed>` elements in `div.ws-seg role="group"` with an `aria-label`. The selected segment is `surface-raised` with `shadow-card`; the rest are `ink-muted`. Labels are one word. More than five options, or options that need explaining, belong in a select or a list.
+
+There is no app theme switch: the app follows the device's light or dark setting. The reader's page colours (round swatches in its options) are a reader-only setting.
+
+*In the app:* `Segmented` in `pages/StoryReader.tsx`, drawn as small tab pills (`ws-tabs--sm`).
+
+### Switch
+
+An on/off setting that takes effect at once.
+
+Use `<input type="checkbox" class="ws-switch">` inside a `<label>` with the setting's name after it, in sentence case, describing the on state. On is `brand` with an `on-brand` knob; off is `surface-sunken` with a `border-control` outline. For choices that only apply after a Save, use a checkbox instead.
+
+*In the app:* the reader options in `pages/StoryReader.tsx` use a native checkbox tinted with `brand` (`accent-color`); a styled switch is still to do.
+
+### TabPills
+
+In-page tabs and view toggles as pills in a rounded track: Settings sections, Recent / A–Z, Covers / List, the reader's options.
+
+`div.ws-tabs[role=group][aria-label]` holding `button.ws-tab[aria-pressed]`. The track is `tabs-track` with a hairline; the active pill is lit from above with a radial `tabs-active-from` → `tabs-active-to` fill, a `tabs-active-border` hairline and `shadow-card`. Use `ws-tabs--sm` for toggles beside a title. Labels are one or two words; for more than five options use a select. The header's section links are not tab pills.
+
+*In the app:* `components/TabPills.tsx` (`ws-tabs` / `ws-tab` in `index.css`)
+
+### TutorPanel
+
+The AI tutor under an exercise: Hint, Translate and Why was I wrong? as chips, and one panel for the answer and a follow-up chat.
+
+Chips are `button.ws-chip[aria-pressed]`; the open one turns `brand-soft` / `brand-ink`. The panel (`ws-tutor`) is `surface-raised` with a hairline and `shadow-card`: a header with a glass spark avatar, *Tutor · topic* and a close button; the tutor's text as plain prose (Markdown); the learner's follow-ups as right-aligned `brand-soft` bubbles (`ws-bubble`); a rounded composer (`ws-composer`) with a round send arrow. While the tutor starts, show three typing dots; while it streams, a thin `brand` caret.
+
+The tutor never reveals the accepted answer before the learner has answered.
+
+*In the app:* `pages/ExercisePlayer.tsx`, `components/TutorMarkdown.tsx`
