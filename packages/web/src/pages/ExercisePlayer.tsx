@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { Link, useParams } from "react-router-dom";
 import {
   generateCounts,
+  responseText,
   type AnswerGrading,
   type ExerciseItem,
   type ExerciseProgress,
@@ -9,6 +10,7 @@ import {
   type ExerciseSet,
 } from "@mdb/shared";
 import { ExerciseItemView } from "../components/ExerciseItemView";
+import { gradeHere } from "../lib/grade";
 import { ArrowUpIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CrossIcon, LanguagesIcon, LightbulbIcon, RetryIcon, SparklesIcon } from "../components/icons";
 import { btn, card } from "../components/ui";
 import { TapToTranslate } from "../components/TapToTranslate";
@@ -434,8 +436,11 @@ function Runner({
           <ExerciseItemView
             key={item.id}
             item={item}
-            onAnswered={handleAnswered}
-            llmGrading={llmGrading}
+            submit={async (response) => {
+              const v = await gradeHere(item, response, llmGrading);
+              handleAnswered(v.correct, responseText(item, response), v.grading);
+              return v;
+            }}
           />
         </TapToTranslate>
       </div>

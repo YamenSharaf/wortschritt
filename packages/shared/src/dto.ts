@@ -266,6 +266,14 @@ export const meResponse = z.object({
 export const answerGrading = z.enum(["auto", "ai", "self", "ungraded"]);
 export type AnswerGrading = z.infer<typeof answerGrading>;
 
+/** The verdict on one answer, with the tutor's comment when it judged it. */
+export const answerVerdict = z.object({
+  correct: z.boolean(),
+  grading: answerGrading,
+  feedback: z.string().optional(),
+});
+export type AnswerVerdict = z.infer<typeof answerVerdict>;
+
 export const attemptBody = z.object({
   setId: z.string().min(1),
   itemId: z.string().min(1),

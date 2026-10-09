@@ -4,11 +4,11 @@ import {
   isCanonical,
   isOpenAnswer,
   modelAnswer,
-  type AnswerGrading,
+  type AnswerVerdict,
   type ExerciseItem,
+  type ItemResponse,
   type TextAnswer,
 } from "@mdb/shared";
-import { api } from "../lib/api";
 import { CheckIcon, CrossIcon, LightbulbIcon, QuoteIcon } from "./icons";
 import { btn } from "./ui";
 
@@ -27,36 +27,33 @@ const answerInputProps = {
 
 type Props = {
   item: ExerciseItem;
-  /** Called exactly once when the learner resolves the item. */
-  onAnswered: (correct: boolean, response?: string, grading?: AnswerGrading) => void;
-  /** Whether to consult the AI tutor when local grading misses. */
-  llmGrading?: boolean;
+  /**
+   * Called exactly once when the learner answers; resolves to the verdict
+   * (graded by whoever the page delegates to). The view only renders it.
+   */
+  submit: (response: ItemResponse) => Promise<AnswerVerdict>;
 };
 
 /**
  * One renderer per exercise type. Adding a new interactive type = add a case
  * here + a schema in @mdb/shared. Everything else stays data.
  */
-export function ExerciseItemView({ item, onAnswered, llmGrading }: Props) {
+export function ExerciseItemView({ item, submit }: Props) {
   switch (item.type) {
     case "multiple_choice":
-      return <MultipleChoice item={item} onAnswered={onAnswered} />;
+      return <MultipleChoice item={item} submit={submit} />;
     case "cloze":
-      return <Cloze item={item} onAnswered={onAnswered} />;
+      return <Cloze item={item} submit={submit} />;
     case "flashcard":
-      return <Flashcard item={item} onAnswered={onAnswered} />;
+      return <Flashcard item={item} submit={submit} />;
     case "sentence_build":
-      return (
-        <SentenceBuild item={item} onAnswered={onAnswered} llmGrading={llmGrading} />
-      );
+      return <SentenceBuild item={item} submit={submit} />;
     case "transform":
-      return (
-        <Transform item={item} onAnswered={onAnswered} llmGrading={llmGrading} />
-      );
+      return <Transform item={item} submit={submit} />;
     case "true_false":
-      return <TrueFalse item={item} onAnswered={onAnswered} />;
+      return <TrueFalse item={item} submit={submit} />;
     case "conjugation_table":
-      return <ConjugationTable item={item} onAnswered={onAnswered} />;
+      return <ConjugationTable item={item} submit={submit} />;
   }
 }
 
@@ -134,44 +131,23 @@ function Explanation({ text }: { text?: string }) {
   );
 }
 
-/** `ungraded`: an open answer nobody could judge (no AI tutor) — no verdict,
- *  just the possible answers. */
-type FreeTextResult = {
-  correct: boolean;
-  feedback?: string;
-  ungraded?: boolean;
-  grading: AnswerGrading;
-};
-
-/**
- * Grade a free-text answer: local first, then the tutor on a miss (if enabled).
- * An open-ended answer whose miss can't be judged (no tutor, or it failed)
- * comes back ungraded.
- */
-async function checkFreeText(
-  input: string,
-  answer: TextAnswer,
-  opts: { llmGrading?: boolean; prompt?: string; context?: string },
-): Promise<FreeTextResult> {
-  if (gradeText(input, answer)) return { correct: true, grading: "auto" };
-  const open = isOpenAnswer(answer);
-  if (opts.llmGrading) {
+/** Submit and keep the verdict; a failed submission is shown as an error. */
+function useVerdict(submit: Props["submit"]) {
+  const [busy, setBusy] = useState(false);
+  const [verdict, setVerdict] = useState<AnswerVerdict | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  async function send(r: ItemResponse) {
+    setBusy(true);
+    setError(null);
     try {
-      const v = await api.gradeAnswer({
-        prompt: opts.prompt,
-        expected: answer.accept,
-        response: input,
-        context: opts.context,
-        open,
-      });
-      return { correct: v.correct, feedback: v.feedback || undefined, grading: "ai" };
-    } catch {
-      /* fall back below */
+      setVerdict(await submit(r));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Couldn't check the answer.");
+    } finally {
+      setBusy(false);
     }
   }
-  return open
-    ? { correct: true, ungraded: true, grading: "ungraded" }
-    : { correct: false, grading: "auto" };
+  return { busy, verdict, error, send };
 }
 
 /** Marks an open-ended task, so a learner knows their own wording counts. */
@@ -190,10 +166,10 @@ function OpenAnswerBadge({ answer }: { answer: TextAnswer }) {
 
 function MultipleChoice({
   item,
-  onAnswered,
+  submit,
 }: {
   item: Extract<ExerciseItem, { type: "multiple_choice" }>;
-  onAnswered: Props["onAnswered"];
+  submit: Props["submit"];
 }) {
   const [picked, setPicked] = useState<number | null>(null);
   const done = picked !== null;
@@ -220,7 +196,7 @@ function MultipleChoice({
               disabled={done}
               onClick={() => {
                 setPicked(i);
-                onAnswered(i === item.answerIndex, item.choices[i]);
+                void submit({ type: "multiple_choice", choice: i });
               }}
               className={`min-h-11 rounded-control border px-4 py-2 text-left transition-colors ${
                 state === "correct"
@@ -246,10 +222,10 @@ type Segment = { kind: "text"; value: string } | { kind: "blank"; ref: string };
 
 function Cloze({
   item,
-  onAnswered,
+  submit,
 }: {
   item: Extract<ExerciseItem, { type: "cloze" }>;
-  onAnswered: Props["onAnswered"];
+  submit: Props["submit"];
 }) {
   const segments = useMemo<Segment[]>(() => {
     const out: Segment[] = [];
@@ -275,14 +251,8 @@ function Cloze({
   );
 
   function check() {
-    const allCorrect = item.blanks.every((b) =>
-      gradeText(values[b.ref] ?? "", b.answer),
-    );
     setDone(true);
-    onAnswered(
-      allCorrect,
-      item.blanks.map((b) => values[b.ref] ?? "").join(" / "),
-    );
+    void submit({ type: "cloze", blanks: Object.fromEntries(item.blanks.map((b) => [b.ref, values[b.ref] ?? ""])) });
   }
 
   return (
@@ -349,10 +319,10 @@ function Cloze({
 
 function Flashcard({
   item,
-  onAnswered,
+  submit,
 }: {
   item: Extract<ExerciseItem, { type: "flashcard" }>;
-  onAnswered: Props["onAnswered"];
+  submit: Props["submit"];
 }) {
   const [flipped, setFlipped] = useState(false);
   const [rated, setRated] = useState(false);
@@ -377,7 +347,7 @@ function Flashcard({
             type="button"
             onClick={() => {
               setRated(true);
-              onAnswered(false, "Didn't know", "self");
+              void submit({ type: "flashcard", knew: false });
             }}
             className={btn.secondary}
           >
@@ -388,7 +358,7 @@ function Flashcard({
             type="button"
             onClick={() => {
               setRated(true);
-              onAnswered(true, "Knew it", "self");
+              void submit({ type: "flashcard", knew: true });
             }}
             className={btn.primary}
           >
@@ -461,17 +431,14 @@ function ResultBanner({
 
 function SentenceBuild({
   item,
-  onAnswered,
-  llmGrading,
+  submit,
 }: {
   item: Extract<ExerciseItem, { type: "sentence_build" }>;
-  onAnswered: Props["onAnswered"];
-  llmGrading?: boolean;
+  submit: Props["submit"];
 }) {
   const [text, setText] = useState("");
   const [chosen, setChosen] = useState<number[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<FreeTextResult | null>(null);
+  const { busy, verdict: result, error, send } = useVerdict(submit);
   const hasBank = !!item.tokens && item.tokens.length > 0;
   const remaining = (item.tokens ?? [])
     .map((_, i) => i)
@@ -480,15 +447,8 @@ function SentenceBuild({
     ? chosen.map((i) => item.tokens![i]).join(" ")
     : text;
 
-  async function check() {
-    setBusy(true);
-    const r = await checkFreeText(built, item.answer, {
-      llmGrading,
-      prompt: item.instructions ?? "Build a correct German sentence.",
-    });
-    setBusy(false);
-    setResult(r);
-    onAnswered(r.correct, built, r.grading);
+  function check() {
+    void send({ type: "sentence_build", text: built });
   }
 
   return (
@@ -551,14 +511,16 @@ function SentenceBuild({
         >
           {busy ? "Checking…" : "Check"}
         </button>
-      ) : (
+      ) : null}
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+      {result !== null && (
         <>
           <ResultBanner
             result={result.correct}
             answer={item.answer}
             input={built}
             feedback={result.feedback}
-            ungraded={result.ungraded}
+            ungraded={result.grading === "ungraded"}
           />
           <Explanation text={item.explanation} />
         </>
@@ -571,16 +533,13 @@ function SentenceBuild({
 
 function Transform({
   item,
-  onAnswered,
-  llmGrading,
+  submit,
 }: {
   item: Extract<ExerciseItem, { type: "transform" }>;
-  onAnswered: Props["onAnswered"];
-  llmGrading?: boolean;
+  submit: Props["submit"];
 }) {
   const [text, setText] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<FreeTextResult | null>(null);
+  const { busy, verdict: result, error, send } = useVerdict(submit);
 
   // A source may carry a given base sentence on the first line and a lead-in to
   // complete on the following line(s) (e.g. "Wie heißt er?\nIch habe keine
@@ -590,18 +549,8 @@ function Transform({
   const [given, ...restLines] = item.source.split("\n").map((s) => s.trim());
   const lead = restLines.filter(Boolean).join(" ");
 
-  async function check() {
-    setBusy(true);
-    const r = await checkFreeText(text, item.answer, {
-      llmGrading,
-      prompt: item.instructions ?? "Rewrite the sentence as required.",
-      // Tell the grader what stem the learner already sees, so a correct
-      // completion-only answer (just the missing part) is accepted.
-      context: [given, lead].filter(Boolean).join(" "),
-    });
-    setBusy(false);
-    setResult(r);
-    onAnswered(r.correct, text, r.grading);
+  function check() {
+    void send({ type: "transform", text });
   }
 
   return (
@@ -630,14 +579,16 @@ function Transform({
         >
           {busy ? "Checking…" : "Check"}
         </button>
-      ) : (
+      ) : null}
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+      {result !== null && (
         <>
           <ResultBanner
             result={result.correct}
             answer={item.answer}
             input={text}
             feedback={result.feedback}
-            ungraded={result.ungraded}
+            ungraded={result.grading === "ungraded"}
           />
           <Explanation text={item.explanation} />
         </>
@@ -650,17 +601,17 @@ function Transform({
 
 function TrueFalse({
   item,
-  onAnswered,
+  submit,
 }: {
   item: Extract<ExerciseItem, { type: "true_false" }>;
-  onAnswered: Props["onAnswered"];
+  submit: Props["submit"];
 }) {
   const [picked, setPicked] = useState<boolean | null>(null);
   const done = picked !== null;
 
   function pick(value: boolean) {
     setPicked(value);
-    onAnswered(value === item.correct, value ? "Correct" : "Incorrect");
+    void submit({ type: "true_false", value });
   }
 
   return (
@@ -715,10 +666,10 @@ function TrueFalse({
 
 function ConjugationTable({
   item,
-  onAnswered,
+  submit,
 }: {
   item: Extract<ExerciseItem, { type: "conjugation_table" }>;
-  onAnswered: Props["onAnswered"];
+  submit: Props["submit"];
 }) {
   // values[colIndex][rowIndex]
   const [values, setValues] = useState<Record<string, string>>({});
@@ -734,18 +685,11 @@ function ConjugationTable({
   }
 
   function check() {
-    let all = true;
-    item.columns.forEach((_, c) =>
-      item.rows.forEach((_, r) => {
-        if (!cellCorrect(c, r)) all = false;
-      }),
-    );
     setDone(true);
-    // "ich: gehe / ging; du: …" — what was typed, row by row.
-    const typed = item.rows
-      .map((row, r) => `${row}: ${item.columns.map((_, c) => values[key(c, r)] ?? "").join(" / ")}`)
-      .join("; ");
-    onAnswered(all, typed);
+    void submit({
+      type: "conjugation_table",
+      cells: item.columns.map((_, c) => item.rows.map((_, r) => values[key(c, r)] ?? "")),
+    });
   }
 
   return (
