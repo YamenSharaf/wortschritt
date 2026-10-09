@@ -166,7 +166,7 @@ export function SeriesPage() {
       <div className="flex flex-wrap gap-2">
         {view.written > 0 && (
           <a
-            href={`/api/series/${view.id}/epub`}
+            href={api.epubUrl("series", view.id)}
             download
             className={btn.secondary}
             title="For e-readers: the German text with a table of contents and each chapter's word list"

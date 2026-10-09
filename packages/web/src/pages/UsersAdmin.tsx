@@ -307,7 +307,7 @@ function TtsProviders() {
     try {
       await api.adminTestTts(voice);
       // Play the sample too (served from the server, cached after the first time).
-      const sample = new Audio(`/api/tts?${new URLSearchParams({ voice, text: "Guten Tag! Ich lerne Deutsch." })}`);
+      const sample = new Audio(api.ttsUrl(voice, "Guten Tag! Ich lerne Deutsch."));
       await sample.play().catch(() => {});
       setMsg({ ok: true, text: "It works. pick the voice under Preferences → Pronunciation voice." });
     } catch (err) {

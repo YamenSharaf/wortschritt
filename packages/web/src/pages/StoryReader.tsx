@@ -743,7 +743,7 @@ function StoryReaderView() {
                 <ReaderPanel value={reader} onChange={changeReader} canSpeak={canSpeak} canTranslate={aiEnabled || hasAnyLines} />
                 <div className="reader-muted flex flex-wrap gap-x-4 gap-y-1 text-sm">
                   <a
-                    href={book ? `/api/series/${book.id}/epub` : `/api/stories/${story.id}/epub`}
+                    href={book ? api.epubUrl("series", book.id) : api.epubUrl("story", story.id)}
                     download
                     className="underline"
                   >

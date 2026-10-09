@@ -11,12 +11,15 @@ packages/
   shared/   Zod schemas + inferred types + grading. The shared contract.
   api/      Fastify server (TS via tsx), Drizzle + SQLite, content loader, auth,
             AI proxy. Also serves the built SPA in production.
+  client/   The API client for every frontend: endpoints, SSE streaming, media
+            URLs and the speech logic. No DOM or Node APIs — the platform
+            passes in fetch, auth headers, a device voice and a clip player.
   web/      Vite + React + Tailwind SPA. One client of the API.
 content/    Git-versioned JSON content (exercises + cheatsheets).
 docs/       This documentation.
 ```
 
-Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
+Package names: `@mdb/shared`, `@mdb/client`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
 (api :3000 + web :5173), `pnpm typecheck`, `pnpm build` (web).
 
 ## Data flow
@@ -308,7 +311,7 @@ without the tutor. This is what makes free-completion sets (e.g.
 `buildChatSystem`), thread it through `routes/assistant.ts` (`/ask` streams via
 SSE; grading and generation run inside `/api/answers` and
 `/api/exercises/:id/generate`), add a client call in
-`packages/web/src/lib/api.ts`, and a button. That's the whole pattern.
+`packages/client/src/api.ts`, and a button. That's the whole pattern.
 
 **Per-user providers and fallback.** Each user adds **OpenAI-compatible**
 providers (base URL + one key; presets for OpenRouter and OpenAI) and an ordered

@@ -55,6 +55,7 @@ validated against the schemas in `packages/shared/src/exercises.ts`.
 ```
 packages/shared  Zod schemas + types + grading (the contract)
 packages/api     Fastify + SQLite + AI proxy; serves the SPA in prod
+packages/client  API client + speech logic for every frontend (no DOM)
 packages/web     React + Tailwind SPA
 content/         git-versioned exercises + cheatsheets (JSON)
 docs/            the guides above

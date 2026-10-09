@@ -1,3 +1,5 @@
+import { api } from "../lib/api";
+
 /**
  * A story's, chapter's or book's cover (its drawn art, or a cover generated
  * from the title). The URL carries the art's version, so it caches well.
@@ -20,7 +22,7 @@ export function Cover({
   const v = version ?? `g-${fallbackKey}`;
   return (
     <img
-      src={`/api/${kind === "series" ? "series" : "stories"}/${id}/cover.svg?v=${encodeURIComponent(v)}`}
+      src={api.coverUrl(kind, id, v)}
       alt=""
       loading="lazy"
       draggable={false}

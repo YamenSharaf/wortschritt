@@ -9,6 +9,7 @@ RUN corepack enable
 # Manifests first for better layer caching.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/shared/package.json packages/shared/
+COPY packages/client/package.json packages/client/
 COPY packages/api/package.json packages/api/
 COPY packages/web/package.json packages/web/
 RUN pnpm install --frozen-lockfile

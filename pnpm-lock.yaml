@@ -90,6 +90,22 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  packages/client:
+    dependencies:
+      '@mdb/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.5
+        version: 22.20.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.7
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
   packages/shared:
     dependencies:
       zod:
@@ -117,6 +133,9 @@ importers:
       '@fontsource/literata':
         specifier: ^5.3.0
         version: 5.3.0
+      '@mdb/client':
+        specifier: workspace:*
+        version: link:../client
       '@mdb/shared':
         specifier: workspace:*
         version: link:../shared
