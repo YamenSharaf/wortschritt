@@ -7,7 +7,6 @@ import com.onyx.android.sdk.api.device.brightness.BrightnessController;
 import com.onyx.android.sdk.api.device.epd.EpdController;
 import com.onyx.android.sdk.api.device.epd.UpdateMode;
 import com.onyx.android.sdk.device.BaseDevice;
-import com.onyx.android.sdk.rx.RxManager;
 import org.lsposed.hiddenapibypass.HiddenApiBypass;
 
 /**
@@ -33,7 +32,6 @@ final class Boox {
     Boox(Context context) {
         // The SDK reaches into the system's e-ink and light services (hidden APIs).
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) HiddenApiBypass.addHiddenApiExemptions("");
-        RxManager.Builder.initAppContext(context.getApplicationContext());
         type = String.valueOf(BrightnessController.getBrightnessType(context));
         switch (type) {
             case "FL":
