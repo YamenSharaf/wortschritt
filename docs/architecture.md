@@ -41,6 +41,13 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   `exercise_runs` row scored by the server (graded answers only; once per
   change) and clears it when done. Cheat-sheet views live in `sheet_views`
   (`services/activity.ts`, `routes/activity.ts`).
+- Display rules the server decides once for every client: the progress
+  summary carries `goalLeft`, `goalPercent`, `accuracy` and `continue` (the
+  most recently touched of an unfinished set, resumed, and the last finished
+  run's set; a tie goes to the unfinished set); runs carry `kind` (exercise
+  or story) and `tier` (good ≥ 80%, ok ≥ 50%, weak); stories and chapters
+  carry `minutes` (about 120 words a minute). Thresholds live in
+  `services/rules.ts`; clients only render them.
 - "Generate more" (`services/generated.ts`): `POST /api/exercises/:id/generate`
   writes items with the learner's tutor (their mistakes in the set first as
   examples), validates them and keeps them in `generated_items` for that

@@ -13,6 +13,7 @@ import {
 } from "@mdb/shared";
 import { db, schema } from "../db/client";
 import { coverVersion } from "./covers";
+import { readingMinutes } from "./rules";
 import { getStory, pruneTranslations, readingStatus, wordCount } from "./stories";
 
 /**
@@ -53,6 +54,7 @@ function chaptersOf(s: Series, rows: ReturnType<typeof chapterRows>): SeriesChap
         title: story.data.title,
         level: story.data.level,
         words: wordCount(story.data.body),
+        minutes: readingMinutes(wordCount(story.data.body)),
         progress: row.progress,
         readAt: row.readAt,
         status: readingStatus(row.progress, row.readAt),
@@ -66,6 +68,7 @@ function chaptersOf(s: Series, rows: ReturnType<typeof chapterRows>): SeriesChap
         title: s.outline[n - 1]?.title ?? `Kapitel ${n}`,
         level: null,
         words: 0,
+        minutes: 0,
         progress: 0,
         readAt: null,
         status: "unread",

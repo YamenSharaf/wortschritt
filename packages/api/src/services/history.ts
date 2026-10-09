@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, lt } from "drizzle-orm";
 import type { ActivityDay, ActivityEvent, ActivityView, ExerciseItem, Mistake, SetHistory } from "@mdb/shared";
 import { loadExerciseSets } from "../content/loader";
+import { withRules } from "./activity";
 import { allGenerated } from "./generated";
 import { storyQuestionSets, storyTimeline } from "./stories";
 import { db, schema } from "../db/client";
@@ -210,5 +211,5 @@ export function getSetHistory(userId: number, setId: string): SetHistory {
     (a, b) => (order.get(a.itemId) ?? 1e9) - (order.get(b.itemId) ?? 1e9),
   );
 
-  return { setId, setTitle: set?.title ?? runs[0]?.setTitle ?? null, runs, items: sorted };
+  return { setId, setTitle: set?.title ?? runs[0]?.setTitle ?? null, runs: runs.map(withRules), items: sorted };
 }

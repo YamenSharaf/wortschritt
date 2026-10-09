@@ -10,8 +10,6 @@ import { Muted, PageHeader, Pill, btn, cardLink } from "../components/ui";
 import { api } from "../lib/api";
 import { useAsync } from "../lib/useAsync";
 
-/** Reading time at a learner's pace (~120 words a minute). */
-const minutes = (words: number) => Math.max(1, Math.round(words / 120));
 
 function status(s: StorySummary): { label: string; tone: "success" | "brand" } | null {
   if (s.status === "read") return { label: "Read", tone: "success" };
@@ -100,7 +98,7 @@ export function StoriesPage() {
                 {s.subtitle && <p className="text-sm text-ink-muted">{s.subtitle}</p>}
                 <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-3">
                   <Pill>{s.level}</Pill>
-                  <Pill>{minutes(s.words)} min</Pill>
+                  <Pill>{s.minutes} min</Pill>
                   {s.questions > 0 && <Pill>{s.questions} {s.questions === 1 ? "question" : "questions"}</Pill>}
                   {st && (
                     <Pill tone={st.tone}>

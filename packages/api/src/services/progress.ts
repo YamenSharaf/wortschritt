@@ -1,6 +1,9 @@
 import { and, eq, sql } from "drizzle-orm";
 import type { AnswerGrading, ProgressSummary } from "@mdb/shared";
 import { db, schema } from "../db/client";
+import { loadExerciseSets } from "../content/loader";
+import { latestRunsPerSet, listExerciseProgress } from "./activity";
+import { setKind } from "./rules";
 import { getSettings } from "./settings";
 import { getTimezone, startOfDay } from "./timezone";
 
@@ -21,6 +24,31 @@ export function recordAttempt(
       ...(at === undefined ? {} : { answeredAt: new Date(at * 1000) }),
     })
     .run();
+}
+
+/**
+ * Where "Continue practice" goes: the most recently touched of an unfinished
+ * practice set (resumed where the learner stopped) and the last finished
+ * run's set; a tie goes to the unfinished set.
+ */
+function continueTarget(userId: number): ProgressSummary["continue"] {
+  const titles = new Map(loadExerciseSets().map((s) => [s.id, s.title]));
+  const open = listExerciseProgress(userId)
+    .filter((p) => titles.has(p.setId) && (p.index > 0 || Object.keys(p.results).length > 0))
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+  const session = open[0];
+  const [run] = latestRunsPerSet(userId, 1);
+  if (session && (!run || session.updatedAt >= run.finishedAt)) {
+    return { setId: session.setId, title: titles.get(session.setId)!, kind: "exercise", resume: true };
+  }
+  if (!run) return null;
+  return {
+    setId: run.setId,
+    title: run.setTitle,
+    kind: setKind(run.setId),
+    // Left partway (the run was recorded on leaving): pick up there.
+    resume: open.some((p) => p.setId === run.setId),
+  };
 }
 
 export function getProgressSummary(userId: number): ProgressSummary {
@@ -55,11 +83,19 @@ export function getProgressSummary(userId: number): ProgressSummary {
     .groupBy(schema.attempts.setId)
     .all();
 
+  const answeredToday = today?.answered ?? 0;
+  const dailyGoal = getSettings(userId).dailyGoal;
+  const totalAnswered = totals?.answered ?? 0;
+  const totalCorrect = totals?.correct ?? 0;
   return {
-    totalAnswered: totals?.answered ?? 0,
-    totalCorrect: totals?.correct ?? 0,
-    answeredToday: today?.answered ?? 0,
-    dailyGoal: getSettings(userId).dailyGoal,
+    totalAnswered,
+    totalCorrect,
+    answeredToday,
+    dailyGoal,
+    goalLeft: Math.max(0, dailyGoal - answeredToday),
+    goalPercent: dailyGoal > 0 ? Math.min(100, Math.round((answeredToday / dailyGoal) * 100)) : 100,
+    accuracy: totalAnswered ? Math.round((totalCorrect / totalAnswered) * 100) : null,
+    continue: continueTarget(userId),
     perSet: perSet.map((p) => ({
       setId: p.setId,
       answered: p.answered,

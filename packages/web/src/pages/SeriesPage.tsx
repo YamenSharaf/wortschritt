@@ -127,7 +127,7 @@ export function SeriesPage() {
                 </div>
                 <div className="text-xs text-ink-subtle">
                   {c.storyId
-                    ? `${Math.max(1, Math.round(c.words / 120))} min${c.level && c.level !== view.level ? ` · ${c.level}` : ""}`
+                    ? `${c.minutes} min${c.level && c.level !== view.level ? ` · ${c.level}` : ""}`
                     : "Not written yet"}
                 </div>
               </div>
