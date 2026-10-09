@@ -11,7 +11,7 @@
 #
 services:
   app:
-    image: ghcr.io/yamensharaf/mit-dem-baby:latest
+    image: ghcr.io/yamensharaf/wortschritt:latest
     ports:
       - "3000:3000"
     environment:
