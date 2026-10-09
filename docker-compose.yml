@@ -1,7 +1,7 @@
 services:
   app:
     build: .
-    image: mit-dem-baby
+    image: wortschritt
     ports:
       - "3000:3000"
     environment:

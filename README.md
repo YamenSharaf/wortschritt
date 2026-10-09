@@ -136,7 +136,7 @@ only need `docker-compose.prod.yml` and a `.env` — no repo checkout, no build:
 
 ```bash
 # On your homelab host, in an empty directory:
-curl -O https://raw.githubusercontent.com/YamenSharaf/mit-dem-baby/main/docker-compose.prod.yml
+curl -O https://raw.githubusercontent.com/YamenSharaf/Wortschritt/main/docker-compose.prod.yml
 cat > .env <<'EOF'
 ADMIN_USERNAME=your-name
 APP_PASSWORD=your-strong-password
