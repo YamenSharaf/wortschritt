@@ -7,10 +7,13 @@ import { App } from "@capacitor/app";
 import { registerPlugin, SystemBars, SystemBarsStyle } from "@capacitor/core";
 import { Preferences } from "@capacitor/preferences";
 import type { PluginListenerHandle } from "@capacitor/core";
-import { closeTopSheet, hydrateDeviceSettings, setDeviceSettings, type PageKey } from "../device";
+import { closeTopSheet, hydrateDeviceSettings, setDeviceSettings, type Light, type PageKey } from "../device";
 
 interface WortschrittPlugin {
   info(): Promise<{ manufacturer: string; model: string }>;
+  getLight(): Promise<{ kind: string; brightness?: number | null; warmth?: number | null }>;
+  setLight(options: { brightness?: number | null; warmth?: number }): Promise<void>;
+  fullRefresh(): Promise<{ done: boolean }>;
   setKeepAwake(options: { on: boolean }): Promise<void>;
   setPageKeys(options: { on: boolean }): Promise<void>;
   addListener(event: "pageKey", listener: (e: { key: PageKey }) => void): Promise<PluginListenerHandle>;
@@ -25,6 +28,19 @@ export async function setBarsStyle(style: "light" | "dark" | "app"): Promise<voi
   // Capacitor names the background: Dark = light icons, Light = dark icons.
   const s = style === "dark" ? SystemBarsStyle.Dark : style === "light" ? SystemBarsStyle.Light : SystemBarsStyle.Default;
   await SystemBars.setStyle({ style: s });
+}
+
+export async function getLight(): Promise<Light> {
+  const l = await Wortschritt.getLight();
+  return { kind: l.kind, brightness: l.brightness ?? null, warmth: l.warmth ?? null };
+}
+
+export async function setLight(light: { brightness?: number | null; warmth?: number }): Promise<void> {
+  await Wortschritt.setLight(light);
+}
+
+export async function fullRefresh(): Promise<boolean> {
+  return (await Wortschritt.fullRefresh()).done;
 }
 
 export async function setKeepAwake(on: boolean): Promise<void> {

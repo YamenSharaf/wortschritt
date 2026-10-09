@@ -21,6 +21,11 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        // The Onyx (Boox) SDK: front light and e-ink refresh (app/src/main/java/.../Boox.java).
+        maven {
+            url "https://repo.boox.com/repository/maven-public/"
+            content { includeGroup "com.onyx.android.sdk" }
+        }
     }
 }
 

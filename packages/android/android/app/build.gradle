@@ -36,6 +36,9 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
+    // Boox front light and e-ink refresh; only used on ONYX devices (Boox.java).
+    implementation 'com.onyx.android.sdk:onyxsdk-device:1.3.5.3'
+    implementation 'org.lsposed.hiddenapibypass:hiddenapibypass:6.1'
     implementation project(':capacitor-cordova-android-plugins')
 }
 

@@ -33,6 +33,38 @@ export function appBarsStyle(): "light" | "dark" | "app" {
   return settings.eink === "off" ? "app" : settings.eink;
 }
 
+/**
+ * The reader's light. "boox-…": a Boox's front light (warmth where it has warm
+ * LEDs or colour temperature); "screen": a phone's window brightness, with
+ * warmth as a tint the reader draws; "none": the web.
+ */
+export type Light = { kind: string; brightness: number | null; warmth: number | null };
+
+export async function getLight(): Promise<Light> {
+  const none = { kind: "none", brightness: null, warmth: null };
+  if (!native) return none;
+  try {
+    return await (await native()).getLight();
+  } catch {
+    return none;
+  }
+}
+
+/** 0..1 each; brightness null gives a phone's brightness back to the system. */
+export function setLight(light: { brightness?: number | null; warmth?: number }): void {
+  call((m) => m.setLight(light));
+}
+
+/** A Boox's real full refresh; false where there is none (the reader flashes instead). */
+export async function fullRefresh(): Promise<boolean> {
+  if (!native) return false;
+  try {
+    return await (await native()).fullRefresh();
+  } catch {
+    return false;
+  }
+}
+
 /** Keep the screen on (while reading). */
 export function setKeepAwake(on: boolean): void {
   call((m) => m.setKeepAwake(on));
@@ -92,8 +124,19 @@ export type DeviceSettings = {
   eink: "off" | "light" | "dark";
   /** E-ink: flash the screen every this many page turns to clear ghosting (0 = never). */
   einkRefresh: number;
+  /** Phone: the reader's own brightness, 0..1 (null = the system's). A Boox's light keeps its own. */
+  readerBrightness: number | null;
+  /** Phone: the reader's warm tint, 0..1. */
+  readerWarmth: number;
 };
-const DEFAULTS: DeviceSettings = { pageKeys: false, invertPageKeys: false, eink: "off", einkRefresh: 0 };
+const DEFAULTS: DeviceSettings = {
+  pageKeys: false,
+  invertPageKeys: false,
+  eink: "off",
+  einkRefresh: 0,
+  readerBrightness: null,
+  readerWarmth: 0,
+};
 const KEY = "device-settings";
 
 let settings: DeviceSettings = DEFAULTS;

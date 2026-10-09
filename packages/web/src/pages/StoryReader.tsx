@@ -43,7 +43,11 @@ import { IS_NATIVE } from "../lib/platform";
 import {
   appBarsStyle,
   capturePageKeys,
+  fullRefresh,
   getDeviceSettings,
+  getLight,
+  setLight,
+  type Light,
   setDeviceSettings,
   setKeepAwake,
   setSystemBarsStyle,
@@ -373,7 +377,9 @@ function StoryReaderView() {
   useEffect(() => {
     if (!eink || !device.einkRefresh || !paged) return;
     turns.current += 1;
-    if (turns.current > 1 && (turns.current - 1) % device.einkRefresh === 0) setFlash(true);
+    if (turns.current > 1 && (turns.current - 1) % device.einkRefresh === 0) {
+      void fullRefresh().then((done) => done || setFlash(true));
+    }
     // Counts page changes only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
@@ -776,6 +782,7 @@ function StoryReaderView() {
   return (
     <div className="reader fixed inset-0 z-40 overflow-hidden" data-theme={reader.theme} lang="de" {...cornerHold}>
       {flash && <div className="eink-flash" aria-hidden />}
+      {IS_NATIVE && <LightEdges onTap={tapAt} eink={eink} />}
       {/* Top bar: hides while reading; a tap on the page (not a word) brings it back. */}
       <div
         className={`reader-bar absolute inset-x-0 top-0 z-20 pt-[var(--sa-top)] transition-transform duration-200 ${
@@ -1203,6 +1210,127 @@ function PageKeySettings({ row, label }: { row: string; label: string }) {
           className={box}
         />
       </label>
+    </>
+  );
+}
+
+/**
+ * Vertical swipes along the page's edges: left = brightness, right = warmth.
+ * A Boox changes its front light (warmth where it has warm LEDs); a phone its
+ * screen brightness while reading, with warmth as a tint over the page. Taps on
+ * the edges still turn pages.
+ */
+function LightEdges({ onTap, eink }: { onTap: (x: number) => void; eink: boolean }) {
+  const [light, setLightState] = useState<Light | null>(null);
+  const [tint, setTint] = useState(() => getDeviceSettings().readerWarmth);
+  const [hint, setHint] = useState<{ what: "Brightness" | "Warmth"; value: number } | null>(null);
+  const drag = useRef<{ what: "brightness" | "warmth"; y0: number; v0: number; moved: boolean; sent: number } | null>(
+    null,
+  );
+  const swallow = useRef(false);
+  const hintTimer = useRef(0);
+
+  useEffect(() => {
+    let alive = true;
+    let phone = false;
+    void getLight().then((l) => {
+      if (!alive) return;
+      phone = l.kind === "screen";
+      const own = getDeviceSettings().readerBrightness;
+      if (phone && own !== null) setLight({ brightness: own });
+      setLightState(phone ? { ...l, brightness: own ?? l.brightness } : l);
+    });
+    return () => {
+      alive = false;
+      // A phone's own brightness is the reader's only.
+      if (phone) setLight({ brightness: null });
+    };
+  }, []);
+
+  if (!light || light.kind === "none") return null;
+  const phone = light.kind === "screen";
+  const can = {
+    brightness: light.brightness !== null,
+    warmth: phone ? !eink : light.warmth !== null,
+  };
+  const current = (what: "brightness" | "warmth") =>
+    what === "brightness" ? (light.brightness ?? 0.5) : phone ? tint : (light.warmth ?? 0.5);
+
+  const apply = (what: "brightness" | "warmth", value: number) => {
+    if (what === "warmth" && phone) setTint(value);
+    else setLight({ [what]: value });
+  };
+
+  const edge = (what: "brightness" | "warmth", side: string) => (
+    <div
+      aria-hidden
+      className={`absolute bottom-10 top-14 z-10 w-[8%] ${side}`}
+      style={{ touchAction: "none" }}
+      onPointerDown={(e) => {
+        if (!can[what]) return;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        drag.current = { what, y0: e.clientY, v0: current(what), moved: false, sent: 0 };
+      }}
+      onPointerMove={(e) => {
+        const d = drag.current;
+        if (!d) return;
+        const dy = e.clientY - d.y0;
+        if (!d.moved && Math.abs(dy) < 10) return;
+        d.moved = true;
+        // Up = more; half the screen's height covers the whole range.
+        const value = Math.max(0, Math.min(1, d.v0 - dy / (window.innerHeight * 0.5)));
+        window.clearTimeout(hintTimer.current);
+        setHint({ what: what === "brightness" ? "Brightness" : "Warmth", value });
+        // The front light is slow to change: at most every 60 ms.
+        if (e.timeStamp - d.sent > 60) {
+          d.sent = e.timeStamp;
+          apply(what, value);
+        }
+      }}
+      onPointerUp={(e) => {
+        const d = drag.current;
+        drag.current = null;
+        if (!d?.moved) return;
+        swallow.current = true;
+        const value = Math.max(0, Math.min(1, d.v0 - (e.clientY - d.y0) / (window.innerHeight * 0.5)));
+        apply(what, value);
+        setLightState((l) => (l && !(what === "warmth" && phone) ? { ...l, [what]: value } : l));
+        if (phone) setDeviceSettings(what === "brightness" ? { readerBrightness: value } : { readerWarmth: value });
+        hintTimer.current = window.setTimeout(() => setHint(null), 700);
+      }}
+      onPointerCancel={() => {
+        drag.current = null;
+      }}
+      onClick={(e) => {
+        if (swallow.current) {
+          swallow.current = false;
+          e.stopPropagation();
+          return;
+        }
+        onTap(e.clientX);
+      }}
+    />
+  );
+
+  return (
+    <>
+      {phone && !eink && tint > 0 && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-30 mix-blend-multiply"
+          style={{ background: "rgb(255 150 60)", opacity: tint * 0.35 }}
+        />
+      )}
+      {edge("brightness", "left-0")}
+      {edge("warmth", "right-0")}
+      {hint && (
+        <div
+          className="pointer-events-none absolute left-1/2 top-1/3 z-40 -translate-x-1/2 rounded-full border border-line bg-surface-raised px-4 py-2 font-sans text-sm font-medium text-ink shadow-pop"
+          lang="en"
+        >
+          {hint.what} {Math.round(hint.value * 100)}%
+        </div>
+      )}
     </>
   );
 }
