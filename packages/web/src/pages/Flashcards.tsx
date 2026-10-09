@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { filterVocab, useFlashcards } from "@mdb/client/react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import type { VocabEntry } from "@mdb/shared";
 import { SpeakButton } from "../components/SpeakButton";
 import { formChips } from "../lib/forms";
 import { useVocab } from "../lib/vocab";
@@ -9,17 +9,6 @@ import { btn, card } from "../components/ui";
 
 type Dir = "de" | "en";
 const DIR_KEY = "mdb-flashcard-dir";
-
-function shuffle<T>(list: T[]): T[] {
-  const a = [...list];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    const tmp = a[i]!;
-    a[i] = a[j]!;
-    a[j] = tmp;
-  }
-  return a;
-}
 
 export function Flashcards() {
   const { entries, groups, recordStudy } = useVocab();
@@ -33,11 +22,7 @@ export function Flashcards() {
       ? "All words"
       : groups.find((g) => g.id === groupId)?.name ?? "Group";
 
-  const pool = useMemo(
-    () =>
-      entries.filter((e) => groupId == null || e.groups.includes(groupId)),
-    [entries, groupId],
-  );
+  const pool = useMemo(() => filterVocab(entries, { group: groupId }), [entries, groupId]);
 
   const [dir, setDir] = useState<Dir>(() => {
     try {
@@ -46,25 +31,8 @@ export function Flashcards() {
       return "de";
     }
   });
-  const [queue, setQueue] = useState<VocabEntry[]>([]);
-  const [i, setI] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  const [results, setResults] = useState<Record<string, boolean>>({});
-  const [phase, setPhase] = useState<"loading" | "playing" | "done">("loading");
-
-  function start(list: VocabEntry[]) {
-    setQueue(shuffle(list));
-    setI(0);
-    setFlipped(false);
-    setResults({});
-    setPhase("playing");
-  }
-
-  // Kick off once the vocab has loaded (context fetches asynchronously).
-  useEffect(() => {
-    if (phase === "loading" && pool.length > 0) start(pool);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pool.length]);
+  const session = useFlashcards(pool, recordStudy);
+  const { phase, queue, index: i, card: word, flipped, setFlipped, start, grade } = session;
 
   function toggleDir() {
     setDir((d) => {
@@ -77,20 +45,6 @@ export function Flashcards() {
       return next;
     });
     setFlipped(false);
-  }
-
-  const card = queue[i];
-
-  function grade(known: boolean) {
-    if (!card) return;
-    setResults((r) => ({ ...r, [card.word]: known }));
-    void recordStudy(card.word, known).catch(() => {});
-    if (i + 1 < queue.length) {
-      setI(i + 1);
-      setFlipped(false);
-    } else {
-      setPhase("done");
-    }
   }
 
   // Keyboard: Space/Enter flip, ← don't know, → know.
@@ -135,9 +89,7 @@ export function Flashcards() {
 
   if (phase === "done") {
     const total = queue.length;
-    const knownCount = queue.filter((c) => results[c.word]).length;
-    const missed = queue.filter((c) => results[c.word] === false);
-    const pct = total ? Math.round((knownCount / total) * 100) : 0;
+    const { knownCount, missed, percent: pct } = session;
     return (
       <div className="mx-auto max-w-md space-y-5">
         {back}
@@ -185,11 +137,11 @@ export function Flashcards() {
   }
 
   // playing
-  if (!card) return null;
-  const knownSoFar = Object.values(results).filter(Boolean).length;
-  const missedSoFar = Object.values(results).filter((v) => !v).length;
-  const promptText = dir === "de" ? card.display : card.translation;
-  const answerText = dir === "de" ? card.translation : card.display;
+  if (!word) return null;
+  const knownSoFar = session.knownCount;
+  const missedSoFar = session.missedCount;
+  const promptText = dir === "de" ? word.display : word.translation;
+  const answerText = dir === "de" ? word.translation : word.display;
 
   return (
     <div className="mx-auto max-w-md">
@@ -228,7 +180,7 @@ export function Flashcards() {
         </div>
         <div className="mt-1 flex items-center gap-2">
           <span className="font-content text-[34px] font-semibold leading-10 tracking-[-0.02em]">{promptText}</span>
-          {dir === "de" && <SpeakButton text={card.display} />}
+          {dir === "de" && <SpeakButton text={word.display} />}
         </div>
 
         {flipped ? (
@@ -238,11 +190,11 @@ export function Flashcards() {
             </div>
             <div className="mt-1 flex items-center gap-2">
               <span className="text-xl text-ink">{answerText}</span>
-              {dir === "en" && <SpeakButton text={card.display} />}
+              {dir === "en" && <SpeakButton text={word.display} />}
             </div>
-            {formChips(card.forms).length > 0 && (
+            {formChips(word.forms).length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">
-                {formChips(card.forms).map(([label, val]) => (
+                {formChips(word.forms).map(([label, val]) => (
                   <span
                     key={label}
                     className="rounded-full border border-line bg-surface-sunken px-2 py-0.5 text-xs"
@@ -253,9 +205,9 @@ export function Flashcards() {
                 ))}
               </div>
             )}
-            {card.examples.length > 0 && (
+            {word.examples.length > 0 && (
               <div className="mt-3 space-y-2">
-                {card.examples.slice(0, 2).map((ex, k) => (
+                {word.examples.slice(0, 2).map((ex, k) => (
                   <div key={k} className="rounded-control bg-surface-sunken p-2.5 text-sm">
                     <div className="flex items-start justify-between gap-1">
                       <p className="text-ink">{ex.de}</p>

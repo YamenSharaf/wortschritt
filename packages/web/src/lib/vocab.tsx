@@ -1,28 +1,12 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import type {
-  DictEntry,
-  SaveVocabBody,
-  VocabEntry,
-  VocabGroup,
-  WordDetails,
-  WordLookup,
-} from "@mdb/shared";
+import type { DictEntry, WordDetails } from "@mdb/shared";
+import { useVocabState, useWordLookup, useWordTranslation, type VocabState } from "@mdb/client/react";
 import { SpeakButton } from "../components/SpeakButton";
-import { api, formsFromLookup } from "./api";
 import { perfektAux } from "./forms";
 import { speak, ttsSupported } from "./tts";
 import { CheckIcon, CopyIcon, CrossIcon, LanguagesIcon, PlusIcon, SpeakerIcon } from "../components/icons";
 import { btn } from "../components/ui";
-
-const norm = (w: string) => w.trim().toLowerCase();
 
 type Anchor = {
   display: string;
@@ -32,27 +16,8 @@ type Anchor = {
   view: "menu" | "panel";
 };
 
-type VocabCtx = {
-  /** Whether the AI tutor is configured (the fuller word lookup needs it). */
-  enabled: boolean;
-  /** Whether the bundled offline dictionary is loaded (instant gloss on tap). */
-  dictAvailable: boolean;
-  /** Either source lets a tap open the word menu. */
-  canTap: boolean;
-  entries: VocabEntry[];
-  groups: VocabGroup[];
-  /** Lowercased keys currently saved. */
-  words: Set<string>;
-  reload: () => void;
-  save: (body: SaveVocabBody) => Promise<VocabEntry>;
-  remove: (word: string) => Promise<void>;
-  createGroup: (name: string) => Promise<VocabGroup>;
-  deleteGroup: (id: number) => Promise<void>;
-  setWordGroup: (word: string, id: number, member: boolean) => Promise<void>;
-  /** Record a flashcard grade; updates the word's kept score. */
-  recordStudy: (word: string, known: boolean) => Promise<void>;
-  /** Clear a word's flashcard score. */
-  resetStudy: (word: string) => Promise<void>;
+/** The saved words (see useVocabState) and the tap-a-word popup. */
+type VocabCtx = VocabState & {
   openWord: (display: string, x: number, y: number, context?: string) => void;
 };
 
@@ -65,121 +30,14 @@ export function useVocab(): VocabCtx {
 }
 
 export function VocabProvider({ children }: { children: ReactNode }) {
-  const [enabled, setEnabled] = useState(false);
-  const [dictAvailable, setDictAvailable] = useState(false);
-  const [entries, setEntries] = useState<VocabEntry[]>([]);
-  const [groups, setGroups] = useState<VocabGroup[]>([]);
+  const state = useVocabState();
   const [anchor, setAnchor] = useState<Anchor | null>(null);
-
-  const reload = () => {
-    api.vocab().then(setEntries).catch(() => {});
-    api.vocabGroups().then(setGroups).catch(() => {});
-  };
-
-  useEffect(() => {
-    api
-      .assistantStatus()
-      .then((s) => setEnabled(s.enabled))
-      .catch(() => {});
-    api
-      .dictStatus()
-      .then((s) => setDictAvailable(s.available))
-      .catch(() => {});
-    reload();
-  }, []);
-
-  const words = useMemo(() => new Set(entries.map((e) => e.word)), [entries]);
-
-  async function save(body: SaveVocabBody) {
-    const entry = await api.vocabSave(body);
-    setEntries((prev) =>
-      [entry, ...prev.filter((e) => e.word !== entry.word)].sort(
-        (a, b) => b.createdAt - a.createdAt,
-      ),
-    );
-    return entry;
-  }
-
-  async function remove(word: string) {
-    await api.vocabRemove(word);
-    setEntries((prev) => prev.filter((e) => e.word !== norm(word)));
-    api.vocabGroups().then(setGroups).catch(() => {});
-  }
-
-  async function createGroup(name: string) {
-    const g = await api.vocabGroupCreate(name);
-    setGroups((prev) => [...prev, g].sort((a, b) => a.name.localeCompare(b.name)));
-    return g;
-  }
-
-  async function deleteGroup(id: number) {
-    await api.vocabGroupDelete(id);
-    setGroups((prev) => prev.filter((g) => g.id !== id));
-    setEntries((prev) =>
-      prev.map((e) => ({ ...e, groups: e.groups.filter((g) => g !== id) })),
-    );
-  }
-
-  async function setWordGroup(word: string, id: number, member: boolean) {
-    if (member) await api.vocabGroupAddWord(id, word);
-    else await api.vocabGroupRemoveWord(id, word);
-    const w = norm(word);
-    setEntries((prev) =>
-      prev.map((e) =>
-        e.word !== w
-          ? e
-          : {
-              ...e,
-              groups: member
-                ? [...new Set([...e.groups, id])]
-                : e.groups.filter((g) => g !== id),
-            },
-      ),
-    );
-    setGroups((prev) =>
-      prev.map((g) =>
-        g.id !== id ? g : { ...g, count: g.count + (member ? 1 : -1) },
-      ),
-    );
-  }
-
-  async function recordStudy(word: string, known: boolean) {
-    const w = norm(word);
-    const stats = await api.studyVocab(w, known);
-    setEntries((prev) =>
-      prev.map((e) => (e.word === w ? { ...e, stats } : e)),
-    );
-  }
-
-  async function resetStudy(word: string) {
-    const w = norm(word);
-    await api.resetVocabStudy(w);
-    setEntries((prev) =>
-      prev.map((e) => (e.word === w ? { ...e, stats: null } : e)),
-    );
-  }
 
   function openWord(display: string, x: number, y: number, context?: string) {
     setAnchor({ display, x, y, context, view: "menu" });
   }
 
-  const value: VocabCtx = {
-    enabled,
-    dictAvailable,
-    canTap: enabled || dictAvailable,
-    entries,
-    groups,
-    words,
-    reload,
-    save,
-    remove,
-    createGroup,
-    deleteGroup,
-    setWordGroup,
-    recordStudy,
-    resetStudy,
-    openWord,
-  };
+  const value: VocabCtx = { ...state, openWord };
 
   return (
     <Ctx.Provider value={value}>
@@ -231,33 +89,13 @@ function WordOverlay({
   onClose: () => void;
 }) {
   const { enabled } = useVocab();
-  // undefined = still looking up; null = no offline entry.
-  const [dict, setDict] = useState<DictEntry | null | undefined>(undefined);
-  // Wiktionary details, loaded alongside (slower; null = none).
-  const [details, setDetails] = useState<WordDetails | null | undefined>(undefined);
+  const { dict, details } = useWordLookup(anchor.display);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
-
-  useEffect(() => {
-    let alive = true;
-    setDict(undefined);
-    setDetails(undefined);
-    api
-      .dict(anchor.display)
-      .then((d) => alive && setDict(d))
-      .catch(() => alive && setDict(null));
-    api
-      .wordDetails(anchor.display)
-      .then((d) => alive && setDetails(d))
-      .catch(() => alive && setDetails(null));
-    return () => {
-      alive = false;
-    };
-  }, [anchor.display]);
 
   return (
     <div className="fixed inset-0 z-50" onClick={onClose}>
@@ -461,64 +299,12 @@ function WordPanel({
   dict: DictEntry | null;
   onClose: () => void;
 }) {
-  const { entries, groups, save, setWordGroup, createGroup } = useVocab();
-  const [fetched, setFetched] = useState<WordLookup | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const vocab = useVocab();
+  const { groups } = vocab;
   const [newGroup, setNewGroup] = useState("");
-
-  // If the tapped surface form itself is already saved, use it (no AI call).
-  const preSaved = entries.find((e) => e.word === norm(display));
-
-  function load() {
-    setLoading(true);
-    setError(null);
-    api
-      .translateWord(display, { context, count: 2 })
-      .then(setFetched)
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
-      .finally(() => setLoading(false));
-  }
-
-  useEffect(() => {
-    if (preSaved) return; // cached — no lookup
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [display, context]);
-
-  const data: WordLookup | null = preSaved
-    ? { lemma: preSaved.display, translation: preSaved.translation, examples: preSaved.examples }
-    : fetched;
-  // Save under the base form (e.g. "trifft" → "treffen"). The offline dictionary
-  // gives us the lemma instantly, before the AI reply lands.
-  const headword = data?.lemma?.trim() || dict?.lemma || display;
-  const savedEntry = entries.find((e) => e.word === norm(headword));
+  const tr = useWordTranslation({ display, context, dict, vocab });
+  const { data, fetched, loading, error, headword, inflected, savedEntry, saving } = tr;
   const isSaved = !!savedEntry;
-  const inflected = headword.toLowerCase() !== display.toLowerCase();
-
-  async function ensureSaved() {
-    if (isSaved || !data) return;
-    await save({
-      word: headword,
-      display: headword,
-      translation: data.translation,
-      examples: data.examples,
-      forms: fetched ? formsFromLookup(fetched) : undefined,
-    });
-  }
-  async function addPlain() {
-    setSaving(true);
-    try {
-      await ensureSaved();
-    } finally {
-      setSaving(false);
-    }
-  }
-  async function toggleGroup(id: number, member: boolean) {
-    await ensureSaved();
-    await setWordGroup(headword, id, member);
-  }
 
   const ex = data?.examples?.[0];
   return (
@@ -559,7 +345,7 @@ function WordPanel({
           <p>{error}</p>
           <button
             type="button"
-            onClick={load}
+            onClick={tr.retry}
             className="mt-1 font-medium underline"
           >
             Try again
@@ -598,7 +384,7 @@ function WordPanel({
                     <button
                       key={g.id}
                       type="button"
-                      onClick={() => void toggleGroup(g.id, !member)}
+                      onClick={() => void tr.setGroup(g.id, !member)}
                       className={`rounded-full border px-2.5 py-1 text-xs ${
                         member
                           ? "border-transparent bg-brand-soft text-brand-ink"
@@ -616,10 +402,8 @@ function WordPanel({
           <form
             onSubmit={async (e) => {
               e.preventDefault();
-              const name = newGroup.trim();
-              if (!name) return;
-              const g = await createGroup(name);
-              await toggleGroup(g.id, true);
+              if (!newGroup.trim()) return;
+              await tr.addToNewGroup(newGroup);
               setNewGroup("");
             }}
             className="mt-2 flex items-center gap-1"
@@ -650,7 +434,7 @@ function WordPanel({
             ) : (
               <button
                 type="button"
-                onClick={addPlain}
+                onClick={() => void tr.add()}
                 disabled={saving}
                 className={`${btn.primary} ${btn.sm} w-full`}
               >

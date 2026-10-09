@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import type { SaveVocabBody, VocabEntry, VocabGroup } from "@mdb/shared";
+import { filterVocab, useAddWord } from "@mdb/client/react";
 import { SearchBox } from "../components/SearchBox";
 import { SpeakButton } from "../components/SpeakButton";
-import { api, formsFromLookup } from "../lib/api";
 import { formChips } from "../lib/forms";
 import { timeAgo } from "../lib/time";
 import { useVocab } from "../lib/vocab";
@@ -16,6 +16,7 @@ export function VocabPage() {
     groups,
     reload,
     save,
+    refresh,
     remove,
     createGroup,
     deleteGroup,
@@ -35,24 +36,9 @@ export function VocabPage() {
   }, []);
 
   // Flashcards study the selected group (or all) — independent of the search box.
-  const poolCount = useMemo(
-    () => entries.filter((e) => group == null || e.groups.includes(group)).length,
-    [entries, group],
-  );
+  const poolCount = useMemo(() => filterVocab(entries, { group }).length, [entries, group]);
 
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    return entries.filter((e) => {
-      if (group != null && !e.groups.includes(group)) return false;
-      if (
-        needle &&
-        !e.display.toLowerCase().includes(needle) &&
-        !e.translation.toLowerCase().includes(needle)
-      )
-        return false;
-      return true;
-    });
-  }, [entries, q, group]);
+  const filtered = useMemo(() => filterVocab(entries, { group, query: q }), [entries, q, group]);
 
   return (
     <div>
@@ -126,7 +112,7 @@ export function VocabPage() {
               groups={groups}
               open={open === e.word}
               onToggle={() => setOpen(open === e.word ? null : e.word)}
-              onRefresh={save}
+              onRefresh={refresh}
               onRemove={remove}
               onCreateGroup={createGroup}
               onToggleGroup={setWordGroup}
@@ -149,123 +135,21 @@ function AddWordForm({
   dictAvailable: boolean;
   onAdd: (body: SaveVocabBody) => Promise<void>;
 }) {
-  const [word, setWord] = useState("");
-  const [definition, setDefinition] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [genBusy, setGenBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  // Cached from a Generate action so Add doesn't re-query.
-  const [gen, setGen] = useState<{
-    examples: { de: string; en: string }[];
-    lemma?: string;
-    forms?: ReturnType<typeof formsFromLookup>;
-  } | null>(null);
-
-  const canGenerate = enabled || dictAvailable;
-
-  /** Fill the translation from the AI (preferred) or the offline dictionary. */
-  async function generate() {
-    const w = word.trim();
-    if (!w || genBusy) return;
-    setGenBusy(true);
-    setError(null);
-    try {
-      if (enabled) {
-        const d = await api.translateWord(w, { count: 2 });
-        setDefinition(d.translation);
-        setGen({
-          examples: d.examples,
-          lemma: d.lemma?.trim(),
-          forms: formsFromLookup(d),
-        });
-      } else {
-        const d = await api.dict(w);
-        if (d?.gloss) {
-          setDefinition(d.gloss);
-          setGen({ examples: [], lemma: d.lemma });
-        } else {
-          setError("No offline definition found — type one.");
-        }
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setGenBusy(false);
-    }
-  }
-
-  /** Resolve the final entry, generating a translation if left blank. */
-  async function resolve(w: string): Promise<SaveVocabBody | null> {
-    let translation = definition.trim();
-    let examples = gen?.examples ?? [];
-    let headword = gen?.lemma || w;
-    let forms = gen?.forms;
-
-    if (!translation) {
-      if (enabled) {
-        const d = await api.translateWord(w, { count: 2 });
-        translation = d.translation;
-        examples = d.examples;
-        headword = d.lemma?.trim() || w;
-        forms = formsFromLookup(d);
-      } else if (dictAvailable) {
-        const d = await api.dict(w);
-        if (d?.gloss) {
-          translation = d.gloss;
-          headword = d.lemma || w;
-        }
-      }
-    } else if (enabled && !gen) {
-      // User typed their own translation — enrich with examples + base form.
-      try {
-        const d = await api.translateWord(w, { meaning: translation, count: 2 });
-        examples = d.examples;
-        headword = d.lemma?.trim() || w;
-        forms = formsFromLookup(d);
-      } catch {
-        /* keep the typed translation without examples */
-      }
-    }
-
-    if (!translation) return null;
-    return { word: headword, display: headword, translation, examples, forms };
-  }
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    const w = word.trim();
-    if (!w || busy || genBusy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const body = await resolve(w);
-      if (!body) {
-        setError("Add a translation, or generate one.");
-        return;
-      }
-      await onAdd(body);
-      setWord("");
-      setDefinition("");
-      setGen(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
-    }
-  }
+  const form = useAddWord({ enabled, dictAvailable });
+  const { word, definition, busy, genBusy, error, canGenerate } = form;
 
   return (
     <form
-      onSubmit={submit}
+      onSubmit={(e) => {
+        e.preventDefault();
+        void form.add(onAdd);
+      }}
       className="mb-4 space-y-2 rounded-card border border-line bg-surface p-3 "
     >
       <div className="flex flex-col gap-2 sm:flex-row">
         <input
           value={word}
-          onChange={(e) => {
-            setWord(e.target.value);
-            setGen(null); // a new word invalidates a prior generation
-          }}
+          onChange={(e) => form.setWord(e.target.value)}
           placeholder="Word (German)"
           autoCapitalize="none"
           autoCorrect="off"
@@ -275,14 +159,14 @@ function AddWordForm({
         <div className="flex flex-1 items-stretch gap-2">
           <input
             value={definition}
-            onChange={(e) => setDefinition(e.target.value)}
+            onChange={(e) => form.setDefinition(e.target.value)}
             placeholder="Translation (optional)"
             className="input flex-1"
           />
           {canGenerate && (
             <button
               type="button"
-              onClick={generate}
+              onClick={() => void form.generate()}
               disabled={!word.trim() || genBusy || busy}
               title={
                 enabled
@@ -417,7 +301,7 @@ function VocabRow({
   groups: VocabGroup[];
   open: boolean;
   onToggle: () => void;
-  onRefresh: (b: SaveVocabBody) => Promise<VocabEntry>;
+  onRefresh: (entry: VocabEntry) => Promise<VocabEntry>;
   onRemove: (word: string) => Promise<void>;
   onCreateGroup: (name: string) => Promise<VocabGroup>;
   onToggleGroup: (word: string, id: number, member: boolean) => Promise<void>;
@@ -432,14 +316,7 @@ function VocabRow({
     setBusy(true);
     setError(null);
     try {
-      const d = await api.translateWord(entry.display, { count: 2 });
-      await onRefresh({
-        word: entry.word,
-        display: entry.display,
-        translation: d.translation,
-        examples: d.examples,
-        forms: formsFromLookup(d),
-      });
+      await onRefresh(entry);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
