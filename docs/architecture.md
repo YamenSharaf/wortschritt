@@ -200,11 +200,16 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
   state of each item changed since the cursor (or its id under `deleted`),
   a book whenever one of its chapters changed, and the whole shared library
   when its hash differs; no `since` (or one older than the pruned horizon,
-  90 days) gives a full snapshot. Pages of 1000 items (`more`).
+  90 days) gives a full snapshot. Pages of 1000 items (`more`). Every
+  response also carries `stats`, computed by the server on each pull: the
+  progress summary, latest run per set, recent sheet views and where the
+  learner stopped in each set (the same DTOs as the REST routes), so the app
+  shows them offline and keeps no stats logic of its own.
   `POST /api/sync/push` replays offline actions (answers, runs, sheet views,
-  reading progress — max-merged — vocab, notes) once per `opId`
-  (`sync_ops`, 30 days); a note edited on two devices keeps both (conflict
-  copy). `sync_log` holds ids only and has no FK (triggers fire while a
+  reading progress — max-merged — vocab, notes, set positions) once per
+  `opId` (`sync_ops`, 30 days); a note edited on two devices keeps both
+  (conflict copy); a set position carries its time (`at`, capped at now) and
+  is skipped as `stale` when the server's is newer. `sync_log` holds ids only and has no FK (triggers fire while a
   user's rows cascade away); `pruneSync` drops deleted users' entries.
 - Brute-force protection: password routes are limited per client IP
   (`@fastify/rate-limit`, 10/min, keyed on `CF-Connecting-IP` when present) and

@@ -893,6 +893,22 @@ export const syncChangesQuery = z.object({
   library: z.string().max(64).optional(),
 });
 
+/**
+ * Numbers the server computes for the learner (Home and Practice), sent on
+ * every pull so the app shows them offline without computing anything.
+ */
+export const syncStats = z.object({
+  /** As GET /api/progress (today's answers vs the goal, totals, per set). */
+  progress: progressSummary,
+  /** The latest run per set, newest first (as GET /api/runs). */
+  runs: z.array(runSummary),
+  /** Recently opened cheat sheets, newest first (as GET /api/sheet-views). */
+  sheetViews: z.array(sheetView),
+  /** Where the learner stopped in each unfinished set. */
+  exerciseProgress: z.array(exerciseProgress),
+});
+export type SyncStats = z.infer<typeof syncStats>;
+
 export const syncChanges = z.object({
   /** Pass back as `since` next time. */
   cursor: z.string(),
@@ -924,6 +940,8 @@ export const syncChanges = z.object({
     groups: z.array(z.string()),
     notes: z.array(z.string()),
   }),
+  /** Always current, computed after everything above. */
+  stats: syncStats,
 });
 export type SyncChanges = z.infer<typeof syncChanges>;
 
@@ -949,6 +967,13 @@ export const syncOp = z.discriminatedUnion("type", [
    */
   z.object({ opId, type: z.literal("noteUpdate"), id: z.string().min(1), baseUpdatedAt: z.number().int(), data: saveNoteBody }),
   z.object({ opId, type: z.literal("noteDelete"), id: z.string().min(1) }),
+  /**
+   * Where the learner stopped in a set, or that they finished it (clear).
+   * `at`: when it happened (unix seconds); skipped (`stale`) when the server's
+   * position for that set is newer, e.g. from the web in the meantime.
+   */
+  z.object({ opId, type: z.literal("exerciseProgressSave"), setId: z.string().min(1), at: z.number().int(), data: saveExerciseProgressBody }),
+  z.object({ opId, type: z.literal("exerciseProgressClear"), setId: z.string().min(1), at: z.number().int() }),
 ]);
 export type SyncOp = z.infer<typeof syncOp>;
 
@@ -963,6 +988,8 @@ export const syncOpResult = z.object({
   /** E.g. a created note's id, or a conflict copy's. */
   noteId: z.string().optional(),
   conflict: z.boolean().optional(),
+  /** Not applied: the server had newer data (still counts as done). */
+  stale: z.boolean().optional(),
 });
 export const syncPushResult = z.object({ results: z.array(syncOpResult) });
 export type SyncPushResult = z.infer<typeof syncPushResult>;
