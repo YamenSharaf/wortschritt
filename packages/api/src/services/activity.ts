@@ -151,6 +151,18 @@ export function recordInSession(
     .run();
 }
 
+/** Drop items from a set's session (e.g. its generated items were removed). */
+export function forgetInSession(userId: number, setId: string, itemIds: string[]): void {
+  const current = getExerciseProgress(userId, setId);
+  if (!current || itemIds.length === 0) return;
+  const gone = new Set(itemIds);
+  const keep = <T,>(o: Record<string, T>) => Object.fromEntries(Object.entries(o).filter(([id]) => !gone.has(id)));
+  db.update(schema.exerciseProgress)
+    .set({ results: keep(current.results), responses: keep(current.responses), ungraded: current.ungraded.filter((id) => !gone.has(id)) })
+    .where(progressKey(userId, setId))
+    .run();
+}
+
 /**
  * Turn a set's session into a run: the score counts graded answers only
  * (ungraded open answers stay out, like every accuracy figure). Skipped when

@@ -5,14 +5,10 @@ import {
   aiModelOption,
   aiSettingsView,
   aiTestResult,
-  exerciseItem,
-  exerciseSet,
-  MAX_GENERATE_COUNT,
   saveAiModelsBody,
   saveAiProviderBody,
   wordLookup,
   wordQueryBody,
-  type ExerciseItem,
 } from "@mdb/shared";
 import { clientIp } from "../auth/loginGuard";
 import { requireAuth } from "../auth/session";
@@ -84,40 +80,6 @@ const askBody = z.object({
 const cleanupNotesBody = z.object({
   text: z.string().min(1).max(12000),
 });
-
-const generateBody = z.object({
-  count: z.number().int().min(1).max(MAX_GENERATE_COUNT).default(5),
-  set: z.object({
-    title: z.string().default(""),
-    level: z.string().default("A2"),
-    tags: z.array(z.string()).default([]),
-    types: z.array(z.string()).min(1),
-    samples: z.array(z.unknown()).max(4).default([]),
-  }),
-});
-
-/**
- * Validate one generated item against BOTH the item schema and the structural
- * checks (cloze placeholders, table answer counts) by round-tripping it through
- * a one-item exerciseSet. Returns the clean item or null.
- */
-function validGeneratedItem(raw: unknown, id: string): ExerciseItem | null {
-  // The server owns item ids, so inject ours before validating. Otherwise a
-  // model that omits "id" (or supplies a non-string one) fails the schema and
-  // the item is silently dropped — the whole batch can vanish this way.
-  const withId =
-    raw && typeof raw === "object" ? { ...(raw as object), id } : raw;
-  const parsed = exerciseItem.safeParse(withId);
-  if (!parsed.success) return null;
-  const item = parsed.data;
-  const set = exerciseSet.safeParse({
-    id: "gen",
-    title: "gen",
-    level: "A1",
-    items: [item],
-  });
-  return set.success ? item : null;
-}
 
 /** Best-effort extraction of one JSON object from a model reply that may be
  *  wrapped in ```json fences or padded with stray prose. */
@@ -442,78 +404,6 @@ export async function assistantRoutes(app: FastifyInstance) {
 
   // Generate a few fresh items in the style of a completed set. Ephemeral:
   // validated and returned, never persisted. Malformed items are dropped.
-  r.post(
-    "/api/assistant/generate",
-    {
-      preHandler: requireAuth,
-      schema: {
-        tags: ["assistant"],
-        body: generateBody,
-        response: {
-          200: z.object({
-            items: z.array(exerciseItem),
-            // How many raw items the model returned, so the client can tell
-            // "model returned nothing" from "returned items that were invalid".
-            received: z.number().int(),
-          }),
-          502: z.object({ error: z.string() }),
-          503: z.object({ error: z.string() }),
-        },
-      },
-    },
-    async (req, reply) => {
-      const ai = getAiChain(req.user!.id);
-      if (!ai) return reply.code(503).send({ error: NOT_SET_UP });
-      const { count, set } = req.body;
-      const { system, user } = buildGenerateMessages({
-        title: set.title,
-        level: set.level,
-        tags: set.tags,
-        types: set.types,
-        count,
-        samples: JSON.stringify(set.samples).slice(0, 3000),
-      });
-
-      try {
-        // Scale the token budget with how many items were asked for (each item
-        // is a few hundred tokens of JSON). Streamed (see collectCompletion) so
-        // it uses the same upstream path as the tutor, which is known to work.
-        const content = await collectCompletion(
-          ai,
-          [
-            { role: "system", content: system },
-            { role: "user", content: user },
-          ],
-          { temperature: 0.8, maxTokens: Math.min(8192, 1024 + count * 500), onFallback: logFallback(req.log) },
-        );
-        const match = content.match(/\{[\s\S]*\}/);
-        let rawItems: unknown[] = [];
-        if (match) {
-          try {
-            const parsed = JSON.parse(match[0]) as { items?: unknown };
-            if (Array.isArray(parsed.items)) rawItems = parsed.items;
-          } catch {
-            /* leave empty → 0 valid items */
-          }
-        }
-        const stamp = Date.now().toString(36);
-        const items = rawItems
-          .map((raw, i) => validGeneratedItem(raw, `gen-${stamp}-${i}`))
-          .filter((x): x is ExerciseItem => x !== null)
-          .slice(0, count);
-        if (items.length < rawItems.length) {
-          app.log.warn(
-            { received: rawItems.length, valid: items.length },
-            "generate: some items failed validation and were dropped",
-          );
-        }
-        return { items, received: rawItems.length };
-      } catch (err) {
-        return reply.code(502).send({ error: aiErrorMessage(err, req.log, "generate") });
-      }
-    },
-  );
-
   // Server-side proxy: the API key never reaches the browser. Streams tokens
   // back to the client as Server-Sent Events.
   r.post(

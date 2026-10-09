@@ -307,6 +307,18 @@ export const finishRunBody = z.object({
 });
 export type FinishRunBody = z.infer<typeof finishRunBody>;
 
+/** "Generate more": the server writes new items for a set and keeps them for this learner. */
+export const generateMoreBody = z.object({
+  count: z.number().int().min(1).max(MAX_GENERATE_COUNT).default(5),
+});
+export const generateMoreResult = z.object({
+  /** The new items (already saved). */
+  items: z.array(exerciseItem),
+  /** How many items the model returned, valid or not. */
+  received: z.number().int(),
+});
+export type GenerateMoreResult = z.infer<typeof generateMoreResult>;
+
 /** Latest-run summary for a set (no per-item detail). */
 export const runSummary = z.object({
   setId: z.string(),
@@ -942,6 +954,8 @@ export const syncChanges = z.object({
   vocab: z.array(vocabEntry),
   groups: z.array(vocabGroup),
   notes: z.array(note),
+  /** The learner's generated items, all of a set's whenever any changed. */
+  generated: z.array(z.object({ setId: z.string(), items: z.array(exerciseItem) })),
   /** The learner's settings, when they changed. */
   settings: settingsSchema.nullable(),
   deleted: z.object({
@@ -950,6 +964,8 @@ export const syncChanges = z.object({
     vocab: z.array(z.string()),
     groups: z.array(z.string()),
     notes: z.array(z.string()),
+    /** Sets whose generated items were all removed. */
+    generated: z.array(z.string()),
   }),
   /** Always current, computed after everything above. */
   stats: syncStats,

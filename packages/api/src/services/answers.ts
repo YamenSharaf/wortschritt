@@ -12,6 +12,7 @@ import {
 import { judgeAnswer } from "../assistant/grade";
 import { loadExerciseSets } from "../content/loader";
 import { finishRun, recordInSession } from "./activity";
+import { listGenerated } from "./generated";
 import { recordAttempt } from "./progress";
 import { getSettings } from "./settings";
 import { getStory } from "./stories";
@@ -25,14 +26,14 @@ import { getStory } from "./stories";
 
 const STORY = storySetId("");
 
-/** The items a set id stands for, for this learner: a library set or a story's questions. */
+/** The items a set id stands for, for this learner: a library set (with their generated items) or a story's questions. */
 export function findSet(userId: number, setId: string): { title: string; items: ExerciseItem[] } | null {
   if (setId.startsWith(STORY)) {
     const view = getStory(userId, setId.slice(STORY.length));
     return view ? { title: view.story.title, items: view.story.questions } : null;
   }
   const set = loadExerciseSets().find((s) => s.id === setId);
-  return set ? { title: set.title, items: set.items } : null;
+  return set ? { title: set.title, items: [...set.items, ...listGenerated(userId, setId)] } : null;
 }
 
 export class AnswerError extends Error {}

@@ -23,7 +23,9 @@ validated against the schemas in `packages/shared/src/exercises.ts`.
   Content changes: validate by loading the app or importing (the loader rejects
   malformed content with a clear message).
 - **One source of truth for schemas** (`@mdb/shared`) — API and web both import
-  it. Grading lives in `packages/shared/src/grading.ts`; reuse `gradeText`.
+  it. Grading lives in `packages/shared` (`gradeText` in grading.ts, `gradeItem`
+  per item type in answers.ts) and runs on the server (`services/answers.ts`):
+  clients send what was answered, never a verdict.
 - **All tutor prompts** live in `packages/api/src/assistant/prompts.ts`. Adding
   an AI use-case = a task there + a button. The content-format guide given to
   LLMs (Import's "Copy LLM prompt" and "generate more") is one module,

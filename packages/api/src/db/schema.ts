@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import type { Series, Settings, Story, WordDetails } from "@mdb/shared";
+import type { ExerciseItem, Series, Settings, Story, WordDetails } from "@mdb/shared";
 
 /** Per-user settings blob (one row per user). */
 export const settings = sqliteTable("settings", {
@@ -43,6 +43,19 @@ export const exerciseRuns = sqliteTable("exercise_runs", {
     .notNull()
     .default(sql`(unixepoch())`),
 });
+
+/** Extra items the server generated for a library set, kept per learner. */
+export const generatedItems = sqliteTable(
+  "generated_items",
+  {
+    userId: integer("user_id").notNull(),
+    setId: text("set_id").notNull(),
+    itemId: text("item_id").notNull(),
+    item: text("item", { mode: "json" }).$type<ExerciseItem>().notNull(),
+    createdAt: integer("created_at").notNull().default(sql`(unixepoch())`),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.setId, t.itemId] })],
+);
 
 /** Resumable in-progress position for an exercise set (one row per set;
  *  cleared when the set is finished). */

@@ -298,9 +298,10 @@ OAuth       GET  /.well-known/oauth-protected-resource[/mcp]  /.well-known/oauth
             GET|POST /api/oauth/authorize   GET /api/oauth/grants   DELETE /api/oauth/grants/:id
 Content     GET  /api/exercises[/:id]  /api/cheatsheets[/:id]  /api/exercise-types
             POST /api/import   GET /api/imports   DELETE /api/imports/:id
-Progress    POST /api/attempts                          GET /api/progress
-            POST /api/runs        GET /api/runs[/:setId]
+Progress    POST /api/answers (server grades)             GET /api/progress
+            POST /api/runs { setId, done }  GET /api/runs[/:setId]
             GET|PUT|DELETE /api/exercise-progress/:setId
+            POST /api/exercises/:id/generate  GET|DELETE /api/exercises/:id/generated
             POST /api/sheet-views GET /api/sheet-views
 History     GET  /api/history/mistakes  /api/history/activity  /api/history/sets/:setId
 Settings    GET|PUT /api/settings
@@ -319,7 +320,7 @@ Series      GET|POST /api/series   GET|DELETE /api/series/:id   PUT /api/series/
 Dictionary  GET /api/dict/status   GET /api/dict/:word[/details]   POST /api/dict/lemmas
 TTS         GET /api/tts/status    GET /api/tts    POST /api/tts/download
 Assistant   GET /api/assistant/status
-            POST /api/assistant/ask (SSE) | grade | generate | word | cleanup-notes | test
+            POST /api/assistant/ask (SSE) | word | cleanup-notes | test
             GET|DELETE /api/assistant/settings   PUT /api/assistant/models (fallback order)
             POST /api/assistant/providers   PUT|DELETE /api/assistant/providers/:id
             GET  /api/assistant/providers/:id/models     (keys are write-only)

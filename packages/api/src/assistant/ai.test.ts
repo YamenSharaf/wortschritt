@@ -365,6 +365,45 @@ test("provider errors: status shown, upstream body and internals never leaked", 
   provider = () => sse(["O", "K"]);
 });
 
+test("generate more: the server writes items from your mistakes, keeps and grades them", async () => {
+  const SET = "als-oder-wenn";
+  // A mistake in aw-02 ("Als ich Schülerin war…"): it should lead the examples.
+  await admin("POST", "/api/answers", { setId: SET, itemId: "aw-02", response: { type: "cloze", blanks: { 1: "wenn" } } });
+  const good = { type: "cloze", text: "{{1}} ich klein war, hatte ich einen Hund.", blanks: [{ ref: "1", answer: { accept: ["Als"] } }] };
+  const bad = { type: "cloze", text: "no placeholder here", blanks: [{ ref: "1", answer: { accept: ["x"] } }] };
+  provider = () => sse([JSON.stringify({ items: [good, bad] })]);
+
+  let res = await admin("POST", `/api/exercises/${SET}/generate`, { count: 2 });
+  assert.equal(res.statusCode, 200, res.body);
+  const { items, received } = res.json() as { items: { id: string; text: string }[]; received: number };
+  assert.equal(received, 2);
+  assert.equal(items.length, 1, "the invalid one is dropped");
+  assert.match(items[0]!.id, /^gen-/);
+  const user = JSON.stringify(calls.at(-1)!.body!.messages);
+  assert.ok(user.indexOf("Schülerin") > 0 && user.indexOf("Schülerin") < user.indexOf("Großmutter"), "your mistake comes first");
+
+  // Kept for you: listed with the set, graded, scored, synced.
+  assert.deepEqual((await admin("GET", `/api/exercises/${SET}/generated`)).json(), items);
+  res = await admin("POST", "/api/answers", { setId: SET, itemId: items[0]!.id, response: { type: "cloze", blanks: { 1: "als" } } });
+  assert.deepEqual(res.json(), { correct: true, grading: "auto" });
+  await admin("POST", "/api/runs", { setId: SET, done: true });
+  const run = (await admin("GET", `/api/runs/${SET}`)).json();
+  assert.equal(run.total, (await admin("GET", `/api/exercises/${SET}`)).json().items.length + 1);
+  const synced = (await admin("GET", "/api/sync/changes")).json();
+  assert.deepEqual(synced.generated, [{ setId: SET, items }]);
+  const cursor = synced.cursor;
+
+  // Removed: gone from the set, the sync feed says so, and it can't be answered.
+  assert.deepEqual((await admin("DELETE", `/api/exercises/${SET}/generated`)).json(), { removed: 1 });
+  assert.deepEqual((await admin("GET", `/api/exercises/${SET}/generated`)).json(), []);
+  assert.deepEqual((await admin("GET", `/api/sync/changes?since=${cursor}`)).json().deleted.generated, [SET]);
+  res = await admin("POST", "/api/answers", { setId: SET, itemId: items[0]!.id, response: { type: "cloze", blanks: { 1: "als" } } });
+  assert.equal(res.statusCode, 404);
+
+  assert.equal((await admin("POST", "/api/exercises/no-such-set/generate", { count: 1 })).statusCode, 404);
+  provider = () => sse(["O", "K"]);
+});
+
 test("grading: the server asks the tutor about a free-text miss; open items say the answers are examples", async () => {
   provider = () => sse(['{"correct": true, "feedback": "Fits the task."}']);
   const answer = (setId: string, itemId: string, text: string) =>

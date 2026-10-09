@@ -695,6 +695,32 @@ export const migrations: Migration[] = [
       addColumn(db, "exercise_progress", "recorded", "INTEGER NOT NULL DEFAULT 0");
     },
   },
+  {
+    version: 16,
+    // "Generate more": the server writes extra items for a library set and
+    // keeps them for this learner (the shared set stays as it is), so they
+    // can be graded, resumed, synced and show up in mistakes. Changes reach
+    // the app's sync feed per set.
+    name: "generated-items",
+    up(db) {
+      db.exec(`
+        CREATE TABLE generated_items (
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          set_id TEXT NOT NULL,
+          item_id TEXT NOT NULL,
+          item TEXT NOT NULL,
+          created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+          PRIMARY KEY (user_id, set_id, item_id)
+        );
+        CREATE TRIGGER sync_generated_insert AFTER INSERT ON generated_items BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'generated', NEW.set_id);
+        END;
+        CREATE TRIGGER sync_generated_delete AFTER DELETE ON generated_items BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (OLD.user_id, 'generated', OLD.set_id);
+        END;
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, lt } from "drizzle-orm";
 import type { ActivityDay, ActivityEvent, ActivityView, ExerciseItem, Mistake, SetHistory } from "@mdb/shared";
 import { loadExerciseSets } from "../content/loader";
+import { allGenerated } from "./generated";
 import { storyQuestionSets, storyTimeline } from "./stories";
 import { db, schema } from "../db/client";
 import { dateStart, dayKey, getTimezone } from "./timezone";
@@ -14,10 +15,11 @@ import { dateStart, dayKey, getTimezone } from "./timezone";
 
 const toSec = (d: Date | number) => (d instanceof Date ? Math.floor(d.getTime() / 1000) : d);
 
-/** The library's sets plus this learner's story questions ("story:<id>"). */
+/** The library's sets (with this learner's generated items) plus their story questions ("story:<id>"). */
 function setsById(userId: number): Map<string, { title: string; items: ExerciseItem[] }> {
+  const extra = allGenerated(userId);
   const sets = new Map<string, { title: string; items: ExerciseItem[] }>(
-    loadExerciseSets().map((s) => [s.id, s]),
+    loadExerciseSets().map((s) => [s.id, { title: s.title, items: [...s.items, ...(extra.get(s.id) ?? [])] }]),
   );
   for (const [id, s] of storyQuestionSets(userId)) sets.set(id, s);
   return sets;

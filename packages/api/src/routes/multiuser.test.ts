@@ -332,6 +332,23 @@ test("sync is private: changes and pushed actions stay with their user", async (
   assert.equal((await anna("GET", `/api/notes/${annaNote.id}`)).statusCode, 200, "not deletable by someone else");
 });
 
+test("generated items are private: another user can't see, answer or remove them", async () => {
+  const { db, schema } = await import("../db/client");
+  const users = (await admin("GET", "/api/admin/users")).json() as { id: number; username: string }[];
+  const me = users.find((u) => u.username === "yamen")!.id;
+  const item = { id: "gen-private-0", type: "true_false" as const, statement: "Das ist meins.", correct: true };
+  db.insert(schema.generatedItems).values({ userId: me, setId: "als-oder-wenn", itemId: item.id, item }).run();
+
+  assert.deepEqual((await anna("GET", "/api/exercises/als-oder-wenn/generated")).json(), []);
+  const r = await anna("POST", "/api/answers", { setId: "als-oder-wenn", itemId: item.id, response: { type: "true_false", value: true } });
+  assert.equal(r.statusCode, 404);
+  assert.deepEqual((await anna("DELETE", "/api/exercises/als-oder-wenn/generated")).json(), { removed: 0 });
+  const hers = (await anna("GET", "/api/sync/changes")).json() as { generated: unknown[] };
+  assert.deepEqual(hers.generated, []);
+  assert.equal((await admin("GET", "/api/exercises/als-oder-wenn/generated")).json().length, 1);
+  await admin("DELETE", "/api/exercises/als-oder-wenn/generated");
+});
+
 test("sync stats are private: numbers and set positions stay with their user", async () => {
   const now = Math.floor(Date.now() / 1000);
   await anna("POST", "/api/sync/push", { ops: [

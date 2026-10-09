@@ -24,12 +24,29 @@ Package names: `@mdb/shared`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
 - Content: `content/*.json` (git) **+** `imported_content` (SQLite, via the
   Import screen) → validated by `@mdb/shared` schemas in
   `packages/api/src/content/loader.ts` → served by `routes/content.ts`.
+- Answers are graded on the server (`services/answers.ts`): the client sends
+  `POST /api/answers { setId, itemId, response }` (an `ItemResponse`), the
+  server finds the item (a library set plus the learner's generated items, or
+  a story's questions as `story:<id>`), grades it with `gradeItem` from
+  `@mdb/shared`, asks the learner's AI tutor about a free-text miss when
+  `llmGrading` is on (`assistant/grade.ts`), applies `withoutTutor` otherwise,
+  and records it. Clients never send a verdict.
 - Progress: `attempts` (one row per answered item, with the response and how
   it was graded: `auto`, `ai`, `self` for flashcards, or `ungraded` for an open
   answer nobody could judge — those count for the daily goal, not accuracy) →
-  aggregated in `services/progress.ts`. Completed runs, resumable in-progress positions and
-  cheat-sheet views live in `exercise_runs`, `exercise_progress` and
-  `sheet_views` (`services/activity.ts`, `routes/activity.ts`).
+  aggregated in `services/progress.ts`. Each set has one session in
+  `exercise_progress` (position, results, which answers are ungraded); every
+  graded answer joins it, `PUT /api/exercise-progress` only moves the
+  position, and `POST /api/runs { setId, done }` turns the session into an
+  `exercise_runs` row scored by the server (graded answers only; once per
+  change) and clears it when done. Cheat-sheet views live in `sheet_views`
+  (`services/activity.ts`, `routes/activity.ts`).
+- "Generate more" (`services/generated.ts`): `POST /api/exercises/:id/generate`
+  writes items with the learner's tutor (their mistakes in the set first as
+  examples), validates them and keeps them in `generated_items` for that
+  learner; the shared set never changes. `GET|DELETE
+  /api/exercises/:id/generated` lists or removes them; they're graded, synced
+  and listed in mistakes like the set's own items.
 - History (`services/history.ts`, `routes/history.ts`, MCP `get_mistakes` /
   `get_activity` / `get_set_history`): read from those logs plus `vocab`,
   `vocab_reviews` and `notes`. Mistakes are grouped per item, "resolved" once
@@ -224,8 +241,6 @@ AI endpoints:
 ```
 GET  /api/assistant/status
 POST /api/assistant/ask            (SSE stream; task-based — see below)
-POST /api/assistant/grade          (JSON verdict for a free-text answer)
-POST /api/assistant/generate       (validated new items; never persisted)
 POST /api/assistant/word           (vocab lookup: translation, examples, forms)
 POST /api/assistant/cleanup-notes  (tidy a note into clean Markdown)
 ```
@@ -238,20 +253,24 @@ This is the one place a new *feature* is coded. Steps:
    `packages/shared/src/exercises.ts` (with `type: z.literal("your_type")`), add
    it to `exerciseItem` and `EXERCISE_TYPES`. Add any cross-field checks to
    `exerciseSet`'s `superRefine`.
-2. **Renderer** — add a `case "your_type"` + component in
-   `packages/web/src/components/ExerciseItemView.tsx`. It receives the item and
-   calls `onAnswered(correct, response?)`.
-3. **Describe** — add a branch to `packages/web/src/lib/describeItem.ts` so the
+2. **Grading** — add the response shape to `itemResponse` and a case to
+   `gradeItem` and `responseText` in `packages/shared/src/answers.ts` (the
+   server grades with it; the app can too, offline). Add a case to
+   `content/answers.test.ts`.
+3. **Renderer** — add a `case "your_type"` + component in
+   `packages/web/src/components/ExerciseItemView.tsx`. It receives the item,
+   calls `submit(response)` once and renders the verdict it resolves to.
+4. **Describe** — add a branch to `packages/web/src/lib/describeItem.ts` so the
    tutor (hint/translate/why-wrong) and generation get a readable label +
    expected answers. **Never put the answer in `label`** — it's used for
    translate, which must not reveal the solution.
-4. **LLM guide** — add a valid example to `EXAMPLE_ITEMS` (and a rule line to
+5. **LLM guide** — add a valid example to `EXAMPLE_ITEMS` (and a rule line to
    `ITEM_RULES`) in `packages/shared/src/authoring.ts`. That one guide feeds both
    the Import page's "Copy LLM prompt" and the tutor's "generate more", and
    `content/content.test.ts` checks every example against the schemas.
 
 Grading for text answers lives in `packages/shared/src/grading.ts` (`gradeText`,
-lenient by default) — reuse it, don't reinvent.
+lenient by default) — reuse it, don't reinvent; `gradeItem` builds on it.
 
 ## The AI tutor (prompt registry)
 
@@ -262,15 +281,18 @@ Markdown allowed). Tasks: `highlight`, `hint`, `why_wrong`, `translate_exercise`
 `translate_sheet`, plus `chat` (multi-turn), grading, generation, vocab word
 lookup and note cleanup.
 
-**AI grading**: text answers are graded locally first (`gradeText`); only on a
-miss, and only when the tutor is configured and the `llmGrading` setting is on,
-`/api/assistant/grade` judges the answer against `accept` (which then serves as
-model answers). This is what makes free-completion sets (e.g.
+**AI grading**: the server grades text answers by the item's rules first
+(`gradeItem`); only on a miss, and only when the tutor is configured and the
+`llmGrading` setting is on, `judgeAnswer` (`assistant/grade.ts`, prompt
+`buildGradeMessages`) judges the answer against `accept` (which then serves as
+model answers). Answers replayed from the app's offline queue are graded
+without the tutor. This is what makes free-completion sets (e.g.
 `content/exercises/infinitiv-zu-frei.json`) work.
 
 **To add an AI button**: add a task to `buildMessages` (or a builder like
 `buildChatSystem`), thread it through `routes/assistant.ts` (`/ask` streams via
-SSE; `/grade` and `/generate` return JSON), add a client call in
+SSE; grading and generation run inside `/api/answers` and
+`/api/exercises/:id/generate`), add a client call in
 `packages/web/src/lib/api.ts`, and a button. That's the whole pattern.
 
 **Per-user providers and fallback.** Each user adds **OpenAI-compatible**
