@@ -1,0 +1,80 @@
+name: Android
+
+# Builds the Android app (packages/android): the SPA's native build, synced
+# into the Capacitor project, then a debug APK from Gradle. Signed release
+# APKs on android-v* tags come later (issue #2, phase 5).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/web/**"
+      - "packages/shared/**"
+      - "packages/android/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/android.yml"
+  pull_request:
+    paths:
+      - "packages/web/**"
+      - "packages/shared/**"
+      - "packages/android/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  debug-apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # No version input: uses the `packageManager` field in package.json.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # VITE_TARGET=native build into packages/web/dist-native, then `cap sync`.
+      - name: Build the web app and sync it into the Android project
+        run: pnpm --filter @mdb/android build
+
+      # Capacitor 8 compiles for Java 21.
+      - name: Set up JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "platform-tools platforms;android-36"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Build debug APK
+        working-directory: packages/android/android
+        run: ./gradlew --no-daemon assembleDebug -PversionCode=${{ github.run_number }} -PversionName=0.1.0-dev.${{ github.run_number }}
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: wortschritt-debug-${{ github.run_number }}
+          path: packages/android/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
