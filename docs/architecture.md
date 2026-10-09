@@ -21,12 +21,44 @@ packages/
             generation, …) under a `ClientProvider`; web and app render them
             their own way.
   web/      Vite + React + Tailwind SPA. One client of the API.
+  app/      The Android app: Expo (SDK 57) + expo-router, native components.
+            Another client of the API, on the same @mdb/client (see below).
 content/    Git-versioned JSON content (exercises + cheatsheets).
 docs/       This documentation.
 ```
 
-Package names: `@mdb/shared`, `@mdb/client`, `@mdb/api`, `@mdb/web`. Root scripts: `pnpm dev`
-(api :3000 + web :5173), `pnpm typecheck`, `pnpm build` (web).
+Package names: `@mdb/shared`, `@mdb/client`, `@mdb/api`, `@mdb/web`, `@mdb/app`.
+Root scripts: `pnpm dev` (api :3000 + web :5173), `pnpm dev:app` (Expo),
+`pnpm typecheck`, `pnpm build` (web). The monorepo has **one React** (19.2.3,
+the version the Expo SDK pins): two in one app break at runtime, so upgrade
+React for every package together, with the Expo SDK.
+
+## The Android app (`packages/app`)
+
+Issue #2 is the plan. The app renders natively what `@mdb/client/react`
+computes, like the web does with HTML; it keeps no business logic.
+
+- `src/app/` (expo-router): `connect` (the server's address, checked at
+  `/api/version`) → `sign-in` → the `(tabs)` sections with the dock, and the
+  `account` sheet. Which ones exist follows `useServer().status`
+  (`Stack.Protected`).
+- `src/lib/server.tsx`: the server, its OAuth endpoints and the sign-in. A
+  fresh client registration per sign-in (the server prunes unused ones), the
+  browser step with expo-auth-session (PKCE, redirect
+  `eu.yamen.wortschritt:/oauth/callback`), tokens in `createTokenSession`
+  (expo-secure-store), and `createApi` with `expo/fetch`, the bearer header
+  and refresh-on-401. Sign-out revokes the grant and clears the image cache.
+- `src/lib/theme.tsx`: `nativeTheme(display, scheme)` from the tokens, with
+  this device's choices (`usePreference`) and the OS's reduce-motion; screens
+  read colours, radii, elevation, effects and motion from `useTheme()` only.
+- `src/ui/`: Text, Button, Card, Screen, the Dock; sections not built yet
+  (`Soon`) open the web.
+- Run: `pnpm dev:app` (a development build, not Expo Go). A **web preview**
+  (`pnpm --filter @mdb/app web`, or `expo export --platform web`) shows the
+  screens in a browser; the server must allow its origin
+  (`APP_ORIGINS=http://localhost:8081`). `pnpm --filter @mdb/app bundle`
+  checks that the Android bundle builds. The server's Docker image leaves the
+  app out (`.dockerignore`).
 
 ## Data flow
 
@@ -234,9 +266,9 @@ Package names: `@mdb/shared`, `@mdb/client`, `@mdb/api`, `@mdb/web`. Root script
   `PUBLIC_URL` or the request's forwarded origin. All responses send
   `X-Frame-Options: DENY` so the consent page can't be framed.
 - Native app (`routes/native.ts`, registered on the root instance): CORS on
-  `/api/*` for the app's built-in origins (`APP_ORIGINS`, default
-  `capacitor://localhost`, `https://localhost`, `http://localhost`), bearer
-  tokens only (never `allow-credentials`); public `GET /api/version`
+  `/api/*` for `APP_ORIGINS` (browser-hosted clients such as the app's web
+  preview; the Android app's own requests carry no Origin and need none),
+  bearer tokens only (never `allow-credentials`); public `GET /api/version`
   (`{ api, minClient, appName }`) for the app's compatibility check. See
   issue #2 for the app itself.
 - Sync for the native app (`services/sync.ts`, `routes/sync.ts`, migration 14):

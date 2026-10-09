@@ -3,7 +3,8 @@ import type { Api } from "../api";
 import type { Speech } from "../speech";
 import { memoryStore, type KeyValueStore } from "../storage";
 
-type Client = { api: Api; speech?: Speech; storage?: KeyValueStore };
+/** `api` is missing until the app knows its server (the connect screens). */
+type Client = { api?: Api; speech?: Speech; storage?: KeyValueStore };
 const ClientContext = createContext<(Client & { storage: KeyValueStore }) | null>(null);
 
 /**
@@ -23,7 +24,9 @@ function useClient() {
 }
 
 export function useApi(): Api {
-  return useClient().api;
+  const { api } = useClient();
+  if (!api) throw new Error("ClientProvider has no API yet (no server connected)");
+  return api;
 }
 
 export function useSpeech(): Speech {

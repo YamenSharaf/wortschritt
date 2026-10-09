@@ -5,3 +5,5 @@ data
 .git
 .env
 *.log
+# The Android app is built by its own workflow, not into the server image.
+packages/app

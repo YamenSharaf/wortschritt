@@ -58,6 +58,7 @@ packages/shared  Zod schemas + types + grading (the contract)
 packages/api     Fastify + SQLite + AI proxy; serves the SPA in prod
 packages/client  API client + speech logic for every frontend (no DOM)
 packages/web     React + Tailwind SPA
+packages/app     Android app (Expo / React Native), same @mdb/client
 content/         git-versioned exercises + cheatsheets (JSON)
 docs/            the guides above
 ```

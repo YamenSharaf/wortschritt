@@ -1,0 +1,81 @@
+import { useEffect, type ReactNode } from "react";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
+import * as SystemUI from "expo-system-ui";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { useFonts } from "expo-font";
+// One file per weight, so only these are bundled.
+import { Geist_400Regular } from "@expo-google-fonts/geist/400Regular";
+import { Geist_500Medium } from "@expo-google-fonts/geist/500Medium";
+import { Geist_600SemiBold } from "@expo-google-fonts/geist/600SemiBold";
+import { Geist_700Bold } from "@expo-google-fonts/geist/700Bold";
+import { GeistMono_500Medium } from "@expo-google-fonts/geist-mono/500Medium";
+import { AuthProvider, ClientProvider } from "@mdb/client/react";
+import { ServerProvider, useServer } from "@/lib/server";
+import { deviceStore } from "@/lib/storage";
+import { ThemeProvider, useTheme } from "@/lib/theme";
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
+
+export default function RootLayout() {
+  const [fontsLoaded] = useFonts({ Geist_400Regular, Geist_500Medium, Geist_600SemiBold, Geist_700Bold, GeistMono_500Medium });
+  if (!fontsLoaded) return null;
+  return (
+    <SafeAreaProvider>
+      <ServerProvider>
+        <Providers>
+          <Root />
+        </Providers>
+      </ServerProvider>
+    </SafeAreaProvider>
+  );
+}
+
+/** The shared client (API once a server is known, this device's storage), the theme, and who's signed in. */
+function Providers({ children }: { children: ReactNode }) {
+  const { api, status } = useServer();
+  return (
+    <ClientProvider api={api ?? undefined} storage={deviceStore}>
+      <ThemeProvider>{status === "signed-in" ? <AuthProvider>{children}</AuthProvider> : children}</ThemeProvider>
+    </ClientProvider>
+  );
+}
+
+/** Which screens exist depends on the state: connect to a server, sign in, then the app. */
+function Root() {
+  const { status } = useServer();
+  const { colors, scheme, motion } = useTheme();
+  useEffect(() => {
+    SystemUI.setBackgroundColorAsync(colors.bg).catch(() => {});
+  }, [colors.bg]);
+  useEffect(() => {
+    if (status !== "loading") SplashScreen.hideAsync().catch(() => {});
+  }, [status]);
+  if (status === "loading") return null;
+  return (
+    <>
+      <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.bg },
+          // E-ink and reduced motion: screens appear, they don't slide.
+          animation: motion.base === 0 ? "none" : "default",
+        }}
+      >
+        <Stack.Protected guard={status === "signed-in"}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="account" options={{ presentation: "modal" }} />
+        </Stack.Protected>
+        <Stack.Protected guard={status === "no-server"}>
+          <Stack.Screen name="connect" />
+        </Stack.Protected>
+        <Stack.Protected guard={status === "signed-out"}>
+          <Stack.Screen name="sign-in" />
+        </Stack.Protected>
+        <Stack.Screen name="oauth/callback" />
+      </Stack>
+    </>
+  );
+}

@@ -12,7 +12,8 @@
     "build": "pnpm --filter @mdb/web build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "start": "pnpm --filter @mdb/api start"
+    "start": "pnpm --filter @mdb/api start",
+    "dev:app": "pnpm --filter @mdb/app start"
   },
   "engines": {
     "node": ">=20"
