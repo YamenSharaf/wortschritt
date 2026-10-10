@@ -443,6 +443,9 @@ export const vocabFormsInput = z.object({
 });
 export type VocabFormsInput = z.infer<typeof vocabFormsInput>;
 
+/** How a saved word is keyed (its `word`): "Der Hund " and "der hund" are the same entry. */
+export const vocabKey = (word: string) => word.trim().toLowerCase();
+
 /** A saved vocabulary entry. */
 export const vocabEntry = z.object({
   word: z.string(),
@@ -942,10 +945,12 @@ export const ttsTestBody = z.object({ voice: z.string().min(1).max(100) });
 
 // --- sync (native app) -----------------------------------------------------------
 
-/** A story as the app keeps it offline: the view, its cover version and English lines. */
+/** A story as the app keeps it offline: the view, its cover version, English lines and word count. */
 export const syncStory = storyView.extend({
   cover: z.string().nullable(),
   translations: storyTranslations.nullable(),
+  /** As in the story list (StorySummary.words). */
+  words: z.number().int().default(0),
 });
 export type SyncStory = z.infer<typeof syncStory>;
 

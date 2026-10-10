@@ -36,6 +36,9 @@ import type {
   StoryTranslations,
   StorySummary,
   StoryView,
+  SyncChanges,
+  SyncOp,
+  SyncPushResult,
   TtsStatus,
   VocabEntry,
   VocabFormsInput,
@@ -419,6 +422,16 @@ export function createApi(o: ClientOptions) {
       req<ExerciseItem[]>(`/api/exercises/${encodeURIComponent(setId)}/generated`),
     removeGeneratedItems: (setId: string) =>
       req<{ removed: number }>(`/api/exercises/${encodeURIComponent(setId)}/generated`, { method: "DELETE" }),
+
+    // offline sync (the app): what changed since a cursor, and replaying queued actions
+    syncChanges: (o: { since?: string; library?: string } = {}) => {
+      const q = [o.since && `since=${encodeURIComponent(o.since)}`, o.library && `library=${encodeURIComponent(o.library)}`]
+        .filter(Boolean)
+        .join("&");
+      return req<SyncChanges>(`/api/sync/changes${q ? `?${q}` : ""}`);
+    },
+    syncPush: (ops: SyncOp[]) =>
+      req<SyncPushResult>("/api/sync/push", { method: "POST", body: JSON.stringify({ ops }) }),
 
     // media: where to load covers, clips and books from
     coverUrl: (kind: "story" | "series", id: string, version: string) =>

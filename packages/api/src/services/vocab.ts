@@ -1,15 +1,16 @@
 import { and, desc, eq, sql } from "drizzle-orm";
-import type {
-  SaveVocabBody,
-  VocabEntry,
-  VocabForms,
-  VocabGroup,
-  VocabStat,
+import {
+  vocabKey as normalizeWord,
+  type SaveVocabBody,
+  type VocabEntry,
+  type VocabForms,
+  type VocabGroup,
+  type VocabStat,
 } from "@mdb/shared";
 import { db, schema } from "../db/client";
 import { formsFor } from "./dict";
 
-const key = (w: string) => w.trim().toLowerCase();
+const key = normalizeWord;
 
 // Vocabulary is private: every query below is scoped to one user.
 const vocabKey = (userId: number, word: string) =>

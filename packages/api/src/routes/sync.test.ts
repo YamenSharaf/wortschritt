@@ -48,7 +48,7 @@ type Changes = {
   full: boolean;
   more: boolean;
   library: { version: string; exerciseSets: { id: string }[]; cheatsheets: unknown[]; builtIn: string[] } | null;
-  stories: { story: { id: string; title: string }; progress: number; cover: string | null; translations: unknown }[];
+  stories: { story: { id: string; title: string }; progress: number; cover: string | null; translations: unknown; words: number }[];
   series: { id: string; chapters: { progress: number }[] }[];
   vocab: { word: string; groups: number[] }[];
   groups: { id: number; name: string }[];
@@ -84,6 +84,7 @@ test("first sync: a full snapshot with the library", async () => {
   assert.ok(c.library && c.library.exerciseSets.length > 0 && c.library.builtIn.length > 0);
   assert.deepEqual(c.stories.map((s) => s.story.id), [EXAMPLE_STORY.id]);
   assert.ok(c.stories[0]!.translations, "with its paragraphs for English lines");
+  assert.ok(c.stories[0]!.words > 0, "with its word count, as in the story list");
   assert.ok(c.settings);
   cursor = c.cursor;
   libraryVersion = c.library!.version;

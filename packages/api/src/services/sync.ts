@@ -19,7 +19,7 @@ import { allGenerated, listGenerated } from "./generated";
 import { getProgressSummary } from "./progress";
 import { getSeriesView, listSeries } from "./series";
 import { getSettings } from "./settings";
-import { advanceStoryProgress, getStory, listStories, setStoryRead } from "./stories";
+import { advanceStoryProgress, getStory, listStories, setStoryRead, wordCount } from "./stories";
 import { getStoryTranslations } from "./storyTranslations";
 import { getVocab, listGroups, listVocab, recordStudy, removeVocab, upsertVocab } from "./vocab";
 
@@ -70,6 +70,7 @@ function syncStory(userId: number, id: string): SyncStory | null {
     ...view,
     cover: coverVersion(getStoredCover(userId, "story", id)),
     translations: getStoryTranslations(userId, id),
+    words: wordCount(view.story.body),
   };
 }
 
