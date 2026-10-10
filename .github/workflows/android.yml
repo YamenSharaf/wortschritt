@@ -113,7 +113,14 @@ jobs:
           "$apksigner" sign --ks "$ks" --ks-key-alias "$KEY_ALIAS" \
             --ks-pass env:KEYSTORE_PASSWORD --key-pass env:KEYSTORE_PASSWORD \
             --out "$RUNNER_TEMP/signed.apk" "$apk"
-          "$apksigner" verify --print-certs "$RUNNER_TEMP/signed.apk" | grep -E "Signer #1 certificate (DN|SHA-256)"
+          # Verify (fails the step if the signature is bad) and show whose it is;
+          # apksigner's wording of the signer varies, so match loosely.
+          "$apksigner" verify --verbose --print-certs "$RUNNER_TEMP/signed.apk" > "$RUNNER_TEMP/verify.txt"
+          grep -E "Verified using|certificate (DN|SHA-256 digest)" "$RUNNER_TEMP/verify.txt" || cat "$RUNNER_TEMP/verify.txt"
+          if grep -q "CN=Android Debug" "$RUNNER_TEMP/verify.txt"; then
+            echo "::error::Still signed with the debug key."
+            exit 1
+          fi
           mv "$RUNNER_TEMP/signed.apk" "$apk"
 
       - name: Name it
