@@ -79,8 +79,8 @@ Then open `http://your-host:3000` and sign in. Updates, backups, voices and
 all the settings: [docs/self-hosting.md](docs/self-hosting.md).
 
 **Android app**: download the APK from
-[wortschritt.yamen.dev](https://wortschritt.yamen.dev) and install it; from then on it updates itself (or use
-[Obtainium](https://github.com/ImranR98/Obtainium) with *Include
+[wortschritt.yamen.dev](https://wortschritt.yamen.dev) and install it
+(or use [Obtainium](https://github.com/ImranR98/Obtainium) with *Include
 prereleases*). Enter your server's address and sign in. Details:
 [docs/self-hosting.md#android-app](docs/self-hosting.md#android-app).
 
