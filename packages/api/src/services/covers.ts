@@ -104,3 +104,21 @@ export function coverPng(svg: string, width: number): Uint8Array {
   });
   return r.render().asPng();
 }
+
+/** Rendered PNGs by (art, width): rendering takes a while, and lists ask for many. */
+const pngCache = new Map<string, Uint8Array>();
+const PNG_CACHE_MAX = 300;
+
+export function coverPngCached(svg: string, width: number): Uint8Array {
+  const key = `${createHash("sha1").update(svg).digest("hex")}:${width}`;
+  const hit = pngCache.get(key);
+  if (hit) {
+    pngCache.delete(key);
+    pngCache.set(key, hit);
+    return hit;
+  }
+  const png = coverPng(svg, width);
+  pngCache.set(key, png);
+  if (pngCache.size > PNG_CACHE_MAX) pngCache.delete(pngCache.keys().next().value!);
+  return png;
+}

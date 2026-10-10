@@ -436,6 +436,9 @@ export function createApi(o: ClientOptions) {
     // media: where to load covers, clips and books from
     coverUrl: (kind: "story" | "series", id: string, version: string) =>
       url(`/api/${kind === "series" ? "series" : "stories"}/${id}/cover.svg?v=${encodeURIComponent(version)}`),
+    /** The cover as a PNG about `width` pixels wide (for the app, which draws SVG poorly). */
+    coverPngUrl: (kind: "story" | "series", id: string, version: string, width: number) =>
+      url(`/api/${kind === "series" ? "series" : "stories"}/${id}/cover.png?w=${Math.round(width)}&v=${encodeURIComponent(version)}`),
     epubUrl: (kind: "story" | "series", id: string) =>
       url(`/api/${kind === "series" ? "series" : "stories"}/${id}/epub`),
     ttsUrl: (voice: string, text: string) =>

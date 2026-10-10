@@ -3,10 +3,12 @@ import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { setCoverBody } from "@mdb/shared";
 import { requireAuth } from "../auth/session";
-import { coverFor, coverVersion, setCover, type CoverKind } from "../services/covers";
+import { coverFor, coverPngCached, coverVersion, setCover, type CoverKind } from "../services/covers";
 
 const failure = z.object({ error: z.string() });
 const params = z.object({ id: z.string().min(1) });
+/** PNG widths on offer (a requested width rounds up to one of these). */
+const PNG_WIDTHS = [128, 256, 512] as const;
 
 /**
  * Cover art for the learner's stories and series. The SVG is served as an
@@ -33,6 +35,26 @@ export async function coverRoutes(app: FastifyInstance) {
           // The URL carries the cover's version, so it can be cached for long.
           .header("cache-control", "private, max-age=31536000, immutable")
           .send(cover.svg);
+      },
+    );
+
+    // The same cover as a bitmap, for clients that can't draw SVG well (the app).
+    r.get(
+      `${base}/:id/cover.png`,
+      {
+        preHandler: requireAuth,
+        schema: { tags: ["covers"], params, querystring: z.object({ w: z.coerce.number().int().positive().optional() }) },
+      },
+      async (req, reply) => {
+        const cover = coverFor(req.user!.id, kind, req.params.id);
+        if (!cover) return reply.code(404).send({ error: `no such ${kind}` });
+        const want = req.query.w ?? 256;
+        const width = PNG_WIDTHS.find((w) => w >= want) ?? 512;
+        reply
+          .header("content-type", "image/png")
+          .header("x-content-type-options", "nosniff")
+          .header("cache-control", "private, max-age=31536000, immutable")
+          .send(Buffer.from(coverPngCached(cover.svg, width)));
       },
     );
 

@@ -83,6 +83,14 @@ test("a series and its chapters get generated covers, and can be given art", asy
   assert.match(gen.body, new RegExp(EXAMPLE_SERIES.title.split(" ")[0]!));
   assert.match((await me("GET", `/api/stories/${ch}/cover.svg`)).body, /KAPITEL 1/);
 
+  // The same as a PNG, at the next width on offer.
+  const png = await me("GET", `/api/series/${EXAMPLE_SERIES.id}/cover.png?w=200`);
+  assert.equal(png.statusCode, 200);
+  assert.equal(png.headers["content-type"], "image/png");
+  assert.equal(png.rawPayload.subarray(1, 4).toString(), "PNG");
+  assert.equal(png.rawPayload.readUInt32BE(16), 256, "width");
+  assert.equal((await me("GET", `/api/stories/nope/cover.png`)).statusCode, 404);
+
   // Drawn art: stored, versioned, served as is.
   const set = await me("PUT", `/api/series/${EXAMPLE_SERIES.id}/cover`, { svg: ART });
   assert.equal(set.statusCode, 200, set.body);
