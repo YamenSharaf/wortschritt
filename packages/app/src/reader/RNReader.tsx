@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, forwardRef, useCallback, useContext, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Pressable,
   ScrollView,
@@ -68,7 +68,10 @@ type Props = {
 };
 
 type Line = { text: string; height: number };
-type Segment = { piece: Piece; text: string; ends: boolean };
+/** A piece's lines on one page; `at` is where it starts in the German text (paragraph + character), for keeping your place. */
+type Segment = { piece: Piece; text: string; ends: boolean; at?: Pos };
+type Pos = { para: number; char: number };
+const before = (a: Pos, b: Pos) => a.para < b.para || (a.para === b.para && a.char <= b.char);
 
 const H_PAD = 24;
 const V_PAD = 24;
@@ -130,13 +133,18 @@ export const RNReader = forwardRef<ReaderControls, Props>(function RNReader(p, r
   return p.mode === "scroll" ? <ScrollReader {...p} ref={ref} /> : <PagedReader {...p} ref={ref} />;
 });
 
+/** Told when a word or a hidden English line is pressed, so the page underneath doesn't treat it as a page-turn tap too. */
+const TextTap = createContext<() => void>(() => {});
+
 /** A piece's text with each word tappable (and saved ones underlined). */
 function PieceText({ piece, text, style, p }: { piece: Piece; text: string; style: TextStyle; p: Props }) {
+  const markTextTap = useContext(TextTap);
   if (piece.kind === "en") {
     return (
       <Text
         style={style}
         onPress={piece.hidden && piece.reveal ? () => p.onReveal(piece.reveal!) : undefined}
+        onPressIn={piece.hidden && piece.reveal ? markTextTap : undefined}
         accessibilityLabel={piece.hidden ? "English, hidden. Tap to show." : undefined}
         suppressHighlighting
       >
@@ -158,6 +166,7 @@ function PieceText({ piece, text, style, p }: { piece: Piece; text: string; styl
           <Text
             key={i}
             onPress={() => p.onWord(t.text, sentenceAround(text, offset))}
+            onPressIn={markTextTap}
             suppressHighlighting
             style={saved ? { textDecorationLine: "underline", textDecorationStyle: "dotted", textDecorationColor: p.colors.vocab } : undefined}
           >
@@ -178,6 +187,13 @@ const ScrollReader = forwardRef<ReaderControls, Props>(function ScrollReader(p, 
   const viewport = useRef(0);
   const scrollY = useRef(0);
   const restored = useRef(false);
+  const textTapAt = useRef(0);
+  const markTextTap = useCallback(() => {
+    textTapAt.current = Date.now();
+  }, []);
+  const tapBeside = () => {
+    if (Date.now() - textTapAt.current > 600) p.onCenter();
+  };
   const { onProgress, onVisible } = p;
 
   useImperativeHandle(
@@ -230,21 +246,23 @@ const ScrollReader = forwardRef<ReaderControls, Props>(function ScrollReader(p, 
       onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>) => report(e.nativeEvent.contentOffset.y)}
       scrollEventThrottle={250}
     >
-      <View style={{ width: "100%", maxWidth: p.typo.maxWidth }}>
-        {p.pieces.map((piece) => (
-          <Pressable
-            key={piece.key}
-            onPress={p.onCenter}
-            onLayout={(e: LayoutChangeEvent) => {
-              if (piece.para >= 0 && tops.current[piece.para] === undefined) tops.current[piece.para] = e.nativeEvent.layout.y;
-            }}
-            style={{ marginBottom: piece.gapAfter * p.typo.size }}
-          >
-            <PieceText piece={piece} text={piece.text} style={styleFor(piece, p.typo, p.colors)} p={p} />
-          </Pressable>
-        ))}
-        <View style={{ marginTop: p.typo.size }}>{p.ending}</View>
-      </View>
+      <TextTap.Provider value={markTextTap}>
+        <View style={{ width: "100%", maxWidth: p.typo.maxWidth }}>
+          {p.pieces.map((piece) => (
+            <Pressable
+              key={piece.key}
+              onPress={tapBeside}
+              onLayout={(e: LayoutChangeEvent) => {
+                if (piece.para >= 0 && tops.current[piece.para] === undefined) tops.current[piece.para] = e.nativeEvent.layout.y;
+              }}
+              style={{ marginBottom: piece.gapAfter * p.typo.size }}
+            >
+              <PieceText piece={piece} text={piece.text} style={styleFor(piece, p.typo, p.colors)} p={p} />
+            </Pressable>
+          ))}
+          <View style={{ marginTop: p.typo.size }}>{p.ending}</View>
+        </View>
+      </TextTap.Provider>
     </ScrollView>
   );
 });
@@ -256,9 +274,21 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
   const [lines, setLines] = useState<Record<string, Line[]>>({});
   const [page, setPage] = useState(0);
   const restored = useRef(false);
-  /** The first paragraph on the page: a re-layout (size, font, English lines) keeps you on it. */
-  const anchor = useRef(-1);
+  const lastCount = useRef(0);
+  /**
+   * Where you are in the German text (the start of the page): a re-layout
+   * (size, font, English lines) brings you back to the page with it. Only a
+   * page you turn to moves it, not a page a re-layout lands on, so repeated
+   * re-layouts don't creep backwards.
+   */
+  const anchor = useRef<Pos | null>(null);
+  const lastPage = useRef(-1);
+  const layoutMove = useRef(false);
   const swipedAt = useRef(0);
+  const textTapAt = useRef(0);
+  const markTextTap = useCallback(() => {
+    textTapAt.current = Date.now();
+  }, []);
 
   const width = size ? Math.min(size.w - H_PAD * 2, p.typo.maxWidth) : 0;
   const styles = useMemo(() => new Map(p.pieces.map((x) => [x.key, styleFor(x, p.typo, p.colors)])), [p.pieces, p.typo, p.colors]);
@@ -267,10 +297,7 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
   useEffect(() => setLines({}), [layoutKey]);
 
   const measured = size !== null && p.pieces.every((x) => lines[x.key]);
-  const pages = useMemo(
-    () => (size && measured ? paginate(p.pieces, lines, size.h - V_PAD * 2, p.typo.size) : []),
-    [measured, lines, size, p.pieces, p.typo.size],
-  );
+  const pages = useMemo(() => (size && measured ? paginate(p.pieces, lines, size.h - V_PAD * 2, p.typo.size) : []), [measured, lines, size, p.pieces, p.typo.size]);
   const count = pages.length;
 
   // Where to be once laid out: the server's resume point the first time, then the anchor.
@@ -278,20 +305,33 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
     if (!count) return;
     if (!restored.current) {
       restored.current = true;
+      lastCount.current = count;
       setPage(p.resumeAt === null ? 0 : Math.min(count - 1, Math.floor(p.resumeAt * count)));
       return;
     }
-    setPage((cur) => {
-      if (cur >= count) return count; // stay on the end page
-      const i = pages.findIndex((pg) => pg.some((s) => s.piece.para >= anchor.current));
-      return anchor.current < 0 ? 0 : Math.max(0, i);
-    });
+    // Stay on the end page; else the last page starting at or before your place.
+    let target = 0;
+    if (page >= lastCount.current && lastCount.current > 0) target = count;
+    else if (anchor.current)
+      pages.forEach((pg, i) => {
+        const start = pg.find((x) => x.at)?.at;
+        if (start && before(start, anchor.current!)) target = i;
+      });
+    lastCount.current = count;
+    if (target !== page) {
+      layoutMove.current = true;
+      setPage(target);
+    }
   }, [pages]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { onProgress, onPage, onVisible } = p;
   useEffect(() => {
     if (!count) return;
-    if (page < count) anchor.current = pages[page]!.find((s) => s.piece.para >= 0)?.piece.para ?? anchor.current;
+    if (page !== lastPage.current) {
+      if (!layoutMove.current && page < count) anchor.current = pages[page]!.find((x) => x.at)?.at ?? anchor.current;
+      layoutMove.current = false;
+      lastPage.current = page;
+    }
     onProgress(page / count);
     onPage?.(page, count);
     if (onVisible) onVisible([...new Set([...(pages[page] ?? []), ...(pages[page + 1] ?? [])].map((s) => s.piece.para).filter((x) => x >= 0))]);
@@ -406,10 +446,7 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
     );
 
   return (
-    <View
-      style={{ flex: 1, backgroundColor: p.colors.bg }}
-      onLayout={(e: LayoutChangeEvent) => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
-    >
+    <View style={{ flex: 1, backgroundColor: p.colors.bg }} onLayout={(e: LayoutChangeEvent) => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
       {size && !measured && (
         // Laid out off screen at the column's width to get each piece's lines.
         <View style={{ position: "absolute", opacity: 0, left: H_PAD, width }} pointerEvents="none">
@@ -428,31 +465,44 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
         </View>
       )}
       {count > 0 && (
-        <GestureDetector gesture={swipe}>
-          <Pressable
-            style={p.animated ? { flex: 1, overflow: "hidden" } : { flex: 1, paddingHorizontal: H_PAD, paddingVertical: V_PAD, alignItems: "center" }}
-            onPress={(e) => {
-              if (Date.now() - swipedAt.current > 300) tapAt(e.nativeEvent.pageX);
-            }}
-          >
-            {p.animated ? (
-              <Animated.View style={[StyleSheet.absoluteFill, strip]}>
-                {[page - 1, page, page + 1]
-                  .filter((n) => n >= 0 && n <= count)
-                  .map((n) => (
-                    <View
-                      key={n}
-                      style={{ position: "absolute", top: 0, bottom: 0, left: n * pageW, width: pageW, paddingHorizontal: H_PAD, paddingVertical: V_PAD, alignItems: "center", backgroundColor: p.colors.bg }}
-                    >
-                      {pageView(n)}
-                    </View>
-                  ))}
-              </Animated.View>
-            ) : (
-              pageView(page)
-            )}
-          </Pressable>
-        </GestureDetector>
+        <TextTap.Provider value={markTextTap}>
+          <GestureDetector gesture={swipe}>
+            <Pressable
+              style={p.animated ? { flex: 1, overflow: "hidden" } : { flex: 1, paddingHorizontal: H_PAD, paddingVertical: V_PAD, alignItems: "center" }}
+              onPress={(e) => {
+                // Not after a swipe, nor when the tap was on a word or a hidden line (it has its own action).
+                if (Date.now() - swipedAt.current > 300 && Date.now() - textTapAt.current > 600) tapAt(e.nativeEvent.pageX);
+              }}
+            >
+              {p.animated ? (
+                <Animated.View style={[StyleSheet.absoluteFill, strip]}>
+                  {[page - 1, page, page + 1]
+                    .filter((n) => n >= 0 && n <= count)
+                    .map((n) => (
+                      <View
+                        key={n}
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          bottom: 0,
+                          left: n * pageW,
+                          width: pageW,
+                          paddingHorizontal: H_PAD,
+                          paddingVertical: V_PAD,
+                          alignItems: "center",
+                          backgroundColor: p.colors.bg,
+                        }}
+                      >
+                        {pageView(n)}
+                      </View>
+                    ))}
+                </Animated.View>
+              ) : (
+                pageView(page)
+              )}
+            </Pressable>
+          </GestureDetector>
+        </TextTap.Provider>
       )}
     </View>
   );
@@ -463,8 +513,12 @@ function paginate(pieces: Piece[], lines: Record<string, Line[]>, height: number
   const pages: Segment[][] = [];
   let current: Segment[] = [];
   let used = 0;
+  // Characters of each paragraph's German already laid out (a paragraph can be several pieces, one per sentence).
+  const paraChars = new Map<number, number>();
   for (const piece of pieces) {
     const ls = lines[piece.key] ?? [];
+    const german = piece.kind === "de" && piece.para >= 0;
+    let charAt = paraChars.get(piece.para) ?? 0;
     let at = 0;
     while (at < ls.length) {
       let end = at;
@@ -481,7 +535,12 @@ function paginate(pieces: Piece[], lines: Record<string, Line[]>, height: number
           continue;
         }
       }
-      current.push({ piece, text: ls.slice(at, end).map((l) => l.text).join("").trimEnd(), ends: end === ls.length });
+      const text = ls
+        .slice(at, end)
+        .map((l) => l.text)
+        .join("");
+      current.push({ piece, text: text.trimEnd(), ends: end === ls.length, at: german ? { para: piece.para, char: charAt } : undefined });
+      charAt += text.length;
       used += h;
       at = end;
       if (at < ls.length) {
@@ -491,6 +550,7 @@ function paginate(pieces: Piece[], lines: Record<string, Line[]>, height: number
       }
     }
     used += piece.gapAfter * size;
+    if (german) paraChars.set(piece.para, charAt);
   }
   if (current.length) pages.push(current);
   return pages.length ? pages : [[]];
