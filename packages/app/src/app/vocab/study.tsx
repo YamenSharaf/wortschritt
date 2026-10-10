@@ -9,6 +9,7 @@ import { Card } from "@/ui/Card";
 import { Icon } from "@/ui/icons";
 import { Screen } from "@/ui/Screen";
 import { Text } from "@/ui/Text";
+import { SpeakButton } from "@/ui/SpeakButton";
 import { Check, ChevronLeft, RotateCcw, X } from "lucide-react-native";
 
 /** Flashcards for a group (or all words), as on the web. */
@@ -100,7 +101,10 @@ export default function Flashcards() {
       <Pressable onPress={() => setFlipped(true)} accessibilityRole="button" accessibilityHint={flipped ? undefined : "Shows the answer"}>
         <View style={{ minHeight: 272, padding: 28, borderRadius: radii.panel, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
           <Text variant="eyebrow">{dir === "de" ? "German" : "English"}</Text>
-          <Text style={{ fontFamily: font.semibold, fontSize: 32, lineHeight: 40, letterSpacing: -0.6, marginTop: 4 }}>{prompt}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}>
+            <Text style={{ flexShrink: 1, fontFamily: font.semibold, fontSize: 32, lineHeight: 40, letterSpacing: -0.6 }}>{prompt}</Text>
+            {(dir === "de" || flipped) && <SpeakButton text={word.display} size={22} />}
+          </View>
           {flipped ? (
             <View style={{ marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border, gap: 10 }}>
               <Text variant="eyebrow">{dir === "de" ? "English" : "German"}</Text>
@@ -119,7 +123,10 @@ export default function Flashcards() {
               )}
               {word.examples.slice(0, 2).map((ex, k) => (
                 <View key={k} style={{ padding: 10, borderRadius: radii.control, backgroundColor: colors.surfaceSunken }}>
-                  <Text style={{ fontSize: 14, lineHeight: 20 }}>{ex.de}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 4 }}>
+                    <Text style={{ flex: 1, fontSize: 14, lineHeight: 20 }}>{ex.de}</Text>
+                    <SpeakButton text={ex.de} size={16} />
+                  </View>
                   <Text variant="muted" style={{ fontSize: 14, lineHeight: 20 }}>
                     {ex.en}
                   </Text>

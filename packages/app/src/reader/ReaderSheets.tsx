@@ -104,11 +104,13 @@ export function SettingsPanel({
   value,
   onChange,
   canTranslate,
+  canSpeak,
   device,
 }: {
   value: ReaderSettings;
   onChange: (p: Partial<ReaderSettings>) => void;
   canTranslate: boolean;
+  canSpeak?: boolean;
   /** This device's own reader options (kept here, not in the account). */
   device: {
     fullscreen: boolean;
@@ -185,6 +187,15 @@ export function SettingsPanel({
             value={value.translations}
             options={[["off", "Off"], ["peek", "Peek"], ["always", "Always"]]}
             onChange={(translations) => onChange({ translations })}
+          />
+        </Row>
+      )}
+      {canSpeak && (
+        <Row label="Reading aloud">
+          <Segmented
+            value={String(value.speechRate)}
+            options={[["0.75", "Slow"], ["0.95", "Normal"], ["1.15", "Fast"]]}
+            onChange={(r) => onChange({ speechRate: Number(r) })}
           />
         </Row>
       )}

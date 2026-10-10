@@ -13,6 +13,7 @@ import { Icon, sections } from "@/ui/icons";
 import { Screen } from "@/ui/Screen";
 import { SearchField } from "@/ui/SearchField";
 import { Text } from "@/ui/Text";
+import { SpeakButton } from "@/ui/SpeakButton";
 import { Check, ChevronDown, ChevronUp, Plus, RotateCw, Sparkles } from "lucide-react-native";
 
 const msg = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -263,7 +264,12 @@ function VocabRow({ entry, first, vocab, open, onToggle }: { entry: VocabEntry; 
 
       {open && (
         <View style={{ borderTopWidth: 1, borderTopColor: colors.border, padding: 16, gap: 12 }}>
-          <Text>{entry.translation}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Text style={{ flex: 1 }}>
+              <Text style={{ fontFamily: font.semibold }}>{entry.display}</Text> — {entry.translation}
+            </Text>
+            <SpeakButton text={entry.display} />
+          </View>
           {formChips(entry.forms).length > 0 && (
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
               {formChips(entry.forms).map(([label, val]) => (
@@ -279,7 +285,10 @@ function VocabRow({ entry, first, vocab, open, onToggle }: { entry: VocabEntry; 
           <View style={{ gap: 8 }}>
             {entry.examples.map((ex, i) => (
               <View key={i} style={{ padding: 10, borderRadius: radii.control, backgroundColor: colors.surfaceSunken }}>
-                <Text style={{ fontSize: 14, lineHeight: 20 }}>{ex.de}</Text>
+                <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 4 }}>
+                  <Text style={{ flex: 1, fontSize: 14, lineHeight: 20 }}>{ex.de}</Text>
+                  <SpeakButton text={ex.de} size={16} />
+                </View>
                 <Text variant="muted" style={{ fontSize: 14, lineHeight: 20 }}>
                   {ex.en}
                 </Text>

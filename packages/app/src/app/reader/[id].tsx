@@ -16,6 +16,7 @@ import { preferences } from "@mdb/client";
 import {
   isSavedWord,
   useAssistantEnabled,
+  useReadAloud,
   usePreference,
   useReaderSettings,
   useReadingProgress,
@@ -33,7 +34,7 @@ import { StoryQuiz } from "@/reader/StoryQuiz";
 import { WordSheet } from "@/reader/WordSheet";
 import { Icon } from "@/ui/icons";
 import { Text } from "@/ui/Text";
-import { BookOpenText, Check, ChevronLeft, ChevronRight, Languages, Type } from "lucide-react-native";
+import { BookOpenText, Check, ChevronLeft, ChevronRight, Languages, Square, Type, Volume2 } from "lucide-react-native";
 import { useVolumeKeys, volumeKeysSupported } from "../../../modules/volume-keys";
 
 /** One reader per story, so the next chapter starts fresh. */
@@ -80,6 +81,7 @@ function Reader({ id }: { id: string }) {
   /** Bumped by "Read again": the text starts over at the top. */
   const [round, setRound] = useState(0);
   const controls = useRef<ReaderControls>(null);
+  const aloud = useReadAloud();
   // Volume down is the next page (up with "invert"); only on pages, with nothing open on top.
   useVolumeKeys(volumeKeys && reader.layout === "pages" && !sheet && !word, (key) =>
     controls.current?.turn((key === "down") !== volumeInvert ? 1 : -1),
@@ -104,6 +106,16 @@ function Reader({ id }: { id: string }) {
         : [],
     [view, reader.translations, tr.lines, tr.translating, tr.revealed],
   );
+  // Each paragraph's German, for reading aloud (English lines left out).
+  const paragraphs = useMemo(() => {
+    const out: string[] = [];
+    for (const x of pieces) if (x.kind === "de" && x.para >= 0) out[x.para] = out[x.para] ? `${out[x.para]} ${x.text}` : x.text;
+    return Array.from(out, (t) => t ?? "");
+  }, [pieces]);
+  const readAloud = () => {
+    if (aloud.speaking !== null) return aloud.stop();
+    aloud.read(paragraphs, controls.current?.firstPara() ?? 0, { rate: reader.speechRate, onParagraph: (i) => controls.current?.showPara(i) });
+  };
   const isSaved = useCallback((w: string) => isSavedWord(w, vocab.words, lemmas), [vocab.words, lemmas]);
   const { request } = tr;
   const onVisible = useCallback((paras: number[]) => reader.translations !== "off" && request(paras), [reader.translations, request]);
@@ -177,6 +189,7 @@ function Reader({ id }: { id: string }) {
             onProgress={reading.see}
             onVisible={onVisible}
             onCenter={() => setChrome((c) => !c)}
+            speaking={aloud.speaking}
             onPage={(page, count) => {
               setWhere({ page, count });
               setChrome(false);
@@ -226,6 +239,14 @@ function Reader({ id }: { id: string }) {
                 }}
               />
             )}
+            {aloud.supported && (
+              <BarButton
+                icon={aloud.speaking !== null ? Square : Volume2}
+                color={aloud.speaking !== null ? colors.fg : colors.muted}
+                a11y={aloud.speaking !== null ? "Stop reading aloud" : "Read aloud from here"}
+                onPress={readAloud}
+              />
+            )}
             {story.glossary.length > 0 && <BarButton icon={BookOpenText} color={colors.muted} a11y="Glossary" onPress={() => setSheet("glossary")} />}
             <BarButton icon={Type} color={colors.muted} a11y="Text settings" onPress={() => setSheet("settings")} />
           </View>
@@ -260,6 +281,7 @@ function Reader({ id }: { id: string }) {
             value={reader}
             onChange={change}
             canTranslate={aiEnabled || tr.hasAny}
+            canSpeak={aloud.supported}
             device={{
               fullscreen,
               setFullscreen,

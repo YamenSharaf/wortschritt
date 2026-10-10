@@ -31,6 +31,10 @@ export type Typography = {
 export type ReaderControls = {
   /** Turn by `delta` pages (pages mode). */
   turn(delta: number): void;
+  /** The first paragraph on screen (where reading aloud starts). */
+  firstPara(): number;
+  /** Bring paragraph `i` on screen (reading aloud follows along). */
+  showPara(i: number): void;
 };
 
 type Props = {
@@ -54,6 +58,8 @@ type Props = {
   onCenter: () => void;
   /** Pages mode: the page and the count (page === count is the end page). */
   onPage?: (page: number, count: number) => void;
+  /** The paragraph being read aloud (marked), if any. */
+  speaking?: number | null;
 };
 
 type Line = { text: string; height: number };
@@ -95,7 +101,7 @@ function hexToTriplet(hex: string): string {
 
 /** The reader's text: React Native text, paged from its own line measurements, or one scroll. */
 export const RNReader = forwardRef<ReaderControls, Props>(function RNReader(p, ref) {
-  return p.mode === "scroll" ? <ScrollReader {...p} /> : <PagedReader {...p} ref={ref} />;
+  return p.mode === "scroll" ? <ScrollReader {...p} ref={ref} /> : <PagedReader {...p} ref={ref} />;
 });
 
 /** A piece's text with each word tappable (and saved ones underlined). */
@@ -109,8 +115,9 @@ function PieceText({ piece, text, style, p }: { piece: Piece; text: string; styl
   }
   if (piece.kind !== "de" && piece.kind !== "title") return <Text style={style}>{text}</Text>;
   let at = 0;
+  const reading = piece.kind === "de" && p.speaking === piece.para;
   return (
-    <Text style={style}>
+    <Text style={reading ? [style, { backgroundColor: p.colors.rule }] : style}>
       {tokens(text).map((t, i) => {
         const offset = at;
         at += t.text.length;
@@ -133,16 +140,37 @@ function PieceText({ piece, text, style, p }: { piece: Piece; text: string; styl
 
 // --- scroll ------------------------------------------------------------------
 
-function ScrollReader(p: Props) {
+const ScrollReader = forwardRef<ReaderControls, Props>(function ScrollReader(p, ref) {
   const scroller = useRef<ScrollView>(null);
   const tops = useRef<Record<number, number>>({});
   const content = useRef(0);
   const viewport = useRef(0);
+  const scrollY = useRef(0);
   const restored = useRef(false);
   const { onProgress, onVisible } = p;
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      turn: () => {},
+      firstPara: () => {
+        const on = Object.entries(tops.current).filter(([, top]) => top >= scrollY.current - 8);
+        return on.length ? Math.min(...on.map(([para]) => Number(para))) : 0;
+      },
+      showPara: (i) => {
+        const top = tops.current[i];
+        if (top === undefined) return;
+        // Only when it's off screen (or nearly), so the text doesn't jump for each paragraph.
+        if (top < scrollY.current + 40 || top > scrollY.current + viewport.current * 0.75)
+          scroller.current?.scrollTo({ y: Math.max(0, top - viewport.current * 0.25), animated: false });
+      },
+    }),
+    [],
+  );
+
   const report = useCallback(
     (y: number) => {
+      scrollY.current = y;
       if (!content.current) return;
       onProgress((y + viewport.current) / content.current);
       if (onVisible) {
@@ -188,7 +216,7 @@ function ScrollReader(p: Props) {
       </View>
     </ScrollView>
   );
-}
+});
 
 // --- pages -------------------------------------------------------------------
 
@@ -239,7 +267,18 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
   }, [page, count]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const turn = useCallback((d: number) => setPage((x) => Math.max(0, Math.min(count, x + d))), [count]);
-  useImperativeHandle(ref, () => ({ turn }), [turn]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      turn,
+      firstPara: () => Math.max(0, pages[Math.min(page, count - 1)]?.find((x) => x.piece.para >= 0)?.piece.para ?? 0),
+      showPara: (i) => {
+        const at = pages.findIndex((pg) => pg.some((x) => x.piece.para === i));
+        if (at >= 0) setPage(at);
+      },
+    }),
+    [turn, pages, page, count],
+  );
 
   const tapAt = (x: number) => {
     const w = size?.w ?? 0;

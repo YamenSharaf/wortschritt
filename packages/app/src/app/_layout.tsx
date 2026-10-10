@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -12,7 +12,8 @@ import { Geist_500Medium } from "@expo-google-fonts/geist/500Medium";
 import { Geist_600SemiBold } from "@expo-google-fonts/geist/600SemiBold";
 import { Geist_700Bold } from "@expo-google-fonts/geist/700Bold";
 import { GeistMono_500Medium } from "@expo-google-fonts/geist-mono/500Medium";
-import { AuthProvider, ClientProvider } from "@mdb/client/react";
+import { AuthProvider, ClientProvider, useApi, useSpeech } from "@mdb/client/react";
+import { appSpeech } from "@/lib/speech";
 import { ServerProvider, useServer } from "@/lib/server";
 import { deviceStore } from "@/lib/storage";
 import { SyncProvider } from "@/lib/sync";
@@ -38,12 +39,14 @@ export default function RootLayout() {
 
 /** The shared client (API once a server is known, this device's storage), the theme, and who's signed in. */
 function Providers({ children }: { children: ReactNode }) {
-  const { api, status } = useServer();
+  const { api, status, mediaHeaders } = useServer();
+  const speech = useMemo(() => (api ? appSpeech(api.ttsUrl, mediaHeaders) : undefined), [api, mediaHeaders]);
   return (
-    <ClientProvider api={api ?? undefined} storage={deviceStore}>
+    <ClientProvider api={api ?? undefined} speech={speech} storage={deviceStore}>
       <ThemeProvider>
         {status === "signed-in" ? (
           <AuthProvider>
+            <SpeechSetup />
             <SyncProvider>{children}</SyncProvider>
           </AuthProvider>
         ) : (
@@ -52,6 +55,18 @@ function Providers({ children }: { children: ReactNode }) {
       </ThemeProvider>
     </ClientProvider>
   );
+}
+
+/** Use the server's voice when the account chose one the server has (else the phone's). */
+function SpeechSetup() {
+  const api = useApi();
+  const speech = useSpeech();
+  useEffect(() => {
+    Promise.all([api.ttsStatus(), api.settings()])
+      .then(([st, se]) => speech.setServerTts({ enabled: st.available && st.installed.includes(se.ttsVoice), voice: se.ttsVoice }))
+      .catch(() => {});
+  }, [api, speech]);
+  return null;
 }
 
 /** Which screens exist depends on the state: connect to a server, sign in, then the app. */

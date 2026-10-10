@@ -124,7 +124,16 @@ computes, like the web does with HTML; it keeps no business logic.
     groups. Saved words are underlined (dotted).
   - **Questions**: a story's questions follow its end (`StoryQuiz.tsx`,
     `useStoryQuiz`), in both layouts, with the practice item views.
-  - **Not yet**: read-aloud (phase 5).
+  - **Reading aloud** (phase 5): the speaker in the bar reads from the first
+    paragraph on screen, marks the one being read and turns the page (or
+    scrolls) to follow; speed is in the text settings. `src/lib/speech.ts`
+    gives `createSpeech` the phone's voice (expo-speech) and server clips
+    (expo-audio) when the account chose a server voice; clips are kept in
+    the app's files (`tts/`, newest 600) once heard or fetched ahead, so
+    they play offline, and are removed on sign-out. Speak buttons sit on
+    the word popup, vocab words and examples, and flashcards. The
+    expo-audio plugin is set to ask for no microphone and no background
+    playback.
 - **Practice** (issue #2, phase 3): the tab lists the sets (recent or A–Z,
   search past three sets, the last run's score); `src/app/practice/[id].tsx`
   runs one with `useExerciseRunner`, as the web's player: the score, a

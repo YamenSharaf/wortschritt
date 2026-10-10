@@ -27,6 +27,13 @@
       "expo-web-browser",
       "expo-sqlite",
       [
+        "expo-audio",
+        {
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": false
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#22589A",

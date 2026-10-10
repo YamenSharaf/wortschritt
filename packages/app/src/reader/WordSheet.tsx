@@ -8,6 +8,7 @@ import { useSync } from "@/lib/sync";
 import { font, useTheme } from "@/lib/theme";
 import { Button } from "@/ui/Button";
 import { Text } from "@/ui/Text";
+import { SpeakButton } from "@/ui/SpeakButton";
 import { Sheet } from "./ReaderSheets";
 
 const POS_LABEL: Record<string, string> = {
@@ -60,6 +61,7 @@ function Gloss({ word, dict, hasDetails, aiEnabled }: { word: string; dict: Dict
     <View style={{ gap: 2 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
         <Text variant="heading">{dict.article ? `${dict.article} ${dict.lemma}` : dict.lemma}</Text>
+        <SpeakButton text={dict.article ? `${dict.article} ${dict.lemma}` : dict.lemma} />
         {dict.pos ? (
           <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: radii.control / 2, backgroundColor: colors.surfaceSunken }}>
             <Text style={{ fontSize: 11, letterSpacing: 0.6, textTransform: "uppercase", color: colors.inkMuted }}>
