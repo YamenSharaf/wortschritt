@@ -74,6 +74,9 @@ computes, like the web does with HTML; it keeps no business logic.
   then a Gradle release build for arm64, signed with the Expo template's
   debug key so each build installs over the last (the version code is the
   run number, via `app.config.ts`). Download it from the run's Artifacts.
+  Builds of main are also published as GitHub pre-releases (tag
+  `app-<run>`, version `0.1.<run>`, the newest 10 kept), so Obtainium can
+  install the app from the repo and keep it updated.
   `usesCleartextTraffic` is on so the "Allow http" switch works for a LAN
   server; the app itself refuses http unless that switch is on.
 

@@ -6,6 +6,10 @@ name: Android APK
 # needed) signed with Expo's template debug key, the same on every build, so
 # a newer APK installs over an older one. Not for distribution: a signed
 # release with its own key comes with the release phase (issue #2).
+#
+# Builds of main are also published as a GitHub pre-release (tag app-<run>,
+# version 0.1.<run>) so Obtainium can install and update the app from the
+# repo's releases; only the latest few are kept.
 
 on:
   push:
@@ -34,12 +38,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
-      contents: read
+      # write: publishing main's builds as releases (the step below).
+      contents: write
     env:
       CI: "1"
       EXPO_NO_TELEMETRY: "1"
       # Each build gets a higher version code, so it installs as an update.
       APP_VERSION_CODE: ${{ github.run_number }}
+      APP_VERSION: 0.1.${{ github.run_number }}
 
     steps:
       - name: Checkout
@@ -93,3 +99,24 @@ jobs:
           path: out/*.apk
           retention-days: 30
           if-no-files-found: error
+
+      # For Obtainium: main's builds as pre-releases (not mistaken for a
+      # server release), the newest 10 kept.
+      - name: Publish as a pre-release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP: 10
+        run: |
+          tag="app-${{ github.run_number }}"
+          gh release create "$tag" out/*.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --prerelease \
+            --title "Wortschritt app ${APP_VERSION}" \
+            --notes "Android test build ${APP_VERSION} from ${GITHUB_SHA::7}. Signed with the Expo template's debug key: for testing, not distribution."
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 200 --json tagName,createdAt \
+            --jq '[.[] | select(.tagName | startswith("app-"))] | sort_by(.createdAt) | reverse | .[env.KEEP | tonumber:] | .[].tagName' |
+            while read -r old; do
+              gh release delete "$old" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag
+            done
