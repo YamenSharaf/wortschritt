@@ -82,10 +82,43 @@ jobs:
         working-directory: packages/app
         run: pnpm exec expo prebuild --platform android --no-install
 
+      # Most of the build is compiling native C++ (React Native, Reanimated,
+      # SQLite, ...), the same each time unless native modules change: ccache
+      # keeps the compiled objects between runs (CMake picks it up from the
+      # *_COMPILER_LAUNCHER variables below).
+      - name: Set up ccache
+        run: |
+          sudo apt-get install -y --no-install-recommends ccache
+          ccache --max-size=2G
+          ccache --zero-stats
+
+      - name: Restore the ccache
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ccache
+          # A new entry each run (a cache can't be updated); the newest one is restored.
+          key: ccache-android-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.run_id }}
+          restore-keys: |
+            ccache-android-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            ccache-android-${{ runner.os }}-
+
       # arm64 only: the Boox and current phones; halves the build time and size.
+      # --build-cache: Gradle reuses task outputs (Kotlin, Java, ...) kept in
+      # its cache, which setup-gradle saves between runs.
       - name: Build the APK
         working-directory: packages/app/android
-        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon
+        env:
+          CCACHE_DIR: /home/runner/.cache/ccache
+          CCACHE_BASEDIR: ${{ github.workspace }}
+          CCACHE_COMPRESS: "1"
+          CCACHE_SLOPPINESS: time_macros,include_file_mtime,include_file_ctime
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon --build-cache
+
+      - name: ccache hits
+        if: always()
+        run: ccache --show-stats || true
 
       # Re-sign Gradle's output (aligned, debug-signed) with the app's key;
       # apksigner replaces the old signature. The generated project stays
