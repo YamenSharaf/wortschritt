@@ -1,6 +1,7 @@
 import { Modal, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useWordLookup } from "@mdb/client/react";
+import { useSync } from "@/lib/sync";
 import { font, useTheme } from "@/lib/theme";
 import { Text } from "@/ui/Text";
 
@@ -9,6 +10,7 @@ export function WordSheet({ word, onClose }: { word: string; onClose: () => void
   const { colors, radii, motion } = useTheme();
   const insets = useSafeAreaInsets();
   const { dict, details } = useWordLookup(word);
+  const offline = useSync().status.state === "offline";
   const senses = details?.entries.flatMap((e) => e.senses).slice(0, 3) ?? [];
   return (
     <Modal transparent visible animationType={motion.base === 0 ? "none" : "slide"} onRequestClose={onClose}>
@@ -34,7 +36,9 @@ export function WordSheet({ word, onClose }: { word: string; onClose: () => void
             {i + 1}. {s.definition}
           </Text>
         ))}
-        {dict === null && details === null && <Text variant="muted">No definition found.</Text>}
+        {dict === null && details === null && (
+          <Text variant="muted">{offline ? "You're offline: looking words up needs a connection." : "No definition found."}</Text>
+        )}
         <Pressable onPress={onClose} accessibilityRole="button" style={{ alignSelf: "flex-end", paddingVertical: 8, paddingHorizontal: 4 }}>
           <Text style={{ fontFamily: font.medium, color: colors.brandInk }}>Close</Text>
         </Pressable>

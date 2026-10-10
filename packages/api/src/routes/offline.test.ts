@@ -8,13 +8,14 @@ import {
   createApi,
   createOfflineApi,
   createSync,
-  memoryOfflineStore,
+  sqliteOfflineStore,
   type Api,
   type FetchLike,
   type OfflineStore,
   type Sync,
 } from "@mdb/client";
 import { EXAMPLE_STORY, story as storySchema, type ExerciseItem } from "@mdb/shared";
+import { sqliteForTests } from "./sqliteForTests";
 
 // The app's offline layer (@mdb/client/offline) against the real server: the
 // outbox, the change feed and the merge rules end to end. See auth.test.ts
@@ -70,7 +71,7 @@ before(async () => {
   const res = await app.inject({ method: "POST", url: "/api/auth/login", payload: { username: "yamen", password: "admin-password" } });
   cookie = `mdb_session=${res.cookies.find((c) => c.name === "mdb_session")!.value}`;
   server = createApi({ baseUrl: "http://test", fetch: fetchVia });
-  store = memoryOfflineStore();
+  store = sqliteOfflineStore(async () => sqliteForTests()); // the app's store, on better-sqlite3
   sync = createSync({ api: server, store });
   offline = createOfflineApi({ api: server, store, sync });
   await server.createStory(storySchema.parse(EXAMPLE_STORY));

@@ -5,6 +5,8 @@ import * as WebBrowser from "expo-web-browser";
 import { Image } from "expo-image";
 import {
   createApi,
+  createOfflineApi,
+  createSync,
   createTokenSession,
   exchangeCode,
   fetchServerAuth,
@@ -15,10 +17,13 @@ import {
   type Api,
   type FetchLike,
   type ResponseLike,
+  type OfflineStore,
   type ServerAuth,
+  type Sync,
   type TokenSession,
 } from "@mdb/client";
 import { APP_NAME } from "@mdb/shared";
+import { createOfflineStore } from "./offlineStore";
 import { deviceStore, secretStore } from "./storage";
 
 /** The API version this app speaks (the server's `minClient` must not exceed it). */
@@ -39,12 +44,17 @@ type ServerState = {
   status: ServerStatus;
   /** The server's origin, e.g. https://wortschritt.example.com. */
   server: string | null;
+  /** What screens use: offline-first (reads from the store once synced, writes queued when offline). */
   api: Api | null;
+  /** Keeps the store in step with the server (see lib/sync.tsx). */
+  sync: Sync | null;
+  /** The learner's data on this device. */
+  store: OfflineStore;
   /** Check and keep a server address; throws a readable message when it isn't one. */
   connect: (address: string, opts?: { allowHttp?: boolean }) => Promise<void>;
   /** Sign in through the server's page in a browser tab. */
   signIn: () => Promise<void>;
-  /** End this connection on the server and here. */
+  /** End this connection on the server and here (and forget the learner's data on this device). */
   signOut: () => Promise<void>;
   /** Sign out and forget the server (to connect to another). */
   disconnect: () => Promise<void>;
@@ -90,13 +100,17 @@ export function ServerProvider({ children }: { children: ReactNode }) {
     });
   }, [server, auth]);
 
-  const api = useMemo(
+  const store = useMemo(() => createOfflineStore(), []);
+  const online = useMemo(
     () =>
       server && session
         ? createApi({ baseUrl: server, fetch: appFetch, headers: session.headers, onUnauthorized: session.refreshNow })
         : null,
     [server, session],
   );
+  const sync = useMemo(() => (online ? createSync({ api: online, store }) : null), [online, store]);
+  useEffect(() => () => sync?.stop(), [sync]);
+  const api = useMemo(() => (online && sync ? createOfflineApi({ api: online, store, sync }) : null), [online, sync, store]);
 
   // On start: the saved server, its sign-in endpoints, and whether we hold tokens.
   useEffect(() => {
@@ -156,14 +170,17 @@ export function ServerProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (!server || !auth || !session) return;
+    // Send what's waiting first: the local data goes with the sign-out.
+    await sync?.sync();
     const t = await session.load();
     const clientId = await deviceStore.get(clientIdKey(server));
     if (t && clientId) await revokeToken(auth, appFetch, { clientId, token: t.refreshToken });
     await session.clear();
+    await store.reset();
     await Image.clearDiskCache().catch(() => false);
     await Image.clearMemoryCache().catch(() => false);
     setStatus("signed-out");
-  }, [server, auth, session]);
+  }, [server, auth, session, store, sync]);
 
   const disconnect = useCallback(async () => {
     await signOut();
@@ -175,8 +192,8 @@ export function ServerProvider({ children }: { children: ReactNode }) {
   }, [signOut]);
 
   const value = useMemo(
-    () => ({ status, server, api, connect, signIn, signOut, disconnect }),
-    [status, server, api, connect, signIn, signOut, disconnect],
+    () => ({ status, server, api, sync, store, connect, signIn, signOut, disconnect }),
+    [status, server, api, sync, store, connect, signIn, signOut, disconnect],
   );
   return <ServerContext.Provider value={value}>{children}</ServerContext.Provider>;
 }

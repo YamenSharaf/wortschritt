@@ -17,5 +17,10 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "pnpm": {
+    "overrides": {
+      "drizzle-orm>expo-sqlite": "-"
+    }
   }
 }

@@ -53,6 +53,41 @@ computes, like the web does with HTML; it keeps no business logic.
   read colours, radii, elevation, effects and motion from `useTheme()` only.
 - `src/ui/`: Text, Button, Card, Screen, the Dock; sections not built yet
   (`Soon`) open the web.
+- **Offline-first** (issue #2, phase 2): screens get `createOfflineApi` from
+  `@mdb/client` (`src/offline/`), which has `createApi`'s shape, so the
+  hooks don't change. The web keeps the plain API.
+  - **Store**: an `OfflineStore` (documents by collection and id as the
+    change feed sends them, plus the outbox in order). The app uses
+    `sqliteOfflineStore` on expo-sqlite (`src/lib/offlineStore.native.ts`);
+    the web preview keeps it in memory.
+  - **Sync** (`createSync`): push the outbox (`/api/sync/push`, each op once
+    by its id), then pull `/api/sync/changes` from the cursor (tombstones,
+    full snapshots, the library by version, the server's stats every time).
+    One at a time. `SyncProvider` (`src/lib/sync.tsx`) runs it on start,
+    when the app comes back to the front, every 10 minutes while open, after
+    local changes, and on pull-to-refresh; Home shows its status (synced
+    when, offline, changes waiting). Background sync while closed isn't
+    there yet.
+  - **Reads** come from the store once a first sync filled it. **Writes**
+    the feed covers (answers, finishing and resuming a set, sheet views,
+    reading progress, read / read again, vocab save / remove / study, notes)
+    go straight to the server when it's reachable and nothing is queued,
+    otherwise they're applied locally and queued. An offline answer gets a
+    provisional verdict (`gradeItem` + `withoutTutor`); the server grades it
+    again on push. Notes made offline are folded into their queued create;
+    edits to one note are merged from the same base (a conflict on the
+    server keeps the app's version as a copy). Everything else (the tutor,
+    word lookups, history, settings, groups) needs the server.
+  - **Whose data**: the store belongs to the signed-in user; signing out or
+    changing server clears it (after a last sync), and another account
+    starts from a clean store.
+  - **Tests**: `packages/api/src/routes/offline.test.ts` runs the layer
+    against the real server on SQLite (better-sqlite3 in the shape of
+    expo-sqlite); `offlineStore.test.ts` holds both stores to one contract.
+  - **pnpm**: `drizzle-orm>expo-sqlite: "-"` (root `package.json`) keeps the
+    app's expo-sqlite out of the server's dependencies (an optional peer of
+    drizzle-orm); without it the server's Docker image installs React
+    Native.
 - **Reader** (issue #2, phase 1): Stories → a story opens
   `src/app/reader/[id].tsx` with `src/reader/RNReader.tsx`: React Native
   text, as pages or one scroll, from plain paragraphs (`src/reader/text.ts`)

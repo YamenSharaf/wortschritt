@@ -15,6 +15,7 @@ import { GeistMono_500Medium } from "@expo-google-fonts/geist-mono/500Medium";
 import { AuthProvider, ClientProvider } from "@mdb/client/react";
 import { ServerProvider, useServer } from "@/lib/server";
 import { deviceStore } from "@/lib/storage";
+import { SyncProvider } from "@/lib/sync";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -40,7 +41,15 @@ function Providers({ children }: { children: ReactNode }) {
   const { api, status } = useServer();
   return (
     <ClientProvider api={api ?? undefined} storage={deviceStore}>
-      <ThemeProvider>{status === "signed-in" ? <AuthProvider>{children}</AuthProvider> : children}</ThemeProvider>
+      <ThemeProvider>
+        {status === "signed-in" ? (
+          <AuthProvider>
+            <SyncProvider>{children}</SyncProvider>
+          </AuthProvider>
+        ) : (
+          children
+        )}
+      </ThemeProvider>
     </ClientProvider>
   );
 }

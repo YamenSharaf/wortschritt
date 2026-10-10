@@ -5,13 +5,17 @@ export type AsyncState<T> =
   | { status: "error"; error: Error }
   | { status: "ready"; data: T };
 
-/** Minimal data-fetching hook: loading, error or the data; refetches when `deps` change. */
-export function useAsync<T>(fn: () => Promise<T>, deps: unknown[] = []): AsyncState<T> {
+/**
+ * Minimal data-fetching hook: loading, error or the data; refetches when `deps`
+ * change. `keep`: a refetch keeps showing the data it has until the new data
+ * arrives (a list reloading after a sync, rather than flashing "loading").
+ */
+export function useAsync<T>(fn: () => Promise<T>, deps: unknown[] = [], opts: { keep?: boolean } = {}): AsyncState<T> {
   const [state, setState] = useState<AsyncState<T>>({ status: "loading" });
 
   useEffect(() => {
     let alive = true;
-    setState({ status: "loading" });
+    setState((cur) => (opts.keep && cur.status === "ready" ? cur : { status: "loading" }));
     fn()
       .then((data) => alive && setState({ status: "ready", data }))
       .catch(

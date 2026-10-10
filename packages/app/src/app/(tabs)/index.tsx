@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import type { RunSummary } from "@mdb/shared";
 import { timeAgo } from "@mdb/client";
 import { useApi, useAsync, useAuth } from "@mdb/client/react";
+import { useSync } from "@/lib/sync";
 import { font, useTheme } from "@/lib/theme";
 import { Button } from "@/ui/Button";
 import { Card } from "@/ui/Card";
@@ -21,19 +22,29 @@ export default function Home() {
   const api = useApi();
   const { user } = useAuth();
   const { colors, radii } = useTheme();
-  const [reload, setReload] = useState(0);
-  const settings = useAsync(() => api.settings(), [api, reload]);
-  const progress = useAsync(() => api.progress(), [api, reload]);
-  const runs = useAsync(() => api.runs(5), [api, reload]);
+  const sync = useSync();
+  const [refreshing, setRefreshing] = useState(false);
+  // Read from the device; reloaded after each sync (keeping what's shown meanwhile).
+  const rev = sync.status.revision;
+  const settings = useAsync(() => api.settings(), [api, rev], { keep: true });
+  const progress = useAsync(() => api.progress(), [api, rev], { keep: true });
+  const runs = useAsync(() => api.runs(5), [api, rev], { keep: true });
 
   const name = (settings.status === "ready" && settings.data.displayName.trim()) || user?.username || "";
   const p = progress.status === "ready" ? progress.data : null;
   const left = p?.goalLeft ?? 0;
-  const loading = progress.status === "loading";
 
   return (
-    <Screen onRefresh={() => setReload((n) => n + 1)} refreshing={loading && reload > 0}>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end" }}>
+    <Screen
+      onRefresh={async () => {
+        setRefreshing(true);
+        await sync.syncNow();
+        setRefreshing(false);
+      }}
+      refreshing={refreshing}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <SyncLine />
         <Pressable
           onPress={() => router.push("/account")}
           accessibilityRole="button"
@@ -100,6 +111,33 @@ export default function Home() {
         </View>
       )}
     </Screen>
+  );
+}
+
+/** Where the data on screen stands: synced when, offline, or changes waiting to be sent. */
+function SyncLine() {
+  const { status } = useSync();
+  const { colors } = useTheme();
+  const waiting = status.pending > 0 ? ` · ${status.pending} ${status.pending === 1 ? "change" : "changes"} to send` : "";
+  const text =
+    status.state === "syncing"
+      ? "Syncing…"
+      : status.state === "offline"
+        ? `Offline${status.lastSyncAt ? ` · synced ${timeAgo(Math.floor(status.lastSyncAt / 1000))}` : ""}${waiting}`
+        : status.state === "error"
+          ? `Couldn't sync${waiting}`
+          : status.lastSyncAt
+            ? `Synced ${timeAgo(Math.floor(status.lastSyncAt / 1000))}${waiting}`
+            : waiting.slice(3);
+  return (
+    <Text
+      variant="subtle"
+      numberOfLines={1}
+      style={{ flex: 1, color: status.state === "error" ? colors.danger : undefined }}
+      accessibilityLiveRegion="polite"
+    >
+      {text}
+    </Text>
   );
 }
 

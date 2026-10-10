@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { useApi, useAsync } from "@mdb/client/react";
+import { useSync } from "@/lib/sync";
 import { font, useTheme } from "@/lib/theme";
 import { Card } from "@/ui/Card";
 import { Screen } from "@/ui/Screen";
@@ -10,9 +12,18 @@ import { Text } from "@/ui/Text";
 export default function Stories() {
   const api = useApi();
   const { colors } = useTheme();
-  const stories = useAsync(() => api.stories(), [api]);
+  const { status, syncNow } = useSync();
+  const stories = useAsync(() => api.stories(), [api, status.revision], { keep: true });
+  const [refreshing, setRefreshing] = useState(false);
   return (
-    <Screen>
+    <Screen
+      onRefresh={async () => {
+        setRefreshing(true);
+        await syncNow();
+        setRefreshing(false);
+      }}
+      refreshing={refreshing}
+    >
       <Text variant="title">Stories</Text>
       {stories.status === "ready" && (
         <Card>
