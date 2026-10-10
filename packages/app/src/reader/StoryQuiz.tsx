@@ -3,6 +3,7 @@ import type { Story } from "@mdb/shared";
 import { useStoryQuiz } from "@mdb/client/react";
 import { font, useTheme } from "@/lib/theme";
 import { ItemView } from "@/practice/ItemView";
+import { useFeedback } from "@/lib/feedback";
 import { Card } from "@/ui/Card";
 import { Text } from "@/ui/Text";
 import type { ReaderColors } from "./style";
@@ -10,6 +11,7 @@ import type { ReaderColors } from "./style";
 /** A story's comprehension questions after the text; answers count as set "story:<id>" (queued offline). */
 export function StoryQuiz({ story, colors, onFinished }: { story: Story; colors: ReaderColors; onFinished: () => void }) {
   const quiz = useStoryQuiz(story, onFinished);
+  const feedback = useFeedback();
   const t = useTheme();
   return (
     <View style={{ gap: 12, marginTop: 8 }}>
@@ -24,7 +26,14 @@ export function StoryQuiz({ story, colors, onFinished }: { story: Story; colors:
           <Text variant="eyebrow" style={{ marginBottom: 10 }}>
             Frage {i + 1}
           </Text>
-          <ItemView item={q} submit={(response) => quiz.answer(q, response)} />
+          <ItemView
+            item={q}
+            submit={async (response) => {
+              const v = await quiz.answer(q, response);
+              feedback.answer(v.correct);
+              return v;
+            }}
+          />
         </Card>
       ))}
       {quiz.done && (

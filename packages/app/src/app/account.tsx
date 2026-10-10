@@ -1,7 +1,8 @@
 import { Alert, Pressable, Switch, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import { router } from "expo-router";
-import { useAuth } from "@mdb/client/react";
+import { preferences, type Preference } from "@mdb/client";
+import { useAuth, usePreference } from "@mdb/client/react";
 import { useServer } from "@/lib/server";
 import { font, useTheme } from "@/lib/theme";
 import { Button } from "@/ui/Button";
@@ -89,6 +90,16 @@ export default function Account() {
       </View>
 
       <View style={{ gap: 10 }}>
+        <Text variant="heading">Practice</Text>
+        <Text variant="subtle">On this device only.</Text>
+        <Card style={{ padding: 16, gap: 8 }}>
+          <PrefSwitch pref={preferences.autoAdvance} label="Move on after a right answer" hint="Wrong answers always wait, so you can read the answer or ask the tutor." />
+          <PrefSwitch pref={preferences.feedbackSounds} label="Sounds" hint="A chime when you're right, a soft tone when you're not." />
+          <PrefSwitch pref={preferences.haptics} label="Vibration" hint="A short tap for answers and swipes." />
+        </Card>
+      </View>
+
+      <View style={{ gap: 10 }}>
         <Text variant="heading">More</Text>
         <Card>
           <LinkRow label="Import content" onPress={() => router.push("/import")} first />
@@ -133,5 +144,19 @@ function LinkRow({ label, onPress, first }: { label: string; onPress: () => void
     >
       <Text style={{ fontFamily: font.medium }}>{label} ›</Text>
     </Pressable>
+  );
+}
+
+function PrefSwitch({ pref, label, hint }: { pref: Preference<boolean>; label: string; hint?: string }) {
+  const [on, set] = usePreference(pref);
+  const { colors } = useTheme();
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, minHeight: 44 }}>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontFamily: font.medium }}>{label}</Text>
+        {hint ? <Text variant="subtle">{hint}</Text> : null}
+      </View>
+      <Switch value={on} onValueChange={set} accessibilityLabel={label} trackColor={{ true: colors.brand, false: colors.borderControl }} thumbColor={colors.surface} />
+    </View>
   );
 }

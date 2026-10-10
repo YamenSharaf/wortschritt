@@ -190,6 +190,7 @@ function Reader({ id }: { id: string }) {
             onVisible={onVisible}
             onCenter={() => setChrome((c) => !c)}
             speaking={aloud.speaking}
+            animated={theme.motion.base > 0}
             onPage={(page, count) => {
               setWhere({ page, count });
               setChrome(false);

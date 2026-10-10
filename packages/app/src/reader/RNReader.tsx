@@ -1,7 +1,8 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   View,
   type LayoutChangeEvent,
@@ -11,6 +12,8 @@ import {
   type TextStyle,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import type { Piece } from "./pieces";
 import type { ReaderColors } from "./style";
 import { rgbHex, sentenceAround, tokens } from "./text";
@@ -60,6 +63,8 @@ type Props = {
   onPage?: (page: number, count: number) => void;
   /** The paragraph being read aloud (marked), if any. */
   speaking?: number | null;
+  /** Pages slide (follow the finger); off on e-ink and with reduced motion. */
+  animated?: boolean;
 };
 
 type Line = { text: string; height: number };
@@ -275,7 +280,32 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
     if (onVisible) onVisible([...new Set([...(pages[page] ?? []), ...(pages[page + 1] ?? [])].map((s) => s.piece.para).filter((x) => x >= 0))]);
   }, [page, count]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const turn = useCallback((d: number) => setPage((x) => Math.max(0, Math.min(count, x + d))), [count]);
+  // Sliding pages (not on e-ink): every page sits at its own place in a long
+  // strip (page n at n × width) and the strip moves, so finishing a slide
+  // doesn't need a jump back. `pos` is the page in view (fractional mid-slide),
+  // `drag` the finger's pull.
+  const pageW = size?.w ?? 0;
+  const pos = useSharedValue(0);
+  const drag = useSharedValue(0);
+  /** Where we're going: the page, or the one a slide is heading to (quick taps add up). */
+  const aim = useRef(page);
+  useLayoutEffect(() => {
+    aim.current = page;
+    pos.value = page;
+  }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
+  const settle = useCallback((target: number) => setPage(target), []);
+  const turn = useCallback(
+    (d: number) => {
+      const target = Math.max(0, Math.min(count, aim.current + d));
+      if (target === aim.current) return;
+      aim.current = target;
+      if (!p.animated) return setPage(target);
+      pos.value = withTiming(target, { duration: 240, easing: Easing.out(Easing.cubic) }, (done) => {
+        if (done) scheduleOnRN(settle, target);
+      });
+    },
+    [count, p.animated], // eslint-disable-line react-hooks/exhaustive-deps
+  );
   useImperativeHandle(
     ref,
     () => ({
@@ -298,9 +328,12 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
 
   // A swipe is long enough or quick enough (a short flick counts); a mostly
   // vertical move isn't one. It cancels the tap underneath.
-  const swipe = useMemo(
-    () =>
-      Gesture.Pan()
+  const markSwiped = useCallback(() => {
+    swipedAt.current = Date.now();
+  }, []);
+  const swipe = useMemo(() => {
+    if (!p.animated)
+      return Gesture.Pan()
         .runOnJS(true)
         .activeOffsetX([-12, 12])
         .failOffsetY([-24, 24])
@@ -310,9 +343,49 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
           if (!far && !fast) return;
           swipedAt.current = Date.now();
           turn(e.translationX < 0 ? 1 : -1);
-        }),
-    [turn],
-  );
+        });
+    // The page follows the finger, then slides on (or back).
+    return Gesture.Pan()
+      .activeOffsetX([-12, 12])
+      .failOffsetY([-24, 24])
+      .onStart(() => {
+        scheduleOnRN(markSwiped);
+      })
+      .onUpdate((e) => {
+        const from = Math.round(pos.value);
+        const blocked = (e.translationX < 0 && from >= count) || (e.translationX > 0 && from <= 0);
+        drag.value = blocked ? e.translationX * 0.25 : e.translationX;
+      })
+      .onEnd((e) => {
+        const from = Math.round(pos.value);
+        const far = Math.abs(e.translationX) > SWIPE_DISTANCE;
+        const fast = Math.abs(e.velocityX) > SWIPE_VELOCITY && Math.sign(e.velocityX) === Math.sign(e.translationX);
+        const target = far || fast ? Math.max(0, Math.min(count, from + (e.translationX < 0 ? 1 : -1))) : from;
+        // Fold the pull into the position, then glide to the page.
+        pos.value = pos.value - drag.value / pageW;
+        drag.value = 0;
+        pos.value = withTiming(target, { duration: 220, easing: Easing.out(Easing.cubic) }, (done) => {
+          if (done && target !== from) scheduleOnRN(settle, target);
+        });
+      });
+  }, [turn, p.animated, count, pageW]); // eslint-disable-line react-hooks/exhaustive-deps
+  const strip = useAnimatedStyle(() => ({ transform: [{ translateX: -pos.value * pageW + drag.value }] }));
+
+  /** Page n's content (n === count is the end). */
+  const pageView = (n: number) =>
+    n < count ? (
+      <View style={{ width }}>
+        {pages[n]!.map((s, i) => (
+          <View key={`${s.piece.key}-${i}`} style={{ marginBottom: s.ends ? s.piece.gapAfter * p.typo.size : 0 }}>
+            <PieceText piece={s.piece} text={s.text} style={styles.get(s.piece.key)!} p={p} />
+          </View>
+        ))}
+      </View>
+    ) : (
+      <ScrollView style={{ width }} contentContainerStyle={{ paddingVertical: 16 }}>
+        {p.ending}
+      </ScrollView>
+    );
 
   return (
     <View
@@ -339,23 +412,26 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
       {count > 0 && (
         <GestureDetector gesture={swipe}>
           <Pressable
-            style={{ flex: 1, paddingHorizontal: H_PAD, paddingVertical: V_PAD, alignItems: "center" }}
+            style={p.animated ? { flex: 1, overflow: "hidden" } : { flex: 1, paddingHorizontal: H_PAD, paddingVertical: V_PAD, alignItems: "center" }}
             onPress={(e) => {
               if (Date.now() - swipedAt.current > 300) tapAt(e.nativeEvent.pageX);
             }}
           >
-            {page < count ? (
-              <View style={{ width }}>
-                {pages[page]!.map((s, i) => (
-                  <View key={`${s.piece.key}-${i}`} style={{ marginBottom: s.ends ? s.piece.gapAfter * p.typo.size : 0 }}>
-                    <PieceText piece={s.piece} text={s.text} style={styles.get(s.piece.key)!} p={p} />
-                  </View>
-                ))}
-              </View>
+            {p.animated ? (
+              <Animated.View style={[StyleSheet.absoluteFill, strip]}>
+                {[page - 1, page, page + 1]
+                  .filter((n) => n >= 0 && n <= count)
+                  .map((n) => (
+                    <View
+                      key={n}
+                      style={{ position: "absolute", top: 0, bottom: 0, left: n * pageW, width: pageW, paddingHorizontal: H_PAD, paddingVertical: V_PAD, alignItems: "center", backgroundColor: p.colors.bg }}
+                    >
+                      {pageView(n)}
+                    </View>
+                  ))}
+              </Animated.View>
             ) : (
-              <ScrollView style={{ width }} contentContainerStyle={{ paddingVertical: 16 }}>
-                {p.ending}
-              </ScrollView>
+              pageView(page)
             )}
           </Pressable>
         </GestureDetector>

@@ -1,11 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { generateCounts, type ExerciseItem, type ExerciseProgress, type ExerciseSet } from "@mdb/shared";
-import { useExerciseRunner, useExerciseSet } from "@mdb/client/react";
+import { preferences } from "@mdb/client";
+import { useExerciseRunner, useExerciseSet, usePreference } from "@mdb/client/react";
+import { useFeedback } from "@/lib/feedback";
 import { font, useTheme } from "@/lib/theme";
 import { ItemView } from "@/practice/ItemView";
 import { TutorHelp } from "@/practice/TutorHelp";
+import { QuestionSlide } from "@/practice/QuestionSlide";
 import { Segmented } from "@/reader/ReaderSheets";
 import { Button } from "@/ui/Button";
 import { Card } from "@/ui/Card";
@@ -38,9 +41,26 @@ export default function ExerciseScreen() {
 function BackLink({ label }: { label: string }) {
   const { colors } = useTheme();
   return (
-    <Pressable onPress={() => router.back()} accessibilityRole="button" style={{ flexDirection: "row", alignItems: "center", gap: 4, minHeight: 44, flexShrink: 1 }}>
+    <Pressable
+      onPress={() => router.back()}
+      accessibilityRole="button"
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        minHeight: 44,
+        flexShrink: 1,
+      }}
+    >
       <Icon icon={ChevronLeft} size={18} color={colors.inkMuted} />
-      <Text numberOfLines={1} style={{ fontFamily: font.medium, color: colors.inkMuted, flexShrink: 1 }}>
+      <Text
+        numberOfLines={1}
+        style={{
+          fontFamily: font.medium,
+          color: colors.inkMuted,
+          flexShrink: 1,
+        }}
+      >
         {label}
       </Text>
     </Pressable>
@@ -53,12 +73,24 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
   const { colors, radii, motion } = useTheme();
   const [navOpen, setNavOpen] = useState(false);
 
-  // After a right answer, move on by itself (a wrong one waits: read the answer, ask the tutor).
+  const feedback = useFeedback();
+  // Which way the questions move (for the slide): forward unless going back.
+  const lastIndex = useRef(index);
+  const dir: 1 | -1 = index >= lastIndex.current ? 1 : -1;
   useEffect(() => {
-    if (!answered || !lastCorrect) return;
+    lastIndex.current = index;
+  }, [index]);
+  const [autoAdvance] = usePreference(preferences.autoAdvance);
+  // A chime and a tap as the verdict comes in.
+  useEffect(() => {
+    if (answered && lastCorrect !== null) feedback.answer(lastCorrect);
+  }, [answered, index]); // eslint-disable-line react-hooks/exhaustive-deps
+  // After a right answer, move on by itself if set (a wrong one waits: read the answer, ask the tutor).
+  useEffect(() => {
+    if (!autoAdvance || !answered || !lastCorrect) return;
     const t = setTimeout(() => next(), motion.base === 0 ? 900 : 1100);
     return () => clearTimeout(t);
-  }, [answered, lastCorrect, index]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [answered, lastCorrect, index, autoAdvance]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (done) {
     const pct = answeredCount ? Math.round((correctCount / answeredCount) * 100) : 0;
@@ -67,7 +99,15 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
         <Card style={{ padding: 24, gap: 12, alignItems: "center" }}>
           <View
             accessibilityLabel={`${correctCount} of ${answeredCount} correct`}
-            style={{ width: 96, height: 96, borderRadius: 48, borderWidth: 8, borderColor: pct >= 50 ? colors.reward2 : colors.surfaceSunken, alignItems: "center", justifyContent: "center" }}
+            style={{
+              width: 96,
+              height: 96,
+              borderRadius: 48,
+              borderWidth: 8,
+              borderColor: pct >= 50 ? colors.reward2 : colors.surfaceSunken,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
           >
             <Text variant="number">
               {correctCount}/{answeredCount}
@@ -94,7 +134,13 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
                 />
               </View>
               {run.generate.error ? (
-                <View style={{ padding: 12, borderRadius: radii.control, backgroundColor: colors.dangerSoft }}>
+                <View
+                  style={{
+                    padding: 12,
+                    borderRadius: radii.control,
+                    backgroundColor: colors.dangerSoft,
+                  }}
+                >
                   <Text style={{ color: colors.danger }}>{run.generate.error}</Text>
                 </View>
               ) : null}
@@ -103,7 +149,14 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
           {run.extraCount > 0 && (
             <Text variant="muted" style={{ textAlign: "center" }}>
               This set includes {run.extraCount} extra {run.extraCount === 1 ? "exercise" : "exercises"} generated for you.{" "}
-              <Text onPress={() => void run.removeExtras().catch(() => {})} style={{ fontFamily: font.medium, color: colors.brandInk, textDecorationLine: "underline" }}>
+              <Text
+                onPress={() => void run.removeExtras().catch(() => {})}
+                style={{
+                  fontFamily: font.medium,
+                  color: colors.brandInk,
+                  textDecorationLine: "underline",
+                }}
+              >
                 Remove {run.extraCount === 1 ? "it" : "them"}
               </Text>
             </Text>
@@ -119,13 +172,25 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
 
   return (
     <Screen>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+        }}
+      >
         <BackLink label={set.title} />
         <Pressable
           onPress={() => setNavOpen((o) => !o)}
           accessibilityRole="button"
           accessibilityLabel={navOpen ? "Hide question navigator" : "Show question navigator"}
-          style={{ flexDirection: "row", alignItems: "center", gap: 8, minHeight: 44 }}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            minHeight: 44,
+          }}
         >
           {answeredCount > 0 && (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -142,8 +207,22 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
         </Pressable>
       </View>
       {set.subtitle ? <Text variant="subtle">{set.subtitle}</Text> : null}
-      <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.surfaceSunken, overflow: "hidden" }}>
-        <View style={{ width: `${(answeredCount / items.length) * 100}%`, height: "100%", backgroundColor: colors.reward2, borderRadius: 4 }} />
+      <View
+        style={{
+          height: 8,
+          borderRadius: 4,
+          backgroundColor: colors.surfaceSunken,
+          overflow: "hidden",
+        }}
+      >
+        <View
+          style={{
+            width: `${(answeredCount / items.length) * 100}%`,
+            height: "100%",
+            backgroundColor: colors.reward2,
+            borderRadius: 4,
+          }}
+        />
       </View>
 
       {navOpen && (
@@ -171,26 +250,65 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
                   backgroundColor: mine === undefined ? colors.surface : mine ? colors.successSoft : colors.dangerSoft,
                 }}
               >
-                <Text style={{ fontSize: 12, fontFamily: mine !== undefined ? font.semibold : font.regular, color: fg }}>{i + 1}</Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontFamily: mine !== undefined ? font.semibold : font.regular,
+                    color: fg,
+                  }}
+                >
+                  {i + 1}
+                </Text>
               </Pressable>
             );
           })}
         </View>
       )}
 
-      <Card style={{ padding: 20 }}>
-        {answeredEarlier && (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 16 }}>
-            <Icon icon={RotateCcw} size={14} color={colors.inkSubtle} />
-            <Text variant="subtle" style={{ flex: 1 }}>
-              You answered this{" "}
-              <Text style={{ fontSize: 13, fontFamily: font.medium, color: prior ? colors.success : colors.danger }}>{prior ? "correctly" : "incorrectly"}</Text> this run.
-              Answer again to change it.
-            </Text>
-          </View>
-        )}
-        <ItemView key={`${item.id}-${index}`} item={item} submit={run.submit} />
-      </Card>
+      <QuestionSlide
+        key={index}
+        dir={dir}
+        verdict={answered ? lastCorrect : null}
+        animated={motion.base > 0}
+        canPrev={index > 0}
+        canNext={index + 1 < items.length || answered}
+        onPrev={() => goTo(index - 1)}
+        onNext={() => {
+          feedback.tick();
+          // Answered: on (or finish); not yet: skip it, as the Skip button does.
+          if (answered) next();
+          else goTo(index + 1);
+        }}
+      >
+        <Card style={{ padding: 20 }}>
+          {answeredEarlier && (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 16,
+              }}
+            >
+              <Icon icon={RotateCcw} size={14} color={colors.inkSubtle} />
+              <Text variant="subtle" style={{ flex: 1 }}>
+                You answered this{" "}
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontFamily: font.medium,
+                    color: prior ? colors.success : colors.danger,
+                  }}
+                >
+                  {prior ? "correctly" : "incorrectly"}
+                </Text>{" "}
+                this run. Answer again to change it.
+              </Text>
+            </View>
+          )}
+          <ItemView key={`${item.id}-${index}`} item={item} submit={run.submit} />
+        </Card>
+      </QuestionSlide>
 
       {run.assistantEnabled && <TutorHelp key={item.id} item={item} answered={answered} lastCorrect={lastCorrect} lastResponse={run.lastResponse} />}
 

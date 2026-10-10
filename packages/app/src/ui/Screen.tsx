@@ -9,17 +9,20 @@ export function Screen({
   onRefresh,
   refreshing = false,
   dock = true,
+  transparent = false,
 }: {
   children: ReactNode;
   onRefresh?: () => void;
   refreshing?: boolean;
   /** Leave room for the dock at the bottom. */
   dock?: boolean;
+  /** No page ground (something is drawn behind it). */
+  transparent?: boolean;
 }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: transparent ? "transparent" : colors.bg }}>
       <ScrollView
         // A tap on a button while the keyboard is up acts at once (not just closes the keyboard).
         keyboardShouldPersistTaps="handled"

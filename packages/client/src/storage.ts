@@ -59,5 +59,11 @@ export const preferences = {
   volumeKeys: { key: "mdb-volume-keys", fallback: false, parse: bool } as Preference<boolean>,
   /** …with volume up as the next page (down by default). */
   volumeKeysInvert: { key: "mdb-volume-keys-invert", fallback: false, parse: bool } as Preference<boolean>,
+  /** Practice moves on by itself after a right answer. */
+  autoAdvance: { key: "mdb-auto-advance", fallback: true, parse: bool } as Preference<boolean>,
+  /** A chime for a right answer, a soft tone for a wrong one (the app). */
+  feedbackSounds: { key: "mdb-feedback-sounds", fallback: true, parse: bool } as Preference<boolean>,
+  /** A haptic tap for right and wrong answers and swipes (the app). */
+  haptics: { key: "mdb-haptics", fallback: true, parse: bool } as Preference<boolean>,
 };
 export const NOTE_FONT_SIZE = { min: 12, max: 26 };

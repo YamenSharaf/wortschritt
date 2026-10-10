@@ -166,6 +166,22 @@ computes, like the web does with HTML; it keeps no business logic.
     this device, Import (`src/app/import.tsx`: paste JSON, checked against
     the schema; "Share LLM prompt" uses the share sheet), and the web's
     settings for the rest (password, AI tutor, voices, connected apps).
+- **Motion and feedback** (not on e-ink, nor with the system's reduced
+  motion; Reanimated and gesture-handler):
+  - Reader pages slide and follow the finger: every page sits at its own
+    place in a strip (page n at n × width) and the strip moves, so a
+    finished slide needs no jump back; taps and the volume keys slide too.
+  - Flashcards (`src/vocab/SwipeCard.tsx`): a frosted-glass card (expo-blur;
+    on Android it blurs a `BlurTargetView` of soft colour fields), a 3D flip
+    on tap, swipe right for know and left for don't know (it tilts, a stamp
+    shows), the buttons fling it.
+  - Exercises (`src/practice/QuestionSlide.tsx`): swipe left for the next
+    question (skips an unanswered one, as Skip does) and right for the
+    previous; questions slide in, pop when right, shake when wrong.
+  - `src/lib/feedback.ts`: a chime when right and a soft tone when wrong
+    (the app's own sounds, `assets/sounds`, made for it) and haptics
+    (expo-haptics). This device's settings (Account → Practice): move on
+    after a right answer, sounds, vibration; all on by default.
 - **Stories**: books as a shelf of covers or a list (`shelfView`, this
   device) and short stories; `src/app/series/[id].tsx` is a book's page.
   Covers (`ui/Cover.tsx`) are PNGs the server renders from the cover's SVG
