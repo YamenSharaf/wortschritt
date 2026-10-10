@@ -1,4 +1,5 @@
-import { Pressable } from "react-native";
+// The gesture library's Pressable: inside a card that has its own tap (flashcards), this one wins.
+import { Pressable } from "react-native-gesture-handler";
 import { useSpeech } from "@mdb/client/react";
 import { useTheme } from "@/lib/theme";
 import { Icon } from "./icons";

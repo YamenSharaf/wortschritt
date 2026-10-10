@@ -145,9 +145,14 @@ function RunRow({ run, first }: { run: RunSummary; first: boolean }) {
   const { colors } = useTheme();
   const s = run.kind === "story" ? sections.stories : sections.practice;
   const tierColor = run.tier === "good" ? colors.success : run.tier === "ok" ? colors.warning : run.tier === "weak" ? colors.danger : colors.inkMuted;
+  // An exercise set opens to practise again; a story's questions open the story.
+  const open = () => (run.kind === "story" ? router.push(`/reader/${run.setId.replace(/^story:/, "")}`) : router.push(`/practice/${run.setId}`));
   return (
-    <View
-      style={{
+    <Pressable
+      onPress={open}
+      accessibilityRole="button"
+      accessibilityLabel={`${run.setTitle}, last ${run.correct} of ${run.answered}`}
+      style={({ pressed }) => ({
         flexDirection: "row",
         alignItems: "center",
         gap: 12,
@@ -155,7 +160,8 @@ function RunRow({ run, first }: { run: RunSummary; first: boolean }) {
         paddingVertical: 12,
         borderTopWidth: first ? 0 : 1,
         borderTopColor: colors.border,
-      }}
+        backgroundColor: pressed ? colors.surfaceSunken : "transparent",
+      })}
     >
       <Icon icon={s.icon} size={18} color={colors[s.tint]} />
       <View style={{ flex: 1, minWidth: 0 }}>
@@ -167,6 +173,6 @@ function RunRow({ run, first }: { run: RunSummary; first: boolean }) {
       <Text variant="subtle">
         Last: <Text style={{ fontFamily: font.semibold, fontSize: 13, color: tierColor }}>{`${run.correct}/${run.answered}`}</Text>
       </Text>
-    </View>
+    </Pressable>
   );
 }

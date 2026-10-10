@@ -76,6 +76,18 @@ const V_PAD = 24;
 const SWIPE_DISTANCE = 40;
 const SWIPE_VELOCITY = 350;
 
+/**
+ * Hidden English (peek), shuffled so the blur can't be read through: each
+ * letter moves 13 along the alphabet (same case, same word lengths), the
+ * rest stays. Tapping shows the real line.
+ */
+function scramble(text: string): string {
+  return text.replace(/[a-z]/gi, (c) => {
+    const base = c <= "Z" ? 65 : 97;
+    return String.fromCharCode(((c.charCodeAt(0) - base + 13) % 26) + base);
+  });
+}
+
 /** Text that doesn't show (its shadow still can). */
 const INVISIBLE = "rgba(0,0,0,0.004)";
 
@@ -100,7 +112,7 @@ function styleFor(piece: Piece, t: Typography, c: ReaderColors): TextStyle {
         color: INVISIBLE,
         textShadowColor: rgbHex(hexToTriplet(c.muted), 0.9),
         textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: Math.round(size * 0.45),
+        textShadowRadius: Math.round(size * 0.75),
       };
     }
     default:
@@ -122,8 +134,13 @@ export const RNReader = forwardRef<ReaderControls, Props>(function RNReader(p, r
 function PieceText({ piece, text, style, p }: { piece: Piece; text: string; style: TextStyle; p: Props }) {
   if (piece.kind === "en") {
     return (
-      <Text style={style} onPress={piece.hidden && piece.reveal ? () => p.onReveal(piece.reveal!) : undefined} suppressHighlighting>
-        {text}
+      <Text
+        style={style}
+        onPress={piece.hidden && piece.reveal ? () => p.onReveal(piece.reveal!) : undefined}
+        accessibilityLabel={piece.hidden ? "English, hidden. Tap to show." : undefined}
+        suppressHighlighting
+      >
+        {piece.hidden ? scramble(text) : text}
       </Text>
     );
   }

@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, type ReactNode } from "react";
-import { Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
+import { StyleSheet, View, useWindowDimensions } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { interpolate, Extrapolation, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
@@ -26,10 +26,12 @@ export const SwipeCard = forwardRef<
     back: ReactNode;
     flipped: boolean;
     onFlip: () => void;
+    /** A double tap (say the word). */
+    onDoubleTap?: () => void;
     onGrade: (known: boolean) => void;
     onDrag?: () => void;
   }
->(function SwipeCard({ front, back, flipped, onFlip, onGrade, onDrag }, ref) {
+>(function SwipeCard({ front, back, flipped, onFlip, onDoubleTap, onGrade, onDrag }, ref) {
   const { width } = useWindowDimensions();
   const { colors, radii, scheme } = useTheme();
   const x = useSharedValue(0);
@@ -76,6 +78,17 @@ export const SwipeCard = forwardRef<
       }
     });
 
+  // A tap flips the card, a double tap says the word (the single tap waits a moment to see which).
+  const doubleTap = Gesture.Tap()
+    .numberOfTaps(2)
+    .onEnd(() => {
+      if (onDoubleTap) scheduleOnRN(onDoubleTap);
+    });
+  const singleTap = Gesture.Tap().onEnd(() => {
+    scheduleOnRN(onFlip);
+  });
+  const gesture = Gesture.Race(pan, Gesture.Exclusive(doubleTap, singleTap));
+
   const card = useAnimatedStyle(() => ({
     transform: [
       { translateX: x.value },
@@ -107,7 +120,7 @@ export const SwipeCard = forwardRef<
   const glassFill = scheme === "dark" ? "rgba(30,41,59,0.35)" : "rgba(255,255,255,0.45)";
 
   return (
-    <GestureDetector gesture={pan}>
+    <GestureDetector gesture={gesture}>
       <Animated.View style={[{ flex: 1, minHeight: 260, borderRadius: radii.panel }, card]}>
         <View style={[StyleSheet.absoluteFill, { borderRadius: radii.panel, overflow: "hidden" }]}>
           <BlurView
@@ -130,15 +143,22 @@ export const SwipeCard = forwardRef<
           ]}
         />
         {/* The face that's up takes the room; the other lies over it, hidden. */}
-        {/* A tap flips it (a button inside, like the speaker, keeps its own tap). */}
-        <Pressable onPress={onFlip} accessibilityRole="button" accessibilityHint={flipped ? "Shows the front" : "Shows the answer"} style={{ flex: 1, padding: 28, justifyContent: "center" }}>
+        <View
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel={flipped ? "Card, answer side" : "Card"}
+          accessibilityHint="Double-tap to flip"
+          accessibilityActions={[{ name: "activate" }, { name: "speak", label: "Say the word" }]}
+          onAccessibilityAction={(e) => (e.nativeEvent.actionName === "speak" ? onDoubleTap?.() : onFlip())}
+          style={{ flex: 1, padding: 28, justifyContent: "center" }}
+        >
           <Animated.View pointerEvents={flipped ? "none" : "auto"} style={[flipped ? [StyleSheet.absoluteFill, { padding: 28, justifyContent: "center" }] : null, frontFace]}>
             {front}
           </Animated.View>
           <Animated.View pointerEvents={flipped ? "auto" : "none"} style={[flipped ? null : [StyleSheet.absoluteFill, { padding: 28, justifyContent: "center" }], backFace]}>
             {back}
           </Animated.View>
-        </Pressable>
+        </View>
         <Stamp style={knowTint} color={colors.success} label="Know" side="left" />
         <Stamp style={againTint} color={colors.danger} label="Again" side="right" />
       </Animated.View>

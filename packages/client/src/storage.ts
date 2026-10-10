@@ -63,6 +63,8 @@ export const preferences = {
   autoAdvance: { key: "mdb-auto-advance", fallback: true, parse: bool } as Preference<boolean>,
   /** A chime for a right answer, a soft tone for a wrong one (the app). */
   feedbackSounds: { key: "mdb-feedback-sounds", fallback: true, parse: bool } as Preference<boolean>,
+  /** The flashcards' how-to tip was dismissed (the app). */
+  flashcardTipDone: { key: "mdb-flashcard-tip-done", fallback: false, parse: bool } as Preference<boolean>,
   /** A haptic tap for right and wrong answers and swipes (the app). */
   haptics: { key: "mdb-haptics", fallback: true, parse: bool } as Preference<boolean>,
 };

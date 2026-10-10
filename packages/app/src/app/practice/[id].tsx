@@ -334,8 +334,10 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
       </QuestionSlide>
 
       <View style={{ flexDirection: "row", gap: 8, paddingTop: 4, paddingBottom: insets.bottom + 12 }}>
-        <Button label="Prev" icon={<Icon icon={ChevronLeft} size={16} />} disabled={index === 0} onPress={() => goTo(index - 1)} accessibilityLabel="Previous question" />
         <View style={{ flex: 1 }}>
+          <Button label="Prev" icon={<Icon icon={ChevronLeft} size={16} />} disabled={index === 0} onPress={() => goTo(index - 1)} accessibilityLabel="Previous question" />
+        </View>
+        <View style={{ flex: 2 }}>
           {answered ? (
             <Button kind="primary" label={run.isLast ? "Finish" : "Next"} icon={<Icon icon={ChevronRight} size={16} color={colors.brandInk} />} onPress={next} />
           ) : (

@@ -3,7 +3,7 @@ import { Pressable, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formChips, preferences } from "@mdb/client";
-import { filterVocab, useFlashcards, usePreference, useVocabState } from "@mdb/client/react";
+import { filterVocab, useFlashcards, usePreference, useSpeech, useVocabState } from "@mdb/client/react";
 import { font, useTheme } from "@/lib/theme";
 import { Button } from "@/ui/Button";
 import { Card } from "@/ui/Card";
@@ -26,6 +26,8 @@ export default function Flashcards() {
   const animated = motion.base > 0;
   const insets = useSafeAreaInsets();
   const feedback = useFeedback();
+  const speech = useSpeech();
+  const [tipDone, setTipDone] = usePreference(preferences.flashcardTipDone);
   const cardRef = useRef<SwipeCardHandle>(null);
   /** Bumped on each new round, so the cards mount afresh. */
   const [deck, setDeck] = useState(0);
@@ -135,7 +137,7 @@ export default function Flashcards() {
         >
           {prompt}
         </Text>
-        {(dir === "de" || flipped) && <SpeakButton text={word.display} size={22} />}
+        {!animated && (dir === "de" || flipped) && <SpeakButton text={word.display} size={22} />}
       </View>
     </>
   );
@@ -251,15 +253,9 @@ export default function Flashcards() {
             flipped={flipped}
             onFlip={() => setFlipped((f) => !f)}
             onDrag={feedback.tick}
+            onDoubleTap={() => speech.speak(word.display)}
             onGrade={rate}
-            front={
-              <>
-                {promptFace}
-                <Text variant="subtle" style={{ marginTop: 32 }}>
-                  Tap to flip · swipe right if you know it, left if not
-                </Text>
-              </>
-            }
+            front={promptFace}
             back={
               <>
                 {promptFace}
@@ -291,6 +287,16 @@ export default function Flashcards() {
           </Pressable>
         )}
         </View>
+        {animated && !tipDone && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 8, paddingHorizontal: 12, borderRadius: radii.control, backgroundColor: colors.surfaceSunken }}>
+            <Text variant="subtle" style={{ flex: 1 }}>
+              Tap to flip · double-tap to hear it · swipe right if you know it, left if not
+            </Text>
+            <Pressable onPress={() => setTipDone(true)} accessibilityRole="button" accessibilityLabel="Dismiss tip" hitSlop={10}>
+              <Icon icon={X} size={16} color={colors.inkMuted} />
+            </Pressable>
+          </View>
+        )}
         <Text variant="subtle" style={{ textAlign: "center" }}>
           <Text
             style={{
