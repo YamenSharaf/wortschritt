@@ -10,15 +10,23 @@ import {
   type TextLayoutEventData,
   type TextStyle,
 } from "react-native";
-import type { ComposeReaderProps } from "../../modules/reader";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { tokens } from "./text";
 
-type Props = Omit<ComposeReaderProps, "onWordPress" | "onPageChange" | "onCenterTap"> & {
+type Props = {
+  storyTitle: string;
+  /** Plain paragraphs (plainParagraphs). */
+  paragraphs: string[];
+  mode: "pages" | "scroll";
+  fontSize: number;
+  /** A multiple of the font size. */
+  lineHeight: number;
+  serif: boolean;
+  textColor: string;
+  pageColor: string;
   onWord: (word: string, paragraph: number) => void;
   onPage: (page: number, count: number) => void;
   onCenter: () => void;
-  /** How long laying out the pages took (ms), for the comparison. */
-  onLaidOut?: (ms: number) => void;
 };
 
 type Block = { index: number; text: string; style: TextStyle; gap: number };
@@ -29,10 +37,10 @@ const H_PAD = 24;
 const V_PAD = 28;
 
 /**
- * Engine A of the reader spike: React Native text. The same look and
- * behaviour as the Compose engine (modules/reader): words tappable anywhere,
- * pages packed from React Native's own line measurements (onTextLayout),
- * outer quarters and swipes turn the page at once, the middle is the app's.
+ * The reader: React Native text, as pages or one scroll. Words are tappable
+ * anywhere; pages are packed from React Native's own line measurements
+ * (onTextLayout); the outer quarters and swipes turn the page at once (no
+ * animation, for e-ink), and the middle is the app's (its bars).
  */
 export function RNReader(p: Props) {
   const blocks = useMemo<Block[]>(() => {
@@ -79,29 +87,26 @@ function WordText({ text, style, onWord }: { text: string; style: TextStyle; onW
   );
 }
 
+/** A swipe this long (dp), or this fast (dp/s) in its direction, turns the page. */
+const SWIPE_DISTANCE = 40;
+const SWIPE_VELOCITY = 350;
+
 function PagedRNReader(p: Props & { blocks: Block[] }) {
   const { width: screenWidth } = useWindowDimensions();
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const [lines, setLines] = useState<Record<number, Line[]>>({});
   const [page, setPage] = useState(0);
-  const started = useRef(0);
-  const swipeFrom = useRef<number | null>(null);
-  const swiped = useRef(false);
+  const swipedAt = useRef(0);
 
   // A new layout (text, size or style changed): measure again.
   const layoutKey = `${size?.w}x${size?.h}|${p.blocks.map((b) => b.text.length).join(",")}|${p.fontSize}|${p.lineHeight}|${p.serif}`;
   useEffect(() => {
     setLines({});
     setPage(0);
-    started.current = Date.now();
   }, [layoutKey]);
 
   const measured = Object.keys(lines).length === p.blocks.length;
   const pages = useMemo(() => (size && measured ? paginate(p.blocks, lines, size.h - V_PAD * 2) : []), [measured, lines, size, p.blocks]);
-  const onLaidOut = p.onLaidOut;
-  useEffect(() => {
-    if (pages.length) onLaidOut?.(Date.now() - started.current);
-  }, [pages, onLaidOut]);
   const onPage = p.onPage;
   useEffect(() => {
     if (pages.length) onPage(page, pages.length);
@@ -109,6 +114,25 @@ function PagedRNReader(p: Props & { blocks: Block[] }) {
 
   const turn = useCallback((d: number) => setPage((x) => Math.max(0, Math.min(pages.length - 1, x + d))), [pages.length]);
   const tapAt = (x: number) => (x < screenWidth * 0.25 ? turn(-1) : x > screenWidth * 0.75 ? turn(1) : p.onCenter());
+
+  // A swipe turns the page when it's long enough or quick enough (a short
+  // flick counts); a mostly vertical move doesn't. Activating cancels the
+  // tap underneath, and the timestamp guards against one slipping through.
+  const swipe = useMemo(
+    () =>
+      Gesture.Pan()
+        .runOnJS(true)
+        .activeOffsetX([-12, 12])
+        .failOffsetY([-24, 24])
+        .onEnd((e) => {
+          const far = Math.abs(e.translationX) > SWIPE_DISTANCE;
+          const fast = Math.abs(e.velocityX) > SWIPE_VELOCITY && Math.sign(e.velocityX) === Math.sign(e.translationX);
+          if (!far && !fast) return;
+          swipedAt.current = Date.now();
+          turn(e.translationX < 0 ? 1 : -1);
+        }),
+    [turn],
+  );
 
   return (
     <View
@@ -133,29 +157,20 @@ function PagedRNReader(p: Props & { blocks: Block[] }) {
         </View>
       )}
       {pages.length > 0 && (
-        <Pressable
-          style={{ flex: 1, paddingHorizontal: H_PAD, paddingVertical: V_PAD }}
-          onPressIn={(e) => {
-            swipeFrom.current = e.nativeEvent.pageX;
-            swiped.current = false;
-          }}
-          onPressOut={(e) => {
-            const dx = swipeFrom.current === null ? 0 : e.nativeEvent.pageX - swipeFrom.current;
-            if (Math.abs(dx) > 60) {
-              swiped.current = true;
-              turn(dx < 0 ? 1 : -1);
-            }
-          }}
-          onPress={(e) => {
-            if (!swiped.current) tapAt(e.nativeEvent.pageX);
-          }}
-        >
-          {pages[Math.min(page, pages.length - 1)]!.map((s, i) => (
-            <View key={i} style={{ marginBottom: s.endsBlock ? s.block.gap : 0 }}>
-              <WordText text={s.text} style={s.block.style} onWord={(w) => p.onWord(w, s.block.index)} />
-            </View>
-          ))}
-        </Pressable>
+        <GestureDetector gesture={swipe}>
+          <Pressable
+            style={{ flex: 1, paddingHorizontal: H_PAD, paddingVertical: V_PAD }}
+            onPress={(e) => {
+              if (Date.now() - swipedAt.current > 300) tapAt(e.nativeEvent.pageX);
+            }}
+          >
+            {pages[Math.min(page, pages.length - 1)]!.map((s, i) => (
+              <View key={i} style={{ marginBottom: s.endsBlock ? s.block.gap : 0 }}>
+                <WordText text={s.text} style={s.block.style} onWord={(w) => p.onWord(w, s.block.index)} />
+              </View>
+            ))}
+          </Pressable>
+        </GestureDetector>
       )}
     </View>
   );

@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 // One file per weight, so only these are bundled.
@@ -22,13 +23,15 @@ export default function RootLayout() {
   const [fontsLoaded] = useFonts({ Geist_400Regular, Geist_500Medium, Geist_600SemiBold, Geist_700Bold, GeistMono_500Medium });
   if (!fontsLoaded) return null;
   return (
-    <SafeAreaProvider>
-      <ServerProvider>
-        <Providers>
-          <Root />
-        </Providers>
-      </ServerProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ServerProvider>
+          <Providers>
+            <Root />
+          </Providers>
+        </ServerProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

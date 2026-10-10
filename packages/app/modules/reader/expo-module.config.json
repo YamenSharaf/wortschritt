@@ -1,6 +1,0 @@
-{
-  "platforms": ["android"],
-  "android": {
-    "modules": ["eu.yamen.wortschritt.reader.ReaderModule"]
-  }
-}

@@ -1,35 +1,29 @@
 import { useMemo, useState } from "react";
-import { Platform, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useStory } from "@mdb/client/react";
-import { ComposeReader } from "../../../modules/reader";
 import { font, useTheme } from "@/lib/theme";
 import { plainParagraphs, rgbHex } from "@/reader/text";
 import { RNReader } from "@/reader/RNReader";
 import { WordSheet } from "@/reader/WordSheet";
 import { Text } from "@/ui/Text";
 
-type Engine = "rn" | "compose";
-
 /**
- * The reader spike (issue #2, phase 1): one story in two engines — React
- * Native text and a Jetpack Compose view — with the same look, pages or
- * scroll, tap-to-define and tap zones, to compare on the Boox and a phone.
+ * A story in the reader (issue #2, phase 1): pages or scroll, the text size,
+ * tap a word to define it; the middle of the page shows or hides the bars.
  */
-export default function ReaderSpike() {
+export default function Reader() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { view, error } = useStory(id);
   const theme = useTheme();
   const { colors } = theme;
   const insets = useSafeAreaInsets();
-  const [engine, setEngine] = useState<Engine>(Platform.OS === "android" ? "compose" : "rn");
   const [mode, setMode] = useState<"pages" | "scroll">("pages");
   const [fontSize, setFontSize] = useState(19);
   const [chrome, setChrome] = useState(true);
   const [word, setWord] = useState<string | null>(null);
   const [where, setWhere] = useState<{ page: number; count: number } | null>(null);
-  const [laidOutMs, setLaidOutMs] = useState<number | null>(null);
 
   const paragraphs = useMemo(() => (view ? plainParagraphs(view.story.body) : []), [view]);
   const palette = theme.reader[theme.scheme];
@@ -53,7 +47,6 @@ export default function ReaderSpike() {
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: rgbHex(palette.rule) }}>
           <Chip label="‹ Back" onPress={() => router.back()} color={textColor} />
           <View style={{ flex: 1 }} />
-          <Segment value={engine} onChange={setEngine} options={[["rn", "RN"], ["compose", "Compose"]]} color={textColor} rule={rgbHex(palette.rule)} />
           <Segment value={mode} onChange={setMode} options={[["pages", "Pages"], ["scroll", "Scroll"]]} color={textColor} rule={rgbHex(palette.rule)} />
           <Chip label="A−" onPress={() => setFontSize((s) => Math.max(14, s - 1))} color={textColor} />
           <Chip label="A+" onPress={() => setFontSize((s) => Math.min(30, s + 1))} color={textColor} />
@@ -61,32 +54,19 @@ export default function ReaderSpike() {
       )}
       <View style={{ flex: 1 }}>
         {error && <Text style={{ color: colors.danger, padding: 24 }}>{error}</Text>}
-        {view &&
-          (engine === "compose" ? (
-            <ComposeReader
-              key="compose"
-              style={{ flex: 1 }}
-              {...common}
-              onWordPress={(e) => setWord(e.nativeEvent.word)}
-              onPageChange={(e) => setWhere(e.nativeEvent)}
-              onCenterTap={() => setChrome((c) => !c)}
-            />
-          ) : (
-            <RNReader
-              key="rn"
-              {...common}
-              onWord={(w) => setWord(w)}
-              onPage={(page, count) => setWhere({ page, count })}
-              onCenter={() => setChrome((c) => !c)}
-              onLaidOut={setLaidOutMs}
-            />
-          ))}
+        {view && (
+          <RNReader
+            {...common}
+            onWord={(w) => setWord(w)}
+            onPage={(page, count) => setWhere({ page, count })}
+            onCenter={() => setChrome((c) => !c)}
+          />
+        )}
       </View>
       {mode === "pages" && where && (
         <View style={{ paddingBottom: insets.bottom + 6, paddingTop: 4, alignItems: "center" }}>
           <Text style={{ fontFamily: font.mono, fontSize: 12, color: rgbHex(palette.muted) }}>
             {where.page + 1} / {where.count}
-            {engine === "rn" && laidOutMs !== null ? `  ·  laid out in ${laidOutMs} ms` : ""}
           </Text>
         </View>
       )}

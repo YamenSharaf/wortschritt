@@ -6,7 +6,7 @@ import { Card } from "@/ui/Card";
 import { Screen } from "@/ui/Screen";
 import { Text } from "@/ui/Text";
 
-/** Stories (for now: a plain list that opens the reader spike). */
+/** Stories (for now: a plain list that opens the reader). */
 export default function Stories() {
   const api = useApi();
   const { colors } = useTheme();
@@ -14,7 +14,6 @@ export default function Stories() {
   return (
     <Screen>
       <Text variant="title">Stories</Text>
-      <Text variant="muted">Reader spike: open a story to compare the two reading engines.</Text>
       {stories.status === "ready" && (
         <Card>
           {stories.data.map((s, i) => (

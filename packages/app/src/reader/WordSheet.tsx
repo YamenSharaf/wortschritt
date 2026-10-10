@@ -4,7 +4,7 @@ import { useWordLookup } from "@mdb/client/react";
 import { font, useTheme } from "@/lib/theme";
 import { Text } from "@/ui/Text";
 
-/** A tapped word: the dictionary's gloss and the first Wiktionary senses (shared by both engines). */
+/** A tapped word: the dictionary's gloss and the first Wiktionary senses. */
 export function WordSheet({ word, onClose }: { word: string; onClose: () => void }) {
   const { colors, radii, motion } = useTheme();
   const insets = useSafeAreaInsets();

@@ -1,7 +1,7 @@
 import { storyParagraphs } from "@mdb/shared";
 
 /**
- * A story's paragraphs as plain text for the spike's engines: Markdown
+ * A story's paragraphs as plain text for the reader: Markdown
  * emphasis, headings, quotes and links reduced to their words.
  */
 export function plainParagraphs(body: string): string[] {
