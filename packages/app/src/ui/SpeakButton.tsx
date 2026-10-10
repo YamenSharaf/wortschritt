@@ -1,17 +1,20 @@
-// The gesture library's Pressable: inside a card that has its own tap (flashcards), this one wins.
-import { Pressable } from "react-native-gesture-handler";
+import { Pressable } from "react-native";
 import { useSpeech } from "@mdb/client/react";
 import { useTheme } from "@/lib/theme";
 import { Icon } from "./icons";
+import { useCardTapGuard } from "@/vocab/SwipeCard";
 import { Volume2 } from "lucide-react-native";
 
 /** Say a German word or sentence (the server's voice when chosen, else the phone's). */
 export function SpeakButton({ text, size = 18 }: { text: string; size?: number }) {
   const speech = useSpeech();
+  // On a flashcard: tell the card this tap was the speaker's, not a flip.
+  const markCardTap = useCardTapGuard();
   const { colors } = useTheme();
   if (!speech.supported()) return null;
   return (
     <Pressable
+      onPressIn={markCardTap}
       onPress={() => speech.speak(text)}
       accessibilityRole="button"
       accessibilityLabel={`Say “${text}”`}

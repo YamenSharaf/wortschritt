@@ -399,7 +399,8 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
         ))}
       </View>
     ) : (
-      <ScrollView style={{ width }} contentContainerStyle={{ paddingVertical: 16 }}>
+      // flex: the end page scrolls within the page (the questions can run long).
+      <ScrollView style={{ width, flex: 1 }} contentContainerStyle={{ paddingVertical: 16 }}>
         {p.ending}
       </ScrollView>
     );

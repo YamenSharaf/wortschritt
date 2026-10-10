@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, type ReactNode } from "react";
+import { createContext, forwardRef, useContext, useEffect, useImperativeHandle, useRef, type ReactNode } from "react";
 import { StyleSheet, View, useWindowDimensions } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { interpolate, Extrapolation, useAnimatedStyle, useSharedValue, withSpring, withTiming } from "react-native-reanimated";
@@ -12,6 +12,18 @@ const THRESHOLD = 110;
 const FLING = 900;
 
 export type SwipeCardHandle = { fling(known: boolean): void };
+
+/**
+ * Buttons on a card (the speaker) mark when they're pressed, so the card's
+ * own tap underneath doesn't flip it as well.
+ */
+const CardTapGuard = createContext<{ current: number } | null>(null);
+export function useCardTapGuard() {
+  const guard = useContext(CardTapGuard);
+  return () => {
+    if (guard) guard.current = Date.now();
+  };
+}
 
 /**
  * A flashcard on frosted glass: tap to flip it over (a 3D turn), swipe right
@@ -39,6 +51,10 @@ export const SwipeCard = forwardRef<
   const turn = useSharedValue(flipped ? 1 : 0);
   const enter = useSharedValue(0);
   const done = useRef(false);
+  const guard = useRef(0);
+  const flip = () => {
+    if (Date.now() - guard.current > 600) onFlip();
+  };
 
   useEffect(() => {
     enter.value = withSpring(1, { damping: 16, stiffness: 180 });
@@ -85,7 +101,7 @@ export const SwipeCard = forwardRef<
       if (onDoubleTap) scheduleOnRN(onDoubleTap);
     });
   const singleTap = Gesture.Tap().onEnd(() => {
-    scheduleOnRN(onFlip);
+    scheduleOnRN(flip);
   });
   const gesture = Gesture.Race(pan, Gesture.Exclusive(doubleTap, singleTap));
 
@@ -120,6 +136,7 @@ export const SwipeCard = forwardRef<
   const glassFill = scheme === "dark" ? "rgba(30,41,59,0.35)" : "rgba(255,255,255,0.45)";
 
   return (
+    <CardTapGuard.Provider value={guard}>
     <GestureDetector gesture={gesture}>
       <Animated.View style={[{ flex: 1, minHeight: 260, borderRadius: radii.panel }, card]}>
         <View style={[StyleSheet.absoluteFill, { borderRadius: radii.panel, overflow: "hidden" }]}>
@@ -149,7 +166,7 @@ export const SwipeCard = forwardRef<
           accessibilityLabel={flipped ? "Card, answer side" : "Card"}
           accessibilityHint="Double-tap to flip"
           accessibilityActions={[{ name: "activate" }, { name: "speak", label: "Say the word" }]}
-          onAccessibilityAction={(e) => (e.nativeEvent.actionName === "speak" ? onDoubleTap?.() : onFlip())}
+          onAccessibilityAction={(e) => (e.nativeEvent.actionName === "speak" ? onDoubleTap?.() : flip())}
           style={{ flex: 1, padding: 28, justifyContent: "center" }}
         >
           <Animated.View pointerEvents={flipped ? "none" : "auto"} style={[flipped ? [StyleSheet.absoluteFill, { padding: 28, justifyContent: "center" }] : null, frontFace]}>
@@ -163,6 +180,7 @@ export const SwipeCard = forwardRef<
         <Stamp style={againTint} color={colors.danger} label="Again" side="right" />
       </Animated.View>
     </GestureDetector>
+    </CardTapGuard.Provider>
   );
 });
 
