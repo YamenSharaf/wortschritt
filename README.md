@@ -7,6 +7,13 @@ with. Read stories at your level, drill grammar, collect words and practise
 them, keep notes, and get help from an AI tutor when you want it. It runs on
 your own server, on the web and as an Android app that works offline.
 
+<p>
+  <img src="docs/screenshots/home.png" alt="Home: today's goal and recent practice" width="190" />
+  <img src="docs/screenshots/reader.png" alt="The reader with a tapped word" width="190" />
+  <img src="docs/screenshots/exercise.png" alt="An exercise: build the sentence" width="190" />
+  <img src="docs/screenshots/flashcards.png" alt="A flashcard" width="190" />
+</p>
+
 ## What you can do
 
 ### Read
