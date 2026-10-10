@@ -59,6 +59,14 @@ computes, like the web does with HTML; it keeps no business logic.
   (`APP_ORIGINS=http://localhost:8081`). `pnpm --filter @mdb/app bundle`
   checks that the Android bundle builds. The server's Docker image leaves the
   app out (`.dockerignore`).
+- APK: `.github/workflows/android.yml` builds an installable APK on every push
+  to main that touches the app, client or shared (and on demand): `expo
+  prebuild` (Continuous Native Generation; `android/` is never committed),
+  then a Gradle release build for arm64, signed with the Expo template's
+  debug key so each build installs over the last (the version code is the
+  run number, via `app.config.ts`). Download it from the run's Artifacts.
+  `usesCleartextTraffic` is on so the "Allow http" switch works for a LAN
+  server; the app itself refuses http unless that switch is on.
 
 ## Data flow
 

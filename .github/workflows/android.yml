@@ -1,0 +1,95 @@
+name: Android APK
+
+# Builds the app (packages/app) into an installable APK and keeps it as a
+# download on the run (Actions → this run → Artifacts). For testing on a phone
+# or e-reader: a release build (the JavaScript is inside, no dev server
+# needed) signed with Expo's template debug key, the same on every build, so
+# a newer APK installs over an older one. Not for distribution: a signed
+# release with its own key comes with the release phase (issue #2).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/app/**"
+      - "packages/client/**"
+      - "packages/shared/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/android.yml"
+  pull_request:
+    paths:
+      - "packages/app/**"
+      - "packages/client/**"
+      - "packages/shared/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/android.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+      # Each build gets a higher version code, so it installs as an update.
+      APP_VERSION_CODE: ${{ github.run_number }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      # Gradle 9 (React Native 0.86) needs JDK 17 or newer.
+      - name: Set up JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle (with its cache)
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck the app
+        run: pnpm --filter @mdb/app typecheck
+
+      # Continuous Native Generation: android/ is made from app.json each time.
+      - name: Generate the Android project
+        working-directory: packages/app
+        run: pnpm exec expo prebuild --platform android --no-install
+
+      # arm64 only: the Boox and current phones; halves the build time and size.
+      - name: Build the APK
+        working-directory: packages/app/android
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon
+
+      - name: Name it
+        run: |
+          mkdir -p out
+          cp packages/app/android/app/build/outputs/apk/release/app-release.apk \
+            "out/wortschritt-${{ github.run_number }}-${GITHUB_SHA::7}.apk"
+
+      - name: Keep it on the run
+        uses: actions/upload-artifact@v7
+        with:
+          name: wortschritt-apk-${{ github.run_number }}
+          path: out/*.apk
+          retention-days: 30
+          if-no-files-found: error
