@@ -1,0 +1,35 @@
+# The download page (site/) on GitHub Pages, at wortschritt.yamen.dev. The
+# page reads the newest app build from the releases API itself, so it only
+# needs publishing when site/ changes. One-time setup: Settings → Pages →
+# Source "GitHub Actions", custom domain wortschritt.yamen.dev.
+name: Download page
+
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v5

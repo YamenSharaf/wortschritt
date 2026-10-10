@@ -75,8 +75,9 @@ It works offline (the data syncs, also in the background now and then) and
 has the reader with page turning by volume keys, practice, cheat sheets,
 vocab with flashcards, notes and read-aloud.
 
-**Install**: download the APK from the newest `app-…` release and install
-it (allow installing from your browser or file manager when Android asks).
+**Install**: download the APK from
+[wortschritt.yamen.dev](https://wortschritt.yamen.dev) (the newest
+`app-…` release) and install it (allow installing from your browser or file manager when Android asks).
 
 **Updates**: each time it opens, the app looks at this repository's
 releases for a newer build; when there is one, a card on Home downloads it
