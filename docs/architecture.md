@@ -125,8 +125,11 @@ computes, like the web does with HTML; it keeps no business logic.
   - **Words**: `WordSheet`: the offline dictionary's gloss and Wiktionary at
     once, "Translate" (the AI, with the sentence) and saving to vocab and
     groups. Saved words are underlined (dotted).
-  - **Questions**: a story's questions follow its end (`StoryQuiz.tsx`,
-    `useStoryQuiz`), in both layouts, with the practice item views.
+  - **Questions**: after the text, a card offers the story's questions
+    (`StoryQuiz.tsx`); they open on their own screen
+    (`src/app/quiz/[id].tsx`, `useStoryQuiz`), one card at a time as the
+    exercises (swipe, Prev / Next, skip any, the score at the end). Going
+    on to the next chapter skips them.
   - **Reading aloud** (phase 5): the speaker in the bar reads from the first
     paragraph on screen, marks the one being read and turns the page (or
     scrolls) to follow; speed is in the text settings. `src/lib/speech.ts`

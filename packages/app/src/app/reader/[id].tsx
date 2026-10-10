@@ -149,7 +149,7 @@ function Reader({ id }: { id: string }) {
       colors={colors}
       read={view.readAt !== null}
       book={book}
-      quiz={story.questions.length > 0 ? <StoryQuiz story={story} colors={colors} onFinished={showRead} /> : null}
+      quiz={story.questions.length > 0 ? <StoryQuiz story={story} colors={colors} /> : null}
       onFinished={() => void markRead()}
       onReadAgain={async () => {
         await readAgain();
