@@ -98,10 +98,19 @@ importers:
 
   packages/app:
     dependencies:
+      '@expo-google-fonts/atkinson-hyperlegible':
+        specifier: ^0.4.1
+        version: 0.4.1
       '@expo-google-fonts/geist':
         specifier: ^0.4.2
         version: 0.4.2
       '@expo-google-fonts/geist-mono':
+        specifier: ^0.4.3
+        version: 0.4.3
+      '@expo-google-fonts/lato':
+        specifier: ^0.4.1
+        version: 0.4.1
+      '@expo-google-fonts/literata':
         specifier: ^0.4.3
         version: 0.4.3
       '@mdb/client':
@@ -134,9 +143,15 @@ importers:
       expo-image:
         specifier: ~57.0.5
         version: 57.0.5(expo@57.0.27)(react-native-web@0.21.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3)
+      expo-keep-awake:
+        specifier: ~57.0.2
+        version: 57.0.2(expo@57.0.27)(react@19.2.3)
       expo-linking:
         specifier: ~57.0.12
         version: 57.0.12(expo@57.0.27)(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3)
+      expo-navigation-bar:
+        specifier: ~57.0.3
+        version: 57.0.3(expo@57.0.27)(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3)
       expo-router:
         specifier: ~57.0.25
         version: 57.0.25(pw3byqcquidm2gp4wfjdgio2am)
@@ -1298,11 +1313,20 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@expo-google-fonts/atkinson-hyperlegible@0.4.1':
+    resolution: {integrity: sha512-Xr1XAguU7oEVHy28WxCBmdjPT2BNwH5lFZF2adHb9Cy6qtNgXwDzeAgvESkoq4mQmYW5RzqJZknqQxrTkEm0Xw==}
+
   '@expo-google-fonts/geist-mono@0.4.3':
     resolution: {integrity: sha512-gjnwv1QOG4meZpMhrLjTIPC/+lhyNu8EcXa2eJPVbPrYvguVjCfBq+Ezq6cWKWW8ung6fqb2TjvuTalE6lqlnw==}
 
   '@expo-google-fonts/geist@0.4.2':
     resolution: {integrity: sha512-cTsqJRQrvK5EniTVwH7UDK18RFf9Bc6yxciAuM936aViQ+eR6j3mLEI2rQkJXz5JP9kwtn8tHJviDyZ0ulH6oA==}
+
+  '@expo-google-fonts/lato@0.4.1':
+    resolution: {integrity: sha512-U2g1sOBFSNgmxhh/Ywgyi7Hx6T3UielX2nmZuP55wqndrIEyNX3HeUQIhhQDe2vZ+nvZI0Z2vTcVjmOn/BM9ow==}
+
+  '@expo-google-fonts/literata@0.4.3':
+    resolution: {integrity: sha512-AuxE7NB6Ae1laRK8uTcap5xI2MYTZOXrAWul4SNGBiq4igP7r/q8IO3vdvO/P1MGiRczuyZ1zhTwSm/CaYeq9A==}
 
   '@expo-google-fonts/material-symbols@0.4.49':
     resolution: {integrity: sha512-HtoaXYCk7A9kOjwoxrjq6i0iDtAoQnOPm31zUn+TgmKlHVUU+yyqvQDxN830MvGmBQV8eINv/SK7JRtWhB2xcg==}
@@ -3008,6 +3032,13 @@ packages:
   expo-modules-jsi@57.1.1:
     resolution: {integrity: sha512-ssnwz3ZuIgCbZj5A3J6NlhQrXZojg+BjkeWrOWqVJhyMHlV/A/cRT7s986chKku97BFt6ucmDu6/BCzrV45Wcw==}
     peerDependencies:
+      react-native: '*'
+
+  expo-navigation-bar@57.0.3:
+    resolution: {integrity: sha512-+9Q/2OQtpYjObmby1EMpFyhfK5LyT/oHD3lfkU6Z9as8f7arq7vGTlAXzYDP+xK2t76g9TFk//zya56vN5CkzA==}
+    peerDependencies:
+      expo: '*'
+      react: '*'
       react-native: '*'
 
   expo-router@57.0.25:
@@ -5827,9 +5858,15 @@ snapshots:
   '@esbuild/win32-x64@0.28.1':
     optional: true
 
+  '@expo-google-fonts/atkinson-hyperlegible@0.4.1': {}
+
   '@expo-google-fonts/geist-mono@0.4.3': {}
 
   '@expo-google-fonts/geist@0.4.2': {}
+
+  '@expo-google-fonts/lato@0.4.1': {}
+
+  '@expo-google-fonts/literata@0.4.3': {}
 
   '@expo-google-fonts/material-symbols@0.4.49': {}
 
@@ -7779,6 +7816,15 @@ snapshots:
   expo-modules-jsi@57.1.1(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3)):
     dependencies:
       react-native: 0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3)
+
+  expo-navigation-bar@57.0.3(expo@57.0.27)(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3):
+    dependencies:
+      debug: 4.4.3
+      expo: 57.0.27(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(@expo/metro-runtime@57.0.16)(expo-router@57.0.25)(react-dom@19.2.3(react@19.2.3))(react-native-web@0.21.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react-native-worklets@0.10.1(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
+      react: 19.2.3
+      react-native: 0.86.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.3(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.2.3)
+    transitivePeerDependencies:
+      - supports-color
 
   expo-router@57.0.25(pw3byqcquidm2gp4wfjdgio2am):
     dependencies:

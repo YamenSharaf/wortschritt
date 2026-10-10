@@ -37,6 +37,8 @@ const between = (min: number, max: number) => (raw: string) => {
   return Number.isFinite(n) && n >= min && n <= max ? n : undefined;
 };
 
+const bool = (raw: string) => (raw === "true" ? true : raw === "false" ? false : undefined);
+
 /** The preferences the apps keep (keys as the web has always used them). */
 export const preferences = {
   /** Which side of a flashcard shows first. */
@@ -51,5 +53,11 @@ export const preferences = {
   display: { key: "mdb-display", fallback: "standard", parse: oneOf("standard", "eink") } as Preference<"standard" | "eink">,
   /** The note text size, in px. */
   noteFontSize: { key: "mdb-note-fontsize", fallback: 16, parse: between(12, 26) } as Preference<number>,
+  /** The app's reader hides the system bars (a swipe from the edge shows them for a moment). */
+  readerFullscreen: { key: "mdb-reader-fullscreen", fallback: true, parse: bool } as Preference<boolean>,
+  /** The app's reader turns pages with the volume keys. */
+  volumeKeys: { key: "mdb-volume-keys", fallback: false, parse: bool } as Preference<boolean>,
+  /** …with volume up as the next page (down by default). */
+  volumeKeysInvert: { key: "mdb-volume-keys-invert", fallback: false, parse: bool } as Preference<boolean>,
 };
 export const NOTE_FONT_SIZE = { min: 12, max: 26 };

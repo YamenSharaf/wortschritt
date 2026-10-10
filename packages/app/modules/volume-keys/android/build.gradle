@@ -1,0 +1,14 @@
+// Page turns with the volume keys in the reader (see VolumeKeysModule.kt).
+apply plugin: 'com.android.library'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'eu.yamen.wortschritt'
+version = '0.1.0'
+
+android {
+  namespace "eu.yamen.wortschritt.volumekeys"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+}

@@ -50,6 +50,8 @@ type ServerState = {
   sync: Sync | null;
   /** The learner's data on this device. */
   store: OfflineStore;
+  /** Headers for media (covers): the current access token. */
+  mediaHeaders: () => Record<string, string>;
   /** Check and keep a server address; throws a readable message when it isn't one. */
   connect: (address: string, opts?: { allowHttp?: boolean }) => Promise<void>;
   /** Sign in through the server's page in a browser tab. */
@@ -191,9 +193,14 @@ export function ServerProvider({ children }: { children: ReactNode }) {
     setStatus("no-server");
   }, [signOut]);
 
+  const mediaHeaders = useCallback((): Record<string, string> => {
+    const token = session?.current()?.accessToken;
+    return token ? { authorization: `Bearer ${token}` } : {};
+  }, [session]);
+
   const value = useMemo(
-    () => ({ status, server, api, sync, store, connect, signIn, signOut, disconnect }),
-    [status, server, api, sync, store, connect, signIn, signOut, disconnect],
+    () => ({ status, server, api, sync, store, mediaHeaders, connect, signIn, signOut, disconnect }),
+    [status, server, api, sync, store, mediaHeaders, connect, signIn, signOut, disconnect],
   );
   return <ServerContext.Provider value={value}>{children}</ServerContext.Provider>;
 }

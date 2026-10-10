@@ -369,6 +369,13 @@ Full-screen reading keeps the same tokens; only the chrome hides.
 
 *In the app:* `pages/StoryReader.tsx`, `components/TapToTranslate.tsx`
 
+*In the Android app:* the same reader palettes and fonts (Libron among
+them), the English lines in the app's sans at 0.78 of the text size in
+`muted`, "peek" as a grey bar (no blur), saved words dotted-underlined, the
+word popup and the text settings as bottom sheets, page turns and sheets
+without animation on e-ink. `packages/app/src/reader/`,
+`src/app/reader/[id].tsx`
+
 ### SectionIcon
 
 The tinted glass squircle that identifies a section: Practice, Cheat sheets, Stories, Vocab, Notes.

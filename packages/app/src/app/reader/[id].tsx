@@ -1,114 +1,413 @@
-import { useMemo, useState } from "react";
-import { Pressable, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { BackHandler, Platform, Pressable, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { useFonts } from "expo-font";
+import { useKeepAwake } from "expo-keep-awake";
+import { NavigationBar } from "expo-navigation-bar";
+import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useStory } from "@mdb/client/react";
+import { AtkinsonHyperlegible_400Regular } from "@expo-google-fonts/atkinson-hyperlegible/400Regular";
+import { AtkinsonHyperlegible_700Bold } from "@expo-google-fonts/atkinson-hyperlegible/700Bold";
+import { Lato_400Regular } from "@expo-google-fonts/lato/400Regular";
+import { Lato_700Bold } from "@expo-google-fonts/lato/700Bold";
+import { Literata_400Regular } from "@expo-google-fonts/literata/400Regular";
+import { Literata_600SemiBold } from "@expo-google-fonts/literata/600SemiBold";
+import { preferences } from "@mdb/client";
+import {
+  isSavedWord,
+  useAssistantEnabled,
+  usePreference,
+  useReaderSettings,
+  useReadingProgress,
+  useStory,
+  useStoryLemmas,
+  useStoryTranslations,
+  useVocabState,
+} from "@mdb/client/react";
 import { font, useTheme } from "@/lib/theme";
-import { plainParagraphs, rgbHex } from "@/reader/text";
-import { RNReader } from "@/reader/RNReader";
+import { storyPieces } from "@/reader/pieces";
+import { GlossaryPanel, SettingsPanel, Sheet } from "@/reader/ReaderSheets";
+import { RNReader, type ReaderControls } from "@/reader/RNReader";
+import { LINE_HEIGHTS, READER_FONTS, WIDTHS, readerColors, type ReaderColors } from "@/reader/style";
 import { WordSheet } from "@/reader/WordSheet";
+import { Icon } from "@/ui/icons";
 import { Text } from "@/ui/Text";
+import { BookOpenText, Check, ChevronLeft, ChevronRight, Languages, Type } from "lucide-react-native";
+import { useVolumeKeys, volumeKeysSupported } from "../../../modules/volume-keys";
+
+/** One reader per story, so the next chapter starts fresh. */
+export default function ReaderScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  return <Reader key={id} id={id} />;
+}
 
 /**
- * A story in the reader (issue #2, phase 1): pages or scroll, the text size,
- * tap a word to define it; the middle of the page shows or hides the bars.
+ * A story: pages (or one scroll), full screen, the screen kept on. Tapping a
+ * word looks it up; the outer quarters, swipes (and the volume keys, if on)
+ * turn the page; the middle shows or hides the bars. Text settings are the
+ * account's (as on the web); the reading position goes to the server.
  */
-export default function Reader() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { view, error } = useStory(id);
+function Reader({ id }: { id: string }) {
+  useKeepAwake();
+  const [fontsLoaded] = useFonts({
+    Literata_400Regular,
+    Literata_600SemiBold,
+    Lato_400Regular,
+    Lato_700Bold,
+    AtkinsonHyperlegible_400Regular,
+    AtkinsonHyperlegible_700Bold,
+    "Libron-Regular": require("../../../assets/fonts/libron/Libron-Regular.ttf"),
+    "Libron-Bold": require("../../../assets/fonts/libron/Libron-Bold.ttf"),
+  });
+  const { view, error, markRead, readAgain, nextChapter } = useStory(id);
+  const { reader, change } = useReaderSettings();
+  const aiEnabled = useAssistantEnabled();
+  const tr = useStoryTranslations({ storyId: view?.story.id, enabled: aiEnabled });
+  const reading = useReadingProgress(view);
+  const vocab = useVocabState();
+  const lemmas = useStoryLemmas(view?.story.body);
   const theme = useTheme();
-  const { colors } = theme;
   const insets = useSafeAreaInsets();
-  const [mode, setMode] = useState<"pages" | "scroll">("pages");
-  const [fontSize, setFontSize] = useState(19);
+  const [fullscreen, setFullscreen] = usePreference(preferences.readerFullscreen);
+  const [volumeKeys, setVolumeKeys] = usePreference(preferences.volumeKeys);
+  const [volumeInvert, setVolumeInvert] = usePreference(preferences.volumeKeysInvert);
+
   const [chrome, setChrome] = useState(true);
-  const [word, setWord] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<"settings" | "glossary" | null>(null);
+  const [word, setWord] = useState<{ word: string; context: string } | null>(null);
   const [where, setWhere] = useState<{ page: number; count: number } | null>(null);
+  /** Bumped by "Read again": the text starts over at the top. */
+  const [round, setRound] = useState(0);
+  const controls = useRef<ReaderControls>(null);
+  // Volume down is the next page (up with "invert"); only on pages, with nothing open on top.
+  useVolumeKeys(volumeKeys && reader.layout === "pages" && !sheet && !word, (key) =>
+    controls.current?.turn((key === "down") !== volumeInvert ? 1 : -1),
+  );
 
-  const paragraphs = useMemo(() => (view ? plainParagraphs(view.story.body) : []), [view]);
-  const palette = theme.reader[theme.scheme];
-  const textColor = rgbHex(palette.fg);
-  const pageColor = rgbHex(palette.bg);
+  const colors = readerColors(reader.theme, theme.display, theme.scheme);
+  const typo = useMemo(
+    () => ({
+      regular: READER_FONTS[reader.font].regular,
+      title: READER_FONTS[reader.font].title,
+      ui: font.regular,
+      size: reader.size,
+      lineHeight: LINE_HEIGHTS[reader.lineHeight],
+      maxWidth: WIDTHS[reader.width],
+    }),
+    [reader.font, reader.size, reader.lineHeight, reader.width],
+  );
+  const pieces = useMemo(
+    () =>
+      view
+        ? storyPieces({ view, translations: reader.translations, lines: tr.lines, translating: tr.translating, revealed: tr.revealed })
+        : [],
+    [view, reader.translations, tr.lines, tr.translating, tr.revealed],
+  );
+  const isSaved = useCallback((w: string) => isSavedWord(w, vocab.words, lemmas), [vocab.words, lemmas]);
+  const { request } = tr;
+  const onVisible = useCallback((paras: number[]) => reader.translations !== "off" && request(paras), [reader.translations, request]);
 
-  const common = {
-    storyTitle: view?.story.title ?? "",
-    paragraphs,
-    mode,
-    fontSize,
-    lineHeight: 1.6,
-    serif: true,
-    textColor,
-    pageColor,
-  };
+  // Back closes a sheet before leaving the reader.
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (word) return setWord(null), true;
+      if (sheet) return setSheet(null), true;
+      return false;
+    });
+    return () => sub.remove();
+  }, [sheet, word]);
+
+  const book = view?.series ?? null;
+  const showBars = chrome || sheet !== null;
+
+  if (error || !view || !fontsLoaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <Text style={{ color: error ? theme.colors.danger : colors.muted, textAlign: "center" }}>{error ?? "Loading…"}</Text>
+        {error && <BarButton label="Stories" icon={ChevronLeft} color={colors.fg} onPress={() => router.back()} />}
+      </View>
+    );
+  }
+  const story = view.story;
+
+  const ending = (
+    <Ending
+      colors={colors}
+      read={view.readAt !== null}
+      book={book}
+      hasQuestions={story.questions.length > 0}
+      onFinished={() => void markRead()}
+      onReadAgain={async () => {
+        await readAgain();
+        reading.reset();
+        setRound((r) => r + 1);
+      }}
+      onNext={async () => {
+        const next = await nextChapter();
+        if (next) router.replace(`/reader/${next}`);
+      }}
+      onPrevious={() => book?.prev && router.replace(`/reader/${book.prev}`)}
+      onBook={() => router.back()}
+    />
+  );
 
   return (
-    <View style={{ flex: 1, backgroundColor: pageColor, paddingTop: insets.top }}>
-      {chrome && (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: rgbHex(palette.rule) }}>
-          <Chip label="‹ Back" onPress={() => router.back()} color={textColor} />
-          <View style={{ flex: 1 }} />
-          <Segment value={mode} onChange={setMode} options={[["pages", "Pages"], ["scroll", "Scroll"]]} color={textColor} rule={rgbHex(palette.rule)} />
-          <Chip label="A−" onPress={() => setFontSize((s) => Math.max(14, s - 1))} color={textColor} />
-          <Chip label="A+" onPress={() => setFontSize((s) => Math.min(30, s + 1))} color={textColor} />
-        </View>
-      )}
-      <View style={{ flex: 1 }}>
-        {error && <Text style={{ color: colors.danger, padding: 24 }}>{error}</Text>}
-        {view && (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      {/* Immersive: the system bars stay away (a swipe from the edge shows them for a moment). */}
+      <StatusBar hidden={fullscreen} style={isLight(colors.bg) ? "dark" : "light"} />
+      {Platform.OS === "android" && <NavigationBar hidden={fullscreen} />}
+
+      {/* The safe area (camera cutout, gesture bar) stays clear in full screen too. */}
+      <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}>
+        <View style={{ flex: 1, paddingTop: reader.layout === "pages" ? 44 : 0, paddingBottom: reader.layout === "pages" ? 32 : 0 }}>
           <RNReader
-            {...common}
-            onWord={(w) => setWord(w)}
-            onPage={(page, count) => setWhere({ page, count })}
+            key={`${round}-${reader.layout}`}
+            ref={controls}
+            pieces={pieces}
+            mode={reader.layout}
+            typo={typo}
+            colors={colors}
+            isSaved={reader.highlightVocab ? isSaved : undefined}
+            resumeAt={round > 0 ? null : view.resumeAt}
+            ending={ending}
+            onWord={(w, context) => setWord({ word: w, context })}
+            onReveal={tr.reveal}
+            onProgress={reading.see}
+            onVisible={onVisible}
             onCenter={() => setChrome((c) => !c)}
+            onPage={(page, count) => {
+              setWhere({ page, count });
+              setChrome(false);
+            }}
           />
-        )}
-      </View>
-      {mode === "pages" && where && (
-        <View style={{ paddingBottom: insets.bottom + 6, paddingTop: 4, alignItems: "center" }}>
-          <Text style={{ fontFamily: font.mono, fontSize: 12, color: rgbHex(palette.muted) }}>
-            {where.page + 1} / {where.count}
-          </Text>
         </View>
+      </View>
+
+        {/* The bar: back, English lines, glossary, text settings. */}
+        {showBars && (
+          <View
+            style={{
+              position: "absolute",
+              top: insets.top,
+              left: 0,
+              right: 0,
+              height: 52,
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 8,
+              gap: 4,
+              backgroundColor: colors.bg,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.rule,
+            }}
+          >
+            <Pressable
+              onPress={() => router.back()}
+              accessibilityRole="button"
+              accessibilityLabel={book ? `Back to ${book.title}` : "Back to stories"}
+              style={{ flexDirection: "row", alignItems: "center", gap: 4, flex: 1, minHeight: 44, paddingHorizontal: 6 }}
+            >
+              <Icon icon={ChevronLeft} size={20} color={colors.muted} />
+              <Text numberOfLines={1} style={{ fontFamily: font.medium, color: colors.muted, flexShrink: 1 }}>
+                {book ? book.title : "Stories"}
+              </Text>
+            </Pressable>
+            {(aiEnabled || tr.hasAny) && (
+              <BarButton
+                icon={Languages}
+                color={reader.translations === "off" ? colors.muted : colors.fg}
+                label={reader.translations === "peek" ? "Peek" : reader.translations === "always" ? "On" : undefined}
+                a11y={`English line by line: ${reader.translations}`}
+                onPress={() => {
+                  tr.clearError();
+                  change({ translations: reader.translations === "off" ? "peek" : reader.translations === "peek" ? "always" : "off" });
+                }}
+              />
+            )}
+            {story.glossary.length > 0 && <BarButton icon={BookOpenText} color={colors.muted} a11y="Glossary" onPress={() => setSheet("glossary")} />}
+            <BarButton icon={Type} color={colors.muted} a11y="Text settings" onPress={() => setSheet("settings")} />
+          </View>
+        )}
+        {reader.translations !== "off" && tr.error && (
+          <Pressable
+            onPress={tr.clearError}
+            style={{ position: "absolute", top: insets.top + 56, left: 16, right: 16, padding: 12, borderRadius: 12, backgroundColor: theme.colors.warningSoft }}
+          >
+            <Text style={{ color: theme.colors.warning }}>{tr.error} Tap to try again.</Text>
+          </Pressable>
+        )}
+
+        {/* Where you are (pages). */}
+        {reader.layout === "pages" && where && (
+          <View
+            pointerEvents="none"
+            style={{ position: "absolute", left: 0, right: 0, bottom: insets.bottom + 4, height: 24, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 }}
+          >
+            <Text style={{ fontFamily: font.mono, fontSize: 12, color: colors.muted }}>
+              {where.page >= where.count ? "End" : `${where.page + 1} / ${where.count}`}
+            </Text>
+            <View style={{ width: 72, height: 2, borderRadius: 1, backgroundColor: colors.rule, overflow: "hidden" }}>
+              <View style={{ width: `${Math.round((Math.min(where.page + 1, where.count) / where.count) * 100)}%`, height: "100%", backgroundColor: colors.mark }} />
+            </View>
+          </View>
+        )}
+
+      {sheet === "settings" && (
+        <Sheet title="Text" onClose={() => setSheet(null)}>
+          <SettingsPanel
+            value={reader}
+            onChange={change}
+            canTranslate={aiEnabled || tr.hasAny}
+            device={{
+              fullscreen,
+              setFullscreen,
+              volumeKeys: volumeKeysSupported ? { on: volumeKeys, set: setVolumeKeys, invert: volumeInvert, setInvert: setVolumeInvert } : null,
+            }}
+          />
+        </Sheet>
       )}
-      {word && <WordSheet word={word} onClose={() => setWord(null)} />}
+      {sheet === "glossary" && (
+        <Sheet title="Glossary" onClose={() => setSheet(null)}>
+          <GlossaryPanel entries={story.glossary} />
+        </Sheet>
+      )}
+      {word && <WordSheet word={word.word} context={word.context} vocab={vocab} onClose={() => setWord(null)} />}
     </View>
   );
 }
 
-function Chip({ label, onPress, color }: { label: string; onPress: () => void; color: string }) {
+/** Whether a "#rrggbb" background wants dark status-bar icons. */
+function isLight(hex: string): boolean {
+  const n = parseInt(hex.slice(1, 7), 16);
+  return ((n >> 16) & 255) * 0.299 + ((n >> 8) & 255) * 0.587 + (n & 255) * 0.114 > 150;
+}
+
+function BarButton({
+  icon,
+  label,
+  a11y,
+  color,
+  onPress,
+}: {
+  icon: Parameters<typeof Icon>[0]["icon"];
+  label?: string;
+  a11y?: string;
+  color: string;
+  onPress: () => void;
+}) {
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" style={{ minHeight: 36, minWidth: 36, paddingHorizontal: 8, alignItems: "center", justifyContent: "center" }}>
-      <Text style={{ fontFamily: font.medium, fontSize: 14, color }}>{label}</Text>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={a11y ?? label}
+      hitSlop={4}
+      style={{ minWidth: 44, minHeight: 44, paddingHorizontal: 8, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4 }}
+    >
+      <Icon icon={icon} size={20} color={color} />
+      {label ? <Text style={{ fontFamily: font.medium, fontSize: 13, color }}>{label}</Text> : null}
     </Pressable>
   );
 }
 
-function Segment<T extends string>({
-  value,
-  onChange,
-  options,
-  color,
-  rule,
+/** After the last page: finished (or read), and the book's previous / next chapter. */
+function Ending({
+  colors,
+  read,
+  book,
+  hasQuestions,
+  onFinished,
+  onReadAgain,
+  onNext,
+  onPrevious,
+  onBook,
 }: {
-  value: T;
-  onChange: (v: T) => void;
-  options: [T, string][];
-  color: string;
-  rule: string;
+  colors: ReaderColors;
+  read: boolean;
+  book: { chapter: number; total: number; prev: string | null; next: string | null } | null;
+  hasQuestions: boolean;
+  onFinished: () => void;
+  onReadAgain: () => void;
+  onNext: () => void;
+  onPrevious: () => void;
+  onBook: () => void;
 }) {
+  const t = useTheme();
+  const link = { fontFamily: font.medium, color: colors.muted, textDecorationLine: "underline" as const };
   return (
-    <View style={{ flexDirection: "row", borderWidth: 1, borderColor: rule, borderRadius: 999, padding: 2 }}>
-      {options.map(([v, label]) => (
-        <Pressable
-          key={v}
-          onPress={() => onChange(v)}
-          accessibilityRole="button"
-          accessibilityState={{ selected: value === v }}
-          style={{ minHeight: 32, paddingHorizontal: 10, justifyContent: "center", borderRadius: 999, backgroundColor: value === v ? rule : "transparent" }}
-        >
-          <Text style={{ fontFamily: value === v ? font.semibold : font.regular, fontSize: 13, color }}>{label}</Text>
-        </Pressable>
-      ))}
+    <View style={{ gap: 20 }}>
+      <Text style={{ textAlign: "center", color: colors.muted, fontSize: 13 }}>
+        — End of {book ? `chapter ${book.chapter}` : "the story"} —
+      </Text>
+      <View style={{ borderTopWidth: 1, borderTopColor: colors.rule, paddingTop: 16, gap: 14 }}>
+        {read ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Icon icon={Check} size={18} color={t.colors.success} />
+              <Text style={{ fontFamily: font.medium, color: t.colors.success }}>You've read this</Text>
+            </View>
+            <Pressable onPress={onReadAgain} accessibilityRole="button" hitSlop={8}>
+              <Text style={link}>Read again</Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            onPress={onFinished}
+            accessibilityRole="button"
+            style={{
+              alignSelf: "flex-start",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              minHeight: 44,
+              paddingHorizontal: 16,
+              borderRadius: t.radii.control,
+              borderWidth: 1,
+              borderColor: colors.rule,
+            }}
+          >
+            <Icon icon={Check} size={18} color={colors.fg} />
+            <Text style={{ fontFamily: font.semibold, color: colors.fg }}>Finished reading</Text>
+          </Pressable>
+        )}
+        {book && (
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            {book.prev ? (
+              <Pressable onPress={onPrevious} accessibilityRole="button" style={{ flexDirection: "row", alignItems: "center", gap: 4, minHeight: 44 }}>
+                <Icon icon={ChevronLeft} size={18} color={colors.muted} />
+                <Text style={{ fontFamily: font.medium, color: colors.muted }}>Previous</Text>
+              </Pressable>
+            ) : (
+              <View />
+            )}
+            {book.next ? (
+              <Pressable
+                onPress={onNext}
+                accessibilityRole="button"
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  minHeight: 44,
+                  paddingHorizontal: 16,
+                  borderRadius: t.radii.control,
+                  backgroundColor: t.colors.brandSoft,
+                }}
+              >
+                <Text style={{ fontFamily: font.semibold, color: t.colors.brandInk }}>Next chapter</Text>
+                <Icon icon={ChevronRight} size={18} color={t.colors.brandInk} />
+              </Pressable>
+            ) : (
+              <Pressable onPress={onBook} accessibilityRole="button" hitSlop={8}>
+                <Text style={link}>{book.chapter < book.total ? "More chapters coming" : "Back to the book"}</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+        {hasQuestions && (
+          <Text style={{ color: colors.muted, fontSize: 13 }}>The questions on this story come with the app's practice screens.</Text>
+        )}
+      </View>
     </View>
   );
 }

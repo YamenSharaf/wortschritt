@@ -88,15 +88,46 @@ computes, like the web does with HTML; it keeps no business logic.
     app's expo-sqlite out of the server's dependencies (an optional peer of
     drizzle-orm); without it the server's Docker image installs React
     Native.
-- **Reader** (issue #2, phase 1): Stories → a story opens
-  `src/app/reader/[id].tsx` with `src/reader/RNReader.tsx`: React Native
-  text, as pages or one scroll, from plain paragraphs (`src/reader/text.ts`)
-  in the reader palette. Pages are packed from each paragraph's lines,
-  measured off screen (`onTextLayout`). Tap a word to define it
-  (`WordSheet`); the outer quarters or a swipe (a gesture-handler pan: long
-  enough or quick enough) turn the page, without animation; the middle shows
-  or hides the bars. A Jetpack Compose engine was tried side by side and
-  dropped: slightly nicer text flow, not worth a native module.
+- **Reader** (issue #2, phases 1 and 4): `src/app/reader/[id].tsx`, the
+  layout in `src/reader/`. React Native text: a spike tried a Jetpack Compose
+  engine side by side and dropped it (slightly nicer text flow, not worth a
+  native module).
+  - **What it reads**: the same hooks as the web (`useStory`,
+    `useReaderSettings` (the account's text settings), `useStoryTranslations`,
+    `useReadingProgress`, `useStoryLemmas`, `useVocabState`). `pieces.ts`
+    turns a story into what's laid out: the header, each paragraph's German
+    and, when English line by line is on, its English (under each sentence
+    when sentences and lines match one to one, else under the paragraph;
+    "peek" is a grey bar until tapped).
+  - **Pages**: each piece's lines are measured off screen (`onTextLayout`)
+    and packed into pages; a re-layout (size, font, English lines) keeps the
+    first paragraph on the page; it opens at the server's `resumeAt`; after
+    the last page comes the end (finished / read again / chapters). Scroll
+    is one ScrollView. The web preview has no `onTextLayout`, so pages stay
+    blank there (scroll works).
+  - **Turning**: the outer quarters, swipes (a gesture-handler pan, long or
+    quick enough), and the volume keys when on (this device: "Turn pages
+    with volume keys", "Invert"), all without animation; the middle shows
+    or hides the bars. Volume keys: a local Expo module
+    (`modules/volume-keys`, Android) wraps the window's callback while the
+    reader is open with the option on, so the keys turn pages and leave the
+    volume alone; everywhere else they're the volume.
+  - **Fonts**: Literata, Lato, Atkinson Hyperlegible (expo-google-fonts) and
+    Libron (the release's TTFs, unmodified, `assets/fonts/libron`); Android
+    picks faces by name, so each font has a regular and a title face
+    (`style.ts`). Themes come from `readerPalettes` (sepia isn't offered on
+    e-ink, which has greys only).
+  - **Screen**: full screen by default (system bars hidden; "Full screen" on
+    this device to keep them), the screen kept on, Back closes a sheet first.
+  - **Words**: `WordSheet`: the offline dictionary's gloss and Wiktionary at
+    once, "Translate" (the AI, with the sentence) and saving to vocab and
+    groups. Saved words are underlined (dotted).
+  - **Not yet**: the story's questions (they come with the practice
+    screens) and read-aloud (phase 5).
+- **Stories**: books as a shelf of covers or a list (`shelfView`, this
+  device) and short stories; `src/app/series/[id].tsx` is a book's page.
+  Covers (`ui/Cover.tsx`) load with the bearer token through expo-image and
+  stay in its disk cache, so they're there offline once seen.
 - Run: `pnpm dev:app` (a development build, not Expo Go). A **web preview**
   (`pnpm --filter @mdb/app web`, or `expo export --platform web`) shows the
   screens in a browser; the server must allow its origin
