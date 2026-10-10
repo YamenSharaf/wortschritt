@@ -8,6 +8,8 @@ import { useSync } from "@/lib/sync";
 import { font, useTheme } from "@/lib/theme";
 import { Button } from "@/ui/Button";
 import { Card } from "@/ui/Card";
+import { GlassCard } from "@/ui/GlassCard";
+import { IconTile } from "@/ui/IconTile";
 import { Icon, Play, sections } from "@/ui/icons";
 import { Screen } from "@/ui/Screen";
 import { Text } from "@/ui/Text";
@@ -64,7 +66,7 @@ export default function Home() {
         </Pressable>
       </View>
 
-      <Card style={{ padding: 24, gap: 10, borderRadius: radii.panel }}>
+      <GlassCard style={{ padding: 24, gap: 10 }}>
         <Text variant="eyebrow">
           {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
         </Text>
@@ -98,7 +100,7 @@ export default function Home() {
             onPress={() => router.navigate("/practice")}
           />
         </View>
-      </Card>
+      </GlassCard>
 
       {runs.status === "ready" && runs.data.length > 0 && (
         <View style={{ gap: 10 }}>
@@ -163,7 +165,7 @@ function RunRow({ run, first }: { run: RunSummary; first: boolean }) {
         backgroundColor: pressed ? colors.surfaceSunken : "transparent",
       })}
     >
-      <Icon icon={s.icon} size={18} color={colors[s.tint]} />
+      <IconTile icon={s.icon} color={colors[s.tint]} size={32} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text numberOfLines={1} style={{ fontFamily: font.medium }}>
           {run.setTitle}

@@ -175,6 +175,12 @@ computes, like the web does with HTML; it keeps no business logic.
     buttons (at thumb height): the flashcard is centred, the question is a
     raised sheet that scrolls inside and swipes anywhere, with Prev / Next
     in a bar at the bottom.
+  - Cards: Home leads with a frosted-glass card (`ui/GlassCard.tsx`, its own
+    soft colour fields blurred); list cards spring a little when pressed
+    (`ui/PressCard.tsx`), carry their section's icon on a tinted tile
+    (`ui/IconTile.tsx`) and, in light mode, a faint bright top edge.
+    Buttons spring too, and primary ones have a glossy edge, a soft brand
+    glow and a light haptic tap. All plain on e-ink.
   - Sheets over the reader (word, text, glossary): the shade fades in place
     and only the panel slides up, and back down on closing.
   - Flashcards (`src/vocab/SwipeCard.tsx`): a frosted-glass card (expo-blur;

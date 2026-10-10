@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { router } from "expo-router";
 import type { RunSummary } from "@mdb/shared";
 import { timeAgo } from "@mdb/client";
 import { useApi, useAsync } from "@mdb/client/react";
 import { useSync } from "@/lib/sync";
 import { font, useTheme } from "@/lib/theme";
-import { Card } from "@/ui/Card";
-import { Icon, sections } from "@/ui/icons";
+import { IconTile } from "@/ui/IconTile";
+import { PressCard } from "@/ui/PressCard";
+import { sections } from "@/ui/icons";
 import { Pill } from "@/ui/Pill";
 import { Screen } from "@/ui/Screen";
 import { SearchField, sortByMode } from "@/ui/SearchField";
@@ -51,7 +52,15 @@ export default function Practice() {
       {list.length > 1 && (
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <View style={{ flex: 1 }}>{list.length > 3 && <SearchField value={q} onChange={setQ} placeholder="Search exercises…" />}</View>
-          <Segmented compact value={sort} options={[["recent", "Recent"], ["az", "A–Z"]]} onChange={setSort} />
+          <Segmented
+            compact
+            value={sort}
+            options={[
+              ["recent", "Recent"],
+              ["az", "A–Z"],
+            ]}
+            onChange={setSort}
+          />
         </View>
       )}
       {sets.status === "error" && <Text style={{ color: colors.danger }}>Couldn't load the exercises. Pull to try again.</Text>}
@@ -59,29 +68,29 @@ export default function Practice() {
       {sets.status === "ready" && list.length > 0 && shown.length === 0 && <Text variant="muted">No exercises match.</Text>}
       <View style={{ gap: 12 }}>
         {shown.map((s) => (
-          <Pressable key={s.id} onPress={() => router.push(`/practice/${s.id}`)} accessibilityRole="button">
-            {({ pressed }) => (
-              <Card style={{ padding: 16, gap: 10, backgroundColor: pressed ? colors.surfaceSunken : colors.surface }}>
-                <View style={{ flexDirection: "row", gap: 12 }}>
-                  <Icon icon={sections.practice.icon} size={20} color={colors.sectionPractice} />
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={{ fontFamily: font.semibold }}>{s.title}</Text>
-                    {s.subtitle ? <Text variant="muted">{s.subtitle}</Text> : null}
-                  </View>
-                </View>
-                {s.description ? <Text variant="muted" style={{ fontSize: 14, lineHeight: 20 }}>{s.description}</Text> : null}
-                <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
-                  <Pill text={s.level} />
-                  <Pill text={`${s.items.length} tasks`} />
-                  {s.tags.slice(0, 2).map((t) => (
-                    <Pill key={t} text={t} />
-                  ))}
-                  <View style={{ flex: 1 }} />
-                  <LastRun run={last[s.id]} />
-                </View>
-              </Card>
-            )}
-          </Pressable>
+          <PressCard key={s.id} onPress={() => router.push(`/practice/${s.id}`)} style={{ padding: 16, gap: 10 }}>
+            <View style={{ flexDirection: "row", gap: 12 }}>
+              <IconTile icon={sections.practice.icon} color={colors.sectionPractice} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={{ fontFamily: font.semibold }}>{s.title}</Text>
+                {s.subtitle ? <Text variant="muted">{s.subtitle}</Text> : null}
+              </View>
+            </View>
+            {s.description ? (
+              <Text variant="muted" style={{ fontSize: 14, lineHeight: 20 }}>
+                {s.description}
+              </Text>
+            ) : null}
+            <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
+              <Pill text={s.level} />
+              <Pill text={`${s.items.length} tasks`} />
+              {s.tags.slice(0, 2).map((t) => (
+                <Pill key={t} text={t} />
+              ))}
+              <View style={{ flex: 1 }} />
+              <LastRun run={last[s.id]} />
+            </View>
+          </PressCard>
         ))}
       </View>
     </Screen>

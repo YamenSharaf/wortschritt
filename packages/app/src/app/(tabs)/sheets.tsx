@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { router } from "expo-router";
 import { useApi, useAsync } from "@mdb/client/react";
 import { useSync } from "@/lib/sync";
 import { font, useTheme } from "@/lib/theme";
 import { Segmented } from "@/reader/ReaderSheets";
-import { Card } from "@/ui/Card";
-import { Icon, sections } from "@/ui/icons";
+import { IconTile } from "@/ui/IconTile";
+import { PressCard } from "@/ui/PressCard";
+import { sections } from "@/ui/icons";
 import { Pill } from "@/ui/Pill";
 import { Screen } from "@/ui/Screen";
 import { SearchField, sortByMode } from "@/ui/SearchField";
@@ -46,7 +47,15 @@ export default function Sheets() {
       {list.length > 1 && (
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <View style={{ flex: 1 }}>{list.length > 3 && <SearchField value={q} onChange={setQ} placeholder="Search cheat sheets…" />}</View>
-          <Segmented compact value={sort} options={[["recent", "Recent"], ["az", "A–Z"]]} onChange={setSort} />
+          <Segmented
+            compact
+            value={sort}
+            options={[
+              ["recent", "Recent"],
+              ["az", "A–Z"],
+            ]}
+            onChange={setSort}
+          />
         </View>
       )}
       {sheets.status === "error" && <Text style={{ color: colors.danger }}>Couldn't load the cheat sheets. Pull to try again.</Text>}
@@ -54,22 +63,18 @@ export default function Sheets() {
       {sheets.status === "ready" && list.length > 0 && shown.length === 0 && <Text variant="muted">No cheat sheets match.</Text>}
       <View style={{ gap: 12 }}>
         {shown.map((s) => (
-          <Pressable key={s.id} onPress={() => router.push(`/sheet/${s.id}`)} accessibilityRole="button">
-            {({ pressed }) => (
-              <Card style={{ padding: 16, flexDirection: "row", gap: 12, backgroundColor: pressed ? colors.surfaceSunken : colors.surface }}>
-                <Icon icon={sections.sheets.icon} size={20} color={colors.sectionSheets} />
-                <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                  <Text style={{ fontFamily: font.semibold }}>{s.title}</Text>
-                  {s.subtitle ? <Text variant="muted">{s.subtitle}</Text> : null}
-                  {s.category ? (
-                    <View style={{ flexDirection: "row", marginTop: 8 }}>
-                      <Pill text={s.category} />
-                    </View>
-                  ) : null}
+          <PressCard key={s.id} onPress={() => router.push(`/sheet/${s.id}`)} style={{ padding: 16, flexDirection: "row", gap: 12 }}>
+            <IconTile icon={sections.sheets.icon} color={colors.sectionSheets} />
+            <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+              <Text style={{ fontFamily: font.semibold }}>{s.title}</Text>
+              {s.subtitle ? <Text variant="muted">{s.subtitle}</Text> : null}
+              {s.category ? (
+                <View style={{ flexDirection: "row", marginTop: 8 }}>
+                  <Pill text={s.category} />
                 </View>
-              </Card>
-            )}
-          </Pressable>
+              ) : null}
+            </View>
+          </PressCard>
         ))}
       </View>
     </Screen>
