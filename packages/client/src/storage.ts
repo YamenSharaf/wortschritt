@@ -57,6 +57,8 @@ export const preferences = {
   readerFullscreen: { key: "mdb-reader-fullscreen", fallback: true, parse: bool } as Preference<boolean>,
   /** The app's reader turns pages with the volume keys. */
   volumeKeys: { key: "mdb-volume-keys", fallback: false, parse: bool } as Preference<boolean>,
+  /** The app's reader turns pages with a tap on the left or right side (else only swipes and keys). */
+  tapToTurn: { key: "mdb-tap-to-turn", fallback: true, parse: bool } as Preference<boolean>,
   /** …with volume up as the next page (down by default). */
   volumeKeysInvert: { key: "mdb-volume-keys-invert", fallback: false, parse: bool } as Preference<boolean>,
   /** Practice moves on by itself after a right answer. */

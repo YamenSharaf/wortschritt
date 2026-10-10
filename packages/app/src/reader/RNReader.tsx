@@ -65,6 +65,8 @@ type Props = {
   speaking?: number | null;
   /** Pages slide (follow the finger); off on e-ink and with reduced motion. */
   animated?: boolean;
+  /** A tap on the left or right quarter turns the page (else every tap shows or hides the bars). */
+  tapToTurn?: boolean;
 };
 
 type Line = { text: string; height: number };
@@ -378,6 +380,7 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
 
   const tapAt = (x: number) => {
     const w = size?.w ?? 0;
+    if (p.tapToTurn === false) return p.onCenter();
     if (x < w * 0.25 && page > 0) turn(-1);
     else if (x > w * 0.75 && page < count) turn(1);
     else p.onCenter();

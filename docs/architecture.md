@@ -108,7 +108,7 @@ computes, like the web does with HTML; it keeps no business logic.
     the last page comes the end (finished / read again / chapters). Scroll
     is one ScrollView. The web preview has no `onTextLayout`, so pages stay
     blank there (scroll works).
-  - **Turning**: the outer quarters, swipes (a gesture-handler pan, long or
+  - **Turning**: the outer quarters (unless "Turn pages by tapping the sides" is off, this device), swipes (a gesture-handler pan, long or
     quick enough), and the volume keys when on (this device: "Turn pages
     with volume keys", "Invert"), all without animation; the middle shows
     or hides the bars, as do the margins above and below the text. Volume keys: a local Expo module

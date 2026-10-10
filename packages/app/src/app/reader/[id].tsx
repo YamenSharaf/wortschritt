@@ -73,6 +73,7 @@ function Reader({ id }: { id: string }) {
   const [fullscreen, setFullscreen] = usePreference(preferences.readerFullscreen);
   const [volumeKeys, setVolumeKeys] = usePreference(preferences.volumeKeys);
   const [volumeInvert, setVolumeInvert] = usePreference(preferences.volumeKeysInvert);
+  const [tapToTurn, setTapToTurn] = usePreference(preferences.tapToTurn);
 
   const [chrome, setChrome] = useState(true);
   const [sheet, setSheet] = useState<"settings" | "glossary" | null>(null);
@@ -191,6 +192,7 @@ function Reader({ id }: { id: string }) {
             onCenter={() => setChrome((c) => !c)}
             speaking={aloud.speaking}
             animated={theme.motion.base > 0}
+            tapToTurn={tapToTurn}
             onPage={(page, count) => {
               setWhere({ page, count });
               setChrome(false);
@@ -302,6 +304,7 @@ function Reader({ id }: { id: string }) {
             device={{
               fullscreen,
               setFullscreen,
+              tapToTurn: { on: tapToTurn, set: setTapToTurn },
               volumeKeys: volumeKeysSupported ? { on: volumeKeys, set: setVolumeKeys, invert: volumeInvert, setInvert: setVolumeInvert } : null,
             }}
           />

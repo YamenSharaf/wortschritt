@@ -150,6 +150,8 @@ export function SettingsPanel({
   device: {
     fullscreen: boolean;
     setFullscreen: (v: boolean) => void;
+    /** Page turns by a tap on the sides (pages layout). */
+    tapToTurn: { on: boolean; set: (v: boolean) => void };
     /** null where there are no volume keys to use (not Android). */
     volumeKeys: { on: boolean; set: (v: boolean) => void; invert: boolean; setInvert: (v: boolean) => void } | null;
   };
@@ -240,6 +242,7 @@ export function SettingsPanel({
       <View style={{ gap: 4 }}>
         <Text variant="eyebrow">This device</Text>
         <Toggle label="Full screen" value={device.fullscreen} onChange={device.setFullscreen} />
+        {value.layout === "pages" && <Toggle label="Turn pages by tapping the sides" value={device.tapToTurn.on} onChange={device.tapToTurn.set} />}
         {device.volumeKeys && (
           <>
             <Toggle label="Turn pages with volume keys" value={device.volumeKeys.on} onChange={device.volumeKeys.set} />
