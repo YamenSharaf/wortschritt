@@ -69,5 +69,7 @@ export const preferences = {
   flashcardTipDone: { key: "mdb-flashcard-tip-done", fallback: false, parse: bool } as Preference<boolean>,
   /** A haptic tap for right and wrong answers and swipes (the app). */
   haptics: { key: "mdb-haptics", fallback: true, parse: bool } as Preference<boolean>,
+  /** The Android app looks for a newer build of itself each time it opens. */
+  autoUpdate: { key: "mdb-auto-update", fallback: true, parse: bool } as Preference<boolean>,
 };
 export const NOTE_FONT_SIZE = { min: 12, max: 26 };

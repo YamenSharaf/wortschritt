@@ -1,4 +1,5 @@
 import { useEffect, useMemo, type ReactNode } from "react";
+import { AppState } from "react-native";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -12,6 +13,7 @@ import { Geist_500Medium } from "@expo-google-fonts/geist/500Medium";
 import { Geist_600SemiBold } from "@expo-google-fonts/geist/600SemiBold";
 import { Geist_700Bold } from "@expo-google-fonts/geist/700Bold";
 import { GeistMono_500Medium } from "@expo-google-fonts/geist-mono/500Medium";
+import { preferences } from "@mdb/client";
 import { AuthProvider, ClientProvider, useApi, useSpeech } from "@mdb/client/react";
 import { appSpeech } from "@/lib/speech";
 // Defines the background sync task when the bundle loads (also when Android starts it for the task).
@@ -20,6 +22,7 @@ import { ServerProvider, useServer } from "@/lib/server";
 import { deviceStore } from "@/lib/storage";
 import { SyncProvider } from "@/lib/sync";
 import { ThemeProvider, useTheme } from "@/lib/theme";
+import { checkForUpdate, updatesSupported } from "@/lib/updates";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -74,9 +77,27 @@ function SpeechSetup() {
   return null;
 }
 
+/** Each time the app opens (and when it comes back after an hour away), look for a newer build unless that's turned off. */
+function useUpdateCheck() {
+  useEffect(() => {
+    if (!updatesSupported) return;
+    let last = 0;
+    const check = async () => {
+      if (Date.now() - last < 60 * 60 * 1000) return;
+      last = Date.now();
+      const raw = await Promise.resolve(deviceStore.get(preferences.autoUpdate.key)).catch(() => null);
+      if ((raw === null ? undefined : preferences.autoUpdate.parse(raw)) ?? preferences.autoUpdate.fallback) await checkForUpdate({ quiet: true });
+    };
+    void check();
+    const sub = AppState.addEventListener("change", (s) => s === "active" && void check());
+    return () => sub.remove();
+  }, []);
+}
+
 /** Which screens exist depends on the state: connect to a server, sign in, then the app. */
 function Root() {
   const { status } = useServer();
+  useUpdateCheck();
   const { colors, scheme, motion } = useTheme();
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(colors.bg).catch(() => {});

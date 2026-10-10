@@ -13,6 +13,7 @@ import { IconTile } from "@/ui/IconTile";
 import { Icon, Play, sections } from "@/ui/icons";
 import { Screen } from "@/ui/Screen";
 import { Text } from "@/ui/Text";
+import { UpdateCard } from "@/ui/UpdateCard";
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -65,6 +66,8 @@ export default function Home() {
           <Text style={{ fontFamily: font.semibold, color: colors.brandInk }}>{(user?.username ?? "?").slice(0, 1).toUpperCase()}</Text>
         </Pressable>
       </View>
+
+      <UpdateCard />
 
       <GlassCard style={{ padding: 24, gap: 10 }}>
         <Text variant="eyebrow">

@@ -75,16 +75,17 @@ It works offline (the data syncs, also in the background now and then) and
 has the reader with page turning by volume keys, practice, cheat sheets,
 vocab with flashcards, notes and read-aloud.
 
-**Install with [Obtainium](https://github.com/ImranR98/Obtainium)** (keeps it updated):
+**Install**: download the APK from the newest `app-…` release and install
+it (allow installing from your browser or file manager when Android asks).
 
-1. In Obtainium, *Add app* with `https://github.com/YamenSharaf/wortschritt`.
-2. Turn on *Include prereleases* (each build of `main` is a prerelease,
-   `app-<run>`), then *Add*, and install. If the repository is private,
-   give Obtainium a GitHub token (its settings, GitHub source) that can
-   read it.
+**Updates**: each time it opens, the app looks at this repository's
+releases for a newer build; when there is one, a card on Home downloads it
+and opens Android's installer (the first time, allow installs from
+Wortschritt). Turn that off, or check by hand, in Account → App.
 
-Or download the APK from the newest `app-…` release and install it (allow
-installing from your browser or file manager when Android asks).
+Or keep it updated with [Obtainium](https://github.com/ImranR98/Obtainium):
+*Add app* with `https://github.com/YamenSharaf/wortschritt` and turn on
+*Include prereleases* (each build of `main` is a prerelease, `app-<run>`).
 
 **Connect**: enter your server's address (`https://wort.example.com`; for a
 server on your own network over http, turn on *Allow http*), then sign in

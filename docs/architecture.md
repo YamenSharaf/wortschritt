@@ -220,8 +220,11 @@ computes, like the web does with HTML; it keeps no business logic.
   installs over the last (the version code is the
   run number, via `app.config.ts`). Download it from the run's Artifacts.
   Builds of main are also published as GitHub pre-releases (tag
-  `app-<run>`, version `0.1.<run>`, the newest 10 kept), so Obtainium can
-  install the app from the repo and keep it updated.
+  `app-<run>`, version `0.1.<run>`, the newest 10 kept). The app updates
+  itself from them (`src/lib/updates.native.ts`: the public releases API,
+  the APK downloaded to the cache, Android's installer through
+  `expo-intent-launcher` and the `REQUEST_INSTALL_PACKAGES` permission);
+  Obtainium can use them too.
   `usesCleartextTraffic` is on so the "Allow http" switch works for a LAN
   server; the app itself refuses http unless that switch is on.
 

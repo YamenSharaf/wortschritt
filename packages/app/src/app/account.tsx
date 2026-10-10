@@ -11,6 +11,8 @@ import { Icon, LogOut } from "@/ui/icons";
 import { Screen } from "@/ui/Screen";
 import { Text } from "@/ui/Text";
 import { LearningSettings } from "@/settings/Learning";
+import { checkForUpdate, currentBuild, updatesSupported } from "@/lib/updates";
+import { useUpdateState } from "@/lib/updateStore";
 
 /** The account sheet: who and where you are, how the app looks on this device, sign out. */
 export default function Account() {
@@ -99,6 +101,8 @@ export default function Account() {
         </Card>
       </View>
 
+      {updatesSupported && <AppUpdates />}
+
       <View style={{ gap: 10 }}>
         <Text variant="heading">More</Text>
         <Card>
@@ -164,6 +168,38 @@ function PrefSwitch({ pref, label, hint }: { pref: Preference<boolean>; label: s
         {hint ? <Text variant="subtle">{hint}</Text> : null}
       </View>
       <Switch value={on} onValueChange={set} accessibilityLabel={label} trackColor={{ true: colors.brand, false: colors.borderControl }} thumbColor={colors.surface} />
+    </View>
+  );
+}
+
+/** This build, and looking for a newer one (the card on Home downloads and installs it). */
+function AppUpdates() {
+  const s = useUpdateState();
+  const line =
+    s.phase === "checking"
+      ? "Looking for a new version…"
+      : s.phase === "current"
+        ? "This is the newest version."
+        : s.phase === "available" || s.phase === "ready"
+          ? `Build ${s.release.build} is out: see Home to install it.`
+          : s.phase === "downloading"
+            ? `Downloading build ${s.release.build}… ${Math.round(s.progress * 100)}%`
+            : s.phase === "error"
+              ? `Couldn't check: ${s.message}`
+              : null;
+  return (
+    <View style={{ gap: 10 }}>
+      <Text variant="heading">App</Text>
+      <Card style={{ padding: 16, gap: 12 }}>
+        <View style={{ gap: 2 }}>
+          <Text style={{ fontFamily: font.medium }}>Build {currentBuild()}</Text>
+          {line ? <Text variant="subtle">{line}</Text> : null}
+        </View>
+        <PrefSwitch pref={preferences.autoUpdate} label="Look for updates when the app opens" hint="New versions come from the app's GitHub releases." />
+        <View style={{ flexDirection: "row" }}>
+          <Button label="Check now" busy={s.phase === "checking"} disabled={s.phase === "downloading"} onPress={() => void checkForUpdate()} />
+        </View>
+      </Card>
     </View>
   );
 }
