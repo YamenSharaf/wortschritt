@@ -18,7 +18,7 @@ import {
   setServerTts,
   speak,
 } from "../lib/tts";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { TabPills } from "../components/TabPills";
 import { AiSettings } from "./AiSettings";
 import { SpeakerIcon } from "../components/icons";
@@ -56,6 +56,17 @@ export function SettingsPage() {
       )}
       {current === "account" && <Account />}
       {current === "connections" && <Connections />}
+      <div className="mt-10 space-y-2 text-sm text-ink-subtle">
+        <p>
+          About AI: the tutor's answers, AI translations, generated stories and “Generate more” questions are written by an AI model and can be
+          wrong. Stories and sets may also have been written with AI.
+        </p>
+        <p>
+          <Link to="/licenses" className="underline decoration-dotted hover:text-ink">
+            Open-source licences
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

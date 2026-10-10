@@ -103,6 +103,13 @@ export default function Account() {
         <Text variant="heading">More</Text>
         <Card>
           <LinkRow label="Import content" onPress={() => router.push("/import")} first />
+          <LinkRow label="Open-source licences" onPress={() => router.push("/licenses")} />
+          <View style={{ padding: 16, borderTopWidth: 1, borderTopColor: colors.border }}>
+            <Text variant="subtle">
+              About AI: the tutor's answers, AI translations, generated stories and “Generate more” questions are written by an AI model and can be wrong.
+              Stories and sets may also have been written with AI.
+            </Text>
+          </View>
           <LinkRow
             label="Password, AI tutor, voices, connected apps (web)"
             onPress={() => server && void WebBrowser.openBrowserAsync(`${server}/settings`)}

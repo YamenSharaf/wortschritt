@@ -13,7 +13,8 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "start": "pnpm --filter @mdb/api start",
-    "dev:app": "pnpm --filter @mdb/app start"
+    "dev:app": "pnpm --filter @mdb/app start",
+    "notices": "node scripts/third-party-notices.mjs"
   },
   "engines": {
     "node": ">=20"

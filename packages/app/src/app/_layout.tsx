@@ -107,6 +107,7 @@ function Root() {
           <Stack.Screen name="note/[id]" />
           <Stack.Screen name="import" />
           <Stack.Screen name="quiz/[id]" />
+          <Stack.Screen name="licenses" />
         </Stack.Protected>
         <Stack.Protected guard={status === "no-server"}>
           <Stack.Screen name="connect" />

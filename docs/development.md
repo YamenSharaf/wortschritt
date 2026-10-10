@@ -55,6 +55,7 @@ pnpm dev:web        # web only
 pnpm typecheck      # type-check every package
 pnpm test           # run the test suites
 pnpm build          # build the web SPA
+pnpm notices        # regenerate THIRD_PARTY_NOTICES.md after changing dependencies
 ```
 
 ## Features vs. content

@@ -63,6 +63,8 @@ const router = createBrowserRouter([
       { path: "admin", element: <AdminPage /> },
       { path: "admin/:tab", element: <AdminPage /> },
       { path: "import", element: <ImportPage /> },
+      // Large (every package's licence): its own chunk, loaded when opened.
+      { path: "licenses", lazy: async () => ({ Component: (await import("./pages/Licenses")).Licenses }) },
     ],
   },
 ]);

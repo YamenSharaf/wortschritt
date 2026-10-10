@@ -94,8 +94,18 @@ release. Enter your server's address and sign in. Details:
 - [Design system](docs/design-system.md): colours, type and components.
 - [AGENTS.md](AGENTS.md): orientation for AI agents working on the code.
 
+## How it's made
+
+Wortschritt is built by one person with a lot of help from an AI coding
+assistant (Claude, through Claude Code): most of the code was written by
+it under the maintainer's direction, and commits say so with a
+`Co-Authored-By` trailer. Some of the built-in content and the stories are
+AI-written too. In the app, the AI tutor, AI translations, generated
+stories and "Generate more" questions come from an AI model you configure;
+the app says so and they can be wrong.
+
 ## License
 
-MIT, see [LICENSE](LICENSE). Bundled fonts and dictionary data keep their own
-licences (see [packages/api/assets/ATTRIBUTION.md](packages/api/assets/ATTRIBUTION.md)
-and the font folders).
+MIT, see [LICENSE](LICENSE). Bundled fonts, dictionary data and packages keep
+their own licences: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) (also in
+the apps under Open-source licences; regenerate with `pnpm notices`).
