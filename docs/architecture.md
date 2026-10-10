@@ -462,7 +462,7 @@ computes, like the web does with HTML; it keeps no business logic.
 
 ## API surface
 
-See the README for the grouped list; `/api/docs` has the full typed spec. The
+See [api.md](api.md) for the grouped list; `/api/docs` has the full typed spec. The
 AI endpoints:
 
 ```
