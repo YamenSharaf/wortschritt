@@ -190,6 +190,32 @@ key + region under Administration → Server) or the unofficial **Edge "Read alo
 endpoint (admin opt-in). The app proxies and caches clips; with neither set up
 it falls back to the browser's built-in voice.
 
+## Android app
+
+An Android app (`packages/app`, React Native with Expo) talks to your server.
+It works offline (the data syncs, also in the background now and then) and
+has the reader with page turning by volume keys, practice, cheat sheets,
+vocab with flashcards, notes and read-aloud.
+
+**Install with [Obtainium](https://github.com/ImranR98/Obtainium)** (keeps it updated):
+
+1. In Obtainium, *Add app* with `https://github.com/YamenSharaf/wortschritt`.
+2. Turn on *Include prereleases* (each build of `main` is a prerelease,
+   `app-<run>`), then *Add*, and install. If the repository is private,
+   give Obtainium a GitHub token (its settings, GitHub source) that can
+   read it.
+
+Or download the APK from the newest `app-…` release and install it (allow
+installing from your browser or file manager when Android asks).
+
+**Connect**: enter your server's address (`https://wort.example.com`; for a
+server on your own network over http, turn on *Allow http*), then sign in
+in the browser tab that opens, and allow the app. The server must be
+reachable from the phone; the app uses OAuth, no extra server settings.
+
+Every build is signed with the same key, so each one installs over the
+last. Builds and signing: [docs/architecture.md](docs/architecture.md#the-android-app-packagesapp).
+
 ## Data model
 
 All tables live in one SQLite file (`DATABASE_PATH`). Learner data is per

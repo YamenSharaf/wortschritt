@@ -14,6 +14,8 @@ import { Geist_700Bold } from "@expo-google-fonts/geist/700Bold";
 import { GeistMono_500Medium } from "@expo-google-fonts/geist-mono/500Medium";
 import { AuthProvider, ClientProvider, useApi, useSpeech } from "@mdb/client/react";
 import { appSpeech } from "@/lib/speech";
+// Defines the background sync task when the bundle loads (also when Android starts it for the task).
+import { registerBackgroundSync } from "@/lib/backgroundSync";
 import { ServerProvider, useServer } from "@/lib/server";
 import { deviceStore } from "@/lib/storage";
 import { SyncProvider } from "@/lib/sync";
@@ -57,10 +59,13 @@ function Providers({ children }: { children: ReactNode }) {
   );
 }
 
-/** Use the server's voice when the account chose one the server has (else the phone's). */
+/** Once signed in: background sync on, and the server's voice when the account chose one it has (else the phone's). */
 function SpeechSetup() {
   const api = useApi();
   const speech = useSpeech();
+  useEffect(() => {
+    registerBackgroundSync().catch(() => {});
+  }, []);
   useEffect(() => {
     Promise.all([api.ttsStatus(), api.settings()])
       .then(([st, se]) => speech.setServerTts({ enabled: st.available && st.installed.includes(se.ttsVoice), voice: se.ttsVoice }))

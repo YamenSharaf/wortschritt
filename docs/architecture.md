@@ -66,8 +66,11 @@ computes, like the web does with HTML; it keeps no business logic.
     One at a time. `SyncProvider` (`src/lib/sync.tsx`) runs it on start,
     when the app comes back to the front, every 10 minutes while open, after
     local changes, and on pull-to-refresh; Home shows its status (synced
-    when, offline, changes waiting). Background sync while closed isn't
-    there yet.
+    when, offline, changes waiting). While the app is closed,
+    `src/lib/backgroundSync.native.ts` (expo-background-task, Android's
+    WorkManager, about hourly at best) builds the API from the saved server
+    and tokens and runs one sync; it does nothing while the app is open,
+    signed out, or before a first sync.
   - **Reads** come from the store once a first sync filled it. **Writes**
     the feed covers (answers, finishing and resuming a set, sheet views,
     reading progress, read / read again, vocab save / remove / study, notes)

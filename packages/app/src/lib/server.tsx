@@ -29,8 +29,8 @@ import { deviceStore, secretStore } from "./storage";
 
 /** The API version this app speaks (the server's `minClient` must not exceed it). */
 const CLIENT_API = 1;
-const SERVER_KEY = "mdb-server";
-const AUTH_KEY = "mdb-server-auth";
+export const SERVER_KEY = "mdb-server";
+export const AUTH_KEY = "mdb-server-auth";
 
 /** The app's own redirect (RFC 8252 private-use scheme); the web preview uses its origin. */
 const redirectUri = AuthSession.makeRedirectUri({ native: "eu.yamen.wortschritt:/oauth/callback", path: "oauth/callback" });
@@ -80,6 +80,20 @@ export function normalizeServer(address: string, allowHttp = false): string {
   return url.origin;
 }
 
+/** The sign-in's tokens for a server (kept in the secure store, refreshed when they run out). */
+export function makeSession(server: string, auth: ServerAuth, onSignedOut: () => void): TokenSession {
+  return createTokenSession({
+    store: secretStore,
+    key: `mdb-tokens:${server}`,
+    refresh: async (refreshToken) => {
+      const clientId = await deviceStore.get(clientIdKey(server));
+      if (!clientId) throw new OAuthError("invalid_grant", "This install isn't registered with the server.");
+      return refreshTokens(auth, appFetch, { clientId, refreshToken });
+    },
+    onSignedOut,
+  });
+}
+
 function clientIdKey(server: string) {
   return `mdb-client-id:${server}|${redirectUri}`;
 }
@@ -91,16 +105,7 @@ export function ServerProvider({ children }: { children: ReactNode }) {
 
   const session: TokenSession | null = useMemo(() => {
     if (!server || !auth) return null;
-    return createTokenSession({
-      store: secretStore,
-      key: `mdb-tokens:${server}`,
-      refresh: async (refreshToken) => {
-        const clientId = await deviceStore.get(clientIdKey(server));
-        if (!clientId) throw new OAuthError("invalid_grant", "This install isn't registered with the server.");
-        return refreshTokens(auth, appFetch, { clientId, refreshToken });
-      },
-      onSignedOut: () => setStatus("signed-out"),
-    });
+    return makeSession(server, auth, () => setStatus("signed-out"));
   }, [server, auth]);
 
   const store = useMemo(() => createOfflineStore(), []);
