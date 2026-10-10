@@ -71,8 +71,11 @@ computes, like the web does with HTML; it keeps no business logic.
 - APK: `.github/workflows/android.yml` builds an installable APK on every push
   to main that touches the app, client or shared (and on demand): `expo
   prebuild` (Continuous Native Generation; `android/` is never committed),
-  then a Gradle release build for arm64, signed with the Expo template's
-  debug key so each build installs over the last (the version code is the
+  then a Gradle release build for arm64, re-signed with `apksigner` using
+  the app's own key (secrets `ANDROID_KEYSTORE_BASE64`,
+  `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`; keep the keystore safe,
+  losing it means no build can update an installed app) so each build
+  installs over the last (the version code is the
   run number, via `app.config.ts`). Download it from the run's Artifacts.
   Builds of main are also published as GitHub pre-releases (tag
   `app-<run>`, version `0.1.<run>`, the newest 10 kept), so Obtainium can

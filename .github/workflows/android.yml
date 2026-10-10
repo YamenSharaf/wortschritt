@@ -3,9 +3,10 @@ name: Android APK
 # Builds the app (packages/app) into an installable APK and keeps it as a
 # download on the run (Actions → this run → Artifacts). For testing on a phone
 # or e-reader: a release build (the JavaScript is inside, no dev server
-# needed) signed with Expo's template debug key, the same on every build, so
-# a newer APK installs over an older one. Not for distribution: a signed
-# release with its own key comes with the release phase (issue #2).
+# needed) signed with the app's own key (the ANDROID_KEYSTORE_* secrets), the
+# same on every build, so a newer APK installs over an older one. Without the
+# secrets (a pull request from a fork) it keeps Expo's template debug key;
+# main never publishes that.
 #
 # Builds of main are also published as a GitHub pre-release (tag app-<run>,
 # version 0.1.<run>) so Obtainium can install and update the app from the
@@ -86,6 +87,35 @@ jobs:
         working-directory: packages/app/android
         run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon
 
+      # Re-sign Gradle's output (aligned, debug-signed) with the app's key;
+      # apksigner replaces the old signature. The generated project stays
+      # untouched. main must be signed: it fails rather than publish a
+      # debug-signed build.
+      - name: Sign with the app's key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+              echo "::error::The ANDROID_KEYSTORE_* secrets are missing; main is never published debug-signed."
+              exit 1
+            fi
+            echo "::warning::No signing secrets: this APK keeps the debug signature."
+            exit 0
+          fi
+          apk=packages/app/android/app/build/outputs/apk/release/app-release.apk
+          ks="$RUNNER_TEMP/app.jks"
+          trap 'rm -f "$ks"' EXIT
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$ks"
+          apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)/apksigner"
+          "$apksigner" sign --ks "$ks" --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass env:KEYSTORE_PASSWORD --key-pass env:KEYSTORE_PASSWORD \
+            --out "$RUNNER_TEMP/signed.apk" "$apk"
+          "$apksigner" verify --print-certs "$RUNNER_TEMP/signed.apk" | grep -E "Signer #1 certificate (DN|SHA-256)"
+          mv "$RUNNER_TEMP/signed.apk" "$apk"
+
       - name: Name it
         run: |
           mkdir -p out
@@ -114,7 +144,7 @@ jobs:
             --target "$GITHUB_SHA" \
             --prerelease \
             --title "Wortschritt app ${APP_VERSION}" \
-            --notes "Android test build ${APP_VERSION} from ${GITHUB_SHA::7}. Signed with the Expo template's debug key: for testing, not distribution."
+            --notes "Android test build ${APP_VERSION} from ${GITHUB_SHA::7}."
           gh release list --repo "$GITHUB_REPOSITORY" --limit 200 --json tagName,createdAt \
             --jq '[.[] | select(.tagName | startswith("app-"))] | sort_by(.createdAt) | reverse | .[env.KEEP | tonumber:] | .[].tagName' |
             while read -r old; do
