@@ -186,13 +186,19 @@ function Choice({ label, state, disabled, onPress }: { label: string; state: Cho
   );
 }
 
+/**
+ * An answer box. Uncontrolled: what's typed stays in the native field and is
+ * only reported (`onChangeText`); handing every keystroke back as `value`
+ * makes typing lag on Android. Each item mounts fresh, so it starts empty.
+ */
 function AnswerField(props: TextInputProps & { state?: ChoiceState; width?: number }) {
   const { colors, radii } = useTheme();
-  const { state = "idle", width, style, ...rest } = props;
+  const { state = "idle", width, style, value, ...rest } = props;
   return (
     <TextInput
       {...answerInput}
       placeholderTextColor={colors.inkSubtle}
+      defaultValue={value}
       {...rest}
       style={[
         {

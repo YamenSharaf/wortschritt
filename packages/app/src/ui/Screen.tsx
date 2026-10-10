@@ -21,6 +21,9 @@ export function Screen({
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView
+        // A tap on a button while the keyboard is up acts at once (not just closes the keyboard).
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
         contentContainerStyle={{
           paddingTop: insets.top + 16,
           paddingBottom: insets.bottom + (dock ? 112 : 24),

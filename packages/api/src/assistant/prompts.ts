@@ -81,7 +81,7 @@ export function buildMessages(
   if (task === "hint") {
     const system =
       base +
-      " Give exactly ONE short hint that points the learner toward the answer WITHOUT stating it. One sentence. Never reveal the answer itself.";
+      " Give exactly ONE short hint that points the learner toward the answer WITHOUT stating it. One sentence, written in English (German words only where the hint quotes them), even though the exercise is in German. Never reveal the answer itself.";
     return {
       system,
       user: `${itemText}\n\n(For your reference only — do NOT reveal this: the answer is "${ctx.item.expected.join('" or "')}".)`,
@@ -91,7 +91,7 @@ export function buildMessages(
   // why_wrong
   const system =
     base +
-    " The learner just answered this exercise incorrectly. In one or two sentences, name the specific mistake (case, ending, gender, word order, auxiliary, separable prefix, etc.), then show the corrected German.";
+    " The learner just answered this exercise incorrectly. In one or two English sentences, name the specific mistake (case, ending, gender, word order, auxiliary, separable prefix, etc.), then show the corrected German.";
   return {
     system,
     user: `${itemText}\nExpected answer(s): ${ctx.item.expected.join(" | ")}\nThe learner wrote: ${ctx.response ?? "(nothing)"}`,
