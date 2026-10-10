@@ -122,8 +122,19 @@ computes, like the web does with HTML; it keeps no business logic.
   - **Words**: `WordSheet`: the offline dictionary's gloss and Wiktionary at
     once, "Translate" (the AI, with the sentence) and saving to vocab and
     groups. Saved words are underlined (dotted).
-  - **Not yet**: the story's questions (they come with the practice
-    screens) and read-aloud (phase 5).
+  - **Questions**: a story's questions follow its end (`StoryQuiz.tsx`,
+    `useStoryQuiz`), in both layouts, with the practice item views.
+  - **Not yet**: read-aloud (phase 5).
+- **Practice** (issue #2, phase 3): the tab lists the sets (recent or A–Z,
+  search past three sets, the last run's score); `src/app/practice/[id].tsx`
+  runs one with `useExerciseRunner`, as the web's player: the score, a
+  question navigator (this run and the last), progress, Prev / Skip / Next,
+  moving on by itself after a right answer, and the end (score, "Generate N
+  more", remove the extras). `src/practice/ItemView.tsx` renders all seven
+  item types (same verdicts and wording as the web's `ExerciseItemView`);
+  `TutorHelp.tsx` is the tutor (hint, translate, why was I wrong, follow-up
+  questions; it needs the server). Answers given offline get the
+  provisional verdict and are queued (see Offline-first).
 - **Stories**: books as a shelf of covers or a list (`shelfView`, this
   device) and short stories; `src/app/series/[id].tsx` is a book's page.
   Covers (`ui/Cover.tsx`) load with the bearer token through expo-image and

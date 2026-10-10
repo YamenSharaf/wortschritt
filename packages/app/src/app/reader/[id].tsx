@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { BackHandler, Platform, Pressable, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useFonts } from "expo-font";
@@ -29,6 +29,7 @@ import { storyPieces } from "@/reader/pieces";
 import { GlossaryPanel, SettingsPanel, Sheet } from "@/reader/ReaderSheets";
 import { RNReader, type ReaderControls } from "@/reader/RNReader";
 import { LINE_HEIGHTS, READER_FONTS, WIDTHS, readerColors, type ReaderColors } from "@/reader/style";
+import { StoryQuiz } from "@/reader/StoryQuiz";
 import { WordSheet } from "@/reader/WordSheet";
 import { Icon } from "@/ui/icons";
 import { Text } from "@/ui/Text";
@@ -59,7 +60,7 @@ function Reader({ id }: { id: string }) {
     "Libron-Regular": require("../../../assets/fonts/libron/Libron-Regular.ttf"),
     "Libron-Bold": require("../../../assets/fonts/libron/Libron-Bold.ttf"),
   });
-  const { view, error, markRead, readAgain, nextChapter } = useStory(id);
+  const { view, error, markRead, readAgain, nextChapter, showRead } = useStory(id);
   const { reader, change } = useReaderSettings();
   const aiEnabled = useAssistantEnabled();
   const tr = useStoryTranslations({ storyId: view?.story.id, enabled: aiEnabled });
@@ -136,7 +137,7 @@ function Reader({ id }: { id: string }) {
       colors={colors}
       read={view.readAt !== null}
       book={book}
-      hasQuestions={story.questions.length > 0}
+      quiz={story.questions.length > 0 ? <StoryQuiz story={story} colors={colors} onFinished={showRead} /> : null}
       onFinished={() => void markRead()}
       onReadAgain={async () => {
         await readAgain();
@@ -315,7 +316,7 @@ function Ending({
   colors,
   read,
   book,
-  hasQuestions,
+  quiz,
   onFinished,
   onReadAgain,
   onNext,
@@ -325,7 +326,8 @@ function Ending({
   colors: ReaderColors;
   read: boolean;
   book: { chapter: number; total: number; prev: string | null; next: string | null } | null;
-  hasQuestions: boolean;
+  /** The story's questions (in the end page's scroll). */
+  quiz: ReactNode;
   onFinished: () => void;
   onReadAgain: () => void;
   onNext: () => void;
@@ -404,9 +406,7 @@ function Ending({
             )}
           </View>
         )}
-        {hasQuestions && (
-          <Text style={{ color: colors.muted, fontSize: 13 }}>The questions on this story come with the app's practice screens.</Text>
-        )}
+        {quiz}
       </View>
     </View>
   );
