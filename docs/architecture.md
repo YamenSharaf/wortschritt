@@ -53,6 +53,20 @@ computes, like the web does with HTML; it keeps no business logic.
   read colours, radii, elevation, effects and motion from `useTheme()` only.
 - `src/ui/`: Text, Button, Card, Screen, the Dock; sections not built yet
   (`Soon`) open the web.
+- **Reader spike** (issue #2, phase 1): Stories → a story opens
+  `src/app/reader/[id].tsx`, which shows it in either of two engines, switched
+  in its top bar, to compare on a phone and the Boox. Both take the same
+  props (plain paragraphs from `src/reader/text.ts`, size, line height, the
+  reader palette) and offer pages or scroll, tap a word to define it
+  (`WordSheet`), tap the outer quarters or swipe to turn a page, and tap the
+  middle for the bars. Page turns aren't animated.
+  - React Native text (`src/reader/RNReader.tsx`): pages come from measuring
+    each paragraph's lines off screen (`onTextLayout`). The page counter shows
+    how long that took.
+  - Jetpack Compose (`modules/reader`, a local Expo module, autolinked):
+    `ReaderView` hosts a `ComposeView`, `Reader.kt` paginates with a
+    `TextMeasurer` and finds the tapped word from the text layout. It only
+    compiles in the APK build (CI). Off Android it shows a placeholder.
 - Run: `pnpm dev:app` (a development build, not Expo Go). A **web preview**
   (`pnpm --filter @mdb/app web`, or `expo export --platform web`) shows the
   screens in a browser; the server must allow its origin

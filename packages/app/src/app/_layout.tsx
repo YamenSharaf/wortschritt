@@ -67,6 +67,7 @@ function Root() {
         <Stack.Protected guard={status === "signed-in"}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="account" options={{ presentation: "modal" }} />
+          <Stack.Screen name="reader/[id]" />
         </Stack.Protected>
         <Stack.Protected guard={status === "no-server"}>
           <Stack.Screen name="connect" />
