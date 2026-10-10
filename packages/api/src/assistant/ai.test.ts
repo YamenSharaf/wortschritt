@@ -29,7 +29,7 @@ const secrets = await import("./secrets");
 
 test("isPublicAddress: private, local and special ranges are refused", () => {
   for (const ip of [
-    "127.0.0.1", "10.1.2.3", "172.16.0.1", "192.168.50.240", "169.254.169.254",
+    "127.0.0.1", "10.1.2.3", "172.16.0.1", "192.168.1.10", "169.254.169.254",
     "100.64.0.1", "0.0.0.0", "224.0.0.1", "255.255.255.255",
     "::1", "::", "fd00::1", "fe80::1", "ff02::1", "::ffff:192.168.1.1", "::ffff:7f00:1",
     "64:ff9b::a00:1",
@@ -47,7 +47,7 @@ test("checkAiUrl: https only, public hosts, no credentials; normalizes", () => {
   rejects("http://ai.example.com/v1", /https/);
   rejects("ftp://ai.example.com", /https/);
   rejects("not a url", /valid URL/);
-  rejects("https://192.168.50.240/v1", /private/);
+  rejects("https://192.168.1.10/v1", /private/);
   rejects("https://127.0.0.1:8123", /private/);
   rejects("https://[::1]/v1", /private/);
   rejects("https://[::ffff:10.0.0.1]/v1", /private/);
@@ -203,7 +203,7 @@ const providerIds = async (c: ReturnType<typeof client>) =>
 test("providers: guard errors are explained, keys are write-only", async () => {
   const post = (body: object) => anna("POST", "/api/assistant/providers", body);
   assert.match((await post({ name: "x", baseUrl: "http://ai.example.org/v1" })).json().error, /https/);
-  assert.match((await post({ name: "x", baseUrl: "https://192.168.50.240/v1" })).json().error, /private/);
+  assert.match((await post({ name: "x", baseUrl: "https://192.168.1.10/v1" })).json().error, /private/);
 
   let view = (await post({ name: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1/", apiKey: "sk-or-anna" })).json() as View;
   const or = view.providers.find((p) => p.name === "OpenRouter")!;

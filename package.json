@@ -22,5 +22,6 @@
     "overrides": {
       "drizzle-orm>expo-sqlite": "-"
     }
-  }
+  },
+  "license": "MIT"
 }

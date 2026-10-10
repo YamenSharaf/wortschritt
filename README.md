@@ -352,3 +352,7 @@ Assistant   GET /api/assistant/status
             POST /api/assistant/providers   PUT|DELETE /api/assistant/providers/:id
             GET  /api/assistant/providers/:id/models     (keys are write-only)
 ```
+
+## License
+
+MIT, see [LICENSE](LICENSE). Bundled fonts and dictionary data keep their own licences (see [packages/api/assets/ATTRIBUTION.md](packages/api/assets/ATTRIBUTION.md) and the font folders).
