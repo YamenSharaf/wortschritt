@@ -101,7 +101,7 @@ computes, like the web does with HTML; it keeps no business logic.
     turns a story into what's laid out: the header, each paragraph's German
     and, when English line by line is on, its English (under each sentence
     when sentences and lines match one to one, else under the paragraph;
-    "peek" is a grey bar until tapped).
+    "peek" is blurred until tapped, a grey bar on e-ink).
   - **Pages**: each piece's lines are measured off screen (`onTextLayout`)
     and packed into pages; a re-layout (size, font, English lines) keeps the
     first paragraph on the page; it opens at the server's `resumeAt`; after
@@ -111,7 +111,7 @@ computes, like the web does with HTML; it keeps no business logic.
   - **Turning**: the outer quarters, swipes (a gesture-handler pan, long or
     quick enough), and the volume keys when on (this device: "Turn pages
     with volume keys", "Invert"), all without animation; the middle shows
-    or hides the bars. Volume keys: a local Expo module
+    or hides the bars, as do the margins above and below the text. Volume keys: a local Expo module
     (`modules/volume-keys`, Android) wraps the window's callback while the
     reader is open with the option on, so the keys turn pages and leave the
     volume alone; everywhere else they're the volume.

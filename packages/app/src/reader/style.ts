@@ -17,7 +17,7 @@ export const LINE_HEIGHTS: Record<ReaderSettings["lineHeight"], number> = { comp
 export const WIDTHS: Record<ReaderSettings["width"], number> = { narrow: 512, medium: 608, wide: 736 };
 
 /** The reader's colours as hex: the theme picked in the reader, or "auto" (the app's scheme). */
-export type ReaderColors = { bg: string; fg: string; muted: string; rule: string; mark: string; vocab: string };
+export type ReaderColors = { bg: string; fg: string; muted: string; rule: string; mark: string; vocab: string; eink: boolean };
 
 export function readerColors(theme: ReaderSettings["theme"], display: "standard" | "eink", scheme: "light" | "dark"): ReaderColors {
   let p: ReaderPalette;
@@ -28,5 +28,5 @@ export function readerColors(theme: ReaderSettings["theme"], display: "standard"
   } else {
     p = readerPalettes.standard[theme === "auto" ? scheme : theme];
   }
-  return { bg: rgbHex(p.bg), fg: rgbHex(p.fg), muted: rgbHex(p.muted), rule: rgbHex(p.rule), mark: rgbHex(p.mark), vocab: rgbHex(p.vocab) };
+  return { bg: rgbHex(p.bg), fg: rgbHex(p.fg), muted: rgbHex(p.muted), rule: rgbHex(p.rule), mark: rgbHex(p.mark), vocab: rgbHex(p.vocab), eink: display === "eink" };
 }

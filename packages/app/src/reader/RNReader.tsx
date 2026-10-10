@@ -71,6 +71,9 @@ const V_PAD = 24;
 const SWIPE_DISTANCE = 40;
 const SWIPE_VELOCITY = 350;
 
+/** Text that doesn't show (its shadow still can). */
+const INVISIBLE = "rgba(0,0,0,0.004)";
+
 function styleFor(piece: Piece, t: Typography, c: ReaderColors): TextStyle {
   switch (piece.kind) {
     case "eyebrow":
@@ -79,16 +82,22 @@ function styleFor(piece: Piece, t: Typography, c: ReaderColors): TextStyle {
       return { fontFamily: t.title, fontSize: t.size * 1.45, lineHeight: t.size * 1.45 * 1.25, color: c.fg };
     case "meta":
       return { fontFamily: t.ui, fontSize: 12, lineHeight: 18, color: c.muted };
-    case "en":
+    case "en": {
+      const size = t.size * 0.78;
+      const base: TextStyle = { fontFamily: t.ui, fontSize: size, lineHeight: size * 1.45, color: c.muted, opacity: piece.loading ? 0.6 : 1 };
+      if (!piece.hidden) return base;
+      // Peek, as on the web: the line blurred until tapped. The glyphs are all but
+      // invisible (not "transparent": Android reads that as no colour, i.e. black)
+      // and their shadow, blurred, is what shows. On e-ink a plain bar instead.
+      if (c.eink) return { ...base, color: INVISIBLE, backgroundColor: rgbHex(hexToTriplet(c.muted), 0.22) };
       return {
-        fontFamily: t.ui,
-        fontSize: t.size * 0.78,
-        lineHeight: t.size * 0.78 * 1.45,
-        // Peek: a grey bar where the line is (no blur on Android, and none wanted on e-ink).
-        color: piece.hidden ? "transparent" : c.muted,
-        backgroundColor: piece.hidden ? rgbHex(hexToTriplet(c.muted), 0.22) : undefined,
-        opacity: piece.loading ? 0.6 : 1,
+        ...base,
+        color: INVISIBLE,
+        textShadowColor: rgbHex(hexToTriplet(c.muted), 0.9),
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: Math.round(size * 0.45),
       };
+    }
     default:
       return { fontFamily: t.regular, fontSize: t.size, lineHeight: t.size * t.lineHeight, color: c.fg };
   }

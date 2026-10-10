@@ -198,6 +198,22 @@ function Reader({ id }: { id: string }) {
         </View>
       </View>
 
+        {/* Pages: the margins above and below the text show or hide the bars too. */}
+        {reader.layout === "pages" && (
+          <>
+            <Pressable
+              onPress={() => setChrome((c) => !c)}
+              accessible={false}
+              style={{ position: "absolute", top: 0, left: 0, right: 0, height: insets.top + 44 }}
+            />
+            <Pressable
+              onPress={() => setChrome((c) => !c)}
+              accessible={false}
+              style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: insets.bottom + 32 }}
+            />
+          </>
+        )}
+
         {/* The bar: back, English lines, glossary, text settings. */}
         {showBars && (
           <View
