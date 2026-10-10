@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Pressable, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { generateCounts, type ExerciseItem, type ExerciseProgress, type ExerciseSet } from "@mdb/shared";
 import { preferences } from "@mdb/client";
@@ -70,7 +71,8 @@ function BackLink({ label }: { label: string }) {
 function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem[]; initial: ExerciseProgress | null }) {
   const run = useExerciseRunner({ set, extra, initial });
   const { items, index, item, results, answered, lastCorrect, done, correctCount, answeredCount, next, goTo } = run;
-  const { colors, radii, motion } = useTheme();
+  const { colors, radii, motion, elevation } = useTheme();
+  const insets = useSafeAreaInsets();
   const [navOpen, setNavOpen] = useState(false);
 
   const feedback = useFeedback();
@@ -171,7 +173,9 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
   const answeredEarlier = !answered && prior !== undefined;
 
   return (
-    <Screen>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.bg }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      {/* The question is a sheet filling the screen between the header and the buttons (at thumb height); it scrolls inside, swipes anywhere. */}
+      <View style={{ flex: 1, width: "100%", maxWidth: 720, alignSelf: "center", paddingTop: insets.top + 16, paddingHorizontal: 20, gap: 12 }}>
       <View
         style={{
           flexDirection: "row",
@@ -280,7 +284,19 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
           else goTo(index + 1);
         }}
       >
-        <Card style={{ padding: 20 }}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            borderWidth: 1,
+            borderRadius: radii.panel,
+            boxShadow: elevation.cardHover === "none" ? undefined : elevation.cardHover,
+            overflow: "hidden",
+          }}
+        >
+          <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20, gap: 20 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+            <View>
           {answeredEarlier && (
             <View
               style={{
@@ -306,13 +322,18 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
               </Text>
             </View>
           )}
-          <ItemView key={`${item.id}-${index}`} item={item} submit={run.submit} />
-        </Card>
+              <ItemView key={`${item.id}-${index}`} item={item} submit={run.submit} />
+            </View>
+            {run.assistantEnabled && (
+              <View style={{ marginTop: "auto" }}>
+                <TutorHelp key={item.id} item={item} answered={answered} lastCorrect={lastCorrect} lastResponse={run.lastResponse} />
+              </View>
+            )}
+          </ScrollView>
+        </View>
       </QuestionSlide>
 
-      {run.assistantEnabled && <TutorHelp key={item.id} item={item} answered={answered} lastCorrect={lastCorrect} lastResponse={run.lastResponse} />}
-
-      <View style={{ flexDirection: "row", gap: 8 }}>
+      <View style={{ flexDirection: "row", gap: 8, paddingTop: 4, paddingBottom: insets.bottom + 12 }}>
         <Button label="Prev" icon={<Icon icon={ChevronLeft} size={16} />} disabled={index === 0} onPress={() => goTo(index - 1)} accessibilityLabel="Previous question" />
         <View style={{ flex: 1 }}>
           {answered ? (
@@ -322,6 +343,7 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
           )}
         </View>
       </View>
-    </Screen>
+      </View>
+    </KeyboardAvoidingView>
   );
 }

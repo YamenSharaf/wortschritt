@@ -108,7 +108,7 @@ export const SwipeCard = forwardRef<
 
   return (
     <GestureDetector gesture={pan}>
-      <Animated.View style={[{ minHeight: 300, borderRadius: radii.panel }, card]}>
+      <Animated.View style={[{ flex: 1, minHeight: 260, borderRadius: radii.panel }, card]}>
         <View style={[StyleSheet.absoluteFill, { borderRadius: radii.panel, overflow: "hidden" }]}>
           <BlurView
             blurTarget={backdropRef}
@@ -131,11 +131,11 @@ export const SwipeCard = forwardRef<
         />
         {/* The face that's up takes the room; the other lies over it, hidden. */}
         {/* A tap flips it (a button inside, like the speaker, keeps its own tap). */}
-        <Pressable onPress={onFlip} accessibilityRole="button" accessibilityHint={flipped ? "Shows the front" : "Shows the answer"} style={{ padding: 28, minHeight: 300 }}>
-          <Animated.View pointerEvents={flipped ? "none" : "auto"} style={[flipped ? [StyleSheet.absoluteFill, { padding: 28 }] : null, frontFace]}>
+        <Pressable onPress={onFlip} accessibilityRole="button" accessibilityHint={flipped ? "Shows the front" : "Shows the answer"} style={{ flex: 1, padding: 28, justifyContent: "center" }}>
+          <Animated.View pointerEvents={flipped ? "none" : "auto"} style={[flipped ? [StyleSheet.absoluteFill, { padding: 28, justifyContent: "center" }] : null, frontFace]}>
             {front}
           </Animated.View>
-          <Animated.View pointerEvents={flipped ? "auto" : "none"} style={[flipped ? null : [StyleSheet.absoluteFill, { padding: 28 }], backFace]}>
+          <Animated.View pointerEvents={flipped ? "auto" : "none"} style={[flipped ? null : [StyleSheet.absoluteFill, { padding: 28, justifyContent: "center" }], backFace]}>
             {back}
           </Animated.View>
         </Pressable>
@@ -188,7 +188,7 @@ export function GlassBackdrop() {
   const a = scheme === "dark" ? 0.5 : 0.42;
   const blob = (c: string, st: object) => <View style={[{ position: "absolute", width: 320, height: 320, borderRadius: 160, backgroundColor: c, opacity: a }, st]} />;
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    <View style={[StyleSheet.absoluteFill, { overflow: "hidden" }]} pointerEvents="none">
       <BlurTargetView ref={backdropRef} style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg }]}>
         {blob(colors.brand, { top: 60, left: -120 })}
         {blob(colors.reward2, { top: 300, right: -130 })}

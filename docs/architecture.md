@@ -171,6 +171,12 @@ computes, like the web does with HTML; it keeps no business logic.
   - Reader pages slide and follow the finger: every page sits at its own
     place in a strip (page n at n × width) and the strip moves, so a
     finished slide needs no jump back; taps and the volume keys slide too.
+  - Flashcards and exercises fill the screen between the header and the
+    buttons (at thumb height): the flashcard is centred, the question is a
+    raised sheet that scrolls inside and swipes anywhere, with Prev / Next
+    in a bar at the bottom.
+  - Sheets over the reader (word, text, glossary): the shade fades in place
+    and only the panel slides up, and back down on closing.
   - Flashcards (`src/vocab/SwipeCard.tsx`): a frosted-glass card (expo-blur;
     on Android it blurs a `BlurTargetView` of soft colour fields), a 3D flip
     on tap, swipe right for know and left for don't know (it tilts, a stamp

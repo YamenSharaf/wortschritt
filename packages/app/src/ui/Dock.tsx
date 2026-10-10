@@ -3,7 +3,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Tabs } from "expo-router";
 import type { ComponentProps } from "react";
 import { font, useTheme } from "@/lib/theme";
-import { tint } from "./color";
 import { Icon, sections } from "./icons";
 import { Text } from "./Text";
 
@@ -57,13 +56,11 @@ export function Dock({ state, navigation }: TabBarProps) {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 2,
-                backgroundColor: active ? (effects.glassFill > 0 ? tint(colors.brand, 14) : colors.brandSoft) : "transparent",
-                borderWidth: active && effects.glassFill === 0 ? 1 : 0,
-                borderColor: colors.borderStrong,
               }}
             >
+              {/* The current section: the brand colour and bold (no bubble). */}
               <Icon icon={s.icon} size={20} color={active ? colors.brandInk : colors.inkMuted} />
-              <Text style={{ fontFamily: active ? font.semibold : font.medium, fontSize: 10.5, color: active ? colors.brandInk : colors.inkMuted }}>
+              <Text style={{ fontFamily: active ? font.bold : font.medium, fontSize: 10.5, color: active ? colors.brandInk : colors.inkSubtle }}>
                 {s.label}
               </Text>
             </Pressable>

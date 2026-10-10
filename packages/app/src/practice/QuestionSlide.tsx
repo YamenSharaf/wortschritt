@@ -72,7 +72,7 @@ export function QuestionSlide({
 
   return (
     <GestureDetector gesture={pan}>
-      <Animated.View entering={entering} style={style}>
+      <Animated.View entering={entering} style={[{ flex: 1 }, style]}>
         {children}
       </Animated.View>
     </GestureDetector>

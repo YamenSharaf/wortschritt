@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { formChips, preferences } from "@mdb/client";
 import { filterVocab, useFlashcards, usePreference, useVocabState } from "@mdb/client/react";
 import { font, useTheme } from "@/lib/theme";
@@ -23,6 +24,7 @@ export default function Flashcards() {
   const { colors, radii, motion } = useTheme();
   // Glass, flips and swipes, except on e-ink and with reduced motion.
   const animated = motion.base > 0;
+  const insets = useSafeAreaInsets();
   const feedback = useFeedback();
   const cardRef = useRef<SwipeCardHandle>(null);
   /** Bumped on each new round, so the cards mount afresh. */
@@ -193,9 +195,10 @@ export default function Flashcards() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg, overflow: "hidden" }}>
       {animated && <GlassBackdrop />}
-      <Screen dock={false} transparent={animated}>
+      {/* The card takes the room between the header and the buttons (at thumb height), no scrolling. */}
+      <View style={{ flex: 1, width: "100%", maxWidth: 720, alignSelf: "center", paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16, paddingHorizontal: 20, gap: 16 }}>
         <View
           style={{
             flexDirection: "row",
@@ -240,6 +243,7 @@ export default function Flashcards() {
           </View>
         </View>
 
+        <View style={{ flex: 1 }}>
         {animated ? (
           <SwipeCard
             key={`${deck}-${i}`}
@@ -264,10 +268,10 @@ export default function Flashcards() {
             }
           />
         ) : (
-          <Pressable onPress={() => setFlipped(true)} accessibilityRole="button" accessibilityHint={flipped ? undefined : "Shows the answer"}>
+          <Pressable style={{ flex: 1 }} onPress={() => setFlipped(true)} accessibilityRole="button" accessibilityHint={flipped ? undefined : "Shows the answer"}>
             <View
               style={{
-                minHeight: 272,
+                flex: 1,
                 padding: 28,
                 borderRadius: radii.panel,
                 borderWidth: 1,
@@ -286,22 +290,6 @@ export default function Flashcards() {
             </View>
           </Pressable>
         )}
-        <View style={{ flexDirection: "row", gap: 12 }}>
-          <View style={{ flex: 1 }}>
-            <Button
-              label="Don’t know"
-              icon={<Icon icon={X} size={16} color={colors.danger} />}
-              onPress={() => (animated && cardRef.current ? cardRef.current.fling(false) : rate(false))}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Button
-              kind="primary"
-              label="Know"
-              icon={<Icon icon={Check} size={16} color={colors.brandInk} />}
-              onPress={() => (animated && cardRef.current ? cardRef.current.fling(true) : rate(true))}
-            />
-          </View>
         </View>
         <Text variant="subtle" style={{ textAlign: "center" }}>
           <Text
@@ -324,7 +312,24 @@ export default function Flashcards() {
             {session.missedCount} missed
           </Text>
         </Text>
-      </Screen>
+        <View style={{ flexDirection: "row", gap: 12 }}>
+          <View style={{ flex: 1 }}>
+            <Button
+              label="Don’t know"
+              icon={<Icon icon={X} size={16} color={colors.danger} />}
+              onPress={() => (animated && cardRef.current ? cardRef.current.fling(false) : rate(false))}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Button
+              kind="primary"
+              label="Know"
+              icon={<Icon icon={Check} size={16} color={colors.brandInk} />}
+              onPress={() => (animated && cardRef.current ? cardRef.current.fling(true) : rate(true))}
+            />
+          </View>
+        </View>
+      </View>
     </View>
   );
 }

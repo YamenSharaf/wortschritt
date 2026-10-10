@@ -45,11 +45,14 @@ export default function Practice() {
     >
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         <Text variant="title">Practice</Text>
-        {list.length > 1 && <Segmented value={sort} options={[["recent", "Recent"], ["az", "A–Z"]]} onChange={setSort} />}
       </View>
       <Text variant="muted">Exercise sets for grammar and vocabulary. Wrong answers come back until you get them.</Text>
-      {list.length > 3 && (
-        <SearchField value={q} onChange={setQ} placeholder="Search exercises…" />
+      {/* Search and sort on one line (search once there are a few). */}
+      {list.length > 1 && (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <View style={{ flex: 1 }}>{list.length > 3 && <SearchField value={q} onChange={setQ} placeholder="Search exercises…" />}</View>
+          <Segmented compact value={sort} options={[["recent", "Recent"], ["az", "A–Z"]]} onChange={setSort} />
+        </View>
       )}
       {sets.status === "error" && <Text style={{ color: colors.danger }}>Couldn't load the exercises. Pull to try again.</Text>}
       {sets.status === "ready" && list.length === 0 && <Text variant="muted">No exercises yet. Import some under Account › Import content.</Text>}

@@ -1,39 +1,71 @@
-import type { ReactNode } from "react";
-import { Modal, Pressable, ScrollView, Switch, View } from "react-native";
+import { useEffect, useRef, type ReactNode } from "react";
+import { Modal, Pressable, ScrollView, Switch, View, useWindowDimensions } from "react-native";
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { ReaderSettings, Story } from "@mdb/shared";
 import { font, useTheme } from "@/lib/theme";
 import { Text } from "@/ui/Text";
 import { READER_FONTS, readerColors } from "./style";
 
-/** A sheet from the bottom over the reader (no slide on e-ink or with reduced motion). */
+/**
+ * A sheet from the bottom over the reader: the shade fades in where it is and
+ * only the panel slides up (and the same back on closing). Nothing moves on
+ * e-ink or with reduced motion.
+ */
 export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
   const { colors, radii, motion } = useTheme();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const animated = motion.base > 0;
+  const shown = useSharedValue(animated ? 0 : 1);
+  const closing = useRef(false);
+  useEffect(() => {
+    if (animated) shown.value = withTiming(1, { duration: 260, easing: Easing.out(Easing.cubic) });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const close = () => {
+    if (closing.current) return;
+    closing.current = true;
+    if (!animated) return onClose();
+    shown.value = withTiming(0, { duration: 200, easing: Easing.in(Easing.cubic) }, (done) => {
+      if (done) scheduleOnRN(onClose);
+    });
+  };
+  const shade = useAnimatedStyle(() => ({ opacity: shown.value }));
+  const panel = useAnimatedStyle(() => ({ transform: [{ translateY: (1 - shown.value) * height * 0.75 }] }));
   return (
-    <Modal transparent visible animationType={motion.base === 0 ? "none" : "slide"} onRequestClose={onClose} statusBarTranslucent>
-      <Pressable style={{ flex: 1, backgroundColor: colors.scrim }} onPress={onClose} accessibilityLabel="Close" />
-      <View
-        style={{
-          maxHeight: "75%",
-          backgroundColor: colors.surfaceRaised,
-          borderTopLeftRadius: radii.panel,
-          borderTopRightRadius: radii.panel,
-          borderWidth: 1,
-          borderColor: colors.border,
-          paddingBottom: insets.bottom + 8,
-        }}
+    <Modal transparent visible animationType="none" onRequestClose={close} statusBarTranslucent>
+      <Animated.View style={[{ flex: 1, backgroundColor: colors.scrim }, shade]}>
+        <Pressable style={{ flex: 1 }} onPress={close} accessibilityLabel="Close" />
+      </Animated.View>
+      <Animated.View
+        style={[
+          {
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            maxHeight: "75%",
+            backgroundColor: colors.surfaceRaised,
+            borderTopLeftRadius: radii.panel,
+            borderTopRightRadius: radii.panel,
+            borderWidth: 1,
+            borderColor: colors.border,
+            paddingBottom: insets.bottom + 8,
+          },
+          panel,
+        ]}
       >
         <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 }}>
           <Text variant="eyebrow" style={{ flex: 1 }}>
             {title}
           </Text>
-          <Pressable onPress={onClose} accessibilityRole="button" hitSlop={12}>
+          <Pressable onPress={close} accessibilityRole="button" hitSlop={12}>
             <Text style={{ fontFamily: font.medium, color: colors.brandInk }}>Done</Text>
           </Pressable>
         </View>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 12, gap: 16 }}>{children}</ScrollView>
-      </View>
+      </Animated.View>
     </Modal>
   );
 }
@@ -42,14 +74,17 @@ export function Segmented<T extends string>({
   value,
   options,
   onChange,
+  compact,
 }: {
   value: T;
   options: [T, string][];
   onChange: (v: T) => void;
+  /** One line, smaller (a list's sort beside its search). */
+  compact?: boolean;
 }) {
   const { colors, radii } = useTheme();
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", borderWidth: 1, borderColor: colors.border, borderRadius: radii.control, padding: 2, gap: 2 }}>
+    <View style={{ flexDirection: "row", flexWrap: compact ? "nowrap" : "wrap", borderWidth: 1, borderColor: colors.border, borderRadius: radii.control, padding: 2, gap: 2 }}>
       {options.map(([v, label]) => {
         const on = value === v;
         return (
@@ -59,8 +94,8 @@ export function Segmented<T extends string>({
             accessibilityRole="button"
             accessibilityState={{ selected: on }}
             style={{
-              minHeight: 36,
-              paddingHorizontal: 12,
+              minHeight: compact ? 38 : 36,
+              paddingHorizontal: compact ? 10 : 12,
               justifyContent: "center",
               borderRadius: radii.control - 2,
               backgroundColor: on ? colors.brandSoft : "transparent",
