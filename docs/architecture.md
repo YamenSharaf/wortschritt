@@ -135,10 +135,32 @@ computes, like the web does with HTML; it keeps no business logic.
   `TutorHelp.tsx` is the tutor (hint, translate, why was I wrong, follow-up
   questions; it needs the server). Answers given offline get the
   provisional verdict and are queued (see Offline-first).
+- **Sheets, Vocab, Notes, Account** (issue #2, phase 3), each as on the web
+  with the same hooks:
+  - **Sheets**: the list (recent / A–Z, search) and a sheet
+    (`src/app/sheet/[id].tsx`): each word tappable (the word popup), each
+    section translatable by the tutor. `ui/Markdown.tsx` draws the Markdown
+    sheets and notes use (headings, lists, quotes, tables that scroll
+    sideways, emphasis, code).
+  - **Vocab**: search, groups (tap to filter, long-press to delete), add a
+    word (dictionary or AI fill), each word's details, groups, score and
+    regenerate; flashcards in `src/app/vocab/study.tsx` (`useFlashcards`).
+  - **Notes**: the list (categories, search) and the editor
+    (`src/app/note/[id].tsx`): write / preview with tappable words, text
+    size, AI clean-up, save as a cheat sheet. `useNoteEditor` also saves an
+    unsaved change when the editor closes (leaving right after typing).
+  - **Account**: the learning settings (name, level, daily goal, batch
+    size, AI grading; saved at once, merged into the latest), appearance on
+    this device, Import (`src/app/import.tsx`: paste JSON, checked against
+    the schema; "Share LLM prompt" uses the share sheet), and the web's
+    settings for the rest (password, AI tutor, voices, connected apps).
 - **Stories**: books as a shelf of covers or a list (`shelfView`, this
   device) and short stories; `src/app/series/[id].tsx` is a book's page.
-  Covers (`ui/Cover.tsx`) load with the bearer token through expo-image and
-  stay in its disk cache, so they're there offline once seen.
+  Covers (`ui/Cover.tsx`) are PNGs the server renders from the cover's SVG
+  (`cover.png?w=`, 128/256/512 px, cached in memory): Android drew the SVGs
+  black and decoded them slowly while scrolling. They load with the bearer
+  token through expo-image and stay in its disk cache, so they're there
+  offline once seen.
 - Run: `pnpm dev:app` (a development build, not Expo Go). A **web preview**
   (`pnpm --filter @mdb/app web`, or `expo export --platform web`) shows the
   screens in a browser; the server must allow its origin

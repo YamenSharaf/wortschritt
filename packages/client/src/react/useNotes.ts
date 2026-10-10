@@ -133,6 +133,17 @@ export function useNoteEditor(id: string) {
     return () => timers.clearTimeout(saveTimer.current);
   }, [api, title, category, body, id]);
 
+  // Leaving with a change not saved yet (the timer above is cleared): save it now.
+  const latest = useRef({ title, category, body });
+  latest.current = { title, category, body };
+  useEffect(
+    () => () => {
+      const f = latest.current;
+      if (ready.current && JSON.stringify([f.title, f.category, f.body]) !== saved.current) void api.saveNote(id, f).catch(() => {});
+    },
+    [api, id],
+  );
+
   return {
     status: loaded.status === "ready" && !loaded.data ? ("missing" as const) : loaded.status,
     title,

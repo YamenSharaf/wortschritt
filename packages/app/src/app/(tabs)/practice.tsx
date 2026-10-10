@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Pressable, TextInput, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import type { RunSummary } from "@mdb/shared";
 import { timeAgo } from "@mdb/client";
@@ -10,13 +10,14 @@ import { Card } from "@/ui/Card";
 import { Icon, sections } from "@/ui/icons";
 import { Pill } from "@/ui/Pill";
 import { Screen } from "@/ui/Screen";
+import { SearchField, sortByMode } from "@/ui/SearchField";
 import { Segmented } from "@/reader/ReaderSheets";
 import { Text } from "@/ui/Text";
 
 /** Exercise sets (from the device once synced), with each one's last score as the server reads it. */
 export default function Practice() {
   const api = useApi();
-  const { colors, radii } = useTheme();
+  const { colors } = useTheme();
   const { status, syncNow } = useSync();
   const sets = useAsync(() => api.exercises(), [api, status.revision], { keep: true });
   const runs = useAsync(() => api.runs(), [api, status.revision], { keep: true });
@@ -30,8 +31,7 @@ export default function Practice() {
   const shown = useMemo(() => {
     const n = q.trim().toLowerCase();
     const found = n ? list.filter((s) => [s.title, s.subtitle, s.description, ...s.tags].some((v) => (v ?? "").toLowerCase().includes(n))) : list;
-    const ts = (v?: string) => (v ? Date.parse(v) || 0 : 0);
-    return [...found].sort((a, b) => (sort === "az" ? a.title.localeCompare(b.title, "de") : ts(b.createdAt) - ts(a.createdAt)));
+    return sortByMode(found, sort);
   }, [list, q, sort]);
 
   return (
@@ -49,17 +49,10 @@ export default function Practice() {
       </View>
       <Text variant="muted">Exercise sets for grammar and vocabulary. Wrong answers come back until you get them.</Text>
       {list.length > 3 && (
-        <TextInput
-          value={q}
-          onChangeText={setQ}
-          placeholder="Search exercises…"
-          placeholderTextColor={colors.inkSubtle}
-          accessibilityLabel="Search exercises"
-          style={{ minHeight: 44, paddingHorizontal: 14, borderRadius: radii.control, borderWidth: 1, borderColor: colors.borderControl, backgroundColor: colors.surface, color: colors.ink, fontFamily: font.regular }}
-        />
+        <SearchField value={q} onChange={setQ} placeholder="Search exercises…" />
       )}
       {sets.status === "error" && <Text style={{ color: colors.danger }}>Couldn't load the exercises. Pull to try again.</Text>}
-      {sets.status === "ready" && list.length === 0 && <Text variant="muted">No exercises yet. Import some on the web.</Text>}
+      {sets.status === "ready" && list.length === 0 && <Text variant="muted">No exercises yet. Import some under Account › Import content.</Text>}
       {sets.status === "ready" && list.length > 0 && shown.length === 0 && <Text variant="muted">No exercises match.</Text>}
       <View style={{ gap: 12 }}>
         {shown.map((s) => (

@@ -1,63 +1,193 @@
-import type { ReactNode } from "react";
-import { View } from "react-native";
+import { createContext, useContext, type ReactNode } from "react";
+import { ScrollView, Text as RNText, View } from "react-native";
 import { font, useTheme } from "@/lib/theme";
+import { sentenceAround, tokens } from "@/reader/text";
 import { Text } from "./Text";
 
+/** Called with a tapped word and the sentence around it. */
+type OnWord = (word: string, context: string) => void;
+const WordTap = createContext<OnWord | undefined>(undefined);
+const Size = createContext(15);
+
 /**
- * The little Markdown the tutor writes: paragraphs, bullet and numbered
- * lists, **bold**, *italic* and `code`. Enough for streamed answers; not a
- * general renderer.
+ * The Markdown the app shows: the tutor's answers and the cheat sheets.
+ * Paragraphs, headings, bullet and numbered lists, quotes, tables, **bold**,
+ * *italic* and `code`; not a general renderer. With `onWord`, each word can
+ * be tapped (to look it up).
  */
-export function Markdown({ text }: { text: string }) {
-  const blocks = text.trim().split(/\n{2,}/);
+export function Markdown({ text, onWord, size = 15 }: { text: string; onWord?: OnWord; size?: number }) {
   return (
-    <View style={{ gap: 8 }}>
-      {blocks.map((b, i) => {
-        const lines = b.split("\n");
-        if (lines.every((l) => /^\s*([-*•]|\d+[.)])\s+/.test(l)))
-          return (
-            <View key={i} style={{ gap: 4 }}>
-              {lines.map((l, j) => {
-                const m = /^\s*([-*•]|\d+[.)])\s+(.*)$/.exec(l)!;
-                return (
-                  <View key={j} style={{ flexDirection: "row", gap: 8 }}>
-                    <Text variant="muted">{/\d/.test(m[1]!) ? m[1] : "•"}</Text>
-                    <Text style={{ flex: 1, fontSize: 15, lineHeight: 22 }}>{inline(m[2]!)}</Text>
-                  </View>
-                );
-              })}
-            </View>
-          );
-        return (
-          <Text key={i} style={{ fontSize: 15, lineHeight: 22 }}>
-            {inline(b.replace(/^#{1,6}\s+/gm, "").replace(/\n/g, " "))}
-          </Text>
-        );
-      })}
-    </View>
+    <WordTap.Provider value={onWord}>
+      <Size.Provider value={size}>
+        <View style={{ gap: Math.round(size * 0.66) }}>
+          {blocks(text).map((b, i) => (
+            <Block key={i} lines={b} />
+          ))}
+        </View>
+      </Size.Provider>
+    </WordTap.Provider>
   );
 }
 
-function inline(s: string): ReactNode[] {
-  const out: ReactNode[] = [];
-  const re = /(\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_|`[^`]+`)/g;
-  let last = 0;
-  for (const m of s.matchAll(re)) {
-    if (m.index! > last) out.push(s.slice(last, m.index));
-    const t = m[0];
-    const key = `${m.index}`;
-    if (t.startsWith("**") || t.startsWith("__")) out.push(<Bold key={key}>{t.slice(2, -2)}</Bold>);
-    else if (t.startsWith("`")) out.push(<Code key={key}>{t.slice(1, -1)}</Code>);
-    else out.push(<Italic key={key}>{t.slice(1, -1)}</Italic>);
-    last = m.index! + t.length;
+/** Blocks: runs of lines between blank lines, with a table or quote kept as its own block. */
+function blocks(text: string): string[][] {
+  const out: string[][] = [];
+  let cur: string[] = [];
+  const kind = (l: string) => (/^\s*\|/.test(l) ? "table" : /^\s*>/.test(l) ? "quote" : "text");
+  for (const line of text.trim().split("\n")) {
+    if (!line.trim()) {
+      if (cur.length) out.push(cur);
+      cur = [];
+      continue;
+    }
+    if (cur.length && kind(cur[cur.length - 1]!) !== kind(line)) {
+      out.push(cur);
+      cur = [];
+    }
+    cur.push(line);
   }
-  if (last < s.length) out.push(s.slice(last));
+  if (cur.length) out.push(cur);
   return out;
 }
 
-const Bold = ({ children }: { children: ReactNode }) => <Text style={{ fontFamily: font.semibold, fontSize: 15 }}>{children}</Text>;
-const Italic = ({ children }: { children: ReactNode }) => <Text style={{ fontStyle: "italic", fontSize: 15 }}>{children}</Text>;
+const LIST = /^\s*([-*•]|\d+[.)])\s+(.*)$/;
+
+function Block({ lines }: { lines: string[] }) {
+  const { colors } = useTheme();
+  const size = useContext(Size);
+  const first = lines[0]!;
+  if (/^\s*\|/.test(first)) return <Table lines={lines} />;
+  if (/^\s*>/.test(first))
+    return (
+      <View style={{ borderLeftWidth: 3, borderLeftColor: colors.borderStrong, paddingLeft: 12, gap: 4 }}>
+        {lines.map((l, i) => (
+          <Body key={i} text={l.replace(/^\s*>\s?/, "")} muted />
+        ))}
+      </View>
+    );
+  const h = /^(#{1,6})\s+(.*)$/.exec(first);
+  if (h && lines.length === 1)
+    return (
+      <Text style={{ fontFamily: font.semibold, fontSize: size + (h[1]!.length <= 2 ? 3 : 1), lineHeight: Math.round((size + 3) * 1.4), color: colors.ink }}>
+        <Inline text={h[2]!} />
+      </Text>
+    );
+  if (lines.every((l) => LIST.test(l)))
+    return (
+      <View style={{ gap: 4 }}>
+        {lines.map((l, j) => {
+          const m = LIST.exec(l)!;
+          const depth = Math.min(3, Math.floor((/^\s*/.exec(l)![0].length || 0) / 2));
+          return (
+            <View key={j} style={{ flexDirection: "row", gap: 8, paddingLeft: depth * 16 }}>
+              <Text variant="muted">{/\d/.test(m[1]!) ? m[1] : "•"}</Text>
+              <View style={{ flex: 1 }}>
+                <Body text={m[2]!} />
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    );
+  return <Body text={lines.join(" ").replace(/^#{1,6}\s+/, "")} />;
+}
+
+function Body({ text, muted }: { text: string; muted?: boolean }) {
+  const { colors } = useTheme();
+  const size = useContext(Size);
+  return (
+    <Text style={{ fontSize: size, lineHeight: Math.round(size * 1.5), color: muted ? colors.inkMuted : colors.ink }}>
+      <Inline text={text} />
+    </Text>
+  );
+}
+
+/** A table that scrolls sideways when it's wider than the screen; the first row is the header. */
+function Table({ lines }: { lines: string[] }) {
+  const { colors, radii } = useTheme();
+  const rows = lines
+    .filter((l) => !/^\s*\|?\s*:?-{2,}/.test(l))
+    .map((l) =>
+      l
+        .trim()
+        .replace(/^\|/, "")
+        .replace(/\|$/, "")
+        .split("|")
+        .map((c) => c.trim()),
+    );
+  const cols = Math.max(...rows.map((r) => r.length));
+  // Column widths from the longest cell (cells rarely wrap in a sheet's table).
+  const widths = Array.from({ length: cols }, (_, c) =>
+    Math.min(220, Math.max(64, Math.max(...rows.map((r) => (r[c] ?? "").replace(/[*_`]/g, "").length)) * 8.5 + 20)),
+  );
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -4 }}>
+      <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: radii.control, overflow: "hidden", marginHorizontal: 4 }}>
+        {rows.map((r, i) => (
+          <View
+            key={i}
+            style={{
+              flexDirection: "row",
+              borderTopWidth: i === 0 ? 0 : 1,
+              borderTopColor: colors.border,
+              backgroundColor: i === 0 ? colors.surfaceSunken : "transparent",
+            }}
+          >
+            {widths.map((w, c) => (
+              <View key={c} style={{ width: w, paddingHorizontal: 10, paddingVertical: 8, borderLeftWidth: c === 0 ? 0 : 1, borderLeftColor: colors.border }}>
+                <Text style={{ fontSize: 14, lineHeight: 20, color: colors.ink, fontFamily: i === 0 || c === 0 ? font.semibold : font.regular }}>
+                  <Inline text={r[c] ?? ""} />
+                </Text>
+              </View>
+            ))}
+          </View>
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
+
+/** Emphasis and code within a line; plain words are tappable when the Markdown has `onWord`. */
+function Inline({ text }: { text: string }) {
+  const onWord = useContext(WordTap);
+  const plain = text.replace(/(\*\*|__)(.+?)\1/g, "$2").replace(/(\*|_)(.+?)\1/g, "$2").replace(/`([^`]+)`/g, "$1");
+  const out: ReactNode[] = [];
+  const re = /(\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_|`[^`]+`)/g;
+  let last = 0;
+  const words = (s: string, key: string) => (onWord ? <Words key={key} text={s} context={plain} onWord={onWord} /> : s);
+  for (const m of text.matchAll(re)) {
+    if (m.index! > last) out.push(words(text.slice(last, m.index), `t${last}`));
+    const t = m[0];
+    const key = `${m.index}`;
+    if (t.startsWith("**") || t.startsWith("__")) out.push(<Bold key={key}>{words(t.slice(2, -2), `b${key}`)}</Bold>);
+    else if (t.startsWith("`")) out.push(<Code key={key}>{t.slice(1, -1)}</Code>);
+    else out.push(<Italic key={key}>{words(t.slice(1, -1), `i${key}`)}</Italic>);
+    last = m.index! + t.length;
+  }
+  if (last < text.length) out.push(words(text.slice(last), `t${last}`));
+  return <>{out}</>;
+}
+
+function Words({ text, context, onWord }: { text: string; context: string; onWord: OnWord }) {
+  const at = Math.max(0, context.indexOf(text));
+  return (
+    <>
+      {tokens(text).map((t, i) =>
+        t.word ? (
+          <RNText key={i} onPress={() => onWord(t.text, sentenceAround(context, at))} suppressHighlighting>
+            {t.text}
+          </RNText>
+        ) : (
+          t.text
+        ),
+      )}
+    </>
+  );
+}
+
+const Bold = ({ children }: { children: ReactNode }) => <RNText style={{ fontFamily: font.semibold }}>{children}</RNText>;
+const Italic = ({ children }: { children: ReactNode }) => <RNText style={{ fontStyle: "italic" }}>{children}</RNText>;
 function Code({ children }: { children: ReactNode }) {
   const { colors } = useTheme();
-  return <Text style={{ fontFamily: font.mono, fontSize: 14, backgroundColor: colors.surfaceSunken }}>{children}</Text>;
+  return <RNText style={{ fontFamily: font.mono, fontSize: 14, backgroundColor: colors.surfaceSunken }}>{children}</RNText>;
 }

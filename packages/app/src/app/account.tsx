@@ -1,4 +1,5 @@
 import { Alert, Pressable, Switch, View } from "react-native";
+import * as WebBrowser from "expo-web-browser";
 import { router } from "expo-router";
 import { useAuth } from "@mdb/client/react";
 import { useServer } from "@/lib/server";
@@ -8,6 +9,7 @@ import { Card } from "@/ui/Card";
 import { Icon, LogOut } from "@/ui/icons";
 import { Screen } from "@/ui/Screen";
 import { Text } from "@/ui/Text";
+import { LearningSettings } from "@/settings/Learning";
 
 /** The account sheet: who and where you are, how the app looks on this device, sign out. */
 export default function Account() {
@@ -26,6 +28,12 @@ export default function Account() {
         <Text style={{ fontFamily: font.semibold }}>{user?.username}</Text>
         <Text variant="subtle">{server?.replace(/^https?:\/\//, "")}</Text>
       </Card>
+
+      <View style={{ gap: 10 }}>
+        <Text variant="heading">Learning</Text>
+        <Text variant="subtle">For your account, on every device.</Text>
+        <LearningSettings />
+      </View>
 
       <View style={{ gap: 10 }}>
         <Text variant="heading">Appearance</Text>
@@ -80,6 +88,17 @@ export default function Account() {
         </Card>
       </View>
 
+      <View style={{ gap: 10 }}>
+        <Text variant="heading">More</Text>
+        <Card>
+          <LinkRow label="Import content" onPress={() => router.push("/import")} first />
+          <LinkRow
+            label="Password, AI tutor, voices, connected apps (web)"
+            onPress={() => server && void WebBrowser.openBrowserAsync(`${server}/settings`)}
+          />
+        </Card>
+      </View>
+
       <View style={{ gap: 10, borderRadius: radii.card }}>
         <Button kind="secondary" label="Sign out" icon={<Icon icon={LogOut} size={16} />} onPress={() => void signOut()} />
         <Button
@@ -94,5 +113,25 @@ export default function Account() {
         />
       </View>
     </Screen>
+  );
+}
+
+function LinkRow({ label, onPress, first }: { label: string; onPress: () => void; first?: boolean }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={({ pressed }) => ({
+        minHeight: 48,
+        justifyContent: "center",
+        paddingHorizontal: 16,
+        borderTopWidth: first ? 0 : 1,
+        borderTopColor: colors.border,
+        backgroundColor: pressed ? colors.surfaceSunken : "transparent",
+      })}
+    >
+      <Text style={{ fontFamily: font.medium }}>{label} ›</Text>
+    </Pressable>
   );
 }

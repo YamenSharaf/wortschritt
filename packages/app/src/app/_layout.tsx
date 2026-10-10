@@ -82,6 +82,10 @@ function Root() {
           <Stack.Screen name="reader/[id]" />
           <Stack.Screen name="series/[id]" />
           <Stack.Screen name="practice/[id]" />
+          <Stack.Screen name="sheet/[id]" />
+          <Stack.Screen name="vocab/study" />
+          <Stack.Screen name="note/[id]" />
+          <Stack.Screen name="import" />
         </Stack.Protected>
         <Stack.Protected guard={status === "no-server"}>
           <Stack.Screen name="connect" />
