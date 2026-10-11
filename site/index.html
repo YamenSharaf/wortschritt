@@ -1,115 +1,129 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Wortschritt</title>
-    <meta name="description" content="Download the Wortschritt Android app." />
-    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <style>
-      :root {
-        --bg: #f6f7f9;
-        --surface: #ffffff;
-        --ink: #14171c;
-        --muted: #5b6370;
-        --border: #e2e5ea;
-        --brand: #22589a;
-        --brand-ink: #ffffff;
-        color-scheme: light dark;
-      }
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #0f1216;
-          --surface: #171b21;
-          --ink: #eceff3;
-          --muted: #9aa3af;
-          --border: #2a3039;
-          --brand: #4f86c9;
-          --brand-ink: #0b1018;
-        }
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100vh;
-        display: grid;
-        place-items: center;
-        padding: 24px 16px;
-        background: var(--bg);
-        color: var(--ink);
-        font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      }
-      main { width: 100%; max-width: 420px; display: grid; gap: 20px; }
-      header { display: flex; align-items: center; gap: 14px; }
-      header img { width: 56px; height: 56px; border-radius: 14px; }
-      h1 { margin: 0; font-size: 24px; line-height: 1.2; }
-      .sub { margin: 0; color: var(--muted); font-size: 14px; }
-      .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: grid; gap: 14px; }
-      .build { font-weight: 600; }
-      .download {
-        display: block;
-        text-align: center;
-        padding: 14px 18px;
-        border-radius: 12px;
-        background: var(--brand);
-        color: var(--brand-ink);
-        font-weight: 600;
-        text-decoration: none;
-      }
-      .download[aria-disabled="true"] { opacity: 0.5; pointer-events: none; }
-      .links { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; }
-      a { color: var(--brand); }
-    </style>
-  </head>
-  <body>
-    <main>
-      <header>
-        <img src="icon-192.png" alt="" />
-        <div>
-          <h1>Wortschritt</h1>
-          <p class="sub">German reading and practice, on your own server.</p>
-        </div>
-      </header>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wortschritt</title>
+<meta name="description" content="Wortschritt: read German stories, practise grammar and keep your words as flashcards. Download the Android app.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preload" href="fonts/geist-400.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{font-family:Geist;src:url(fonts/geist-400.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:Geist;src:url(fonts/geist-500.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:Geist;src:url(fonts/geist-600.woff2) format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:Geist;src:url(fonts/geist-700.woff2) format("woff2");font-weight:700;font-display:swap}
+html{color-scheme:light dark}
+:root{--bg:#f6f7fa;--surface:#fff;--border:#e3e7ee;--control:#c9d0db;--ink:#0f1420;--muted:#566074;--brand:#2b6cb0;--brand-ink:#1f5a99;--coral:#ff8a65;--green:#127a4b;--blob:.42;
+--glass-edge:rgba(255,255,255,.85);--glass-fill:rgba(255,255,255,.5);--shadow:0 1px 2px rgba(15,20,32,.06),0 12px 32px rgba(15,20,32,.10);--phone:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#0b0d12;--surface:#12151c;--border:#ffffff14;--control:#ffffff26;--ink:#edf0f5;--muted:#9aa3b2;--brand:#5aa9f5;--brand-ink:#8ec5ff;--green:#3dd68c;--blob:.5;
+--glass-edge:rgba(255,255,255,.14);--glass-fill:rgba(15,20,32,.4);--shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.45);--phone:#1b1f28}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Geist,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.backdrop{position:fixed;inset:0;overflow:hidden;z-index:-1;background:var(--bg)}
+.backdrop i{position:absolute;border-radius:50%;opacity:var(--blob);filter:blur(80px)}
+main{max-width:1080px;margin:0 auto;padding:40px 16px 24px;display:grid;gap:40px}
+.hero{border-radius:28px;border:1px solid var(--glass-edge);background:var(--glass-fill);backdrop-filter:blur(30px) saturate(1.2);-webkit-backdrop-filter:blur(30px) saturate(1.2);box-shadow:var(--shadow);padding:22px;display:grid;gap:20px;max-width:560px}
+.brand{display:flex;gap:16px;align-items:center}
+.brand img{width:64px;height:64px;border-radius:16px;box-shadow:0 6px 18px color-mix(in srgb,var(--brand) 30%,transparent)}
+h1{margin:0;font-size:34px;line-height:1.1;font-weight:700;letter-spacing:-.02em}
+.tag{margin:4px 0 0;color:var(--muted)}
+.lead{margin:0;font-size:17px;color:var(--ink);opacity:.85}
+.actions{display:flex;gap:10px}.actions .btn{flex:1;padding:0 12px;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:50px;padding:0 22px;border-radius:14px;font-weight:600;font-size:16px;text-decoration:none;transition:transform .15s ease,box-shadow .15s ease}
+.btn:active{transform:scale(.96)}
+.btn svg{width:20px;height:20px;flex:none}
+.primary{color:var(--brand-ink);background:color-mix(in srgb,var(--brand) 14%,transparent);border:1px solid color-mix(in srgb,var(--brand) 34%,transparent);box-shadow:inset 0 1px 0 #ffffff59,0 4px 14px color-mix(in srgb,var(--brand) 26%,transparent)}
+.primary:hover{background:color-mix(in srgb,var(--brand) 22%,transparent)}
+.secondary{color:var(--ink);background:var(--surface);border:1px solid var(--control);box-shadow:var(--shadow);font-weight:500;font-display:swap}
+.meta{font-size:14px;color:var(--muted);display:flex;gap:8px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 22%,transparent)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-size:14px;font-weight:500;padding:6px 14px;border-radius:999px;border:1px solid var(--border);background:var(--glass-fill);backdrop-filter:blur(12px);color:var(--muted);text-decoration:none}
+.chip:hover{color:var(--ink)}
+.chip.on{color:var(--brand-ink);border-color:color-mix(in srgb,var(--brand) 34%,transparent);background:color-mix(in srgb,var(--brand) 12%,transparent)}
+.section{display:grid;gap:16px}
+.section h2{margin:0;font-size:22px;letter-spacing:-.01em}
+.strip{display:flex;gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:16px;padding:6px 16px 28px;margin:0 -16px;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,transparent,#000 16px,#000 calc(100% - 32px),transparent)}
+.strip::-webkit-scrollbar{display:none}
+figure{margin:0;flex:0 0 214px;scroll-snap-align:start;display:grid;gap:10px}
+.phone{border-radius:30px;padding:7px;background:var(--phone);border:1px solid var(--border);box-shadow:var(--shadow)}
+.phone img{display:block;width:100%;height:auto;border-radius:23px;aspect-ratio:390/844}
+figcaption{font-size:14px;line-height:1.35;color:var(--muted);padding:0 6px}
+figcaption b{display:block;color:var(--ink);font-weight:600;font-display:swap}
+.group{flex:0 0 auto;align-self:center;writing-mode:vertical-rl;transform:rotate(180deg);font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;color:var(--muted);scroll-snap-align:start}
+footer{max-width:1080px;margin:0 auto;padding:8px 16px 40px;color:var(--muted);font-size:14px}
+footer a{color:var(--ink);text-decoration:none;font-weight:500;border-bottom:1px solid var(--control)}
+.duo{display:none}
+@media (min-width:900px){main{padding-top:72px}.top{display:grid;grid-template-columns:minmax(0,560px) 1fr;gap:48px;align-items:center}.hero{padding:36px}h1{font-size:44px}.actions .btn{flex:0 0 auto;padding:0 24px}
+.duo{display:block;position:relative;height:540px}.duo .phone{position:absolute;width:236px}.duo .back{left:40px;top:10px;transform:rotate(-6deg)}.duo .front{left:200px;top:60px;transform:rotate(5deg)}}
+</style></head><body>
+<div class="backdrop"><i style="width:460px;height:460px;background:var(--brand);top:-120px;left:-180px"></i><i style="width:420px;height:420px;background:var(--coral);top:180px;right:-200px"></i><i style="width:380px;height:380px;background:var(--green);top:620px;left:10%"></i></div>
+<main>
+<div class="top"><section class="hero">
+  <div class="brand"><img src="icon-192.png" alt=""><div><h1>Wortschritt</h1><p class="tag">German, one step at a time</p></div></div>
+  <p class="lead">Read stories with every word a tap away, practise grammar that corrects itself, and keep the words you meet as flashcards. On your own server, and offline.</p>
+  <div class="actions">
+    <a class="btn primary" id="download" href="https://github.com/YamenSharaf/wortschritt/releases"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 9.48l1.84-3.18c.16-.31.04-.69-.26-.85a.637.637 0 0 0-.83.22l-1.88 3.24a11.43 11.43 0 0 0-8.94 0L5.65 5.67a.643.643 0 0 0-.87-.2c-.28.18-.37.54-.22.83L6.4 9.48A10.78 10.78 0 0 0 1 18h22a10.78 10.78 0 0 0-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/></svg>Download</a>
+    <a class="btn secondary" href="https://github.com/YamenSharaf/wortschritt"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-1.96c-3.2.7-3.87-1.54-3.87-1.54-.52-1.33-1.28-1.69-1.28-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.69 1.25 3.35.96.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.18 1.83 1.18 3.09 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>Source code</a>
+  </div>
+  <div class="meta" aria-live="polite"><span class="dot"></span><span id="meta">Looking for the newest build…</span></div>
+</section>
+<div class="duo" aria-hidden="true"><div class="phone back"><picture><source srcset="shots/reader-dark.webp" media="(prefers-color-scheme: dark)"><img src="shots/reader-light.webp" alt="" width="390" height="844" ></picture></div><div class="phone front"><picture><source srcset="shots/flashcards-dark.webp" media="(prefers-color-scheme: dark)"><img src="shots/flashcards-light.webp" alt="" width="390" height="844" loading="lazy"></picture></div></div>
+</div>
+<section class="section">
+  <h2>Inside the app</h2>
+  <div class="chips"><a class="chip on" href="#practise" data-to="home">Practise</a><a class="chip" href="#read" data-to="reader">Read</a><a class="chip" href="#remember" data-to="flashcards">Remember</a></div>
+  <div class="strip">
+<figure data-shot="home"><div class="phone"><picture><source srcset="shots/home-dark.webp" media="(prefers-color-scheme: dark)"><img src="shots/home-light.webp" alt="Today at a glance" width="390" height="844" loading="lazy"></picture></div><figcaption><b>Today at a glance</b>Your daily goal and where you left off.</figcaption></figure>
+<figure data-shot="mc"><div class="phone"><picture><source srcset="shots/mc-dark.webp" media="(prefers-color-scheme: dark)"><img src="shots/mc-light.webp" alt="Multiple choice" width="390" height="844" loading="lazy"></picture></div><figcaption><b>Multiple choice</b>Right answers light up, and the set moves on.</figcaption></figure>
+<figure data-shot="cloze"><div class="phone"><picture><source srcset="shots/cloze-dark.webp" media="(prefers-color-scheme: dark)"><img src="shots/cloze-light.webp" alt="Fill the gap" width="390" height="844" loading="lazy"></picture></div><figcaption><b>Fill the gap</b>Miss one and the right answer sits right under yours.</figcaption></figure>
+<figure data-shot="table"><div class="phone"><picture><source srcset="shots/table-dark.webp" media="(prefers-color-scheme: dark)"><img src="shots/table-light.webp" alt="Conjugation tables" width="390" height="844" loading="lazy"></picture></div><figcaption><b>Conjugation tables</b>Whole paradigms, checked cell by cell.</figcaption></figure>
+<figure data-shot="build"><div class="phone"><picture><source srcset="shots/build-dark.webp" media="(prefers-color-scheme: dark)"><img src="shots/build-light.webp" alt="Build the sentence" width="390" height="844" loading="lazy"></picture></div><figcaption><b>Build the sentence</b>Tap the words into the right order.</figcaption></figure>
+<figure data-shot="truefalse"><div class="phone"><picture><source srcset="shots/truefalse-dark.webp" media="(prefers-color-scheme: dark)"><img src="shots/truefalse-light.webp" alt="True or false" width="390" height="844" loading="lazy"></picture></div><figcaption><b>True or false</b>With the reason why.</figcaption></figure>
+<figure data-shot="practice"><div class="phone"><picture><source srcset="shots/practice-dark.webp" media="(prefers-color-scheme: dark)"><img src="shots/practice-light.webp" alt="Exercise sets" width="390" height="844" loading="lazy"></picture></div><figcaption><b>Exercise sets</b>Grammar from A2 to B1, or import your own.</figcaption></figure>
+<figure data-shot="reader"><div class="phone"><picture><source srcset="shots/reader-dark.webp" media="(prefers-color-scheme: dark)"><img src="shots/reader-light.webp" alt="Stories" width="390" height="844" loading="lazy"></picture></div><figcaption><b>Stories</b>Tap any word for its meaning and save it.</figcaption></figure>
+<figure data-shot="stories"><div class="phone"><picture><source srcset="shots/stories-dark.webp" media="(prefers-color-scheme: dark)"><img src="shots/stories-light.webp" alt="Your shelf" width="390" height="844" loading="lazy"></picture></div><figcaption><b>Your shelf</b>Short stories and whole books, with covers.</figcaption></figure>
+<figure data-shot="sheet"><div class="phone"><picture><source srcset="shots/sheet-dark.webp" media="(prefers-color-scheme: dark)"><img src="shots/sheet-light.webp" alt="Cheat sheets" width="390" height="844" loading="lazy"></picture></div><figcaption><b>Cheat sheets</b>The grammar on one page, every word tappable.</figcaption></figure>
+<figure data-shot="flashcards"><div class="phone"><picture><source srcset="shots/flashcards-dark.webp" media="(prefers-color-scheme: dark)"><img src="shots/flashcards-light.webp" alt="Flashcards" width="390" height="844" loading="lazy"></picture></div><figcaption><b>Flashcards</b>Swipe right if you know it, left if you don't.</figcaption></figure>
+<figure data-shot="vocab"><div class="phone"><picture><source srcset="shots/vocab-dark.webp" media="(prefers-color-scheme: dark)"><img src="shots/vocab-light.webp" alt="Your words" width="390" height="844" loading="lazy"></picture></div><figcaption><b>Your words</b>Everything you saved, in groups.</figcaption></figure>
+  </div>
+</section>
+</main>
+<footer>Made by <a href="https://yamen.dev">Yamen Sharaf</a></footer>
+<script>
+// The newest app-<run> pre-release, read from GitHub on each visit (the page never needs rebuilding).
+(async () => {
+  const meta = document.getElementById("meta");
+  const link = document.getElementById("download");
+  try {
+    const res = await fetch("https://api.github.com/repos/YamenSharaf/wortschritt/releases?per_page=10");
+    if (!res.ok) throw new Error(res.status);
+    let best = null;
+    for (const r of await res.json()) {
+      const m = /^app-(\d+)$/.exec(r.tag_name);
+      const apk = r.assets.find((a) => a.name.endsWith(".apk"));
+      if (!r.draft && m && apk && (!best || Number(m[1]) > best.build)) best = { build: Number(m[1]), apk, at: r.published_at };
+    }
+    if (!best) throw new Error("no build");
+    const date = new Date(best.at).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
+    meta.textContent = `Build ${best.build} · ${date} · ${Math.round(best.apk.size / 1e6)} MB`;
+    link.href = best.apk.browser_download_url;
+  } catch {
+    meta.textContent = "Couldn't reach GitHub: Download opens the list of builds.";
+  }
+})();
 
-      <section class="card" aria-live="polite">
-        <div>
-          <div class="build" id="build">Android app</div>
-          <div class="sub" id="meta">Looking for the newest build…</div>
-        </div>
-        <a class="download" id="download" href="https://github.com/YamenSharaf/wortschritt/releases" aria-disabled="true">Download the APK</a>
-      </section>
-
-      <nav class="links">
-        <a href="https://github.com/YamenSharaf/wortschritt/releases">All builds</a>
-        <a href="https://github.com/YamenSharaf/wortschritt#readme">Source and self-hosting</a>
-      </nav>
-    </main>
-
-    <script>
-      // The newest app-<run> pre-release, read from GitHub each visit (the page itself never needs rebuilding).
-      (async () => {
-        const meta = document.getElementById("meta");
-        const link = document.getElementById("download");
-        try {
-          const res = await fetch("https://api.github.com/repos/YamenSharaf/wortschritt/releases?per_page=10");
-          if (!res.ok) throw new Error(res.status);
-          let best = null;
-          for (const r of await res.json()) {
-            const m = /^app-(\d+)$/.exec(r.tag_name);
-            const apk = r.assets.find((a) => a.name.endsWith(".apk"));
-            if (!r.draft && m && apk && (!best || Number(m[1]) > best.build)) best = { build: Number(m[1]), apk, at: r.published_at };
-          }
-          if (!best) throw new Error("no build");
-          document.getElementById("build").textContent = `Android app · build ${best.build}`;
-          const date = new Date(best.at).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
-          meta.textContent = `${date} · ${Math.round(best.apk.size / 1e6)} MB`;
-          link.href = best.apk.browser_download_url;
-        } catch {
-          meta.textContent = "Couldn't reach GitHub: pick the newest app-… build from the list.";
-        }
-        link.removeAttribute("aria-disabled");
-      })();
-    </script>
-  </body>
-</html>
+// The chips scroll the strip to their part, and follow it as it scrolls.
+const strip = document.querySelector(".strip");
+const chips = [...document.querySelectorAll(".chip")];
+const at = (k) => strip.querySelector(`[data-shot="${k}"]`);
+chips.forEach((c) =>
+  c.addEventListener("click", (e) => {
+    e.preventDefault();
+    strip.scrollTo({ left: at(c.dataset.to).offsetLeft - strip.offsetLeft - 16, behavior: "smooth" });
+  }),
+);
+strip.addEventListener("scroll", () => {
+  const x = strip.scrollLeft + 40;
+  let on = chips[0];
+  for (const c of chips) if (at(c.dataset.to).offsetLeft - strip.offsetLeft - 16 <= x) on = c;
+  chips.forEach((c) => c.classList.toggle("on", c === on));
+}, { passive: true });
+</script>
+</body></html>
