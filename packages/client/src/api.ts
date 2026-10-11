@@ -47,6 +47,7 @@ import type {
   RegistrationStatus,
   WordDetails,
   WordLookup,
+  GermanWord,
 } from "@mdb/shared";
 
 import { createHttp, type ClientOptions } from "./http";
@@ -384,6 +385,14 @@ export function createApi(o: ClientOptions) {
       req<WordLookup>("/api/assistant/word", {
         method: "POST",
         body: JSON.stringify({ word, ...opts }),
+      }),
+    /** English → German from the curated glosses (translation exercises). */
+    germanFromGlossary: (word: string) => req<GermanWord[]>(`/api/dict/en/${encodeURIComponent(word)}`),
+    /** English → German by the tutor, in the sense the sentence uses. */
+    germanWord: (word: string, context?: string) =>
+      req<GermanWord>("/api/assistant/german-word", {
+        method: "POST",
+        body: JSON.stringify({ word, ...(context ? { context } : {}) }),
       }),
 
     // vocab groups

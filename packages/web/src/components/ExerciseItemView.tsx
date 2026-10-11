@@ -9,7 +9,8 @@ import {
   type ItemResponse,
   type TextAnswer,
 } from "@mdb/shared";
-import { wordDiff } from "@mdb/client";
+import { englishParts, wordDiff } from "@mdb/client";
+import { useGermanWord, type TappedWord } from "@mdb/client/react";
 import { CheckIcon, CrossIcon, LightbulbIcon, QuoteIcon } from "./icons";
 import { btn } from "./ui";
 
@@ -622,27 +623,7 @@ function Translate({
       <Context text={item.context} />
       <ItemHint text={item.hint} />
       <Eyebrow>English</Eyebrow>
-      <p className="mb-4 text-[19px] leading-8 text-ink" lang="en">
-        {item.english}
-      </p>
-      {item.words && item.words.length > 0 && (
-        <div className="mb-5">
-          <Eyebrow>Words</Eyebrow>
-          <div className="flex flex-wrap gap-1.5">
-            {item.words.map((w) => (
-              <span key={w.en} className="inline-flex h-7 items-center gap-1.5 rounded-[8px] border border-line bg-surface-sunken px-2.5 text-sm">
-                <span className="text-ink-muted" lang="en">
-                  {w.en}
-                </span>
-                <span className="text-ink-subtle">→</span>
-                <span className="font-medium text-ink" lang="de">
-                  {w.de}
-                </span>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+      <EnglishSentence item={item} />
       <textarea
         value={text}
         disabled={verdict !== null}
@@ -670,6 +651,100 @@ function Translate({
           <Explanation text={item.explanation} />
         </>
       )}
+    </div>
+  );
+}
+
+/**
+ * The English sentence, every word tappable for its German: the item's own
+ * words underlined (and listed, quieter, below), the rest looked up in the
+ * glossary or asked of the tutor. The answer shows in a card under it.
+ */
+function EnglishSentence({ item }: { item: Extract<ExerciseItem, { type: "translate" }> }) {
+  const [tapped, setTapped] = useState<TappedWord | null>(null);
+  const parts = useMemo(() => englishParts(item.english, item.words), [item.english, item.words]);
+  const toggle = (w: TappedWord) => setTapped((t) => (t?.text === w.text ? null : w));
+  return (
+    <div className="mb-5">
+      <p className="text-[19px] leading-9 text-ink" lang="en">
+        {parts.map((p, i) =>
+          p.kind === "text" ? (
+            <span key={i}>{p.text}</span>
+          ) : (
+            <button
+              key={i}
+              type="button"
+              onClick={() => toggle({ text: p.text, ...(p.preset ? { preset: p.preset } : {}) })}
+              className={`rounded-[4px] px-px text-left transition-colors hover:bg-surface-sunken ${tapped?.text === p.text ? "bg-brand-soft" : ""} ${
+                p.preset ? "underline decoration-ink-subtle decoration-dotted decoration-2 underline-offset-[6px]" : ""
+              }`}
+            >
+              {p.text}
+            </button>
+          ),
+        )}
+      </p>
+      {tapped && <GermanWordCard word={tapped} sentence={item.english} onClose={() => setTapped(null)} />}
+      {item.words && item.words.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {item.words.map((w) => (
+            <button
+              key={w.en}
+              type="button"
+              onClick={() => toggle({ text: w.en, preset: w })}
+              className="inline-flex h-6 items-center gap-1 rounded-[6px] border border-line px-2 text-xs text-ink-muted hover:border-ink-subtle"
+            >
+              <span lang="en">{w.en}</span>
+              <span className="text-ink-subtle">→</span>
+              <span className="font-medium text-ink" lang="de">
+                {w.de}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GermanWordCard({ word, sentence, onClose }: { word: TappedWord; sentence: string; onClose: () => void }) {
+  const { state, askTutor, save, isSaved } = useGermanWord(word, sentence);
+  return (
+    <div className="mt-2 rounded-control border border-line bg-surface-sunken px-3 py-2.5 text-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <span className="text-ink-muted" lang="en">
+            {word.text}
+          </span>
+          {state.status === "loading" && <span className="ml-2 text-ink-subtle">Looking it up…</span>}
+          {state.status === "error" && <p className="mt-1 text-ink-muted">{state.message}</p>}
+          {state.status === "ready" &&
+            state.results.map((g) => (
+              <div key={g.de} className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <span className="text-base font-semibold text-ink" lang="de">
+                  {g.de}
+                </span>
+                {state.source === "glossary" && <span className="text-xs text-ink-subtle">{g.en}</span>}
+                <button
+                  type="button"
+                  disabled={isSaved(g)}
+                  onClick={() => void save(g)}
+                  className="text-xs font-medium text-brand-ink hover:underline disabled:text-ink-subtle disabled:no-underline"
+                >
+                  {isSaved(g) ? "Saved" : "Save to vocab"}
+                </button>
+              </div>
+            ))}
+          {state.status === "ready" && state.source === "glossary" && (
+            <button type="button" onClick={askTutor} className="mt-1.5 text-xs text-ink-muted hover:text-ink hover:underline">
+              Not this sense? Ask the tutor
+            </button>
+          )}
+        </div>
+        <button type="button" onClick={onClose} aria-label="Close" className="text-ink-subtle hover:text-ink">
+          <CrossIcon className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 }

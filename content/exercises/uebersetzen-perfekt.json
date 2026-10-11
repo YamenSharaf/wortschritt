@@ -66,7 +66,7 @@
       "english": "My parents flew to Spain last year.",
       "words": [
         {
-          "en": "to fly",
+          "en": "flew",
           "de": "fliegen"
         },
         {
@@ -92,11 +92,11 @@
       "english": "I forgot my keys.",
       "words": [
         {
-          "en": "the key",
-          "de": "der Schlüssel"
+          "en": "keys",
+          "de": "die Schlüssel"
         },
         {
-          "en": "to forget",
+          "en": "forgot",
           "de": "vergessen"
         }
       ],
@@ -117,7 +117,7 @@
           "de": "der Zug"
         },
         {
-          "en": "to arrive",
+          "en": "arrived",
           "de": "ankommen"
         },
         {
@@ -203,7 +203,7 @@
           "de": "das Auto"
         },
         {
-          "en": "to buy",
+          "en": "bought",
           "de": "kaufen"
         }
       ],

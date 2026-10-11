@@ -14,7 +14,8 @@ import { font, useTheme } from "@/lib/theme";
 import { Button } from "@/ui/Button";
 import { Icon } from "@/ui/icons";
 import { Text } from "@/ui/Text";
-import { wordDiff } from "@mdb/client";
+import { englishParts, wordDiff } from "@mdb/client";
+import { useGermanWord, type TappedWord } from "@mdb/client/react";
 import { Check, Lightbulb, Quote, X } from "lucide-react-native";
 
 /**
@@ -602,26 +603,7 @@ function Translate({ item, submit }: { item: Extract<ExerciseItem, { type: "tran
       <Context text={item.context} />
       <ItemHint text={item.hint} />
       <Text variant="eyebrow">English</Text>
-      <Text style={{ fontSize: 19, lineHeight: 30, marginBottom: 16 }}>{item.english}</Text>
-      {item.words?.length ? (
-        <View style={{ marginBottom: 16 }}>
-          <Text variant="eyebrow">Words</Text>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-            {item.words.map((w) => (
-              <View
-                key={w.en}
-                style={{ flexDirection: "row", gap: 6, alignItems: "center", paddingHorizontal: 10, paddingVertical: 4, borderRadius: radii.control, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceSunken }}
-              >
-                <Text variant="muted" style={{ fontSize: 14 }}>
-                  {w.en}
-                </Text>
-                <Text style={{ fontSize: 14, color: colors.inkSubtle }}>→</Text>
-                <Text style={{ fontSize: 14, fontFamily: font.medium }}>{w.de}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      ) : null}
+      <EnglishSentence item={item} />
       <AnswerField
         value={text}
         editable={verdict === null}
@@ -641,6 +623,96 @@ function Translate({ item, submit }: { item: Extract<ExerciseItem, { type: "tran
           <Explanation text={item.explanation} />
         </>
       )}
+    </View>
+  );
+}
+
+/**
+ * The English sentence, every word tappable for its German: the item's own
+ * words underlined (and listed, quieter, below), the rest looked up in the
+ * glossary or asked of the tutor. The answer shows in a card under it.
+ */
+function EnglishSentence({ item }: { item: Extract<ExerciseItem, { type: "translate" }> }) {
+  const { colors, radii } = useTheme();
+  const [tapped, setTapped] = useState<TappedWord | null>(null);
+  const parts = useMemo(() => englishParts(item.english, item.words), [item.english, item.words]);
+  const toggle = (w: TappedWord) => setTapped((t) => (t?.text === w.text ? null : w));
+  return (
+    <View style={{ marginBottom: 16 }}>
+      <Text style={{ fontSize: 19, lineHeight: 32 }}>
+        {parts.map((p, i) =>
+          p.kind === "text" ? (
+            <Text key={i}>{p.text}</Text>
+          ) : (
+            <Text
+              key={i}
+              suppressHighlighting
+              onPress={() => toggle({ text: p.text, ...(p.preset ? { preset: p.preset } : {}) })}
+              style={[
+                tapped?.text === p.text && { backgroundColor: colors.brandSoft },
+                p.preset && { textDecorationLine: "underline", textDecorationStyle: "dotted", textDecorationColor: colors.inkSubtle },
+              ]}
+            >
+              {p.text}
+            </Text>
+          ),
+        )}
+      </Text>
+      {tapped && <GermanWordCard word={tapped} sentence={item.english} onClose={() => setTapped(null)} />}
+      {item.words?.length ? (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+          {item.words.map((w) => (
+            <Pressable
+              key={w.en}
+              onPress={() => toggle({ text: w.en, preset: w })}
+              style={{ flexDirection: "row", gap: 4, alignItems: "center", paddingHorizontal: 8, paddingVertical: 2, borderRadius: radii.control, borderWidth: 1, borderColor: colors.border }}
+            >
+              <Text variant="muted" style={{ fontSize: 12 }}>
+                {w.en}
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.inkSubtle }}>→</Text>
+              <Text style={{ fontSize: 12, fontFamily: font.medium }}>{w.de}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function GermanWordCard({ word, sentence, onClose }: { word: TappedWord; sentence: string; onClose: () => void }) {
+  const { colors, radii } = useTheme();
+  const { state, askTutor, save, isSaved } = useGermanWord(word, sentence);
+  return (
+    <View style={{ marginTop: 8, padding: 12, borderRadius: radii.control, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceSunken, flexDirection: "row", gap: 12 }}>
+      <View style={{ flex: 1, gap: 4 }}>
+        <Text variant="muted" style={{ fontSize: 14 }}>
+          {word.text}
+          {state.status === "loading" ? <Text style={{ color: colors.inkSubtle }}>  Looking it up…</Text> : null}
+        </Text>
+        {state.status === "error" ? <Text variant="muted" style={{ fontSize: 14 }}>{state.message}</Text> : null}
+        {state.status === "ready"
+          ? state.results.map((g) => (
+              <View key={g.de} style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "baseline", columnGap: 12, rowGap: 2 }}>
+                <Text style={{ fontSize: 17, fontFamily: font.semibold }}>{g.de}</Text>
+                {state.source === "glossary" ? <Text style={{ fontSize: 12, color: colors.inkSubtle }}>{g.en}</Text> : null}
+                <Pressable disabled={isSaved(g)} onPress={() => void save(g)} hitSlop={8}>
+                  <Text style={{ fontSize: 13, fontFamily: font.medium, color: isSaved(g) ? colors.inkSubtle : colors.brandInk }}>{isSaved(g) ? "Saved" : "Save to vocab"}</Text>
+                </Pressable>
+              </View>
+            ))
+          : null}
+        {state.status === "ready" && state.source === "glossary" ? (
+          <Pressable onPress={askTutor} hitSlop={8}>
+            <Text variant="muted" style={{ fontSize: 13 }}>
+              Not this sense? Ask the tutor
+            </Text>
+          </Pressable>
+        ) : null}
+      </View>
+      <Pressable onPress={onClose} accessibilityLabel="Close" hitSlop={10}>
+        <Icon icon={X} size={16} color={colors.inkSubtle} />
+      </Pressable>
     </View>
   );
 }

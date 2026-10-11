@@ -41,7 +41,7 @@
           "de": "der Film"
         },
         {
-          "en": "to start",
+          "en": "starts",
           "de": "anfangen"
         }
       ],
@@ -97,7 +97,7 @@
       "english": "We're looking forward to the holidays.",
       "words": [
         {
-          "en": "to look forward to",
+          "en": "looking forward to",
           "de": "sich freuen auf"
         },
         {
@@ -137,12 +137,12 @@
       "english": "I washed my hands.",
       "words": [
         {
-          "en": "to wash",
+          "en": "washed",
           "de": "waschen"
         },
         {
-          "en": "the hand",
-          "de": "die Hand"
+          "en": "hands",
+          "de": "die Hände"
         }
       ],
       "answer": {
@@ -158,7 +158,7 @@
       "english": "She is interested in art.",
       "words": [
         {
-          "en": "to be interested in",
+          "en": "interested in",
           "de": "sich interessieren für"
         },
         {
@@ -183,7 +183,7 @@
           "de": "der Zug"
         },
         {
-          "en": "to leave (a train)",
+          "en": "leave",
           "de": "abfahren"
         }
       ],

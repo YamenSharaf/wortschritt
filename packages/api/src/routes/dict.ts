@@ -1,10 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { dictEntry, lemmasBody, lemmasResult, wordDetails as wordDetailsDto } from "@mdb/shared";
+import { dictEntry, germanWord, lemmasBody, lemmasResult, wordDetails as wordDetailsDto } from "@mdb/shared";
 import { clientIp } from "../auth/loginGuard";
 import { requireAuth } from "../auth/session";
-import { dictAvailable, lookupWord } from "../services/dict";
+import { dictAvailable, lookupEnglish, lookupWord } from "../services/dict";
 import { wordDetails } from "../services/wiktionary";
 
 export async function dictRoutes(app: FastifyInstance) {
@@ -39,6 +39,21 @@ export async function dictRoutes(app: FastifyInstance) {
       }
       return out;
     },
+  );
+
+  // English → German from the curated glosses, for tapping a word in a
+  // translation exercise (the tutor is asked when this finds nothing).
+  r.get(
+    "/api/dict/en/:word",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["dict"],
+        params: z.object({ word: z.string().min(1).max(80) }),
+        response: { 200: z.array(germanWord) },
+      },
+    },
+    async (req) => lookupEnglish(req.params.word),
   );
 
   // Wiktionary details (definitions, IPA, examples) for the tap popup, loaded

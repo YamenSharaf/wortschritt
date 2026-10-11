@@ -147,11 +147,12 @@ guide the tutor's "generate more items" uses.
 ```jsonc
 { "type": "translate", "id": "q8",
   "english": "Yesterday I met my friend at the station.",
-  "words": [ { "en": "to meet", "de": "treffen" }, { "en": "the station", "de": "der Bahnhof" } ],
+  "words": [ { "en": "met", "de": "treffen" }, { "en": "the station", "de": "der Bahnhof" } ],
   "answer": { "accept": ["Gestern habe ich meinen Freund am Bahnhof getroffen.",
                          "Ich habe gestern meinen Freund am Bahnhof getroffen."] } }
 ```
-- The challenge is building the German sentence, not knowing the words: `words` (optional) lists the vocabulary a learner may not know, nouns with their article. They're always shown and don't count as a hint.
+- The challenge is building the German sentence, not knowing the words. Every English word can be tapped for its German: from `words` when the item has it, else the built-in glossary, else the learner's AI tutor (in the sense the sentence uses). None of it counts as a hint.
+- `words` (optional): the vocabulary a learner may not know, with `en` written exactly as in the sentence (`"met"`, `"the station"`, `"looking forward to"`) so it's underlined there, and `de` the dictionary form (nouns with the article, reflexive verbs with `sich`). They're also listed under the sentence.
 - `accept` holds two or three good translations; the first is the model answer. A match is right straight away. Any other answer goes to the learner's AI tutor, which says **right**, **almost** (one small slip: an article, an ending, one misplaced word) or **wrong**, and returns their sentence corrected with the fewest changes; the app marks what changed. "Almost" counts as wrong, so the item comes back.
 - Without a tutor (or offline), an answer that matches none of `accept` counts as wrong, and the translations are shown.
 

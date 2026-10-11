@@ -142,6 +142,17 @@ export function buildWordMessages(ctx: {
   return { system, user };
 }
 
+/** The German for an English word, in the sense its sentence uses (translation exercises). */
+export function buildGermanWordMessages(ctx: { word: string; context?: string }): { system: string; user: string } {
+  const system =
+    "You are a concise English→German dictionary for a German learner. Give the German for the English word or phrase in the sense the sentence uses it. " +
+    'Return ONLY a compact JSON object: {"de": string, "lemma": string, "en": string, "pos": "noun"|"verb"|"adjective"|"adverb"|"other", "article": "der"|"die"|"das" (nouns only)}. ' +
+    '"de" is how a learner notes it: a noun with its article ("der Bahnhof"), a verb in the infinitive (a separable verb whole, "aufstehen"; a reflexive one with "sich", "sich beeilen"). ' +
+    '"lemma" is the German base form without article or "sich". "en" is the English base form ("forgot" → "to forget"). Do not translate the whole sentence.';
+  const user = `Word: ${ctx.word}` + (ctx.context ? `\nSentence: "${ctx.context}"` : "");
+  return { system, user };
+}
+
 /** Tidy up rough, hand-typed learning notes into clean Markdown. */
 export function buildNotesCleanup(ctx: {
   level: string;

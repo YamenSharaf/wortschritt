@@ -69,7 +69,7 @@ export const EXAMPLE_ITEMS: ItemInput[] = [
     id: "q8",
     english: "Yesterday I met my friend at the station.",
     words: [
-      { en: "to meet", de: "treffen" },
+      { en: "met", de: "treffen" },
       { en: "the station", de: "der Bahnhof" },
     ],
     answer: { accept: ["Gestern habe ich meinen Freund am Bahnhof getroffen.", "Ich habe gestern meinen Freund am Bahnhof getroffen."] },
@@ -140,7 +140,7 @@ const ITEM_RULES = `Item types (use only these; keys exactly as in the examples)
 - transform: rewrite "source" as "instructions" asks.
 - true_false: "correction" (optional) gives the right version when "correct" is false.
 - conjugation_table: each column's "answers" has exactly one entry per row, in row order.
-- translate: the learner translates "english" (a natural English sentence) into German. It practises building the sentence (word order, cases, verb forms), not vocabulary: list in "words" the content words they might not know, as English → German with the article for nouns ("the station" → "der Bahnhof"); they're always shown. "answer.accept" holds two or three good translations (other correct ones are judged by the tutor). Keep sentences at the set's level and aimed at its grammar topic.
+- translate: the learner translates "english" (a natural English sentence) into German. It practises building the sentence (word order, cases, verb forms), not vocabulary: list in "words" the content words they might not know: "en" exactly as it appears in the sentence (e.g. "met", "the station", "looking forward to"), so it can be underlined there; "de" the German dictionary form, nouns with the article ("der Bahnhof"), reflexive verbs with "sich". The learner can tap any word for its German; these are the ones with a meaning ready. "answer.accept" holds two or three good translations (other correct ones are judged by the tutor). Keep sentences at the set's level and aimed at its grammar topic.
 
 Fields any item may also have (leave a field out rather than filling it with filler text):
 - "instructions": the task line shown above the item.

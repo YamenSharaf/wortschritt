@@ -508,6 +508,26 @@ export const dictEntry = z.object({
 });
 export type DictEntry = z.infer<typeof dictEntry>;
 
+/**
+ * An English word in German, for translation exercises: `de` as a learner
+ * notes it (the article with a noun, "der Bahnhof"; the infinitive for a
+ * verb, with "sich" when reflexive), `lemma` the German base form to save.
+ */
+export const germanWord = z.object({
+  de: z.string(),
+  lemma: z.string(),
+  en: z.string(),
+  pos: z.string().optional(),
+  article: z.string().optional(),
+});
+export type GermanWord = z.infer<typeof germanWord>;
+
+/** Ask the tutor for the German of an English word, in its sentence. */
+export const germanWordBody = z.object({
+  word: z.string().min(1).max(80),
+  context: z.string().max(400).optional(),
+});
+
 /** A free-form learning note (Markdown body), auto-saved. */
 export const note = z.object({
   id: z.string(),

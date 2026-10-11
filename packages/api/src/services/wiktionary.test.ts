@@ -154,3 +154,11 @@ test("not found is cached; errors and oversized answers aren't, and yield null",
 test("signed-in only", async () => {
   assert.equal((await app.inject({ method: "GET", url: "/api/dict/gehen/details" })).statusCode, 401);
 });
+
+test("English → German from the curated glosses: exact senses first, nouns with their article", async () => {
+  const en = async (w: string) => (await app.inject({ method: "GET", url: `/api/dict/en/${encodeURIComponent(w)}`, headers: { cookie } })).json() as { de: string }[];
+  assert.equal((await en("hurry"))[0]?.de, "sich beeilen");
+  assert.equal((await en("to forget"))[0]?.de, "vergessen");
+  assert.ok((await en("holiday")).some((r) => r.de === "der Urlaub"), JSON.stringify(await en("holiday")));
+  assert.deepEqual(await en("xylophone"), []);
+});

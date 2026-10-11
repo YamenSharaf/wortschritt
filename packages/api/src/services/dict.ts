@@ -1,4 +1,4 @@
-import type { DictEntry, VocabForms } from "@mdb/shared";
+import type { DictEntry, GermanWord, VocabForms } from "@mdb/shared";
 import { rawDb } from "../db/client";
 
 /**
@@ -211,4 +211,42 @@ export function formsFor(word: string): VocabForms | null {
     partizip2: e.partizip2 ?? null,
     auxiliary: null, // the offline data has no perfect auxiliary
   };
+}
+
+/**
+ * English → German from the curated glosses (a reverse search, so only the
+ * few hundred words that have one): the best few lemmas whose gloss has the
+ * word, an exact sense ("to hurry", "holiday") ahead of a mention.
+ */
+export function lookupEnglish(word: string): GermanWord[] {
+  const w = clean(word).toLowerCase().replace(/^(to|the|a|an)\s+/, "");
+  if (w.length < 2) return [];
+  const rows = rawDb
+    .prepare("SELECT lemma, pos, gloss FROM dict_gloss WHERE lower(gloss) LIKE ? LIMIT 200")
+    .all(`%${w}%`) as { lemma: string; pos: string; gloss: string }[];
+  const esc = w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const exact = new RegExp(`^(\\(sich\\)\\s*)?(to\\s+|the\\s+|a\\s+)?${esc}$`);
+  const word_ = new RegExp(`(^|[^\\p{L}])${esc}([^\\p{L}]|$)`, "u");
+  const ranked = rows
+    .map((r) => {
+      const senses = r.gloss.toLowerCase().split(/[;,]/).map((x) => x.trim());
+      const rank = senses.some((x) => exact.test(x)) ? 0 : word_.test(r.gloss.toLowerCase()) ? 1 : 9;
+      return { r, rank };
+    })
+    .filter((x) => x.rank < 9)
+    .sort((a, b) => a.rank - b.rank || a.r.gloss.length - b.r.gloss.length)
+    .slice(0, 3);
+  return ranked.map(({ r }) => {
+    const entry = lookupWord(r.pos === "noun" ? r.lemma[0]!.toUpperCase() + r.lemma.slice(1) : r.lemma);
+    const lemma = entry?.lemma ?? r.lemma;
+    const article = r.pos === "noun" ? (entry?.article ?? undefined) : undefined;
+    const reflexive = /^\(sich\)/.test(r.gloss) ? "sich " : "";
+    return {
+      de: article ? `${article} ${lemma}` : `${reflexive}${lemma}`,
+      lemma,
+      en: r.gloss,
+      pos: r.pos,
+      ...(article ? { article } : {}),
+    };
+  });
 }

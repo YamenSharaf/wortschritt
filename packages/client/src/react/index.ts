@@ -8,3 +8,4 @@ export * from "./useNotes";
 export * from "./useStoryGeneration";
 export * from "./usePreference";
 export * from "./useAuth";
+export * from "./useGermanWord";

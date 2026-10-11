@@ -7,6 +7,7 @@ export * from "./forms";
 export * from "./time";
 export * from "./describeItem";
 export * from "./wordDiff";
+export * from "./englishWords";
 export * from "./storage";
 export * from "./tokens";
 export * from "./oauth";

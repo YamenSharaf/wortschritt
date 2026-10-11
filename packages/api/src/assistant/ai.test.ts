@@ -472,6 +472,17 @@ test("translations: the tutor says right, almost or wrong with a correction; wit
   provider = () => sse(["O", "K"]);
 });
 
+test("the German for an English word, in its sentence", async () => {
+  provider = () => sse(['{"de": "der Bahnhof", "lemma": "Bahnhof", "en": "station", "pos": "noun", "article": "der"}']);
+  let res = await admin("POST", "/api/assistant/german-word", { word: "station", context: "I met my friend at the station." });
+  assert.deepEqual(res.json(), { de: "der Bahnhof", lemma: "Bahnhof", en: "station", pos: "noun", article: "der" });
+  assert.match(JSON.stringify(calls.at(-1)!.body!.messages), /Sentence: \\"I met my friend at the station.\\"/);
+  provider = () => sse(["Bahnhof, I think"]);
+  res = await admin("POST", "/api/assistant/german-word", { word: "station" });
+  assert.equal(res.statusCode, 502);
+  provider = () => sse(["O", "K"]);
+});
+
 test("streaming tutor relays tokens and reports errors safely", async () => {
   provider = () => sse(["Der ", "Dativ"]);
   let res = await admin("POST", "/api/assistant/ask", { task: "highlight", selection: "dem Kind" });

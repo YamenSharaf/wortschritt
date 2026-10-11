@@ -8,6 +8,8 @@ import {
   saveAiModelsBody,
   saveAiProviderBody,
   wordLookup,
+  germanWord,
+  germanWordBody,
   wordQueryBody,
 } from "@mdb/shared";
 import { clientIp } from "../auth/loginGuard";
@@ -18,6 +20,7 @@ import {
   buildGenerateMessages,
   buildNotesCleanup,
   buildWordMessages,
+  buildGermanWordMessages,
 } from "../assistant/prompts";
 import {
   aiErrorMessage,
@@ -352,6 +355,41 @@ export async function assistantRoutes(app: FastifyInstance) {
         return parsed.data;
       } catch (err) {
         return reply.code(502).send({ error: aiErrorMessage(err, req.log, "word") });
+      }
+    },
+  );
+
+  // The German for an English word in its sentence (translation exercises,
+  // when the item's own words and the glossary don't have it).
+  r.post(
+    "/api/assistant/german-word",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["assistant"],
+        body: germanWordBody,
+        response: { 200: germanWord, 502: z.object({ error: z.string() }), 503: z.object({ error: z.string() }) },
+      },
+    },
+    async (req, reply) => {
+      const ai = getAiChain(req.user!.id);
+      if (!ai) return reply.code(503).send({ error: NOT_SET_UP });
+      const { system, user } = buildGermanWordMessages(req.body);
+      try {
+        const content = await collectCompletion(
+          ai,
+          [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+          { temperature: 0, maxTokens: 200, onFallback: logFallback(req.log) },
+        );
+        const obj = extractJsonObject(content);
+        const parsed = obj ? germanWord.safeParse(obj) : null;
+        if (!parsed?.success) return reply.code(502).send({ error: "could not read the tutor's reply — try again" });
+        return parsed.data;
+      } catch (err) {
+        return reply.code(502).send({ error: aiErrorMessage(err, req.log, "german-word") });
       }
     },
   );
