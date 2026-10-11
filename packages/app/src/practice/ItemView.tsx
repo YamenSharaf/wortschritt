@@ -19,10 +19,9 @@ import { Check, Lightbulb, Quote, X } from "lucide-react-native";
 
 /**
  * One renderer per exercise type, as on the web (components/ExerciseItemView):
- * the item is shown, what the learner answers goes to `submit` once (a
- * translation nobody could judge answers a second time, with the learner's
- * own check), and the verdict that comes back (the server's, or offline a
- * provisional one) is only rendered. Adding a type = a case here and a schema in @mdb/shared.
+ * the item is shown, what the learner answers goes to `submit` once, and the
+ * verdict that comes back (the server's, or offline a provisional one) is
+ * only rendered. Adding a type = a case here and a schema in @mdb/shared.
  */
 type Submit = (response: ItemResponse) => Promise<AnswerVerdict>;
 
@@ -596,7 +595,6 @@ function Translate({ item, submit }: { item: Extract<ExerciseItem, { type: "tran
   const { colors, radii } = useTheme();
   const [text, setText] = useState("");
   const { busy, verdict, error, send } = useVerdict(submit);
-  const checking = verdict?.selfCheck === true;
   const check = () => void send({ type: "translate", text });
   return (
     <View>
@@ -637,26 +635,7 @@ function Translate({ item, submit }: { item: Extract<ExerciseItem, { type: "tran
       />
       {verdict === null && <CheckButton onPress={check} busy={busy} disabled={!text.trim()} />}
       {error ? <Text style={{ color: colors.danger, marginTop: 12 }}>{error}</Text> : null}
-      {checking && (
-        <View style={{ marginTop: 16, gap: 8 }}>
-          <Text variant="eyebrow">Compare with</Text>
-          {item.answer.accept.map((a) => (
-            <Text key={a} style={{ fontFamily: font.medium }}>
-              {a}
-            </Text>
-          ))}
-          <Text variant="muted">Other wordings can be right too. Was yours?</Text>
-          <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
-            <View style={{ flex: 1 }}>
-              <Button kind="primary" label="I had it right" disabled={busy} onPress={() => void send({ type: "translate", text, selfCheck: true })} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button kind="secondary" label="Not quite" disabled={busy} onPress={() => void send({ type: "translate", text, selfCheck: false })} />
-            </View>
-          </View>
-        </View>
-      )}
-      {verdict && !checking && (
+      {verdict && (
         <>
           <TranslationVerdict verdict={verdict} item={item} input={text} />
           <Explanation text={item.explanation} />
@@ -710,6 +689,14 @@ function TranslationVerdict({ verdict, item, input }: { verdict: AnswerVerdict; 
           <Text style={{ fontFamily: font.medium }}>{modelAnswer(item.answer)}</Text>
         </Text>
       )}
+      {!verdict.correct &&
+        verdict.grading !== "ai" &&
+        item.answer.accept.slice(1).map((alt) => (
+          <Text key={alt}>
+            <Text variant="muted">Or: </Text>
+            <Text style={{ fontFamily: font.medium }}>{alt}</Text>
+          </Text>
+        ))}
     </View>
   );
 }

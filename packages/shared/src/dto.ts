@@ -274,11 +274,6 @@ export const answerVerdict = z.object({
   almost: z.boolean().optional(),
   /** The learner's answer with the fewest changes that make it right. */
   corrected: z.string().optional(),
-  /**
-   * Not judged yet (a translation, no tutor): show the model answer and let
-   * the learner say whether theirs was right. Nothing was recorded.
-   */
-  selfCheck: z.literal(true).optional(),
 });
 export type AnswerVerdict = z.infer<typeof answerVerdict>;
 

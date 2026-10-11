@@ -153,7 +153,7 @@ guide the tutor's "generate more items" uses.
 ```
 - The challenge is building the German sentence, not knowing the words: `words` (optional) lists the vocabulary a learner may not know, nouns with their article. They're always shown and don't count as a hint.
 - `accept` holds two or three good translations; the first is the model answer. A match is right straight away. Any other answer goes to the learner's AI tutor, which says **right**, **almost** (one small slip: an article, an ending, one misplaced word) or **wrong**, and returns their sentence corrected with the fewest changes; the app marks what changed. "Almost" counts as wrong, so the item comes back.
-- Without a tutor (or offline), the learner compares their answer with `accept` and says whether it was right; nothing is recorded until they do.
+- Without a tutor (or offline), an answer that matches none of `accept` counts as wrong, and the translations are shown.
 
 ## Cheat sheets
 

@@ -29,10 +29,8 @@ const answerInputProps = {
 type Props = {
   item: ExerciseItem;
   /**
-   * Called when the learner answers; resolves to the verdict (graded by
-   * whoever the page delegates to). The view only renders it. Called once,
-   * except for a translation nobody could judge: the verdict asks for the
-   * learner's own check, which comes as a second call.
+   * Called exactly once when the learner answers; resolves to the verdict
+   * (graded by whoever the page delegates to). The view only renders it.
    */
   submit: (response: ItemResponse) => Promise<AnswerVerdict>;
 };
@@ -613,8 +611,6 @@ function Translate({
 }) {
   const [text, setText] = useState("");
   const { busy, verdict, error, send } = useVerdict(submit);
-  const checking = verdict?.selfCheck === true;
-  const done = verdict !== null && !checking;
 
   function check() {
     void send({ type: "translate", text });
@@ -668,28 +664,7 @@ function Translate({
         </button>
       )}
       {error && <p className="mt-3 text-sm text-danger">{error}</p>}
-      {checking && (
-        <div className="mt-4">
-          <Eyebrow>Compare with</Eyebrow>
-          <ul className="mb-3 space-y-1">
-            {item.answer.accept.map((a) => (
-              <li key={a} className="font-medium text-ink" lang="de">
-                {a}
-              </li>
-            ))}
-          </ul>
-          <p className="mb-3 text-sm text-ink-muted">Other wordings can be right too. Was yours?</p>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" disabled={busy} onClick={() => void send({ type: "translate", text, selfCheck: true })} className={btn.primary}>
-              I had it right
-            </button>
-            <button type="button" disabled={busy} onClick={() => void send({ type: "translate", text, selfCheck: false })} className={btn.secondary}>
-              Not quite
-            </button>
-          </div>
-        </div>
-      )}
-      {done && verdict && (
+      {verdict && (
         <>
           <TranslationVerdict verdict={verdict} item={item} input={text} />
           <Explanation text={item.explanation} />
@@ -740,6 +715,16 @@ function TranslationVerdict({ verdict, item, input }: { verdict: AnswerVerdict; 
           </span>
         </p>
       )}
+      {!verdict.correct &&
+        verdict.grading !== "ai" &&
+        item.answer.accept.slice(1).map((alt) => (
+          <p key={alt} className="mt-1 text-sm">
+            <span className="text-ink-muted">Or: </span>
+            <span className="font-medium" lang="de">
+              {alt}
+            </span>
+          </p>
+        ))}
     </div>
   );
 }

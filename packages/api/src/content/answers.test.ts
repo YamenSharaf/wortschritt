@@ -48,7 +48,7 @@ test("free text: a miss is left for the tutor; without one, open answers are ung
   assert.deepEqual(withoutTutor(gradeItem(open, { type: "sentence_build", text: "Ich mag Deutsch." })), { correct: true, grading: "ungraded" });
 });
 
-test("translate: a match is right; a miss waits for a judge; the learner's own check is self-graded", () => {
+test("translate: a match is right; a miss is for the tutor, and without one it's wrong", () => {
   const tr = item({
     id: "tr", type: "translate", english: "I forgot my keys.",
     words: [{ en: "the key", de: "der Schlüssel" }],
@@ -57,8 +57,6 @@ test("translate: a match is right; a miss waits for a judge; the learner's own c
   assert.deepEqual(gradeItem(tr, { type: "translate", text: "ich habe meine schlussel vergessen" }), { correct: true, grading: "auto" });
   const miss = gradeItem(tr, { type: "translate", text: "Meine Schlüssel habe ich vergessen." });
   assert.equal(miss.textMiss?.text, "Meine Schlüssel habe ich vergessen.");
-  assert.deepEqual(withoutTutor(miss), { correct: false, grading: "ungraded", selfCheck: true }, "no tutor: ask the learner");
-  assert.deepEqual(gradeItem(tr, { type: "translate", text: "Meine Schlüssel habe ich vergessen.", selfCheck: true }), { correct: true, grading: "self" });
-  assert.deepEqual(withoutTutor(gradeItem(tr, { type: "translate", text: "Ich vergessen Schlüssel.", selfCheck: false })), { correct: false, grading: "self" });
+  assert.deepEqual(withoutTutor(miss), { correct: false, grading: "auto" });
   assert.equal(responseText(tr, { type: "translate", text: "Ich habe …" }), "Ich habe …");
 });

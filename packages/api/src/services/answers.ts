@@ -82,18 +82,13 @@ export async function answer(userId: number, a: AnswerBody, log?: FastifyBaseLog
     );
     if (ai) return keep(userId, a, item, { correct: ai.correct, grading: "ai", ...(ai.feedback ? { feedback: ai.feedback } : {}) });
   }
-  return settle(userId, a, item, withoutTutor(local));
-}
-
-/** Record a verdict, unless it still waits for the learner's own check (then nothing happened yet). */
-function settle(userId: number, a: AnswerBody, item: ExerciseItem, v: AnswerVerdict, at?: number): AnswerVerdict {
-  return v.selfCheck ? v : keep(userId, a, item, v, at);
+  return keep(userId, a, item, withoutTutor(local));
 }
 
 /** Grade and record without the tutor: answers given offline at `at`, replayed from the app. */
 export function answerOffline(userId: number, a: AnswerBody, at: number): AnswerVerdict {
   const item = lookup(userId, a);
-  return settle(userId, a, item, withoutTutor(gradeItem(item, a.response)), at);
+  return keep(userId, a, item, withoutTutor(gradeItem(item, a.response)), at);
 }
 
 /** End a pass through a set (see finishRun). False when there's no such set. */

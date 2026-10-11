@@ -116,7 +116,7 @@ export const transformItem = z.object({
  * German sentence, not knowing the words: `words` lists vocabulary that's
  * always shown (not a hint). `answer.accept` holds good translations; any
  * other answer goes to the learner's AI tutor (right, almost, wrong, with a
- * corrected version), or the learner checks it against the model answer.
+ * corrected version); without one it's wrong, with the translations shown.
  */
 export const translateItem = z.object({
   ...itemBase,

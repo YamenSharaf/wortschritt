@@ -443,11 +443,9 @@ test("grading: the server asks the tutor about a free-text miss; open items say 
   provider = () => sse(["O", "K"]);
 });
 
-test("translations: the tutor says right, almost or wrong with a correction; without one, the learner checks", async () => {
+test("translations: the tutor says right, almost or wrong with a correction; without a verdict it's wrong", async () => {
   const SET = "uebersetzen-perfekt";
-  const answer = (text: string, selfCheck?: boolean) =>
-    admin("POST", "/api/answers", { setId: SET, itemId: "tp-05", response: { type: "translate", text, ...(selfCheck === undefined ? {} : { selfCheck }) } });
-  const attempts = async () => (await admin("GET", `/api/history/sets/${SET}`)).json().items.find((i: { itemId: string }) => i.itemId === "tp-05")?.attempts ?? 0;
+  const answer = (text: string) => admin("POST", "/api/answers", { setId: SET, itemId: "tp-05", response: { type: "translate", text } });
 
   // One of the item's own translations: right, no tutor asked.
   const asked = calls.length;
@@ -467,15 +465,10 @@ test("translations: the tutor says right, almost or wrong with a correction; wit
   res = await answer("Meine Schlüssel habe ich vergessen.");
   assert.deepEqual(res.json(), { correct: true, grading: "ai", feedback: "Good: object first is fine." });
 
-  // No usable verdict: nothing is recorded until the learner checks it themselves.
-  const before = await attempts();
+  // No usable verdict: the item's own rules decide.
   provider = () => sse(["I think it's fine."]);
   res = await answer("Schlüssel vergessen ich.");
-  assert.deepEqual(res.json(), { correct: false, grading: "ungraded", selfCheck: true });
-  assert.equal(await attempts(), before, "not recorded yet");
-  res = await answer("Schlüssel vergessen ich.", false);
-  assert.deepEqual(res.json(), { correct: false, grading: "self" });
-  assert.equal(await attempts(), before + 1);
+  assert.deepEqual(res.json(), { correct: false, grading: "auto" });
   provider = () => sse(["O", "K"]);
 });
 
