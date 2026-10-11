@@ -9,7 +9,7 @@ import {
   type AnswerVerdict,
   type ExerciseItem,
 } from "@mdb/shared";
-import { judgeAnswer } from "../assistant/grade";
+import { judgeAnswer, judgeTranslation } from "../assistant/grade";
 import { loadExerciseSets } from "../content/loader";
 import { finishRun, recordInSession } from "./activity";
 import { listGenerated } from "./generated";
@@ -56,7 +56,20 @@ function keep(userId: number, a: AnswerBody, item: ExerciseItem, v: AnswerVerdic
 export async function answer(userId: number, a: AnswerBody, log?: FastifyBaseLogger): Promise<AnswerVerdict> {
   const item = lookup(userId, a);
   const local = gradeItem(item, a.response);
-  if (local.textMiss && getSettings(userId).llmGrading) {
+  const settings = getSettings(userId);
+  if (item.type === "translate" && local.textMiss && settings.llmGrading) {
+    const ai = await judgeTranslation(userId, { english: item.english, examples: item.answer.accept, response: local.textMiss.text, level: settings.level }, log);
+    if (ai) {
+      const correct = ai.verdict === "correct";
+      return keep(userId, a, item, {
+        correct,
+        grading: "ai",
+        ...(ai.verdict === "almost" ? { almost: true } : {}),
+        ...(!correct && ai.corrected ? { corrected: ai.corrected } : {}),
+        ...(ai.feedback ? { feedback: ai.feedback } : {}),
+      });
+    }
+  } else if (local.textMiss && settings.llmGrading) {
     const ai = await judgeAnswer(
       userId,
       {
@@ -69,13 +82,18 @@ export async function answer(userId: number, a: AnswerBody, log?: FastifyBaseLog
     );
     if (ai) return keep(userId, a, item, { correct: ai.correct, grading: "ai", ...(ai.feedback ? { feedback: ai.feedback } : {}) });
   }
-  return keep(userId, a, item, withoutTutor(local));
+  return settle(userId, a, item, withoutTutor(local));
+}
+
+/** Record a verdict, unless it still waits for the learner's own check (then nothing happened yet). */
+function settle(userId: number, a: AnswerBody, item: ExerciseItem, v: AnswerVerdict, at?: number): AnswerVerdict {
+  return v.selfCheck ? v : keep(userId, a, item, v, at);
 }
 
 /** Grade and record without the tutor: answers given offline at `at`, replayed from the app. */
 export function answerOffline(userId: number, a: AnswerBody, at: number): AnswerVerdict {
   const item = lookup(userId, a);
-  return keep(userId, a, item, withoutTutor(gradeItem(item, a.response)), at);
+  return settle(userId, a, item, withoutTutor(gradeItem(item, a.response)), at);
 }
 
 /** End a pass through a set (see finishRun). False when there's no such set. */

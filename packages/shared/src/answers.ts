@@ -19,6 +19,11 @@ export const itemResponse = z.discriminatedUnion("type", [
   z.object({ type: z.literal("true_false"), value: z.boolean() }),
   /** cells[column][row], aligned to the item's columns and rows. */
   z.object({ type: z.literal("conjugation_table"), cells: z.array(z.array(z.string().max(200))) }),
+  /**
+   * The German typed. `selfCheck`: the learner's own verdict after comparing
+   * with the model answer, sent when nobody else could judge a miss.
+   */
+  z.object({ type: z.literal("translate"), text: z.string().max(2000), selfCheck: z.boolean().optional() }),
 ]);
 export type ItemResponse = z.infer<typeof itemResponse>;
 
@@ -31,6 +36,8 @@ export type LocalGrade = {
    * Without one, `withoutTutor` decides (open answers come back ungraded).
    */
   textMiss?: { answer: TextAnswer; text: string };
+  /** A translation that didn't match: without a tutor, the learner checks it themselves. */
+  selfCheck?: true;
 };
 
 /** Grade a response by the item's own rules. Throws if it's for another item type. */
@@ -54,6 +61,13 @@ export function gradeItem(item: ExerciseItem, r: ItemResponse): LocalGrade {
     }
     case "true_false":
       return { correct: (r as Extract<ItemResponse, { type: "true_false" }>).value === item.correct, grading: "auto" };
+    case "translate": {
+      const { text, selfCheck } = r as Extract<ItemResponse, { type: "translate" }>;
+      if (selfCheck !== undefined) return { correct: selfCheck, grading: "self" };
+      return gradeText(text, item.answer)
+        ? { correct: true, grading: "auto" }
+        : { correct: false, grading: "auto", textMiss: { answer: item.answer, text }, selfCheck: true };
+    }
     case "conjugation_table": {
       const cells = (r as Extract<ItemResponse, { type: "conjugation_table" }>).cells;
       const ok = item.columns.every((col, c) =>
@@ -71,7 +85,10 @@ export function gradeItem(item: ExerciseItem, r: ItemResponse): LocalGrade {
  * can't be called wrong (its `accept` only lists examples), so it's ungraded;
  * anything else stands.
  */
-export function withoutTutor(local: LocalGrade): { correct: boolean; grading: "auto" | "self" | "ungraded" } {
+export function withoutTutor(local: LocalGrade): { correct: boolean; grading: "auto" | "self" | "ungraded"; selfCheck?: true } {
+  // Not graded yet: the learner compares with the model answer and says (then
+  // answers again with `selfCheck`). Nothing is recorded until then.
+  if (local.selfCheck) return { correct: false, grading: "ungraded", selfCheck: true };
   if (local.textMiss && isOpenAnswer(local.textMiss.answer)) return { correct: true, grading: "ungraded" };
   return { correct: local.correct, grading: local.grading };
 }
@@ -87,6 +104,7 @@ export function responseText(item: ExerciseItem, r: ItemResponse): string {
       return r.knew ? "Knew it" : "Didn't know";
     case "sentence_build":
     case "transform":
+    case "translate":
       return r.text;
     case "true_false":
       return r.value ? "Correct" : "Incorrect";

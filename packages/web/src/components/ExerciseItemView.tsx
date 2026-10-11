@@ -9,6 +9,7 @@ import {
   type ItemResponse,
   type TextAnswer,
 } from "@mdb/shared";
+import { wordDiff } from "@mdb/client";
 import { CheckIcon, CrossIcon, LightbulbIcon, QuoteIcon } from "./icons";
 import { btn } from "./ui";
 
@@ -28,8 +29,10 @@ const answerInputProps = {
 type Props = {
   item: ExerciseItem;
   /**
-   * Called exactly once when the learner answers; resolves to the verdict
-   * (graded by whoever the page delegates to). The view only renders it.
+   * Called when the learner answers; resolves to the verdict (graded by
+   * whoever the page delegates to). The view only renders it. Called once,
+   * except for a translation nobody could judge: the verdict asks for the
+   * learner's own check, which comes as a second call.
    */
   submit: (response: ItemResponse) => Promise<AnswerVerdict>;
 };
@@ -54,6 +57,8 @@ export function ExerciseItemView({ item, submit }: Props) {
       return <TrueFalse item={item} submit={submit} />;
     case "conjugation_table":
       return <ConjugationTable item={item} submit={submit} />;
+    case "translate":
+      return <Translate item={item} submit={submit} />;
   }
 }
 
@@ -592,6 +597,148 @@ function Transform({
           />
           <Explanation text={item.explanation} />
         </>
+      )}
+    </div>
+  );
+}
+
+// --- translate -------------------------------------------------------------
+
+function Translate({
+  item,
+  submit,
+}: {
+  item: Extract<ExerciseItem, { type: "translate" }>;
+  submit: Props["submit"];
+}) {
+  const [text, setText] = useState("");
+  const { busy, verdict, error, send } = useVerdict(submit);
+  const checking = verdict?.selfCheck === true;
+  const done = verdict !== null && !checking;
+
+  function check() {
+    void send({ type: "translate", text });
+  }
+
+  return (
+    <div>
+      <Instructions text={item.instructions ?? "Translate into German."} />
+      <Context text={item.context} />
+      <ItemHint text={item.hint} />
+      <Eyebrow>English</Eyebrow>
+      <p className="mb-4 text-[19px] leading-8 text-ink" lang="en">
+        {item.english}
+      </p>
+      {item.words && item.words.length > 0 && (
+        <div className="mb-5">
+          <Eyebrow>Words</Eyebrow>
+          <div className="flex flex-wrap gap-1.5">
+            {item.words.map((w) => (
+              <span key={w.en} className="inline-flex h-7 items-center gap-1.5 rounded-[8px] border border-line bg-surface-sunken px-2.5 text-sm">
+                <span className="text-ink-muted" lang="en">
+                  {w.en}
+                </span>
+                <span className="text-ink-subtle">→</span>
+                <span className="font-medium text-ink" lang="de">
+                  {w.de}
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      <textarea
+        value={text}
+        disabled={verdict !== null}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            if (verdict === null && text.trim()) check();
+          }
+        }}
+        rows={2}
+        placeholder="Auf Deutsch…"
+        {...answerInputProps}
+        className="input min-h-[4.5rem] resize-none py-2.5 leading-6"
+      />
+      {verdict === null && (
+        <button type="button" disabled={busy || !text.trim()} onClick={check} className={`${btn.primary} mt-4`}>
+          {busy ? "Checking…" : "Check"}
+        </button>
+      )}
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+      {checking && (
+        <div className="mt-4">
+          <Eyebrow>Compare with</Eyebrow>
+          <ul className="mb-3 space-y-1">
+            {item.answer.accept.map((a) => (
+              <li key={a} className="font-medium text-ink" lang="de">
+                {a}
+              </li>
+            ))}
+          </ul>
+          <p className="mb-3 text-sm text-ink-muted">Other wordings can be right too. Was yours?</p>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" disabled={busy} onClick={() => void send({ type: "translate", text, selfCheck: true })} className={btn.primary}>
+              I had it right
+            </button>
+            <button type="button" disabled={busy} onClick={() => void send({ type: "translate", text, selfCheck: false })} className={btn.secondary}>
+              Not quite
+            </button>
+          </div>
+        </div>
+      )}
+      {done && verdict && (
+        <>
+          <TranslationVerdict verdict={verdict} item={item} input={text} />
+          <Explanation text={item.explanation} />
+        </>
+      )}
+    </div>
+  );
+}
+
+/** Right, almost or wrong; the learner's sentence corrected (what changed marked); another way to say it. */
+function TranslationVerdict({ verdict, item, input }: { verdict: AnswerVerdict; item: Extract<ExerciseItem, { type: "translate" }>; input: string }) {
+  const tone = verdict.correct ? "bg-success-soft text-success" : verdict.almost ? "bg-warning-soft text-warning" : "bg-danger-soft text-danger";
+  const label = verdict.correct ? "Correct." : verdict.almost ? "Almost." : "Not quite.";
+  // The model answer is worth seeing unless the learner wrote exactly it.
+  const model = modelAnswer(item.answer);
+  const showModel = !isCanonical(input, item.answer);
+  return (
+    <div className="mt-3">
+      <p className={`flex items-center gap-2 rounded-control px-3 py-2 text-sm font-semibold ${tone}`}>
+        {verdict.correct ? <CheckIcon className="h-4 w-4" /> : <CrossIcon className="h-4 w-4" />}
+        {label}
+      </p>
+      {verdict.corrected && (
+        <div className="mt-4">
+          <Eyebrow>Your sentence, corrected</Eyebrow>
+          <p className="text-base leading-7" lang="de">
+            {wordDiff(input, verdict.corrected).map((part, i) => (
+              <span key={i}>
+                {part.gap ? " " : ""}
+                {part.kind === "same" ? (
+                  part.text
+                ) : part.kind === "added" ? (
+                  <span className="rounded-[4px] bg-success-soft px-0.5 font-semibold text-success">{part.text}</span>
+                ) : (
+                  <span className="text-danger line-through decoration-1">{part.text}</span>
+                )}
+              </span>
+            ))}
+          </p>
+        </div>
+      )}
+      {verdict.feedback && <p className="mt-2 text-sm text-ink-muted">{verdict.feedback}</p>}
+      {showModel && (
+        <p className="mt-3 text-sm">
+          <span className="text-ink-muted">{verdict.correct ? "Also: " : "Model answer: "}</span>
+          <span className="font-medium" lang="de">
+            {model}
+          </span>
+        </p>
       )}
     </div>
   );

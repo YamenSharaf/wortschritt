@@ -443,6 +443,42 @@ test("grading: the server asks the tutor about a free-text miss; open items say 
   provider = () => sse(["O", "K"]);
 });
 
+test("translations: the tutor says right, almost or wrong with a correction; without one, the learner checks", async () => {
+  const SET = "uebersetzen-perfekt";
+  const answer = (text: string, selfCheck?: boolean) =>
+    admin("POST", "/api/answers", { setId: SET, itemId: "tp-05", response: { type: "translate", text, ...(selfCheck === undefined ? {} : { selfCheck }) } });
+  const attempts = async () => (await admin("GET", `/api/history/sets/${SET}`)).json().items.find((i: { itemId: string }) => i.itemId === "tp-05")?.attempts ?? 0;
+
+  // One of the item's own translations: right, no tutor asked.
+  const asked = calls.length;
+  let res = await answer("Ich habe meine Schlüssel vergessen.");
+  assert.deepEqual(res.json(), { correct: true, grading: "auto" });
+  assert.equal(calls.length, asked);
+
+  // Anything else goes to the tutor, with the English and the examples.
+  provider = () => sse(['{"verdict": "almost", "corrected": "Ich habe meine Schlüssel vergessen.", "feedback": "Schlüssel is plural here."}']);
+  res = await answer("Ich habe meinen Schlüssel vergessen.");
+  assert.deepEqual(res.json(), { correct: false, grading: "ai", almost: true, corrected: "Ich habe meine Schlüssel vergessen.", feedback: "Schlüssel is plural here." });
+  const user = JSON.stringify(calls.at(-1)!.body!.messages);
+  assert.match(user, /English: I forgot my keys\./);
+  assert.match(user, /Learner's German: Ich habe meinen Schlüssel vergessen\./);
+
+  provider = () => sse(['{"verdict": "correct", "corrected": "", "feedback": "Good: object first is fine."}']);
+  res = await answer("Meine Schlüssel habe ich vergessen.");
+  assert.deepEqual(res.json(), { correct: true, grading: "ai", feedback: "Good: object first is fine." });
+
+  // No usable verdict: nothing is recorded until the learner checks it themselves.
+  const before = await attempts();
+  provider = () => sse(["I think it's fine."]);
+  res = await answer("Schlüssel vergessen ich.");
+  assert.deepEqual(res.json(), { correct: false, grading: "ungraded", selfCheck: true });
+  assert.equal(await attempts(), before, "not recorded yet");
+  res = await answer("Schlüssel vergessen ich.", false);
+  assert.deepEqual(res.json(), { correct: false, grading: "self" });
+  assert.equal(await attempts(), before + 1);
+  provider = () => sse(["O", "K"]);
+});
+
 test("streaming tutor relays tokens and reports errors safely", async () => {
   provider = () => sse(["Der ", "Dativ"]);
   let res = await admin("POST", "/api/assistant/ask", { task: "highlight", selection: "dem Kind" });

@@ -1,0 +1,218 @@
+{
+  "schemaVersion": 1,
+  "id": "uebersetzen-perfekt",
+  "title": "Übersetzen: Perfekt",
+  "subtitle": "Translate: the present perfect",
+  "description": "Übersetze ins Deutsche und bilde das Perfekt mit „haben“ oder „sein“.",
+  "level": "A2",
+  "tags": [
+    "übersetzen",
+    "grammatik",
+    "perfekt",
+    "verben"
+  ],
+  "createdAt": "2026-10-11",
+  "items": [
+    {
+      "type": "translate",
+      "id": "tp-01",
+      "english": "We went to the cinema on Saturday.",
+      "words": [
+        {
+          "en": "the cinema",
+          "de": "das Kino"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Am Samstag sind wir ins Kino gegangen.",
+          "Wir sind am Samstag ins Kino gegangen."
+        ]
+      },
+      "explanation": "„gehen“ ist eine Bewegung: Perfekt mit „sein“."
+    },
+    {
+      "type": "translate",
+      "id": "tp-02",
+      "english": "She has already eaten.",
+      "words": [
+        {
+          "en": "already",
+          "de": "schon"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Sie hat schon gegessen.",
+          "Sie hat bereits gegessen."
+        ]
+      },
+      "explanation": "„essen“ → „gegessen“, Perfekt mit „haben“."
+    },
+    {
+      "type": "translate",
+      "id": "tp-03",
+      "english": "Did you sleep well? (du)",
+      "answer": {
+        "accept": [
+          "Hast du gut geschlafen?"
+        ]
+      },
+      "explanation": "Ja/Nein-Frage: Das Hilfsverb steht vorne, das Partizip am Ende."
+    },
+    {
+      "type": "translate",
+      "id": "tp-04",
+      "english": "My parents flew to Spain last year.",
+      "words": [
+        {
+          "en": "to fly",
+          "de": "fliegen"
+        },
+        {
+          "en": "Spain",
+          "de": "Spanien"
+        },
+        {
+          "en": "last year",
+          "de": "letztes Jahr"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Meine Eltern sind letztes Jahr nach Spanien geflogen.",
+          "Letztes Jahr sind meine Eltern nach Spanien geflogen."
+        ]
+      },
+      "explanation": "„fliegen“ bildet das Perfekt mit „sein“. Länder ohne Artikel: „nach Spanien“."
+    },
+    {
+      "type": "translate",
+      "id": "tp-05",
+      "english": "I forgot my keys.",
+      "words": [
+        {
+          "en": "the key",
+          "de": "der Schlüssel"
+        },
+        {
+          "en": "to forget",
+          "de": "vergessen"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Ich habe meine Schlüssel vergessen."
+        ]
+      },
+      "explanation": "„vergessen“ hat im Partizip kein „ge-“: „vergessen“."
+    },
+    {
+      "type": "translate",
+      "id": "tp-06",
+      "english": "The train arrived late.",
+      "words": [
+        {
+          "en": "the train",
+          "de": "der Zug"
+        },
+        {
+          "en": "to arrive",
+          "de": "ankommen"
+        },
+        {
+          "en": "late",
+          "de": "spät"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Der Zug ist spät angekommen.",
+          "Der Zug ist mit Verspätung angekommen."
+        ]
+      },
+      "explanation": "Trennbares Verb: „an-ge-kommen“. „ankommen“ bildet das Perfekt mit „sein“."
+    },
+    {
+      "type": "translate",
+      "id": "tp-07",
+      "english": "What did you do at the weekend? (ihr)",
+      "words": [
+        {
+          "en": "at the weekend",
+          "de": "am Wochenende"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Was habt ihr am Wochenende gemacht?"
+        ]
+      },
+      "explanation": "W-Frage: das W-Wort, dann das Hilfsverb; das Partizip steht am Ende."
+    },
+    {
+      "type": "translate",
+      "id": "tp-08",
+      "english": "He stayed at home all day.",
+      "words": [
+        {
+          "en": "all day",
+          "de": "den ganzen Tag"
+        },
+        {
+          "en": "at home",
+          "de": "zu Hause"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Er ist den ganzen Tag zu Hause geblieben."
+        ]
+      },
+      "explanation": "„bleiben“ bildet das Perfekt mit „sein“."
+    },
+    {
+      "type": "translate",
+      "id": "tp-09",
+      "english": "I have never seen this film.",
+      "words": [
+        {
+          "en": "the film",
+          "de": "der Film"
+        },
+        {
+          "en": "never",
+          "de": "noch nie"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Ich habe diesen Film noch nie gesehen.",
+          "Diesen Film habe ich noch nie gesehen."
+        ]
+      },
+      "explanation": "„noch nie“ steht vor dem Partizip am Satzende."
+    },
+    {
+      "type": "translate",
+      "id": "tp-10",
+      "english": "We bought a new car.",
+      "words": [
+        {
+          "en": "the car",
+          "de": "das Auto"
+        },
+        {
+          "en": "to buy",
+          "de": "kaufen"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Wir haben ein neues Auto gekauft."
+        ]
+      },
+      "explanation": "Regelmäßiges Verb: ge- + kauf + -t."
+    }
+  ]
+}

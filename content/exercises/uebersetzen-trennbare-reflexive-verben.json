@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 1,
+  "id": "uebersetzen-trennbare-reflexive-verben",
+  "title": "Übersetzen: Trennbare und reflexive Verben",
+  "subtitle": "Translate: separable and reflexive verbs",
+  "description": "Übersetze ins Deutsche: Wohin geht die Vorsilbe, und welches Reflexivpronomen passt?",
+  "level": "A2",
+  "tags": [
+    "übersetzen",
+    "grammatik",
+    "trennbare verben",
+    "reflexivverben"
+  ],
+  "createdAt": "2026-10-11",
+  "items": [
+    {
+      "type": "translate",
+      "id": "tv-01",
+      "english": "I get up at seven o'clock.",
+      "words": [
+        {
+          "en": "to get up",
+          "de": "aufstehen"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Ich stehe um sieben Uhr auf.",
+          "Um sieben Uhr stehe ich auf."
+        ]
+      },
+      "explanation": "Trennbares Verb: Die Vorsilbe „auf“ steht am Satzende."
+    },
+    {
+      "type": "translate",
+      "id": "tv-02",
+      "english": "The film starts at eight.",
+      "words": [
+        {
+          "en": "the film",
+          "de": "der Film"
+        },
+        {
+          "en": "to start",
+          "de": "anfangen"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Der Film fängt um acht an.",
+          "Der Film fängt um acht Uhr an.",
+          "Der Film beginnt um acht."
+        ]
+      },
+      "explanation": "„anfangen“: „Der Film fängt … an.“"
+    },
+    {
+      "type": "translate",
+      "id": "tv-03",
+      "english": "Please call me tomorrow. (du)",
+      "words": [
+        {
+          "en": "to call",
+          "de": "anrufen"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Ruf mich bitte morgen an.",
+          "Bitte ruf mich morgen an.",
+          "Ruf mich morgen bitte an."
+        ]
+      },
+      "explanation": "Imperativ mit trennbarem Verb: „Ruf … an!“"
+    },
+    {
+      "type": "translate",
+      "id": "tv-04",
+      "english": "I have to go shopping today.",
+      "words": [
+        {
+          "en": "to go shopping",
+          "de": "einkaufen"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Ich muss heute einkaufen.",
+          "Heute muss ich einkaufen."
+        ]
+      },
+      "explanation": "Mit Modalverb bleibt das trennbare Verb am Ende zusammen: „einkaufen“."
+    },
+    {
+      "type": "translate",
+      "id": "tv-05",
+      "english": "We're looking forward to the holidays.",
+      "words": [
+        {
+          "en": "to look forward to",
+          "de": "sich freuen auf"
+        },
+        {
+          "en": "the holidays",
+          "de": "die Ferien"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Wir freuen uns auf die Ferien.",
+          "Wir freuen uns auf den Urlaub."
+        ]
+      },
+      "explanation": "„sich freuen auf“ + Akkusativ."
+    },
+    {
+      "type": "translate",
+      "id": "tv-06",
+      "english": "Hurry up! (du)",
+      "words": [
+        {
+          "en": "to hurry",
+          "de": "sich beeilen"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Beeil dich!",
+          "Beeile dich!"
+        ]
+      },
+      "explanation": "Imperativ mit Reflexivpronomen: „Beeil dich!“"
+    },
+    {
+      "type": "translate",
+      "id": "tv-07",
+      "english": "I washed my hands.",
+      "words": [
+        {
+          "en": "to wash",
+          "de": "waschen"
+        },
+        {
+          "en": "the hand",
+          "de": "die Hand"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Ich habe mir die Hände gewaschen."
+        ]
+      },
+      "explanation": "Mit einem Objekt steht das Reflexivpronomen im Dativ: „mir die Hände“."
+    },
+    {
+      "type": "translate",
+      "id": "tv-08",
+      "english": "She is interested in art.",
+      "words": [
+        {
+          "en": "to be interested in",
+          "de": "sich interessieren für"
+        },
+        {
+          "en": "art",
+          "de": "die Kunst"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Sie interessiert sich für Kunst."
+        ]
+      },
+      "explanation": "„sich interessieren für“ + Akkusativ."
+    },
+    {
+      "type": "translate",
+      "id": "tv-09",
+      "english": "When does the train leave?",
+      "words": [
+        {
+          "en": "the train",
+          "de": "der Zug"
+        },
+        {
+          "en": "to leave (a train)",
+          "de": "abfahren"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Wann fährt der Zug ab?"
+        ]
+      },
+      "explanation": "Trennbares Verb in der Frage: „Wann fährt … ab?“"
+    },
+    {
+      "type": "translate",
+      "id": "tv-10",
+      "english": "I can't remember his name.",
+      "words": [
+        {
+          "en": "to remember",
+          "de": "sich erinnern an"
+        },
+        {
+          "en": "the name",
+          "de": "der Name"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Ich kann mich nicht an seinen Namen erinnern.",
+          "Ich erinnere mich nicht an seinen Namen."
+        ]
+      },
+      "explanation": "„sich erinnern an“ + Akkusativ: „an seinen Namen“."
+    }
+  ]
+}

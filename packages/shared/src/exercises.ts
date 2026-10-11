@@ -34,7 +34,9 @@ export const textAnswer = z.object({
    *                        full list. A match is accepted locally; anything
    *                        else goes to the learner's AI tutor; without one,
    *                        the possible answers are shown with no verdict.
-   *                        Only for transform and sentence_build.
+   *                        Only for transform and sentence_build
+   *                        (translate items treat every other answer this
+   *                        way already).
    */
   grading: z
     .enum(["exact", "normalized", "caseInsensitive", "open"])
@@ -109,6 +111,21 @@ export const transformItem = z.object({
   answer: textAnswer,
 });
 
+/**
+ * Translate an English sentence into German. The challenge is building the
+ * German sentence, not knowing the words: `words` lists vocabulary that's
+ * always shown (not a hint). `answer.accept` holds good translations; any
+ * other answer goes to the learner's AI tutor (right, almost, wrong, with a
+ * corrected version), or the learner checks it against the model answer.
+ */
+export const translateItem = z.object({
+  ...itemBase,
+  type: z.literal("translate"),
+  english: z.string().min(1),
+  answer: textAnswer,
+  words: z.array(z.object({ en: z.string().min(1), de: z.string().min(1) })).optional(),
+});
+
 /** Judge a statement, optionally revealing a correction. */
 export const trueFalseItem = z.object({
   ...itemBase,
@@ -139,6 +156,7 @@ export const exerciseItem = z.discriminatedUnion("type", [
   transformItem,
   trueFalseItem,
   conjugationTableItem,
+  translateItem,
 ]);
 export type ExerciseItem = z.infer<typeof exerciseItem>;
 
@@ -150,6 +168,7 @@ export const EXERCISE_TYPES = [
   "transform",
   "true_false",
   "conjugation_table",
+  "translate",
 ] as const;
 export type ExerciseType = (typeof EXERCISE_TYPES)[number];
 

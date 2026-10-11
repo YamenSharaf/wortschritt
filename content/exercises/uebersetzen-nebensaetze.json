@@ -1,0 +1,200 @@
+{
+  "schemaVersion": 1,
+  "id": "uebersetzen-nebensaetze",
+  "title": "Übersetzen: Nebensätze",
+  "subtitle": "Translate: subordinate clauses",
+  "description": "Übersetze Sätze mit „weil“, „dass“, „wenn“, „als“, „ob“ und W-Fragen: Im Nebensatz steht das Verb am Ende.",
+  "level": "B1",
+  "tags": [
+    "übersetzen",
+    "grammatik",
+    "nebensatz",
+    "konjunktionen"
+  ],
+  "createdAt": "2026-10-11",
+  "items": [
+    {
+      "type": "translate",
+      "id": "tn-01",
+      "english": "I'm staying at home because I'm ill.",
+      "words": [
+        {
+          "en": "ill",
+          "de": "krank"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Ich bleibe zu Hause, weil ich krank bin."
+        ]
+      },
+      "explanation": "Nach „weil“ steht das konjugierte Verb am Ende."
+    },
+    {
+      "type": "translate",
+      "id": "tn-02",
+      "english": "I think that the film is boring.",
+      "words": [
+        {
+          "en": "boring",
+          "de": "langweilig"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Ich finde, dass der Film langweilig ist.",
+          "Ich glaube, dass der Film langweilig ist.",
+          "Ich denke, dass der Film langweilig ist."
+        ]
+      },
+      "explanation": "Nach „dass“ steht das Verb am Ende."
+    },
+    {
+      "type": "translate",
+      "id": "tn-03",
+      "english": "When I was a child, I lived in Berlin.",
+      "words": [
+        {
+          "en": "the child",
+          "de": "das Kind"
+        },
+        {
+          "en": "to live",
+          "de": "wohnen"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Als ich ein Kind war, habe ich in Berlin gewohnt.",
+          "Als ich ein Kind war, wohnte ich in Berlin."
+        ]
+      },
+      "explanation": "„als“ für einen Zeitraum in der Vergangenheit. Danach beginnt der Hauptsatz mit dem Verb."
+    },
+    {
+      "type": "translate",
+      "id": "tn-04",
+      "english": "If it rains tomorrow, we'll stay at home.",
+      "words": [
+        {
+          "en": "to rain",
+          "de": "regnen"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Wenn es morgen regnet, bleiben wir zu Hause."
+        ]
+      },
+      "explanation": "Der Nebensatz steht vorne, also beginnt der Hauptsatz mit dem Verb."
+    },
+    {
+      "type": "translate",
+      "id": "tn-05",
+      "english": "Do you know when the bus comes? (du)",
+      "words": [
+        {
+          "en": "the bus",
+          "de": "der Bus"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Weißt du, wann der Bus kommt?"
+        ]
+      },
+      "explanation": "Indirekte Frage: Das Verb steht am Ende."
+    },
+    {
+      "type": "translate",
+      "id": "tn-06",
+      "english": "I don't know whether he has time.",
+      "words": [
+        {
+          "en": "whether",
+          "de": "ob"
+        },
+        {
+          "en": "the time",
+          "de": "die Zeit"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Ich weiß nicht, ob er Zeit hat."
+        ]
+      },
+      "explanation": "Indirekte Ja/Nein-Fragen beginnen mit „ob“."
+    },
+    {
+      "type": "translate",
+      "id": "tn-07",
+      "english": "She's learning German because she wants to work in Germany.",
+      "answer": {
+        "accept": [
+          "Sie lernt Deutsch, weil sie in Deutschland arbeiten will.",
+          "Sie lernt Deutsch, weil sie in Deutschland arbeiten möchte."
+        ]
+      },
+      "explanation": "Im Nebensatz steht das Modalverb ganz am Ende, nach dem Infinitiv."
+    },
+    {
+      "type": "translate",
+      "id": "tn-08",
+      "english": "Because I was tired, I went to bed early.",
+      "words": [
+        {
+          "en": "tired",
+          "de": "müde"
+        },
+        {
+          "en": "to go to bed",
+          "de": "ins Bett gehen"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Weil ich müde war, bin ich früh ins Bett gegangen.",
+          "Weil ich müde war, ging ich früh ins Bett."
+        ]
+      },
+      "explanation": "Nebensatz zuerst: Im Hauptsatz folgt das Verb sofort nach dem Komma."
+    },
+    {
+      "type": "translate",
+      "id": "tn-09",
+      "english": "I'm happy that you're here. (du)",
+      "words": [
+        {
+          "en": "happy",
+          "de": "froh"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Ich bin froh, dass du hier bist.",
+          "Ich freue mich, dass du hier bist.",
+          "Ich bin froh, dass du da bist."
+        ]
+      },
+      "explanation": "Nach „dass“ steht das Verb am Ende."
+    },
+    {
+      "type": "translate",
+      "id": "tn-10",
+      "english": "Can you tell me where the station is? (Sie)",
+      "words": [
+        {
+          "en": "the station",
+          "de": "der Bahnhof"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Können Sie mir sagen, wo der Bahnhof ist?"
+        ]
+      },
+      "explanation": "Höfliche indirekte Frage: „wo … ist“ mit dem Verb am Ende."
+    }
+  ]
+}

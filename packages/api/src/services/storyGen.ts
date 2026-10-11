@@ -46,6 +46,8 @@ export function itemSummary(item: ExerciseItem): { task: string; answer: string 
       return { task: item.instructions ?? item.hint ?? "Build the sentence", answer: first(item.answer) };
     case "transform":
       return { task: `${item.instructions ?? "Rewrite"}: ${item.source}`, answer: first(item.answer) };
+    case "translate":
+      return { task: `Translate: ${item.english}`, answer: first(item.answer) };
     case "true_false":
       return {
         task: item.statement,

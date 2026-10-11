@@ -47,3 +47,18 @@ test("free text: a miss is left for the tutor; without one, open answers are ung
   const open = item({ id: "o", type: "sentence_build", answer: { accept: ["Ich lerne Deutsch."], grading: "open" } });
   assert.deepEqual(withoutTutor(gradeItem(open, { type: "sentence_build", text: "Ich mag Deutsch." })), { correct: true, grading: "ungraded" });
 });
+
+test("translate: a match is right; a miss waits for a judge; the learner's own check is self-graded", () => {
+  const tr = item({
+    id: "tr", type: "translate", english: "I forgot my keys.",
+    words: [{ en: "the key", de: "der Schlüssel" }],
+    answer: { accept: ["Ich habe meine Schlüssel vergessen."] },
+  });
+  assert.deepEqual(gradeItem(tr, { type: "translate", text: "ich habe meine schlussel vergessen" }), { correct: true, grading: "auto" });
+  const miss = gradeItem(tr, { type: "translate", text: "Meine Schlüssel habe ich vergessen." });
+  assert.equal(miss.textMiss?.text, "Meine Schlüssel habe ich vergessen.");
+  assert.deepEqual(withoutTutor(miss), { correct: false, grading: "ungraded", selfCheck: true }, "no tutor: ask the learner");
+  assert.deepEqual(gradeItem(tr, { type: "translate", text: "Meine Schlüssel habe ich vergessen.", selfCheck: true }), { correct: true, grading: "self" });
+  assert.deepEqual(withoutTutor(gradeItem(tr, { type: "translate", text: "Ich vergessen Schlüssel.", selfCheck: false })), { correct: false, grading: "self" });
+  assert.equal(responseText(tr, { type: "translate", text: "Ich habe …" }), "Ich habe …");
+});

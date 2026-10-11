@@ -120,7 +120,9 @@ export function useExerciseRunner({
   /** Grade on the server, then update this run's live state. */
   async function submit(response: ItemResponse): Promise<AnswerVerdict> {
     const v = await api.answer({ setId, itemId: item.id, response });
-    handleAnswered(v.correct, responseText(item, response));
+    // A translation waiting for the learner's own check isn't answered yet:
+    // the item answers again with their verdict.
+    if (!v.selfCheck) handleAnswered(v.correct, responseText(item, response));
     return v;
   }
 

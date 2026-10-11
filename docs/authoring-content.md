@@ -47,7 +47,7 @@ guide the tutor's "generate more items" uses.
 - `hint` (optional) — **always-visible** helper text (e.g. the words to use)
 - `explanation` (optional) — shown after answering
 
-### Text-answer grading (`answer` of cloze blanks, sentence_build, transform)
+### Text-answer grading (`answer` of cloze blanks, sentence_build, transform, translate)
 
 ```jsonc
 "answer": { "accept": ["muss"], "grading": "normalized" }
@@ -142,6 +142,18 @@ guide the tutor's "generate more items" uses.
   "columns": [ { "header": "gehen", "answers": ["gehe","gehst","geht","gehen","geht","gehen"] } ] }
 ```
 - Each column's `answers` must have **exactly one non-empty entry per row** (enforced).
+
+### `translate` — English → German
+```jsonc
+{ "type": "translate", "id": "q8",
+  "english": "Yesterday I met my friend at the station.",
+  "words": [ { "en": "to meet", "de": "treffen" }, { "en": "the station", "de": "der Bahnhof" } ],
+  "answer": { "accept": ["Gestern habe ich meinen Freund am Bahnhof getroffen.",
+                         "Ich habe gestern meinen Freund am Bahnhof getroffen."] } }
+```
+- The challenge is building the German sentence, not knowing the words: `words` (optional) lists the vocabulary a learner may not know, nouns with their article. They're always shown and don't count as a hint.
+- `accept` holds two or three good translations; the first is the model answer. A match is right straight away. Any other answer goes to the learner's AI tutor, which says **right**, **almost** (one small slip: an article, an ending, one misplaced word) or **wrong**, and returns their sentence corrected with the fewest changes; the app marks what changed. "Almost" counts as wrong, so the item comes back.
+- Without a tutor (or offline), the learner compares their answer with `accept` and says whether it was right; nothing is recorded until they do.
 
 ## Cheat sheets
 

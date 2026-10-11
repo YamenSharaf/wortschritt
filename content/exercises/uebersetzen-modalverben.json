@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "id": "uebersetzen-modalverben",
+  "title": "Übersetzen: Modalverben",
+  "subtitle": "Translate: modal verbs",
+  "description": "Übersetze ins Deutsche: Das Modalverb steht an Position 2, der Infinitiv am Ende.",
+  "level": "A2",
+  "tags": [
+    "übersetzen",
+    "grammatik",
+    "modalverben",
+    "verben"
+  ],
+  "createdAt": "2026-10-11",
+  "items": [
+    {
+      "type": "translate",
+      "id": "tm-01",
+      "english": "I have to work tomorrow.",
+      "answer": {
+        "accept": [
+          "Ich muss morgen arbeiten.",
+          "Morgen muss ich arbeiten."
+        ]
+      },
+      "explanation": "Das Modalverb steht an Position 2, der Infinitiv am Ende."
+    },
+    {
+      "type": "translate",
+      "id": "tm-02",
+      "english": "Can you help me? (du)",
+      "words": [
+        {
+          "en": "to help",
+          "de": "helfen"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Kannst du mir helfen?"
+        ]
+      },
+      "explanation": "„helfen“ verlangt den Dativ: „mir“."
+    },
+    {
+      "type": "translate",
+      "id": "tm-03",
+      "english": "We want to go to the sea in the summer.",
+      "words": [
+        {
+          "en": "the sea",
+          "de": "das Meer"
+        },
+        {
+          "en": "in the summer",
+          "de": "im Sommer"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Im Sommer wollen wir ans Meer fahren.",
+          "Wir wollen im Sommer ans Meer fahren."
+        ]
+      },
+      "explanation": "„wollen“ + Infinitiv am Ende. „ans Meer“ = an + das Meer."
+    },
+    {
+      "type": "translate",
+      "id": "tm-04",
+      "english": "You mustn't smoke here. (du)",
+      "words": [
+        {
+          "en": "to smoke",
+          "de": "rauchen"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Du darfst hier nicht rauchen.",
+          "Hier darfst du nicht rauchen."
+        ]
+      },
+      "explanation": "„must not“ heißt „nicht dürfen“, nicht „nicht müssen“."
+    },
+    {
+      "type": "translate",
+      "id": "tm-05",
+      "english": "You don't have to come. (du)",
+      "answer": {
+        "accept": [
+          "Du musst nicht kommen.",
+          "Du brauchst nicht zu kommen."
+        ]
+      },
+      "explanation": "„don't have to“ heißt „nicht müssen“."
+    },
+    {
+      "type": "translate",
+      "id": "tm-06",
+      "english": "Should I open the window?",
+      "words": [
+        {
+          "en": "the window",
+          "de": "das Fenster"
+        },
+        {
+          "en": "to open",
+          "de": "öffnen"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Soll ich das Fenster öffnen?",
+          "Soll ich das Fenster aufmachen?"
+        ]
+      },
+      "explanation": "„sollen“ fragt, was jemand anderes möchte."
+    },
+    {
+      "type": "translate",
+      "id": "tm-07",
+      "english": "My sister can speak three languages.",
+      "words": [
+        {
+          "en": "the language",
+          "de": "die Sprache"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Meine Schwester kann drei Sprachen sprechen."
+        ]
+      },
+      "explanation": "„können“ für eine Fähigkeit."
+    },
+    {
+      "type": "translate",
+      "id": "tm-08",
+      "english": "I would like a coffee, please.",
+      "words": [
+        {
+          "en": "the coffee",
+          "de": "der Kaffee"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Ich möchte bitte einen Kaffee.",
+          "Ich möchte einen Kaffee, bitte.",
+          "Ich hätte gern einen Kaffee, bitte."
+        ]
+      },
+      "explanation": "„möchten“ für höfliche Wünsche; „einen Kaffee“ steht im Akkusativ."
+    },
+    {
+      "type": "translate",
+      "id": "tm-09",
+      "english": "We had to wait for an hour.",
+      "words": [
+        {
+          "en": "to wait",
+          "de": "warten"
+        },
+        {
+          "en": "the hour",
+          "de": "die Stunde"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Wir mussten eine Stunde warten."
+        ]
+      },
+      "explanation": "Modalverben im Präteritum haben keinen Umlaut: „mussten“."
+    },
+    {
+      "type": "translate",
+      "id": "tm-10",
+      "english": "Were you allowed to go to the party? (du)",
+      "words": [
+        {
+          "en": "the party",
+          "de": "die Party"
+        }
+      ],
+      "answer": {
+        "accept": [
+          "Durftest du auf die Party gehen?",
+          "Durftest du zur Party gehen?"
+        ]
+      },
+      "explanation": "Präteritum von „dürfen“: „du durftest“."
+    }
+  ]
+}

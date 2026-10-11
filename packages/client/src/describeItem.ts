@@ -68,5 +68,13 @@ export function describeItem(item: ExerciseItem): {
         label: `Flashcard — front: ${item.front}`,
         expected: [item.back],
       };
+    case "translate":
+      return {
+        type: item.type,
+        label: `Translate into German: ${item.english}${
+          item.words?.length ? `\nWords given: ${item.words.map((w) => `${w.en} = ${w.de}`).join(", ")}` : ""
+        }`,
+        expected: item.answer.accept,
+      };
   }
 }

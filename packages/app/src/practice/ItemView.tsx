@@ -14,13 +14,15 @@ import { font, useTheme } from "@/lib/theme";
 import { Button } from "@/ui/Button";
 import { Icon } from "@/ui/icons";
 import { Text } from "@/ui/Text";
+import { wordDiff } from "@mdb/client";
 import { Check, Lightbulb, Quote, X } from "lucide-react-native";
 
 /**
  * One renderer per exercise type, as on the web (components/ExerciseItemView):
- * the item is shown, what the learner answers goes to `submit` once, and the
- * verdict that comes back (the server's, or offline a provisional one) is
- * only rendered. Adding a type = a case here and a schema in @mdb/shared.
+ * the item is shown, what the learner answers goes to `submit` once (a
+ * translation nobody could judge answers a second time, with the learner's
+ * own check), and the verdict that comes back (the server's, or offline a
+ * provisional one) is only rendered. Adding a type = a case here and a schema in @mdb/shared.
  */
 type Submit = (response: ItemResponse) => Promise<AnswerVerdict>;
 
@@ -40,6 +42,8 @@ export function ItemView({ item, submit }: { item: ExerciseItem; submit: Submit 
       return <TrueFalse item={item} submit={submit} />;
     case "conjugation_table":
       return <ConjugationTable item={item} submit={submit} />;
+    case "translate":
+      return <Translate item={item} submit={submit} />;
   }
 }
 
@@ -581,6 +585,130 @@ function Transform({ item, submit }: { item: Extract<ExerciseItem, { type: "tran
           <ResultBanner verdict={verdict} answer={item.answer} input={text} />
           <Explanation text={item.explanation} />
         </>
+      )}
+    </View>
+  );
+}
+
+// --- translate -----------------------------------------------------------------
+
+function Translate({ item, submit }: { item: Extract<ExerciseItem, { type: "translate" }>; submit: Submit }) {
+  const { colors, radii } = useTheme();
+  const [text, setText] = useState("");
+  const { busy, verdict, error, send } = useVerdict(submit);
+  const checking = verdict?.selfCheck === true;
+  const check = () => void send({ type: "translate", text });
+  return (
+    <View>
+      <Instructions text={item.instructions ?? "Translate into German."} />
+      <Context text={item.context} />
+      <ItemHint text={item.hint} />
+      <Text variant="eyebrow">English</Text>
+      <Text style={{ fontSize: 19, lineHeight: 30, marginBottom: 16 }}>{item.english}</Text>
+      {item.words?.length ? (
+        <View style={{ marginBottom: 16 }}>
+          <Text variant="eyebrow">Words</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+            {item.words.map((w) => (
+              <View
+                key={w.en}
+                style={{ flexDirection: "row", gap: 6, alignItems: "center", paddingHorizontal: 10, paddingVertical: 4, borderRadius: radii.control, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceSunken }}
+              >
+                <Text variant="muted" style={{ fontSize: 14 }}>
+                  {w.en}
+                </Text>
+                <Text style={{ fontSize: 14, color: colors.inkSubtle }}>→</Text>
+                <Text style={{ fontSize: 14, fontFamily: font.medium }}>{w.de}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
+      <AnswerField
+        value={text}
+        editable={verdict === null}
+        onChangeText={setText}
+        multiline
+        submitBehavior="submit"
+        returnKeyType="done"
+        onSubmitEditing={() => verdict === null && text.trim() && check()}
+        placeholder="Auf Deutsch…"
+        style={{ minHeight: 72, paddingVertical: 10, textAlignVertical: "top", lineHeight: 24 }}
+      />
+      {verdict === null && <CheckButton onPress={check} busy={busy} disabled={!text.trim()} />}
+      {error ? <Text style={{ color: colors.danger, marginTop: 12 }}>{error}</Text> : null}
+      {checking && (
+        <View style={{ marginTop: 16, gap: 8 }}>
+          <Text variant="eyebrow">Compare with</Text>
+          {item.answer.accept.map((a) => (
+            <Text key={a} style={{ fontFamily: font.medium }}>
+              {a}
+            </Text>
+          ))}
+          <Text variant="muted">Other wordings can be right too. Was yours?</Text>
+          <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
+            <View style={{ flex: 1 }}>
+              <Button kind="primary" label="I had it right" disabled={busy} onPress={() => void send({ type: "translate", text, selfCheck: true })} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Button kind="secondary" label="Not quite" disabled={busy} onPress={() => void send({ type: "translate", text, selfCheck: false })} />
+            </View>
+          </View>
+        </View>
+      )}
+      {verdict && !checking && (
+        <>
+          <TranslationVerdict verdict={verdict} item={item} input={text} />
+          <Explanation text={item.explanation} />
+        </>
+      )}
+    </View>
+  );
+}
+
+/** Right, almost or wrong; the learner's sentence corrected (what changed marked); another way to say it. */
+function TranslationVerdict({ verdict, item, input }: { verdict: AnswerVerdict; item: Extract<ExerciseItem, { type: "translate" }>; input: string }) {
+  const { colors, radii } = useTheme();
+  const fg = verdict.correct ? colors.success : verdict.almost ? colors.warning : colors.danger;
+  const bg = verdict.correct ? colors.successSoft : verdict.almost ? colors.warningSoft : colors.dangerSoft;
+  const showModel = !isCanonical(input, item.answer);
+  return (
+    <View style={{ marginTop: 12, gap: 10 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: radii.control, backgroundColor: bg }}>
+        <Icon icon={verdict.correct ? Check : X} size={16} color={fg} />
+        <Text style={{ fontFamily: font.semibold, color: fg }}>{verdict.correct ? "Correct." : verdict.almost ? "Almost." : "Not quite."}</Text>
+      </View>
+      {verdict.corrected ? (
+        <View>
+          <Text variant="eyebrow">Your sentence, corrected</Text>
+          <Text style={{ fontSize: 16, lineHeight: 26 }}>
+            {wordDiff(input, verdict.corrected).map((part, i) => (
+              <Text key={i}>
+                {part.gap ? " " : ""}
+                {part.kind === "same" ? (
+                  part.text
+                ) : (
+                  <Text
+                    style={
+                      part.kind === "added"
+                        ? { fontFamily: font.semibold, color: colors.success, backgroundColor: colors.successSoft }
+                        : { color: colors.danger, textDecorationLine: "line-through" }
+                    }
+                  >
+                    {part.text}
+                  </Text>
+                )}
+              </Text>
+            ))}
+          </Text>
+        </View>
+      ) : null}
+      {verdict.feedback ? <Text variant="muted">{verdict.feedback}</Text> : null}
+      {showModel && (
+        <Text>
+          <Text variant="muted">{verdict.correct ? "Also: " : "Model answer: "}</Text>
+          <Text style={{ fontFamily: font.medium }}>{modelAnswer(item.answer)}</Text>
+        </Text>
       )}
     </View>
   );

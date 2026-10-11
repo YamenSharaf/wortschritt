@@ -271,3 +271,31 @@ export function buildGradeMessages(ctx: {
     .join("\n");
   return { system, user };
 }
+
+/**
+ * Judge an English → German translation: same meaning, correct German, any
+ * natural phrasing. "almost" is one small slip (an article, an ending, a word
+ * order detail) in an otherwise right sentence; "corrected" is the learner's
+ * own sentence with the fewest changes, so they see exactly what to fix.
+ */
+export function buildTranslateGradeMessages(ctx: {
+  english: string;
+  examples: string[];
+  response: string;
+  level: string;
+}): { system: string; user: string } {
+  const system =
+    `You grade a German learner's (${ctx.level}) translation of an English sentence into German. ` +
+    "Judge two things: the German means what the English says, and it is grammatically correct, natural German. " +
+    "Accept any valid phrasing: other word orders, synonyms, Perfekt or Präteritum where both fit, du/Sie unless the English decides. The example translations are only examples. " +
+    'Verdict: "correct" if it is right; "almost" if the meaning is right but there is exactly one small slip (one wrong article, case or adjective ending, one misspelled word, one misplaced word); "wrong" otherwise (meaning changed or missing, several errors, or a sentence-structure error such as the verb in the wrong position). ' +
+    'For "almost" and "wrong", "corrected" is the learner\'s own sentence with the fewest changes that make it a correct translation (keep their wording wherever it is acceptable); for "correct" it is an empty string. ' +
+    '"feedback" is one short sentence in English naming what was wrong (or confirming it). ' +
+    'Reply with ONLY a compact JSON object: {"verdict": "correct" | "almost" | "wrong", "corrected": string, "feedback": string}.';
+  const user = [
+    `English: ${ctx.english}`,
+    `Example translations: ${ctx.examples.join(" | ")}`,
+    `Learner's German: ${ctx.response}`,
+  ].join("\n");
+  return { system, user };
+}

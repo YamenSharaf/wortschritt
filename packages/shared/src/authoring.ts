@@ -64,6 +64,17 @@ export const EXAMPLE_ITEMS: ItemInput[] = [
     rows: ["ich", "du", "er/sie/es", "wir", "ihr", "sie/Sie"],
     columns: [{ header: "müssen", answers: ["muss", "musst", "muss", "müssen", "müsst", "müssen"] }],
   },
+  {
+    type: "translate",
+    id: "q8",
+    english: "Yesterday I met my friend at the station.",
+    words: [
+      { en: "to meet", de: "treffen" },
+      { en: "the station", de: "der Bahnhof" },
+    ],
+    answer: { accept: ["Gestern habe ich meinen Freund am Bahnhof getroffen.", "Ich habe gestern meinen Freund am Bahnhof getroffen."] },
+    explanation: "Im Perfekt steht „haben“ an Position 2, das Partizip am Ende.",
+  },
 ];
 
 /** A complete valid exercise set (the envelope around the items). */
@@ -129,6 +140,7 @@ const ITEM_RULES = `Item types (use only these; keys exactly as in the examples)
 - transform: rewrite "source" as "instructions" asks.
 - true_false: "correction" (optional) gives the right version when "correct" is false.
 - conjugation_table: each column's "answers" has exactly one entry per row, in row order.
+- translate: the learner translates "english" (a natural English sentence) into German. It practises building the sentence (word order, cases, verb forms), not vocabulary: list in "words" the content words they might not know, as English → German with the article for nouns ("the station" → "der Bahnhof"); they're always shown. "answer.accept" holds two or three good translations (other correct ones are judged by the tutor). Keep sentences at the set's level and aimed at its grammar topic.
 
 Fields any item may also have (leave a field out rather than filling it with filler text):
 - "instructions": the task line shown above the item.
@@ -136,9 +148,9 @@ Fields any item may also have (leave a field out rather than filling it with fil
 - "hint": always-visible help, e.g. the words to use.
 - "explanation": shown after answering — one short sentence on the rule.
 
-Answers ("answer" of cloze, sentence_build, transform): "accept" lists every correct answer; the first one is shown to the learner as the model answer. Include valid variants (e.g. other correct word orders). Grading already ignores case, umlauts typed as a/o/u, and final punctuation, so don't list those variants. Free answers: for open-ended tasks with many correct answers (transform or sentence_build only), set "grading": "open" in "answer" and list two or three good example answers in "accept" — e.g. {"type":"transform","instructions":"Vervollständige den Satz frei.","source":"Für mich ist es wichtig, …","answer":{"accept":["Für mich ist es wichtig, jeden Tag Deutsch zu lernen."],"grading":"open"}}. Other answers are judged by the learner's AI tutor, or shown next to your examples. Never use "open" for tasks with one right answer.
+Answers ("answer" of cloze, sentence_build, transform, translate): "accept" lists every correct answer; the first one is shown to the learner as the model answer. Include valid variants (e.g. other correct word orders). Grading already ignores case, umlauts typed as a/o/u, and final punctuation, so don't list those variants. Free answers: for open-ended tasks with many correct answers (transform or sentence_build only), set "grading": "open" in "answer" and list two or three good example answers in "accept" — e.g. {"type":"transform","instructions":"Vervollständige den Satz frei.","source":"Für mich ist es wichtig, …","answer":{"accept":["Für mich ist es wichtig, jeden Tag Deutsch zu lernen."],"grading":"open"}}. Other answers are judged by the learner's AI tutor, or shown next to your examples. Never use "open" for tasks with one right answer.
 
-Language: everything the learner reads (prompts, instructions, hints, explanations, descriptions) is simple German at the set's level; only "subtitle" is a short English gloss. German must be grammatically correct.`;
+Language: everything the learner reads (prompts, instructions, hints, explanations, descriptions) is simple German at the set's level; only "subtitle" is a short English gloss, and a translate item's "english" and the English side of its "words". German must be grammatically correct.`;
 
 /**
  * The item-format part of a prompt. `withIds: false` for generation, where the

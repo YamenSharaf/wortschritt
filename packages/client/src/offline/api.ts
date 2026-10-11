@@ -271,8 +271,29 @@ export function createOfflineApi(o: {
 
     // --- practice ------------------------------------------------------------
 
-    answer: (body) =>
-      write(
+    answer: async (body) => {
+      // A translation the item's own answers don't match waits for a judge:
+      // the server's tutor when it's reachable, else the learner's own check.
+      // Until then nothing is recorded or queued.
+      if (body.response.type === "translate" && body.response.selfCheck === undefined) {
+        const item = await findItem(body.setId, body.itemId);
+        const local = item ? withoutTutor(gradeItem(item, body.response)) : null;
+        if (local?.selfCheck) {
+          if ((await store.pendingCount()) === 0) {
+            try {
+              const v = await api.answer(body);
+              if (v.selfCheck) return v;
+              if (await sync.hasData()) await recordAnswer(body, v);
+              sync.schedule(2000);
+              return v;
+            } catch (e) {
+              if (!isNetworkError(e)) throw e;
+            }
+          }
+          return local;
+        }
+      }
+      return write(
         { type: "answer", at: nowS(), data: body },
         () => api.answer(body),
         (v) => recordAnswer(body, v),
@@ -283,7 +304,8 @@ export function createOfflineApi(o: {
           await recordAnswer(body, v);
           return v;
         },
-      ),
+      );
+    },
     finishRun: (setId, done) => {
       const mirror = async () => {
         if (done) await updateSession(setId, () => null);
