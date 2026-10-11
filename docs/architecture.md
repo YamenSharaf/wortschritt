@@ -550,16 +550,10 @@ go to the server log. Never call `fetch` on a user-supplied URL directly.
 
 ## Configuration (env vars)
 
-`packages/api/src/env.ts` validates these (empty strings are treated as unset):
-
-| Var | Purpose | Default |
-| --- | --- | --- |
-| `APP_PASSWORD` | initial password of the admin account (required; only read when the first user is created) | — |
-| `ADMIN_USERNAME` | username of that admin account | admin |
-| `SESSION_SECRET` | cookie signing key (required, ≥8) | — |
-| `PORT` / `DATABASE_PATH` / `CONTENT_DIR` | runtime paths | 3000 / ./data/app.db / ./content |
-| `ENCRYPTION_KEY` | encrypts users' saved AI keys (≥32 chars, e.g. `openssl rand -base64 32`; keep a copy — if it changes, saved keys must be re-entered) | unset → AI keys can't be saved |
-| `ASSISTANT_BASE_URL` / `ASSISTANT_API_KEY` / `ASSISTANT_MODEL` | legacy single-user AI config; copied once into the admin's AI settings, then unused | OpenAI defaults |
+`packages/api/src/env.ts` validates them (empty strings count as unset). Every
+variable, what it does and its default is in
+[self-hosting.md → Configuration](self-hosting.md#configuration); keep that
+table in step when adding one.
 
 ## Database migrations
 
