@@ -39,6 +39,8 @@ body = body.replace(/<table>([\s\S]*?)<\/table>/g, (table) => {
     return row.replace(/<td([^>]*)>/g, (_, attrs) => `<td${attrs} data-label="${heads[i++] ?? ""}">`);
   });
 });
+// Code blocks get a copy button (the script at the end copies the code's text).
+body = body.replace(/<pre>/g, '<div class="code"><button type="button" class="copy" aria-label="Copy">Copy</button><pre>').replace(/<\/pre>/g, "</pre></div>");
 // The title and its intro come before the contents.
 const firstH2 = body.indexOf("<h2");
 const intro = body.slice(0, firstH2);
@@ -50,7 +52,6 @@ process.stdout.write(`<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${title}</title>
-<meta name="robots" content="noindex">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="preload" href="../fonts/geist-400.woff2" as="font" type="font/woff2" crossorigin>
 <style>
@@ -86,6 +87,9 @@ li{margin:4px 0}
 code{overflow-wrap:anywhere;font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--sunken);border:1px solid var(--border);border-radius:6px;padding:1px 5px}
 pre{background:var(--sunken);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin:0 0 16px;white-space:pre-wrap;overflow-wrap:anywhere}
 pre code{background:none;border:0;padding:0;font-size:13.5px}
+.code{position:relative}.code pre{padding-right:72px}
+.copy{position:absolute;top:8px;right:8px;font:500 13px Geist,system-ui,sans-serif;padding:5px 10px;border-radius:8px;cursor:pointer;color:var(--ink);background:var(--surface);border:1px solid var(--border);box-shadow:0 1px 2px rgba(15,20,32,.06)}
+.copy:hover{border-color:var(--muted)}.copy.done{color:var(--green)}
 .table{overflow-x:auto;margin:0 0 18px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
 table{border-collapse:collapse;width:100%;font-size:15px}
 th,td{text-align:left;vertical-align:top;padding:10px 14px;border-top:1px solid var(--border)}
@@ -110,6 +114,26 @@ ${intro}<nav class="toc" aria-label="Contents"><b>Contents</b><ol>${toc.join("")
 ${rest.replace(/<table>/g, '<div class="table"><table>').replace(/<\/table>/g, "</table></div>")}
 </article></main>
 <footer>Made by <a href="https://yamen.dev">Yamen Sharaf</a></footer>
+<script>
+// Copy a code block's text exactly as written (the button's own label isn't part of it).
+for (const b of document.querySelectorAll(".copy")) {
+  b.addEventListener("click", async () => {
+    const text = b.nextElementSibling.textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const t = Object.assign(document.createElement("textarea"), { value: text });
+      document.body.append(t);
+      t.select();
+      document.execCommand("copy");
+      t.remove();
+    }
+    b.textContent = "Copied";
+    b.classList.add("done");
+    setTimeout(() => ((b.textContent = "Copy"), b.classList.remove("done")), 1500);
+  });
+}
+</script>
 </body>
 </html>
 `);
