@@ -17,10 +17,6 @@ services:
       # AI tutor: each user sets their own provider in the app; their API keys
       # are encrypted with this (openssl rand -base64 32 — keep a copy).
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
-      # Legacy: copied once into the admin's AI settings on first boot.
-      ASSISTANT_BASE_URL: ${ASSISTANT_BASE_URL:-https://api.openai.com/v1}
-      ASSISTANT_API_KEY: ${ASSISTANT_API_KEY:-}
-      ASSISTANT_MODEL: ${ASSISTANT_MODEL:-gpt-4o-mini}
       # Public URL (e.g. https://deutsch.example.com) for MCP sign-in (OAuth).
       # Optional: by default it's taken from the request (works behind a tunnel).
       PUBLIC_URL: ${PUBLIC_URL:-}

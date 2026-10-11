@@ -83,8 +83,8 @@ nav.toc li{break-inside:avoid}
 a{color:var(--brand-ink)}
 p,ul,ol{margin:0 0 14px}
 li{margin:4px 0}
-code{font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--sunken);border:1px solid var(--border);border-radius:6px;padding:1px 5px}
-pre{background:var(--sunken);border:1px solid var(--border);border-radius:14px;padding:14px 16px;overflow-x:auto;margin:0 0 16px}
+code{overflow-wrap:anywhere;font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--sunken);border:1px solid var(--border);border-radius:6px;padding:1px 5px}
+pre{background:var(--sunken);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin:0 0 16px;white-space:pre-wrap;overflow-wrap:anywhere}
 pre code{background:none;border:0;padding:0;font-size:13.5px}
 .table{overflow-x:auto;margin:0 0 18px;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
 table{border-collapse:collapse;width:100%;font-size:15px}
@@ -92,13 +92,14 @@ th,td{text-align:left;vertical-align:top;padding:10px 14px;border-top:1px solid 
 thead th{border-top:0;background:var(--sunken);font-weight:600;font-size:14px}
 td:first-child{white-space:nowrap}
 strong{font-weight:600}
-footer{max-width:820px;margin:0 auto;padding:8px 16px 40px;color:var(--muted);font-size:14px}
+footer{max-width:820px;margin:0 auto;padding:8px 16px 40px;color:var(--muted);font-size:14px;text-align:center}
 footer a{color:var(--ink);text-decoration:none;font-weight:500;border-bottom:1px solid var(--border)}
 @media (max-width:600px){.card{padding:20px;border-radius:20px}h1{font-size:28px}nav.toc ol{columns:1}.anchor{display:none}
-.table{border:0;background:none;overflow:visible}table,tbody,tr,td{display:block}thead{display:none}
-tr{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:12px 14px;margin:0 0 10px}
+.table{border:0;background:none;overflow:visible}table,tbody,td{display:block}thead{display:none}
+tr{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:12px 14px;margin:0 0 10px}
 td{border:0;padding:0}td:first-child{white-space:normal;margin-bottom:4px}td:first-child code{font-weight:600}
-td+td+td{margin-top:6px;font-size:14px;color:var(--muted)}td+td+td::before{content:attr(data-label) ": ";font-weight:600}}
+td:nth-child(2){order:3;margin-top:6px;font-size:14px;color:var(--muted)}td:nth-child(2)::before{content:attr(data-label) ": ";font-weight:600}
+pre{font-size:12.5px}td code{overflow-wrap:anywhere}}
 </style>
 </head>
 <body>

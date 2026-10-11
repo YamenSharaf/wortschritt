@@ -34,8 +34,9 @@ const envSchema = z.object({
     z.string().min(32, "ENCRYPTION_KEY must be at least 32 characters").optional(),
   ),
 
-  // Legacy single-user AI tutor config. Only read once, to seed the admin's
-  // per-user AI settings on first boot (see assistant/config.ts).
+  // Deprecated: the legacy single-user AI tutor config. Each person sets their
+  // own in the app (Settings → Connections). Still read once, to seed the
+  // admin's AI settings on first boot (see assistant/config.ts), with a warning.
   ASSISTANT_BASE_URL: optionalEnv(
     z.string().url().default("https://api.openai.com/v1"),
   ),
@@ -75,4 +76,11 @@ export const isProd = env.NODE_ENV === "production";
 export const hasLegacyAssistantEnv =
   env.ASSISTANT_API_KEY.length > 0 ||
   env.ASSISTANT_BASE_URL !== "https://api.openai.com/v1";
+
+if (["ASSISTANT_BASE_URL", "ASSISTANT_API_KEY", "ASSISTANT_MODEL"].some((k) => process.env[k]) && env.NODE_ENV !== "test") {
+  console.warn(
+    "ASSISTANT_BASE_URL / ASSISTANT_API_KEY / ASSISTANT_MODEL are deprecated: set the AI tutor in the app (Settings → Connections). " +
+      "They're only copied into the admin's AI settings on the first start, and will be removed.",
+  );
+}
 
