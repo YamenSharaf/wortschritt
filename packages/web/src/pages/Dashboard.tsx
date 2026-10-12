@@ -16,6 +16,9 @@ export function Dashboard() {
   const settings = useAsync(() => api.settings(), []);
   const exercises = useAsync(() => api.exercises(), []);
   const runs = useAsync(() => api.runs(), []);
+  // Items generated for this learner count towards a set's size.
+  const extra = useAsync(() => api.generatedCounts().catch(() => ({}) as Record<string, number>), []);
+  const size = (set: { id: string; items: unknown[] }) => set.items.length + (extra.status === "ready" ? (extra.data[set.id] ?? 0) : 0);
   const sheets = useAsync(() => api.sheetViews(5), []);
   const notes = useAsync(() => api.notes(), []);
   const recentRuns = runs.status === "ready" ? runs.data.slice(0, 5) : [];
@@ -148,7 +151,7 @@ export function Dashboard() {
                 </div>
                 <div className="mt-4 flex items-center gap-2">
                   <Pill>{set.level}</Pill>
-                  <Pill>{set.items.length} tasks</Pill>
+                  <Pill>{size(set)} tasks</Pill>
                   <span className="ml-auto">
                     <LastRunBadge run={lastRun[set.id]} />
                   </span>

@@ -80,6 +80,7 @@ Progress    POST /api/answers (server grades)             GET /api/progress
             POST /api/runs { setId, done }  GET /api/runs[/:setId]
             GET|PUT|DELETE /api/exercise-progress/:setId
             POST /api/exercises/:id/generate  GET|DELETE /api/exercises/:id/generated
+            DELETE /api/exercises/:id/generated/:itemId  GET /api/exercises/generated-counts
             POST /api/sheet-views GET /api/sheet-views
 History     GET  /api/history/mistakes  /api/history/activity  /api/history/sets/:setId
 Settings    GET|PUT /api/settings

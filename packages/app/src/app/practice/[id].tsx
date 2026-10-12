@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { generateCounts, type ExerciseItem, type ExerciseProgress, type ExerciseSet } from "@mdb/shared";
@@ -16,7 +17,7 @@ import { Card } from "@/ui/Card";
 import { Icon } from "@/ui/icons";
 import { Screen } from "@/ui/Screen";
 import { Text } from "@/ui/Text";
-import { Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, RotateCcw, Sparkles, X } from "lucide-react-native";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Ellipsis, RotateCcw, Sparkles, X } from "lucide-react-native";
 
 /** A set's exercises one at a time, as on the web (pages/ExercisePlayer). */
 export default function ExerciseScreen() {
@@ -295,7 +296,8 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
             overflow: "hidden",
           }}
         >
-          <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20, gap: 20 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+          {/* Scrolls a focused field (an answer, the tutor chat) above the keyboard. */}
+          <KeyboardAwareScrollView bottomOffset={24} contentContainerStyle={{ flexGrow: 1, padding: 20, paddingRight: run.isGenerated(item.id) ? 44 : 20, gap: 20 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
             <View>
           {answeredEarlier && (
             <View
@@ -329,7 +331,27 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
                 <TutorHelp key={item.id} item={item} answered={answered} lastCorrect={lastCorrect} lastResponse={run.lastResponse} />
               </View>
             )}
-          </ScrollView>
+          </KeyboardAwareScrollView>
+          {run.isGenerated(item.id) && (
+            <Pressable
+              onPress={() =>
+                Alert.alert("Generated for you", "Your tutor wrote this exercise for you. Remove it from the set?", [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Remove",
+                    style: "destructive",
+                    onPress: () => void run.removeItem(item.id).catch((e) => Alert.alert("Couldn't remove it", e instanceof Error ? e.message : String(e))),
+                  },
+                ])
+              }
+              accessibilityRole="button"
+              accessibilityLabel="More about this exercise"
+              hitSlop={8}
+              style={{ position: "absolute", top: 8, right: 8, width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" }}
+            >
+              <Icon icon={Ellipsis} size={18} color={colors.inkSubtle} />
+            </Pressable>
+          )}
         </View>
       </QuestionSlide>
 

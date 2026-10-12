@@ -427,10 +427,14 @@ export function createApi(o: ClientOptions) {
         method: "POST",
         body: JSON.stringify({ count }),
       }),
+    /** How many items were generated for this learner, by set id (sets without any are left out). */
+    generatedCounts: () => req<Record<string, number>>("/api/exercises/generated-counts"),
     generatedItems: (setId: string) =>
       req<ExerciseItem[]>(`/api/exercises/${encodeURIComponent(setId)}/generated`),
     removeGeneratedItems: (setId: string) =>
       req<{ removed: number }>(`/api/exercises/${encodeURIComponent(setId)}/generated`, { method: "DELETE" }),
+    removeGeneratedItem: (setId: string, itemId: string) =>
+      req<{ removed: number }>(`/api/exercises/${encodeURIComponent(setId)}/generated/${encodeURIComponent(itemId)}`, { method: "DELETE" }),
 
     // offline sync (the app): what changed since a cursor, and replaying queued actions
     syncChanges: (o: { since?: string; library?: string } = {}) => {

@@ -13,6 +13,9 @@ import { useAsync } from "@mdb/client/react";
 export function Exercises() {
   const exercises = useAsync(() => api.exercises(), []);
   const runs = useAsync(() => api.runs(), []);
+  // Items generated for this learner count towards a set's size.
+  const extra = useAsync(() => api.generatedCounts().catch(() => ({}) as Record<string, number>), []);
+  const size = (set: { id: string; items: unknown[] }) => set.items.length + (extra.status === "ready" ? (extra.data[set.id] ?? 0) : 0);
   const [sort, setSort] = useState<SortMode>("recent");
   const [q, setQ] = useState("");
   const lastRun: Record<string, RunSummary> = {};
@@ -76,7 +79,7 @@ export function Exercises() {
               {set.description && <p className="mt-3 text-sm leading-5 text-ink-muted">{set.description}</p>}
               <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
                 <Pill>{set.level}</Pill>
-                <Pill>{set.items.length} tasks</Pill>
+                <Pill>{size(set)} tasks</Pill>
                 {set.tags.slice(0, 2).map((t) => (
                   <Pill key={t}>{t}</Pill>
                 ))}

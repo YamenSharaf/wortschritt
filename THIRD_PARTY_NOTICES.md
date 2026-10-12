@@ -335,7 +335,7 @@ Apache License
 
 CC-BY-SA-4.0. Shown with their source in the word panel; via freedictionaryapi.com. https://creativecommons.org/licenses/by-sa/4.0/
 
-## Packages (693)
+## Packages (695)
 
 ### @babel/code-frame 7.29.7, @babel/compat-data 7.29.7, @babel/core 7.29.7, @babel/generator 7.29.8, @babel/helper-annotate-as-pure 7.29.7, @babel/helper-compilation-targets 7.29.7, @babel/helper-create-class-features-plugin 7.29.7, @babel/helper-create-regexp-features-plugin 7.29.10, @babel/helper-globals 7.29.7, @babel/helper-member-expression-to-functions 7.29.7, @babel/helper-module-imports 7.29.7, @babel/helper-module-transforms 7.29.7, @babel/helper-optimise-call-expression 7.29.7, @babel/helper-plugin-utils 7.29.7, @babel/helper-remap-async-to-generator 7.29.7, @babel/helper-replace-supers 7.29.7, @babel/helper-skip-transparent-expression-wrappers 7.29.7, @babel/helper-string-parser 7.29.7, @babel/helper-validator-identifier 7.29.7, @babel/helper-validator-option 7.29.7, @babel/helper-wrap-function 7.29.7, @babel/plugin-proposal-decorators 7.29.7, @babel/plugin-proposal-export-default-from 7.29.7, @babel/plugin-syntax-decorators 7.29.7, @babel/plugin-syntax-dynamic-import 7.8.3, @babel/plugin-syntax-export-default-from 7.29.7, @babel/plugin-syntax-flow 7.29.7, @babel/plugin-syntax-jsx 7.29.7, @babel/plugin-syntax-nullish-coalescing-operator 7.8.3, @babel/plugin-syntax-optional-chaining 7.8.3, @babel/plugin-syntax-typescript 7.29.7, @babel/plugin-transform-arrow-functions 7.29.7, @babel/plugin-transform-async-generator-functions 7.29.7, @babel/plugin-transform-async-to-generator 7.29.7, @babel/plugin-transform-block-scoping 7.29.7, @babel/plugin-transform-class-properties 7.29.7, @babel/plugin-transform-class-static-block 7.29.7, @babel/plugin-transform-classes 7.29.7, @babel/plugin-transform-destructuring 7.29.7, @babel/plugin-transform-export-namespace-from 7.29.7, @babel/plugin-transform-flow-strip-types 7.29.7, @babel/plugin-transform-for-of 7.29.7, @babel/plugin-transform-logical-assignment-operators 7.29.7, @babel/plugin-transform-modules-commonjs 7.29.7, @babel/plugin-transform-named-capturing-groups-regex 7.29.7, @babel/plugin-transform-nullish-coalescing-operator 7.29.7, @babel/plugin-transform-object-rest-spread 7.29.7, @babel/plugin-transform-optional-catch-binding 7.29.7, @babel/plugin-transform-optional-chaining 7.29.7, @babel/plugin-transform-parameters 7.29.7, @babel/plugin-transform-private-methods 7.29.7, @babel/plugin-transform-private-property-in-object 7.29.7, @babel/plugin-transform-react-display-name 7.29.7, @babel/plugin-transform-react-jsx 7.29.7, @babel/plugin-transform-react-jsx-development 7.29.7, @babel/plugin-transform-react-jsx-self 7.29.7, @babel/plugin-transform-react-jsx-source 7.29.7, @babel/plugin-transform-react-pure-annotations 7.29.7, @babel/plugin-transform-runtime 7.29.7, @babel/plugin-transform-shorthand-properties 7.29.7, @babel/plugin-transform-template-literals 7.29.7, @babel/plugin-transform-typescript 7.29.9, @babel/plugin-transform-unicode-regex 7.29.7, @babel/preset-typescript 7.29.7, @babel/runtime 7.29.10, @babel/template 7.29.7, @babel/traverse 7.29.8, @babel/types 7.29.8
 
@@ -566,7 +566,7 @@ SOFTWARE.
 
 </details>
 
-### @expo/cli 57.0.28, @expo/config 57.0.10, @expo/config-plugins 57.0.10, @expo/devtools 57.0.1, @expo/dom-webview 57.0.1, @expo/expo-modules-macros-plugin 0.6.1, @expo/fingerprint 0.20.13, @expo/image-utils 0.11.6, @expo/inline-modules 0.1.7, @expo/json-file 11.0.1, @expo/local-build-cache-provider 57.0.8, @expo/log-box 57.0.4, @expo/metro-config 57.0.13, @expo/metro-file-map 57.0.4, @expo/metro-runtime 57.0.16, @expo/osascript 2.7.1, @expo/package-manager 1.13.1, @expo/plist 0.8.1, @expo/prebuild-config 57.0.17, @expo/router-server 57.0.12, babel-preset-expo 57.0.14, expo 57.0.27, expo-application 57.0.3, expo-asset 57.0.19, expo-audio 57.0.5, expo-auth-session 57.0.14, expo-background-task 57.0.21, expo-blur 57.0.3, expo-build-properties 57.0.22, expo-constants 57.0.21, expo-crypto 57.0.3, expo-file-system 57.0.7, expo-font 57.0.4, expo-glass-effect 57.0.4, expo-haptics 57.0.3, expo-image 57.0.5, expo-keep-awake 57.0.2, expo-linking 57.0.12, expo-modules-autolinking 57.0.14, expo-modules-core 57.0.21, expo-modules-jsi 57.1.1, expo-navigation-bar 57.0.3, expo-secure-store 57.0.4, expo-server 57.0.3, expo-speech 57.0.3, expo-splash-screen 57.0.9, expo-sqlite 57.0.4, expo-status-bar 57.0.1, expo-symbols 57.0.3, expo-system-ui 57.0.4, expo-task-manager 57.0.21, expo-web-browser 57.0.3, unimodules-app-loader 57.0.2
+### @expo/cli 57.0.28, @expo/config 57.0.10, @expo/config-plugins 57.0.10, @expo/devtools 57.0.1, @expo/dom-webview 57.0.1, @expo/expo-modules-macros-plugin 0.6.1, @expo/fingerprint 0.20.13, @expo/image-utils 0.11.6, @expo/inline-modules 0.1.7, @expo/json-file 11.0.1, @expo/local-build-cache-provider 57.0.8, @expo/log-box 57.0.4, @expo/metro-config 57.0.13, @expo/metro-file-map 57.0.4, @expo/metro-runtime 57.0.16, @expo/osascript 2.7.1, @expo/package-manager 1.13.1, @expo/plist 0.8.1, @expo/prebuild-config 57.0.17, @expo/router-server 57.0.12, babel-preset-expo 57.0.14, expo 57.0.27, expo-application 57.0.3, expo-asset 57.0.19, expo-audio 57.0.5, expo-auth-session 57.0.14, expo-background-task 57.0.21, expo-blur 57.0.3, expo-build-properties 57.0.22, expo-constants 57.0.21, expo-crypto 57.0.3, expo-file-system 57.0.7, expo-font 57.0.4, expo-glass-effect 57.0.4, expo-haptics 57.0.3, expo-image 57.0.5, expo-intent-launcher 57.0.1, expo-keep-awake 57.0.2, expo-linking 57.0.12, expo-modules-autolinking 57.0.14, expo-modules-core 57.0.21, expo-modules-jsi 57.1.1, expo-navigation-bar 57.0.3, expo-secure-store 57.0.4, expo-server 57.0.3, expo-speech 57.0.3, expo-splash-screen 57.0.9, expo-sqlite 57.0.4, expo-status-bar 57.0.1, expo-symbols 57.0.3, expo-system-ui 57.0.4, expo-task-manager 57.0.21, expo-web-browser 57.0.3, unimodules-app-loader 57.0.2
 
 MIT
 
@@ -11698,6 +11698,38 @@ MIT
 MIT License
 
 Copyright (c) 2024 Mathieu Acthernoene
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### react-native-keyboard-controller 1.21.9
+
+MIT
+
+<details><summary>Licence</summary>
+
+```
+MIT License
+
+Copyright (c) 2021 Kiryl Ziusko
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

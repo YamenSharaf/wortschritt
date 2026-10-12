@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { generateCounts, type ExerciseItem, type ExerciseProgress, type ExerciseSet } from "@mdb/shared";
 import { useExerciseRunner, useExerciseSet, useTutorChat } from "@mdb/client/react";
 import { ExerciseItemView } from "../components/ExerciseItemView";
-import { ArrowUpIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CrossIcon, LanguagesIcon, LightbulbIcon, RetryIcon, SparklesIcon } from "../components/icons";
+import { ArrowUpIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, CrossIcon, LanguagesIcon, LightbulbIcon, MoreIcon, RetryIcon, SparklesIcon, TrashIcon } from "../components/icons";
 import { btn, card } from "../components/ui";
 import { TapToTranslate } from "../components/TapToTranslate";
 import { TutorMarkdown } from "../components/TutorMarkdown";
@@ -236,10 +236,11 @@ function Runner({
 
       <div
         ref={cardRef}
-        className={`${card} p-6 font-content sm:p-7 ${
+        className={`${card} relative p-6 font-content sm:p-7 ${run.isGenerated(item.id) ? "pr-12 sm:pr-12" : ""} ${
           answered ? (lastCorrect ? "animate-correct" : "animate-wrong") : ""
         }`}
       >
+        {run.isGenerated(item.id) && <GeneratedItemMenu key={item.id} onRemove={() => run.removeItem(item.id)} />}
         {answeredEarlier && (
           <p className="mb-5 flex items-center gap-2 text-xs text-ink-muted">
             <RetryIcon className="h-3.5 w-3.5 shrink-0 text-ink-subtle" />
@@ -303,6 +304,62 @@ function Runner({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * A quiet "⋯" in the corner of an exercise generated for this learner, with
+ * the one thing to do about it: remove it from the set.
+ */
+function GeneratedItemMenu({ onRemove }: { onRemove: () => Promise<void> }) {
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("pointerdown", away);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", away);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={ref} className="absolute right-3 top-3 font-sans">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-label="More about this exercise"
+        className="grid h-8 w-8 place-items-center rounded-full text-ink-subtle hover:bg-surface-sunken hover:text-ink"
+      >
+        <MoreIcon className="h-4 w-4" />
+      </button>
+      {open && (
+        <div role="menu" className={`${card} absolute right-0 top-9 z-10 w-60 p-1.5 shadow-lg`}>
+          <p className="px-3 pb-1 pt-1.5 text-xs text-ink-subtle">Generated for you by the tutor.</p>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setError(null);
+              onRemove().catch((e) => setError(e instanceof Error ? e.message : String(e)));
+            }}
+            className="flex w-full items-center gap-2 rounded-control px-3 py-2 text-sm font-medium text-danger hover:bg-danger-soft"
+          >
+            <TrashIcon className="h-4 w-4" />
+            Remove this exercise
+          </button>
+          {error && <p className="px-3 py-1.5 text-xs text-danger">Couldn't remove it: {error}</p>}
+        </div>
+      )}
     </div>
   );
 }

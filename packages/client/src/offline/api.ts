@@ -255,6 +255,29 @@ export function createOfflineApi(o: {
     cheatsheet: (id) => local(async () => (await library())?.cheatsheets.find((s) => s.id === id), () => api.cheatsheet(id)),
     generatedItems: (setId) =>
       local(async () => (await store.get<ExerciseItem[]>("generated", setId)) ?? [], () => api.generatedItems(setId)),
+    generatedCounts: () =>
+      local(async () => {
+        const sets = (await library())?.exerciseSets;
+        if (!sets) return undefined;
+        const counts: Record<string, number> = {};
+        for (const s of sets) {
+          const n = (await store.get<ExerciseItem[]>("generated", s.id))?.length ?? 0;
+          if (n > 0) counts[s.id] = n;
+        }
+        return counts;
+      }, api.generatedCounts),
+    // Online only; the local copy follows at once so the set doesn't show them again before the next sync.
+    async removeGeneratedItems(setId) {
+      const r = await api.removeGeneratedItems(setId);
+      if (await sync.hasData()) await store.put("generated", setId, []);
+      return r;
+    },
+    async removeGeneratedItem(setId, itemId) {
+      const r = await api.removeGeneratedItem(setId, itemId);
+      const cur = await store.get<ExerciseItem[]>("generated", setId);
+      if (cur) await store.put("generated", setId, cur.filter((i) => i.id !== itemId));
+      return r;
+    },
 
     progress: () => local(async () => (await stats())?.progress, api.progress),
     runs: (limit) => local(async () => (await stats())?.runs.slice(0, limit), () => api.runs(limit)),

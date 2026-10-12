@@ -4,7 +4,7 @@ import { z } from "zod";
 import { cheatsheet, EXERCISE_TYPES, exerciseItem, exerciseSet, generateMoreBody, generateMoreResult } from "@mdb/shared";
 import { requireAuth } from "../auth/session";
 import { loadCheatsheets, loadExerciseSets } from "../content/loader";
-import { generateMore, GenerateError, listGenerated, removeGenerated } from "../services/generated";
+import { allGenerated, generateMore, GenerateError, listGenerated, removeGenerated, removeGeneratedItem } from "../services/generated";
 
 export async function contentRoutes(app: FastifyInstance) {
   const r = app.withTypeProvider<ZodTypeProvider>();
@@ -56,6 +56,16 @@ export async function contentRoutes(app: FastifyInstance) {
   const exists = (id: string) => loadExerciseSets().some((s) => s.id === id);
   const failure = z.object({ error: z.string() });
 
+  // How many generated items this learner has per set (for the sets' item counts).
+  r.get(
+    "/api/exercises/generated-counts",
+    {
+      preHandler: requireAuth,
+      schema: { tags: ["content"], response: { 200: z.record(z.string(), z.number().int()) } },
+    },
+    async (req) => Object.fromEntries([...allGenerated(req.user!.id)].map(([setId, items]) => [setId, items.length])),
+  );
+
   // This learner's generated items for a set (they follow the set's own).
   r.get(
     "/api/exercises/:id/generated",
@@ -96,6 +106,20 @@ export async function contentRoutes(app: FastifyInstance) {
       schema: { tags: ["content"], params: z.object({ id: z.string() }), response: { 200: z.object({ removed: z.number().int() }) } },
     },
     async (req) => ({ removed: removeGenerated(req.user!.id, req.params.id) }),
+  );
+
+  r.delete(
+    "/api/exercises/:id/generated/:itemId",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["content"],
+        description: "Remove one of this learner's generated items from the set.",
+        params: z.object({ id: z.string(), itemId: z.string() }),
+        response: { 200: z.object({ removed: z.number().int() }) },
+      },
+    },
+    async (req) => ({ removed: removeGeneratedItem(req.user!.id, req.params.id, req.params.itemId) ? 1 : 0 }),
   );
 
   r.get(

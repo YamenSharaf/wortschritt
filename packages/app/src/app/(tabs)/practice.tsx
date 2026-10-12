@@ -22,6 +22,9 @@ export default function Practice() {
   const { status, syncNow } = useSync();
   const sets = useAsync(() => api.exercises(), [api, status.revision], { keep: true });
   const runs = useAsync(() => api.runs(), [api, status.revision], { keep: true });
+  // Items generated for this learner count towards a set's size.
+  const extra = useAsync(() => api.generatedCounts().catch(() => ({}) as Record<string, number>), [api, status.revision], { keep: true });
+  const size = (set: { id: string; items: unknown[] }) => set.items.length + (extra.status === "ready" ? (extra.data[set.id] ?? 0) : 0);
   const [refreshing, setRefreshing] = useState(false);
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<"recent" | "az">("recent");
@@ -83,7 +86,7 @@ export default function Practice() {
             ) : null}
             <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 }}>
               <Pill text={s.level} />
-              <Pill text={`${s.items.length} tasks`} />
+              <Pill text={`${size(s)} tasks`} />
               {s.tags.slice(0, 2).map((t) => (
                 <Pill key={t} text={t} />
               ))}

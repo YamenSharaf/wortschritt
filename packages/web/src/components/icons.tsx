@@ -12,6 +12,7 @@ import {
   ChevronRight,
   CircleAlert,
   Copy,
+  Ellipsis,
   Download,
   FileText,
   Languages,
@@ -82,6 +83,7 @@ export const MinimizeIcon = wrap(Minimize2);
 export const StopIcon = wrap(Square);
 export const TypeIcon = wrap(Type);
 export const CopyIcon = wrap(Copy);
+export const MoreIcon = wrap(Ellipsis);
 export const ImportIcon = wrap(Import);
 export const AdminIcon = wrap(ShieldCheck);
 export const LearningIcon = wrap(GraduationCap);

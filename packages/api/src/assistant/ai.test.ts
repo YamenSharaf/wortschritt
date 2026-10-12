@@ -404,6 +404,28 @@ test("generate more: the server writes items from your mistakes, keeps and grade
   provider = () => sse(["O", "K"]);
 });
 
+test("generated items: counted per set, and removable one at a time", async () => {
+  const SET = "als-oder-wenn";
+  const item = (word: string) => ({ type: "cloze", text: `{{1}} ich ${word} war, spielte ich viel.`, blanks: [{ ref: "1", answer: { accept: ["Als"] } }] });
+  provider = () => sse([JSON.stringify({ items: [item("klein"), item("jung")] })]);
+  const items = (await admin("POST", `/api/exercises/${SET}/generate`, { count: 2 })).json().items as { id: string }[];
+  assert.equal(items.length, 2);
+  assert.deepEqual((await admin("GET", "/api/exercises/generated-counts")).json(), { [SET]: 2 });
+  await admin("POST", "/api/answers", { setId: SET, itemId: items[0]!.id, response: { type: "cloze", blanks: { 1: "als" } } });
+
+  // Removing one keeps the other, and drops its answer from the open session.
+  assert.deepEqual((await admin("DELETE", `/api/exercises/${SET}/generated/${items[0]!.id}`)).json(), { removed: 1 });
+  assert.deepEqual((await admin("GET", `/api/exercises/${SET}/generated`)).json(), [items[1]]);
+  assert.deepEqual((await admin("GET", "/api/exercises/generated-counts")).json(), { [SET]: 1 });
+  assert.equal((await admin("GET", `/api/exercise-progress/${SET}`)).json()?.results?.[items[0]!.id], undefined);
+  // A set's own items can't be removed this way.
+  assert.deepEqual((await admin("DELETE", `/api/exercises/${SET}/generated/aw-02`)).json(), { removed: 0 });
+
+  await admin("DELETE", `/api/exercises/${SET}/generated`);
+  assert.deepEqual((await admin("GET", "/api/exercises/generated-counts")).json(), {});
+  provider = () => sse(["O", "K"]);
+});
+
 test("grading: the server asks the tutor about a free-text miss; open items say the answers are examples", async () => {
   provider = () => sse(['{"correct": true, "feedback": "Fits the task."}']);
   const answer = (setId: string, itemId: string, text: string) =>

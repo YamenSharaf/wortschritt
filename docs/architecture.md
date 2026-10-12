@@ -261,8 +261,10 @@ computes, like the web does with HTML; it keeps no business logic.
   writes items with the learner's tutor (their mistakes in the set first as
   examples), validates them and keeps them in `generated_items` for that
   learner; the shared set never changes. `GET|DELETE
-  /api/exercises/:id/generated` lists or removes them; they're graded, synced
-  and listed in mistakes like the set's own items.
+  /api/exercises/:id/generated` lists or removes them (`DELETE
+  …/generated/:itemId` just one; `GET /api/exercises/generated-counts` counts
+  them per set for the lists); they're graded, synced and listed in mistakes
+  like the set's own items.
 - History (`services/history.ts`, `routes/history.ts`, MCP `get_mistakes` /
   `get_activity` / `get_set_history`): read from those logs plus `vocab`,
   `vocab_reviews` and `notes`. Mistakes are grouped per item, "resolved" once

@@ -180,10 +180,28 @@ export function useExerciseRunner({
   }
 
   const extraCount = items.length - set.items.length;
+  /** Drop items from this run (their answers too, as the server does). */
+  function dropItems(ids: Set<string>) {
+    const left = items.filter((i) => !ids.has(i.id));
+    const without = <T,>(o: Record<string, T>) => Object.fromEntries(Object.entries(o).filter(([k]) => !ids.has(k)));
+    setItems(left);
+    setResults(without);
+    setResponses(without);
+    setIndex((i) => Math.min(i, left.length - 1));
+    setAnswered(false);
+    setLastResponse(undefined);
+  }
   async function removeExtras() {
     await api.removeGeneratedItems(setId);
-    setItems(set.items);
-    setIndex((i) => Math.min(i, set.items.length - 1));
+    dropItems(new Set(items.slice(set.items.length).map((i) => i.id)));
+  }
+  /** Whether an item was generated for this learner (only those can be removed). */
+  const isGenerated = (id: string) => !set.items.some((i) => i.id === id);
+  /** Remove one generated item; the run stays on the item that takes its place. */
+  async function removeItem(id: string) {
+    if (!isGenerated(id)) return;
+    await api.removeGeneratedItem(setId, id);
+    dropItems(new Set([id]));
   }
 
   return {
@@ -209,6 +227,8 @@ export function useExerciseRunner({
     next,
     extraCount,
     removeExtras,
+    isGenerated,
+    removeItem,
     generate: { busy: genBusy, error: genError, count: genCount, setCount: setGenCount, run: generateMore },
   };
 }

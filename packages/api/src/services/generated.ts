@@ -49,6 +49,12 @@ export function removeGenerated(userId: number, setId: string): number {
   return db.delete(schema.generatedItems).where(key(userId, setId)).run().changes;
 }
 
+/** Remove one generated item (and its answer from the open session; history keeps it). */
+export function removeGeneratedItem(userId: number, setId: string, itemId: string): boolean {
+  forgetInSession(userId, setId, [itemId]);
+  return db.delete(schema.generatedItems).where(and(key(userId, setId), eq(schema.generatedItems.itemId, itemId))).run().changes > 0;
+}
+
 /**
  * Validate one generated item against BOTH the item schema and the structural
  * checks (cloze placeholders, table answer counts) by round-tripping it through
