@@ -38,6 +38,17 @@ export function gradeText(input: string, answer: TextAnswer): boolean {
   return answer.accept.some((a) => fold(a) === got);
 }
 
+/**
+ * Like gradeText, but punctuation doesn't count at all (a missing comma before
+ * "bitte", a dash, quotes): for translations, where the point is the sentence,
+ * not its commas. Words, their order and their spelling still must match.
+ */
+export function gradeTextIgnoringPunctuation(input: string, answer: TextAnswer): boolean {
+  const bare = (s: string) => fold(s).replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
+  const got = bare(input);
+  return answer.accept.some((a) => bare(a) === got);
+}
+
 /** An open-ended task whose `accept` lists examples, not every right answer. */
 export function isOpenAnswer(answer: TextAnswer): boolean {
   return answer.grading === "open";

@@ -60,3 +60,10 @@ test("translate: a match is right; a miss is for the tutor, and without one it's
   assert.deepEqual(withoutTutor(miss), { correct: false, grading: "auto" });
   assert.equal(responseText(tr, { type: "translate", text: "Ich habe …" }), "Ich habe …");
 });
+
+test("translate: punctuation doesn't count; words, order and spelling do", () => {
+  const tr = item({ id: "k", type: "translate", english: "I would like a coffee, please.", answer: { accept: ["Ich möchte einen Kaffee, bitte."] } });
+  assert.equal(gradeItem(tr, { type: "translate", text: "Ich möchte einen Kaffee bitte" }).correct, true);
+  assert.equal(gradeItem(tr, { type: "translate", text: "ich mochte einen kaffee – bitte!" }).correct, true);
+  assert.equal(gradeItem(tr, { type: "translate", text: "Ich möchte bitte einen Kaffee" }).correct, false, "another order is for the tutor");
+});

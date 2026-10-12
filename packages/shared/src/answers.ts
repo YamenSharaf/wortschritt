@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { ExerciseItem, TextAnswer } from "./exercises";
-import { gradeText, isOpenAnswer } from "./grading";
+import { gradeText, gradeTextIgnoringPunctuation, isOpenAnswer } from "./grading";
 
 /**
  * What a learner answered to one exercise item, per item type. The server
@@ -58,7 +58,7 @@ export function gradeItem(item: ExerciseItem, r: ItemResponse): LocalGrade {
       return { correct: (r as Extract<ItemResponse, { type: "true_false" }>).value === item.correct, grading: "auto" };
     case "translate": {
       const { text } = r as Extract<ItemResponse, { type: "translate" }>;
-      return gradeText(text, item.answer)
+      return gradeTextIgnoringPunctuation(text, item.answer)
         ? { correct: true, grading: "auto" }
         : { correct: false, grading: "auto", textMiss: { answer: item.answer, text } };
     }
