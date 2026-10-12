@@ -639,5 +639,6 @@ Cheat sheets.
 
 Production runs the API via `tsx` and serves `packages/web/dist` statically. The
 Dockerfile builds a multi-arch image; CI (`.github/workflows/docker-publish.yml`)
-pushes to GHCR on `main`/tags and then calls Komodo `CheckStackForUpdate` to
-auto-update the deployment. Self-host with `docker-compose.prod.yml`.
+pushes to GHCR on `main`/tags and then runs Komodo `DeployStack` (it pulls
+first, then `compose up`), waiting for the result so a failed deploy fails the
+job. Self-host with `docker-compose.prod.yml`.

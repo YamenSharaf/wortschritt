@@ -64,18 +64,17 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # After a successful push, ask Komodo to check the stack for image updates.
-      # With auto-update enabled on the stack, Komodo redeploys it immediately
-      # when a newer image is found (a no-op when nothing changed). Skipped on
+      # After a successful push, deploy the stack in Komodo. DeployStack pulls
+      # the images first (the stack has auto_pull on), then runs `compose up`,
+      # which recreates the container only when the image changed. Skipped on
       # PRs and when the Komodo variables aren't configured.
       #
-      # We fire the check WITHOUT waiting for the redeploy to finish
-      # (wait_for_auto_update:false). Waiting held the connection open for the
-      # whole pull+redeploy, which regularly exceeded the ~100s Cloudflare
-      # origin-timeout in front of the Komodo host and failed the job with a 524
-      # even though the images were pushed and the deploy proceeded. Komodo still
-      # performs the update asynchronously; we just don't block CI on it.
-      - name: Trigger Komodo update check
+      # Execute calls return at once with an Update and run in the background,
+      # so the request never sits behind the ~100s Cloudflare origin timeout in
+      # front of the Komodo host (which used to fail the job with a 524). We
+      # then read that Update until it's done and fail the job if the pull or
+      # the deploy failed. Komodo's own image polling stays on as a fallback.
+      - name: Deploy the stack in Komodo
         if: >-
           github.event_name != 'pull_request' &&
           vars.KOMODO_HOST != '' && vars.APP_STACK_ID != ''
@@ -90,12 +89,38 @@ jobs:
             http://*|https://*) ;;
             *) host="https://$host" ;;
           esac
-          echo "CheckStackForUpdate for stack ${STACK_ID} at ${host}"
-          curl --fail-with-body -sS --max-time 60 --retry 2 --retry-all-errors \
-            -X POST "${host}/write" \
-            -H "Content-Type: application/json" \
-            -H "X-Api-Key: ${KOMODO_KEY}" \
-            -H "X-Api-Secret: ${KOMODO_SECRET}" \
-            -d "{\"type\":\"CheckStackForUpdate\",\"params\":{\"stack\":\"${STACK_ID}\",\"skip_auto_update\":false,\"wait_for_auto_update\":false}}"
-          echo
+          komodo() {
+            curl --fail-with-body -sS --max-time 60 --retry 2 --retry-all-errors \
+              -X POST "${host}/$1" \
+              -H "Content-Type: application/json" \
+              -H "X-Api-Key: ${KOMODO_KEY}" \
+              -H "X-Api-Secret: ${KOMODO_SECRET}" \
+              -d "$2"
+          }
+
+          echo "DeployStack for stack ${STACK_ID} at ${host}"
+          update=$(komodo execute "$(jq -nc --arg s "$STACK_ID" '{type:"DeployStack",params:{stack:$s}}')")
+          id=$(jq -r '._id["$oid"] // ._id // empty' <<<"$update")
+          if [ -z "$id" ]; then
+            echo "::error::Komodo didn't start a deploy: $update"
+            exit 1
+          fi
+          echo "Komodo update ${id}"
+
+          # Wait for it (up to 5 minutes), then report how each stage went.
+          for _ in $(seq 1 60); do
+            sleep 5
+            update=$(komodo read "$(jq -nc --arg id "$id" '{type:"GetUpdate",params:{id:$id}}')") || continue
+            [ "$(jq -r '.status' <<<"$update")" = "Complete" ] && break
+          done
+          jq -r '.logs[]? | "\(if .success then "✓" else "✗" end) \(.stage)" + (if .success then "" else "\n\(.stderr)" end)' <<<"$update"
+          if [ "$(jq -r '.status' <<<"$update")" != "Complete" ]; then
+            echo "::error::The deploy didn't finish within 5 minutes (Komodo update ${id})."
+            exit 1
+          fi
+          if [ "$(jq -r '.success' <<<"$update")" != "true" ]; then
+            echo "::error::The deploy failed in Komodo (update ${id})."
+            exit 1
+          fi
+          echo "Deployed."
 
