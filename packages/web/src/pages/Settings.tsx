@@ -7,7 +7,7 @@ import {
   type Settings,
 } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
-import { useAsync, useAuth } from "@mdb/client/react";
+import { useAsync, useAuth, useAvatar } from "@mdb/client/react";
 import { timeAgo } from "@mdb/client";
 import { useAppearance } from "../lib/appearance";
 import {
@@ -21,7 +21,8 @@ import {
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { TabPills } from "../components/TabPills";
 import { AiSettings } from "./AiSettings";
-import { SpeakerIcon } from "../components/icons";
+import { ShuffleIcon, SpeakerIcon } from "../components/icons";
+import { Avatar } from "../components/Avatar";
 import { btn } from "../components/ui";
 
 const SETTINGS_TABS = [
@@ -378,6 +379,7 @@ function Account() {
         Signed in as <span className="font-medium text-ink ">{user?.username}</span>
         {user?.role === "admin" && " (admin)"}
       </p>
+      <AccountIcon />
       <DisplayName />
       <form onSubmit={changePassword} className="space-y-4">
         <h2 className="text-xl font-semibold tracking-[-0.01em]">Change password</h2>
@@ -421,6 +423,38 @@ function Account() {
         )}
       </form>
     </div>
+  );
+}
+
+/** Your icon: a pixel pattern (shuffle for another) or your initial. */
+function AccountIcon() {
+  const { avatar, style, setStyle, shuffle } = useAvatar();
+  const [busy, setBusy] = useState(false);
+  const run = (fn: () => Promise<void>) => {
+    setBusy(true);
+    fn().catch(() => {}).finally(() => setBusy(false));
+  };
+  return (
+    <section className="space-y-3">
+      <h2 className="text-xl font-semibold tracking-[-0.01em]">Icon</h2>
+      <div className="flex flex-wrap items-center gap-4">
+        <Avatar avatar={avatar} size={56} />
+        <TabPills
+          label="Icon style"
+          size="sm"
+          options={[
+            { value: "pattern", label: "Pattern" },
+            { value: "letter", label: "Letter" },
+          ]}
+          value={style}
+          onChange={(v) => run(() => setStyle(v))}
+        />
+        <button type="button" disabled={busy} onClick={() => run(shuffle)} className={btn.secondary}>
+          <ShuffleIcon className="h-4 w-4" />
+          Shuffle
+        </button>
+      </div>
+    </section>
   );
 }
 

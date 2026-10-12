@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import type { ExerciseItem, Series, Settings, Story, WordDetails } from "@mdb/shared";
+import type { ExerciseItem, FavoriteKind, Series, Settings, Story, WordDetails } from "@mdb/shared";
 
 /** Per-user settings blob (one row per user). */
 export const settings = sqliteTable("settings", {
@@ -344,6 +344,19 @@ export const series = sqliteTable("series", {
     .notNull()
     .default(sql`(unixepoch())`),
 }, (t) => [primaryKey({ columns: [t.userId, t.id] })]);
+
+/** Starred sets and sheets; `on` false is an unstar kept for its time (migration 19). */
+export const favorites = sqliteTable(
+  "favorites",
+  {
+    userId: integer("user_id").notNull(),
+    kind: text("kind").$type<FavoriteKind>().notNull(),
+    itemId: text("item_id").notNull(),
+    on: integer("on_", { mode: "boolean" }).notNull(),
+    at: integer("at").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.kind, t.itemId] })],
+);
 
 /** Which of a learner's items changed (filled by triggers, see migration 14). */
 export const syncLog = sqliteTable("sync_log", {

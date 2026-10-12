@@ -9,6 +9,7 @@ import { Muted, PageHeader, Pill, btn, cardLink } from "../components/ui";
 import { api } from "../lib/api";
 import { timeAgo } from "@mdb/client";
 import { useAsync } from "@mdb/client/react";
+import { StarButton } from "../components/StarButton";
 
 export function Exercises() {
   const exercises = useAsync(() => api.exercises(), []);
@@ -75,6 +76,7 @@ export function Exercises() {
                   <h2 className="font-semibold leading-6 tracking-[-0.005em]">{set.title}</h2>
                   {set.subtitle && <p className="text-sm text-ink-muted">{set.subtitle}</p>}
                 </div>
+                <StarButton kind="exercise" id={set.id} title={set.title} className="-mr-2 -mt-1" />
               </div>
               {set.description && <p className="mt-3 text-sm leading-5 text-ink-muted">{set.description}</p>}
               <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">

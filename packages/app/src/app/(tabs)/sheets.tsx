@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { View } from "react-native";
 import { router } from "expo-router";
 import { useApi, useAsync } from "@mdb/client/react";
+import { StarButton } from "@/ui/StarButton";
 import { useSync } from "@/lib/sync";
 import { font, useTheme } from "@/lib/theme";
 import { Segmented } from "@/reader/ReaderSheets";
@@ -74,6 +75,7 @@ export default function Sheets() {
                 </View>
               ) : null}
             </View>
+            <StarButton kind="cheatsheet" id={s.id} title={s.title} />
           </PressCard>
         ))}
       </View>

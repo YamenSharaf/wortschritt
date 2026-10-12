@@ -740,6 +740,31 @@ export const migrations: Migration[] = [
       addColumn(db, "oauth_grants", "prev_refresh_until", "INTEGER");
     },
   },
+  {
+    version: 19,
+    // Starred exercise sets and cheat sheets, per learner. Unstarring keeps
+    // the row (on = 0) with when it happened, so an older offline change from
+    // the app can't undo a newer one. The app syncs the whole list.
+    name: "favorites",
+    up(db) {
+      db.exec(`
+        CREATE TABLE favorites (
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          kind TEXT NOT NULL,
+          item_id TEXT NOT NULL,
+          on_ INTEGER NOT NULL,
+          at INTEGER NOT NULL,
+          PRIMARY KEY (user_id, kind, item_id)
+        );
+        CREATE TRIGGER sync_favorites_insert AFTER INSERT ON favorites BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'favorites', 'me');
+        END;
+        CREATE TRIGGER sync_favorites_update AFTER UPDATE ON favorites BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'favorites', 'me');
+        END;
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

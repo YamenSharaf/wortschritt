@@ -7,6 +7,8 @@ import {
   type AnswerVerdict,
   type ExerciseItem,
   type ExerciseProgress,
+  type Favorite,
+  type FavoriteKind,
   type Note,
   type SaveNoteBody,
   type SaveVocabBody,
@@ -291,6 +293,27 @@ export function createOfflineApi(o: {
         () => api.exerciseProgress(setId),
       ),
     settings: () => local(async () => (await store.get<Settings>("meta", META.settings)) ?? undefined, api.settings),
+    // Online; the local copy follows at once (and with the next sync anyway).
+    async saveSettings(next, opts) {
+      const saved = await api.saveSettings(next, opts);
+      if (await sync.hasData()) await store.put("meta", META.settings, saved);
+      return saved;
+    },
+    favorites: () => local(() => store.get<Favorite[]>("meta", META.favorites).then((f) => f ?? undefined), api.favorites),
+    setFavorite: (kind, id, on) => {
+      const applyLocal = async (): Promise<Favorite[]> => {
+        const cur = ((await store.get<Favorite[]>("meta", META.favorites)) ?? []).filter((f) => !(f.kind === kind && f.id === id));
+        const next = on ? [{ kind, id, createdAt: nowS() }, ...cur] : cur;
+        await store.put("meta", META.favorites, next);
+        return next;
+      };
+      return write(
+        { type: "favorite", kind: kind as FavoriteKind, id, on, at: nowS() },
+        () => api.setFavorite(kind, id, on),
+        (list) => store.put("meta", META.favorites, list),
+        applyLocal,
+      );
+    },
 
     // --- practice ------------------------------------------------------------
 

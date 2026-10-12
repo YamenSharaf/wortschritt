@@ -7,6 +7,7 @@ import { TutorMarkdown } from "../components/TutorMarkdown";
 import { useAsync } from "@mdb/client/react";
 import { ChevronLeftIcon, LanguagesIcon } from "../components/icons";
 import { btn } from "../components/ui";
+import { StarButton } from "../components/StarButton";
 
 const mdOptions = {
   forceBlock: true,
@@ -52,11 +53,14 @@ export function CheatsheetView() {
       )}
       {sheet.status === "ready" && (
         <article className="mt-3 space-y-6">
-          <div>
-            <h1 className="text-[28px] font-semibold leading-[34px] tracking-[-0.02em]">{sheet.data.title}</h1>
-            {sheet.data.subtitle && (
-              <p className="text-sm text-ink-muted">{sheet.data.subtitle}</p>
-            )}
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-[28px] font-semibold leading-[34px] tracking-[-0.02em]">{sheet.data.title}</h1>
+              {sheet.data.subtitle && (
+                <p className="text-sm text-ink-muted">{sheet.data.subtitle}</p>
+              )}
+            </div>
+            <StarButton kind="cheatsheet" id={sheet.data.id} title={sheet.data.title} className="mt-0.5" />
           </div>
           {sheet.data.sections.map((sec, i) => (
             <Section

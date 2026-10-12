@@ -12,9 +12,9 @@ import {
 import { useTheme } from "@/lib/theme";
 
 /** Lucide at the design system's 1.75 stroke, in the ink colour unless told otherwise. */
-export function Icon({ icon: I, size = 20, color }: { icon: LucideIcon; size?: number; color?: string }) {
+export function Icon({ icon: I, size = 20, color, fill }: { icon: LucideIcon; size?: number; color?: string; fill?: string }) {
   const { colors } = useTheme();
-  return <I size={size} strokeWidth={1.75} color={color ?? colors.ink} />;
+  return <I size={size} strokeWidth={1.75} color={color ?? colors.ink} fill={fill ?? "none"} />;
 }
 
 /** The sections, with the web's icons and section colours. */

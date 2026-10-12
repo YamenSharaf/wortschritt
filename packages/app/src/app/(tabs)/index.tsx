@@ -3,7 +3,7 @@ import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import type { RunSummary } from "@mdb/shared";
 import { timeAgo } from "@mdb/client";
-import { useApi, useAsync, useAuth } from "@mdb/client/react";
+import { useApi, useAsync, useAuth, useAvatar, useFavorites } from "@mdb/client/react";
 import { useSync } from "@/lib/sync";
 import { font, useTheme } from "@/lib/theme";
 import { Button } from "@/ui/Button";
@@ -14,6 +14,12 @@ import { Icon, Play, sections } from "@/ui/icons";
 import { Screen } from "@/ui/Screen";
 import { Text } from "@/ui/Text";
 import { UpdateCard } from "@/ui/UpdateCard";
+import { Avatar } from "@/ui/Avatar";
+import { FavoriteRows, useFavoriteRows } from "@/ui/FavoriteRows";
+import { Logo } from "@/ui/Logo";
+
+/** How many favourites Home lists before "Show all". */
+const FAVORITES_ON_HOME = 3;
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -32,6 +38,10 @@ export default function Home() {
   const settings = useAsync(() => api.settings(), [api, rev], { keep: true });
   const progress = useAsync(() => api.progress(), [api, rev], { keep: true });
   const runs = useAsync(() => api.runs(5), [api, rev], { keep: true });
+  const { avatar } = useAvatar({ reloadKey: rev });
+  const favorites = useFavorites({ reloadKey: rev });
+  const favoriteRows = useFavoriteRows(favorites.list);
+  const syncFailed = sync.status.state === "error";
 
   const name = (settings.status === "ready" && settings.data.displayName.trim()) || user?.username || "";
   const p = progress.status === "ready" ? progress.data : null;
@@ -47,23 +57,18 @@ export default function Home() {
       refreshing={refreshing}
     >
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <SyncLine />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }} accessibilityRole="header">
+          <Logo size={28} />
+          <Text style={{ fontFamily: font.semibold, fontSize: 19, letterSpacing: -0.2 }}>Wortschritt</Text>
+        </View>
         <Pressable
           onPress={() => router.push("/account")}
           accessibilityRole="button"
-          accessibilityLabel="Account"
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: colors.brandSoft,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
+          accessibilityLabel={syncFailed ? "Account, couldn't sync" : "Account"}
+          hitSlop={6}
+          style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
         >
-          <Text style={{ fontFamily: font.semibold, color: colors.brandInk }}>{(user?.username ?? "?").slice(0, 1).toUpperCase()}</Text>
+          <Avatar avatar={avatar} size={40} dot={syncFailed ? colors.danger : undefined} />
         </Pressable>
       </View>
 
@@ -105,6 +110,28 @@ export default function Home() {
         </View>
       </GlassCard>
 
+      {syncFailed && (
+        <Pressable onPress={() => void sync.syncNow()} accessibilityRole="button" hitSlop={6} style={{ alignSelf: "center", marginTop: -6 }}>
+          <Text variant="subtle" style={{ color: colors.danger }}>
+            Couldn't sync · <Text style={{ fontFamily: font.medium, fontSize: 13, color: colors.brandInk }}>Try again</Text>
+          </Text>
+        </Pressable>
+      )}
+
+      {favoriteRows && favoriteRows.length > 0 && (
+        <View style={{ gap: 10 }}>
+          <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
+            <Text variant="heading">Favourites</Text>
+            {favoriteRows.length > FAVORITES_ON_HOME && (
+              <Pressable onPress={() => router.push("/favorites")} accessibilityRole="button" hitSlop={8}>
+                <Text style={{ fontFamily: font.medium, color: colors.brandInk }}>Show all ({favoriteRows.length})</Text>
+              </Pressable>
+            )}
+          </View>
+          <FavoriteRows rows={favoriteRows.slice(0, FAVORITES_ON_HOME)} />
+        </View>
+      )}
+
       {runs.status === "ready" && runs.data.length > 0 && (
         <View style={{ gap: 10 }}>
           <Text variant="heading">Recent practice</Text>
@@ -116,33 +143,6 @@ export default function Home() {
         </View>
       )}
     </Screen>
-  );
-}
-
-/** Where the data on screen stands: synced when, offline, or changes waiting to be sent. */
-function SyncLine() {
-  const { status } = useSync();
-  const { colors } = useTheme();
-  const waiting = status.pending > 0 ? ` · ${status.pending} ${status.pending === 1 ? "change" : "changes"} to send` : "";
-  const text =
-    status.state === "syncing"
-      ? "Syncing…"
-      : status.state === "offline"
-        ? `Offline${status.lastSyncAt ? ` · synced ${timeAgo(Math.floor(status.lastSyncAt / 1000))}` : ""}${waiting}`
-        : status.state === "error"
-          ? `Couldn't sync${waiting}`
-          : status.lastSyncAt
-            ? `Synced ${timeAgo(Math.floor(status.lastSyncAt / 1000))}${waiting}`
-            : waiting.slice(3);
-  return (
-    <Text
-      variant="subtle"
-      numberOfLines={1}
-      style={{ flex: 1, color: status.state === "error" ? colors.danger : undefined }}
-      accessibilityLiveRegion="polite"
-    >
-      {text}
-    </Text>
   );
 }
 

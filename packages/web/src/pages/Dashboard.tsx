@@ -1,13 +1,13 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { storySetId, type RunSummary } from "@mdb/shared";
-import { PlayIcon } from "../components/icons";
+import { PlayIcon, StarIcon } from "../components/icons";
 import { Pill, SectionHeading, btn, cardLink } from "../components/ui";
 import { SectionIcon, type Section } from "../components/SectionIcon";
 import { api } from "../lib/api";
 import { useAuth } from "@mdb/client/react";
 import { timeAgo } from "@mdb/client";
-import { useAsync } from "@mdb/client/react";
+import { useAsync, useFavorites } from "@mdb/client/react";
 import { LastRunBadge } from "./Exercises";
 
 export function Dashboard() {
@@ -19,6 +19,9 @@ export function Dashboard() {
   // Items generated for this learner count towards a set's size.
   const extra = useAsync(() => api.generatedCounts().catch(() => ({}) as Record<string, number>), []);
   const size = (set: { id: string; items: unknown[] }) => set.items.length + (extra.status === "ready" ? (extra.data[set.id] ?? 0) : 0);
+  const allSheets = useAsync(() => api.cheatsheets(), []);
+  const favorites = useFavorites();
+  const [allFavorites, setAllFavorites] = useState(false);
   const sheets = useAsync(() => api.sheetViews(5), []);
   const notes = useAsync(() => api.notes(), []);
   const recentRuns = runs.status === "ready" ? runs.data.slice(0, 5) : [];
@@ -27,6 +30,20 @@ export function Dashboard() {
 
   const lastRun: Record<string, RunSummary> = {};
   if (runs.status === "ready") for (const r of runs.data) lastRun[r.setId] = r;
+
+  // Starred sets and sheets that are still in the library, newest first.
+  type FavoriteRow = { key: string; to: string; section: Section; title: string; meta: string; run?: RunSummary };
+  const favoriteRows: FavoriteRow[] =
+    exercises.status === "ready" && allSheets.status === "ready"
+      ? favorites.list.flatMap((f): FavoriteRow[] => {
+          if (f.kind === "exercise") {
+            const set = exercises.data.find((x) => x.id === f.id);
+            return set ? [{ key: `e:${f.id}`, to: `/exercises/${f.id}`, section: "practice" as const, title: set.title, meta: `Exercises · ${size(set)} tasks`, run: lastRun[f.id] }] : [];
+          }
+          const sheet = allSheets.data.find((x) => x.id === f.id);
+          return sheet ? [{ key: `c:${f.id}`, to: `/cheatsheets/${f.id}`, section: "sheets" as const, title: sheet.title, meta: "Cheat sheet", run: undefined }] : [];
+        })
+      : [];
 
   const name =
     (settings.status === "ready" && settings.data.displayName.trim()) || user?.username || "";
@@ -122,6 +139,31 @@ export function Dashboard() {
         </div>
       )}
 
+      {favoriteRows.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-xl font-semibold tracking-[-0.01em]">Favourites</h2>
+            {favoriteRows.length > FAVORITES_SHOWN && (
+              <button type="button" onClick={() => setAllFavorites((v) => !v)} className="text-sm font-medium text-ink-muted hover:text-ink">
+                {allFavorites ? "Show fewer" : `Show all (${favoriteRows.length})`}
+              </button>
+            )}
+          </div>
+          <div className="divide-y divide-[var(--border)] overflow-hidden rounded-card border border-line bg-surface shadow-card">
+            {(allFavorites ? favoriteRows : favoriteRows.slice(0, FAVORITES_SHOWN)).map((r) => (
+              <Row
+                key={r.key}
+                to={r.to}
+                section={r.section}
+                title={r.title}
+                meta={r.meta}
+                end={r.run ? <LastRunBadge run={r.run} /> : <StarIcon className="h-4 w-4 fill-[var(--reward-1)] text-[#e0a800]" aria-hidden />}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="space-y-3">
         <SectionHeading title="Exercises" more={{ to: "/exercises", label: "See all" }} />
         {exercises.status === "loading" && <p className="text-ink-muted">Loading…</p>}
@@ -164,6 +206,9 @@ export function Dashboard() {
     </div>
   );
 }
+
+/** How many favourites Home lists before "Show all". */
+const FAVORITES_SHOWN = 3;
 
 function greeting(): string {
   const h = new Date().getHours();

@@ -12,6 +12,8 @@ import {
   ChevronRight,
   CircleAlert,
   Copy,
+  Shuffle,
+  Star,
   Ellipsis,
   Download,
   FileText,
@@ -84,6 +86,8 @@ export const StopIcon = wrap(Square);
 export const TypeIcon = wrap(Type);
 export const CopyIcon = wrap(Copy);
 export const MoreIcon = wrap(Ellipsis);
+export const ShuffleIcon = wrap(Shuffle);
+export const StarIcon = wrap(Star);
 export const ImportIcon = wrap(Import);
 export const AdminIcon = wrap(ShieldCheck);
 export const LearningIcon = wrap(GraduationCap);

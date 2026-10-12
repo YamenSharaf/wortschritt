@@ -18,6 +18,8 @@ import type {
   ExerciseProgress,
   ExerciseRun,
   ExerciseSet,
+  Favorite,
+  FavoriteKind,
   GenerateStoryBody,
   ImportBody,
   Note,
@@ -320,6 +322,12 @@ export function createApi(o: ClientOptions) {
     /** `keepalive` lets the save finish while the page is closing. */
     saveSettings: (s: Settings, opts: { keepalive?: boolean } = {}) =>
       req<Settings>("/api/settings", { method: "PUT", body: JSON.stringify(s), keepalive: opts.keepalive }),
+
+    // favourites (starred sets and sheets), newest first
+    favorites: () => req<Favorite[]>("/api/favorites"),
+    /** Star or unstar; resolves to the whole list after the change. */
+    setFavorite: (kind: FavoriteKind, id: string, on: boolean) =>
+      req<Favorite[]>(`/api/favorites/${kind}/${encodeURIComponent(id)}`, { method: on ? "PUT" : "DELETE" }),
 
     // import
     import: (body: ImportBody) =>

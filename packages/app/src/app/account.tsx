@@ -2,12 +2,17 @@ import { Alert, Pressable, Switch, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import { router } from "expo-router";
 import { preferences, type Preference } from "@mdb/client";
-import { useAuth, usePreference } from "@mdb/client/react";
+import { useAuth, useAvatar, usePreference } from "@mdb/client/react";
 import { useServer } from "@/lib/server";
 import { font, useTheme } from "@/lib/theme";
 import { Button } from "@/ui/Button";
 import { Card } from "@/ui/Card";
 import { Icon, LogOut } from "@/ui/icons";
+import { Shuffle } from "lucide-react-native";
+import { Avatar } from "@/ui/Avatar";
+import { SyncLine } from "@/ui/SyncLine";
+import { Segmented } from "@/reader/ReaderSheets";
+import { useSync } from "@/lib/sync";
 import { Screen } from "@/ui/Screen";
 import { Text } from "@/ui/Text";
 import { LearningSettings } from "@/settings/Learning";
@@ -27,10 +32,7 @@ export default function Account() {
         <Text variant="title">Account</Text>
         <Button kind="ghost" label="Done" onPress={() => router.back()} />
       </View>
-      <Card style={{ padding: 16, gap: 2 }}>
-        <Text style={{ fontFamily: font.semibold }}>{user?.username}</Text>
-        <Text variant="subtle">{server?.replace(/^https?:\/\//, "")}</Text>
-      </Card>
+      <AccountCard username={user?.username ?? ""} server={server?.replace(/^https?:\/\//, "") ?? ""} />
 
       <View style={{ gap: 10 }}>
         <Text variant="heading">Learning</Text>
@@ -201,5 +203,49 @@ function AppUpdates() {
         </View>
       </Card>
     </View>
+  );
+}
+
+/** Who and where you are, your icon (pattern or letter, shuffle) and how sync stands. */
+function AccountCard({ username, server }: { username: string; server: string }) {
+  const { colors } = useTheme();
+  const sync = useSync();
+  const { avatar, style, setStyle, shuffle } = useAvatar();
+  const fail = (e: unknown) => Alert.alert("Couldn't change your icon", e instanceof Error ? e.message : String(e));
+  return (
+    <Card style={{ padding: 16, gap: 14 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+        <Avatar avatar={avatar} size={56} />
+        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+          <Text style={{ fontFamily: font.semibold }}>{username}</Text>
+          <Text variant="subtle" numberOfLines={1}>
+            {server}
+          </Text>
+          <Pressable onPress={() => void sync.syncNow()} accessibilityRole="button" accessibilityLabel="Sync now" hitSlop={6}>
+            <SyncLine />
+          </Pressable>
+        </View>
+      </View>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 }}>
+        <Text style={{ fontFamily: font.medium, flex: 1 }}>Icon</Text>
+        <Segmented
+          value={style}
+          options={[
+            ["pattern", "Pattern"],
+            ["letter", "Letter"],
+          ]}
+          onChange={(v) => void setStyle(v).catch(fail)}
+          compact
+        />
+        <Pressable
+          onPress={() => void shuffle().catch(fail)}
+          accessibilityRole="button"
+          accessibilityLabel="Shuffle your pattern"
+          style={{ width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
+        >
+          <Icon icon={Shuffle} size={18} color={colors.inkMuted} />
+        </Pressable>
+      </View>
+    </Card>
   );
 }

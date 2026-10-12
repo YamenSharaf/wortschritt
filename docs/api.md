@@ -84,6 +84,7 @@ Progress    POST /api/answers (server grades)             GET /api/progress
             POST /api/sheet-views GET /api/sheet-views
 History     GET  /api/history/mistakes  /api/history/activity  /api/history/sets/:setId
 Settings    GET|PUT /api/settings
+Favourites  GET /api/favorites   PUT|DELETE /api/favorites/:kind/:id (kind: exercise | cheatsheet)
 Vocab       GET|POST /api/vocab    GET|DELETE /api/vocab/:word
             POST|DELETE /api/vocab/:word/study
             GET|POST /api/vocab-groups    DELETE /api/vocab-groups/:id

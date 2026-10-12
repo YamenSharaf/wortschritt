@@ -15,6 +15,7 @@ import {
 import { getStoredCover, coverVersion } from "./covers";
 import { createNote, getNote, listNotes, removeNote, updateNote } from "./notes";
 import { AnswerError, answerOffline, finish } from "./answers";
+import { listFavorites, setFavorite } from "./favorites";
 import { allGenerated, listGenerated } from "./generated";
 import { getProgressSummary } from "./progress";
 import { getSeriesView, listSeries } from "./series";
@@ -41,7 +42,7 @@ const LOG_DAYS = 90;
 const OPS_DAYS = 30;
 const HORIZON_KEY = "sync.horizon";
 
-type Kind = "story" | "series" | "vocab" | "group" | "note" | "settings" | "generated";
+type Kind = "story" | "series" | "vocab" | "group" | "note" | "settings" | "generated" | "favorites";
 
 function horizon(): number {
   const row = db.select().from(schema.appSettings).where(eq(schema.appSettings.key, HORIZON_KEY)).get();
@@ -103,6 +104,7 @@ function snapshot(userId: number, cursor: number): SyncChanges {
     notes: listNotes(userId),
     generated: [...allGenerated(userId)].map(([setId, items]) => ({ setId, items })),
     settings: getSettings(userId),
+    favorites: listFavorites(userId),
     deleted: emptyDeleted(),
     stats: stats(userId),
   };
@@ -134,6 +136,7 @@ export function syncChanges(userId: number, since: number | null, libraryVersion
     notes: [],
     generated: [],
     settings: null,
+    favorites: null,
     deleted: emptyDeleted(),
     stats: stats(userId),
   };
@@ -179,6 +182,9 @@ export function syncChanges(userId: number, since: number | null, libraryVersion
       }
       case "settings":
         out.settings = getSettings(userId);
+        break;
+      case "favorites":
+        out.favorites = listFavorites(userId);
         break;
       case "generated": {
         const items = listGenerated(userId, itemId);
@@ -226,6 +232,9 @@ function apply(userId: number, op: SyncOp): Omit<Result, "opId" | "duplicate"> {
       if (r === "missing") return { ok: false, error: "no such story" };
       return r === "stale" ? { ok: true, stale: true } : { ok: true };
     }
+    case "favorite":
+      // An older change than the one already there is stale: the newer one stands.
+      return setFavorite(userId, op.kind, op.id, op.on, Math.min(op.at, Math.floor(Date.now() / 1000))) ? { ok: true } : { ok: true, stale: true };
     case "vocabSave":
       upsertVocab(userId, op.data);
       return { ok: true };

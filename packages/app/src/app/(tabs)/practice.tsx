@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import type { RunSummary } from "@mdb/shared";
 import { timeAgo } from "@mdb/client";
 import { useApi, useAsync } from "@mdb/client/react";
+import { StarButton } from "@/ui/StarButton";
 import { useSync } from "@/lib/sync";
 import { font, useTheme } from "@/lib/theme";
 import { IconTile } from "@/ui/IconTile";
@@ -78,6 +79,7 @@ export default function Practice() {
                 <Text style={{ fontFamily: font.semibold }}>{s.title}</Text>
                 {s.subtitle ? <Text variant="muted">{s.subtitle}</Text> : null}
               </View>
+              <StarButton kind="exercise" id={s.id} title={s.title} />
             </View>
             {s.description ? (
               <Text variant="muted" style={{ fontSize: 14, lineHeight: 20 }}>

@@ -9,3 +9,5 @@ export * from "./useStoryGeneration";
 export * from "./usePreference";
 export * from "./useAuth";
 export * from "./useGermanWord";
+export * from "./useFavorites";
+export * from "./useAvatar";

@@ -1,7 +1,8 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "@mdb/client/react";
+import { useAuth, useAvatar } from "@mdb/client/react";
+import { Avatar } from "./Avatar";
 import {
   AccountIcon,
   AdminIcon,
@@ -22,13 +23,14 @@ const itemClass = (active: boolean) =>
   }`;
 
 /**
- * The account button in the header: your initial in a glass circle. It opens
+ * The account button in the header: your pixel icon (components/Avatar). It opens
  * your settings, administration (admins) and log out — a dropdown on wide
  * screens, a sheet from the bottom on phones. Rendered in a portal because the
  * header's backdrop-filter would otherwise trap fixed positioning.
  */
 export function AccountMenu() {
   const { user, logout } = useAuth();
+  const { avatar } = useAvatar();
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState<{ top: number; right: number } | null>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -66,7 +68,6 @@ export function AccountMenu() {
   }
 
   if (!user) return null;
-  const initial = user.username.slice(0, 1).toUpperCase();
   const admin = user.role === "admin";
 
   return (
@@ -79,10 +80,9 @@ export function AccountMenu() {
         aria-controls={id}
         aria-label="Account menu"
         title={user.username}
-        className="ws-glass-icon grid h-9 w-9 place-items-center rounded-full text-sm font-semibold"
-        style={{ "--tint": "var(--brand)" } as React.CSSProperties}
+        className="block rounded-[10px] transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
       >
-        {initial}
+        <Avatar avatar={avatar} size={36} />
       </button>
       {open &&
         createPortal(
@@ -102,13 +102,7 @@ export function AccountMenu() {
               }
             >
               <div className="flex items-center gap-3 px-3 pb-3 pt-2 md:pb-2">
-                <span
-                  className="ws-glass-icon grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-semibold"
-                  style={{ "--tint": "var(--brand)" } as React.CSSProperties}
-                  aria-hidden
-                >
-                  {initial}
-                </span>
+                <Avatar avatar={avatar} size={36} />
                 <div className="min-w-0">
                   <p className="truncate font-semibold leading-5">{user.username}</p>
                   <p className="text-xs text-ink-subtle">{admin ? "Admin" : "Learner"}</p>

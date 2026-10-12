@@ -11,6 +11,7 @@ import { Icon } from "@/ui/icons";
 import { Markdown } from "@/ui/Markdown";
 import { Screen } from "@/ui/Screen";
 import { Text } from "@/ui/Text";
+import { StarButton } from "@/ui/StarButton";
 import { ChevronLeft, Languages } from "lucide-react-native";
 
 /** One cheat sheet: its sections, each word tappable, each section translatable (as on the web). */
@@ -39,9 +40,14 @@ export default function SheetScreen() {
       {sheet.status === "error" && <Text style={{ color: colors.danger }}>This cheat sheet isn't here.</Text>}
       {ready && (
         <>
-          <View>
-            <Text variant="title">{ready.title}</Text>
-            {ready.subtitle ? <Text variant="muted">{ready.subtitle}</Text> : null}
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text variant="title">{ready.title}</Text>
+              {ready.subtitle ? <Text variant="muted">{ready.subtitle}</Text> : null}
+            </View>
+            <View style={{ paddingTop: 6 }}>
+              <StarButton kind="cheatsheet" id={ready.id} title={ready.title} />
+            </View>
           </View>
           {ready.sections.map((sec, i) => (
             <Section key={i} heading={sec.heading} body={sec.body} canTranslate={assistant} onWord={(w, context) => setWord({ word: w, context })} />

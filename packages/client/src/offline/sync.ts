@@ -1,4 +1,4 @@
-import type { Cheatsheet, ExerciseSet, Settings, SyncChanges, SyncStats } from "@mdb/shared";
+import type { Cheatsheet, ExerciseSet, Favorite, Settings, SyncChanges, SyncStats } from "@mdb/shared";
 import type { Api } from "../api";
 import { ApiError } from "../http";
 import { timers, type TimerId } from "../timers";
@@ -12,6 +12,8 @@ export const META = {
   cursor: "cursor",
   library: "library",
   settings: "settings",
+  /** Favorite[], newest first. */
+  favorites: "favorites",
   stats: "stats",
   syncedAt: "syncedAt",
   /** + opId: the local id of a note created offline (removed once the server has it). */
@@ -112,6 +114,7 @@ export function createSync(o: { api: Api; store: OfflineStore; now?: () => numbe
       for (const [col, ids] of gone) for (const id of ids) await store.remove(col, id);
       if (c.library) await store.put("meta", META.library, c.library satisfies LocalLibrary);
       if (c.settings) await store.put("meta", META.settings, c.settings satisfies Settings);
+      if (c.favorites) await store.put("meta", META.favorites, c.favorites satisfies Favorite[]);
       await store.put("meta", META.stats, c.stats satisfies SyncStats);
       await store.put("meta", META.cursor, c.cursor);
     });

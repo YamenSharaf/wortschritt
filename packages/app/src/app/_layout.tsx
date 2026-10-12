@@ -130,6 +130,7 @@ function Root() {
           <Stack.Screen name="vocab/study" />
           <Stack.Screen name="note/[id]" />
           <Stack.Screen name="import" />
+          <Stack.Screen name="favorites" />
           <Stack.Screen name="quiz/[id]" />
           <Stack.Screen name="licenses" />
         </Stack.Protected>

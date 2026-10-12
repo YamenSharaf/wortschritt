@@ -373,7 +373,14 @@ computes, like the web does with HTML; it keeps no business logic.
   opt-in, `tts/edge.ts` WebSocket protocol as in edge-tts). Cloud voices are
   limited to `NEURAL_VOICES` (`@mdb/shared`). Clips are cached on disk by
   voice + text; no server voice → the browser's speech synthesis.
-- Settings: single JSON row (`services/settings.ts`).
+- Settings: single JSON row (`services/settings.ts`), including the account
+  icon (`avatar`: a pixel pattern from the username and a shuffle seed, or the
+  initial; drawn by `@mdb/client`'s `avatarFor` on web and app alike).
+- Favourites (`services/favorites.ts`): starred exercise sets and cheat
+  sheets per learner, listed first on Home. Unstarring keeps the row off with
+  its time, so the later of two changes wins (the app's offline `favorite`
+  op is stale when older); the change feed sends the whole list when it
+  changed.
 - Auth: `users` + `sessions` tables (`auth/`). Login checks a scrypt hash
   (`auth/password.ts`) and creates a server-side session; the cookie holds a
   random token, the database only its SHA-256. `requireAuth` (`auth/session.ts`)

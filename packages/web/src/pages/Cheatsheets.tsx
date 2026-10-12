@@ -7,6 +7,7 @@ import { SortControl, sortByMode, type SortMode } from "../components/SortContro
 import { PageHeader, Pill, btn, cardLink } from "../components/ui";
 import { api } from "../lib/api";
 import { useAsync } from "@mdb/client/react";
+import { StarButton } from "../components/StarButton";
 
 export function Cheatsheets() {
   const sheets = useAsync(() => api.cheatsheets(), []);
@@ -69,6 +70,7 @@ export function Cheatsheets() {
                   </div>
                 )}
               </div>
+              <StarButton kind="cheatsheet" id={s.id} title={s.title} className="-mr-2 -mt-1" />
             </Link>
           ))}
         </div>

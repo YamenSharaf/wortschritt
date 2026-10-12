@@ -316,3 +316,35 @@ test("a cursor older than the kept log gets a full snapshot", async () => {
   assert.equal((await changes(me, cursor, libraryVersion)).full, true);
   db.insert(schema.appSettings).values({ key: "sync.horizon", value: "0" }).onConflictDoUpdate({ target: schema.appSettings.key, set: { value: "0" } }).run();
 });
+
+test("favourites: starred per learner, synced whole, and the later change wins", async () => {
+  const sheet = (await me("GET", "/api/cheatsheets")).json()[0].id as string;
+  const SET = (await me("GET", "/api/exercises")).json()[0].id as string;
+  const base = (await me("GET", "/api/sync/changes")).json() as Changes & { favorites: unknown };
+  assert.deepEqual(base.favorites, [], "a snapshot carries the (empty) list");
+
+  let res = await me("PUT", `/api/favorites/exercise/${SET}`);
+  assert.equal(res.statusCode, 200, res.body);
+  res = await me("PUT", `/api/favorites/cheatsheet/${encodeURIComponent(sheet)}`);
+  const list = res.json() as { kind: string; id: string }[];
+  assert.deepEqual(list.map((f) => f.id).sort(), [SET, sheet].sort());
+  assert.equal((await me("PUT", "/api/favorites/exercise/no-such-set")).statusCode, 404);
+  assert.deepEqual((await anna("GET", "/api/favorites")).json(), [], "only yours");
+
+  // The change feed sends the whole list when it changed, and nothing otherwise.
+  const c1 = (await me("GET", `/api/sync/changes?since=${base.cursor}`)).json() as Changes & { favorites: { id: string }[] | null };
+  assert.equal(c1.favorites?.length, 2);
+  const c2 = (await me("GET", `/api/sync/changes?since=${c1.cursor}`)).json() as Changes & { favorites: unknown };
+  assert.equal(c2.favorites, null);
+
+  // Offline: an unstar from the app applies; an older star after it is stale.
+  const now = Math.floor(Date.now() / 1000);
+  const push = (ops: unknown[]) => me("POST", "/api/sync/push", { ops });
+  let r = (await push([{ opId: "fav-op-0001", type: "favorite", kind: "exercise", id: SET, on: false, at: now + 1 }])).json();
+  assert.equal(r.results[0].ok, true);
+  r = (await push([{ opId: "fav-op-0002", type: "favorite", kind: "exercise", id: SET, on: true, at: now - 60 }])).json();
+  assert.equal(r.results[0].stale, true);
+  assert.deepEqual(((await me("GET", "/api/favorites")).json() as { id: string }[]).map((f) => f.id), [sheet]);
+
+  await me("DELETE", `/api/favorites/cheatsheet/${encodeURIComponent(sheet)}`);
+});

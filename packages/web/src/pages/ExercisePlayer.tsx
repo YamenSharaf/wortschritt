@@ -8,6 +8,7 @@ import { btn, card } from "../components/ui";
 import { TapToTranslate } from "../components/TapToTranslate";
 import { TutorMarkdown } from "../components/TutorMarkdown";
 import { describeItem } from "@mdb/client";
+import { StarButton } from "../components/StarButton";
 
 // Enter presses within this window of an answer resolving are treated as the
 // tail of the submitting keystroke, not a request to advance. Comfortably above
@@ -190,10 +191,13 @@ function Runner({
   return (
     <div className="mx-auto max-w-xl">
       <div className="mb-1 flex items-center justify-between gap-2 text-sm text-ink-muted">
-        <Link to="/exercises" className="inline-flex min-w-0 items-center gap-1 hover:text-ink">
-          <ChevronLeftIcon className="h-4 w-4 shrink-0" />
-          <span className="truncate font-medium">{title}</span>
-        </Link>
+        <div className="flex min-w-0 items-center gap-1">
+          <Link to="/exercises" className="inline-flex min-w-0 items-center gap-1 hover:text-ink">
+            <ChevronLeftIcon className="h-4 w-4 shrink-0" />
+            <span className="truncate font-medium">{title}</span>
+          </Link>
+          <StarButton kind="exercise" id={set.id} title={title} />
+        </div>
         <button
           type="button"
           onClick={() => setNavOpen((o) => !o)}

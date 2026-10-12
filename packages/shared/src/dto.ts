@@ -60,8 +60,21 @@ export const settingsSchema = z.object({
    *  a server voice id ("azure:…" or "edge:…"). */
   ttsVoice: z.string().default(""),
   reader: readerSettings.default({}),
+  /** The account icon: a pixel pattern from the name (the seed picks another one) or the initial. */
+  avatar: z
+    .object({
+      style: z.enum(["pattern", "letter"]).default("pattern"),
+      seed: z.number().int().min(0).max(1_000_000).default(0),
+    })
+    .default({}),
 });
 export type Settings = z.infer<typeof settingsSchema>;
+
+/** What can be a favourite: exercise sets and cheat sheets from the library. */
+export const favoriteKind = z.enum(["exercise", "cheatsheet"]);
+export type FavoriteKind = z.infer<typeof favoriteKind>;
+export const favorite = z.object({ kind: favoriteKind, id: z.string().min(1), createdAt: z.number().int() });
+export type Favorite = z.infer<typeof favorite>;
 
 /**
  * German neural voices offered by the cloud providers (Azure Speech and the
@@ -1028,6 +1041,8 @@ export const syncChanges = z.object({
   generated: z.array(z.object({ setId: z.string(), items: z.array(exerciseItem) })),
   /** The learner's settings, when they changed. */
   settings: settingsSchema.nullable(),
+  /** All of the learner's favourites (newest first), when any changed. */
+  favorites: z.array(favorite).nullable(),
   deleted: z.object({
     stories: z.array(z.string()),
     series: z.array(z.string()),
@@ -1081,6 +1096,8 @@ export const syncOp = z.discriminatedUnion("type", [
    */
   z.object({ opId, type: z.literal("exerciseProgressSave"), setId: z.string().min(1), at: z.number().int(), data: saveExerciseProgressBody }),
   z.object({ opId, type: z.literal("exerciseProgressClear"), setId: z.string().min(1), at: z.number().int() }),
+  /** Star or unstar a set or sheet; the later of two changes to the same one wins. */
+  z.object({ opId, type: z.literal("favorite"), kind: favoriteKind, id: z.string().min(1), on: z.boolean(), at: z.number().int() }),
 ]);
 export type SyncOp = z.infer<typeof syncOp>;
 

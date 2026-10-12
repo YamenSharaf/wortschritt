@@ -17,6 +17,7 @@ import { Card } from "@/ui/Card";
 import { Icon } from "@/ui/icons";
 import { Screen } from "@/ui/Screen";
 import { Text } from "@/ui/Text";
+import { StarButton } from "@/ui/StarButton";
 import { Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Ellipsis, RotateCcw, Sparkles, X } from "lucide-react-native";
 
 /** A set's exercises one at a time, as on the web (pages/ExercisePlayer). */
@@ -186,6 +187,8 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
         }}
       >
         <BackLink label={set.title} />
+        <StarButton kind="exercise" id={set.id} title={set.title} />
+        <View style={{ flex: 1 }} />
         <Pressable
           onPress={() => setNavOpen((o) => !o)}
           accessibilityRole="button"
