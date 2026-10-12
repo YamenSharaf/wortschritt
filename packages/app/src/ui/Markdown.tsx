@@ -50,7 +50,38 @@ function blocks(text: string): string[][] {
   return out;
 }
 
-const LIST = /^\s*([-*•]|\d+[.)])\s+(.*)$/;
+const LIST = /^\s*([-*+•]|\d+[.)])\s+(.*)$/;
+const HEADING = /^\s*(#{1,6})\s+(.*)$/;
+
+type Part =
+  | { kind: "heading"; level: number; text: string }
+  | { kind: "list"; items: { marker: string; depth: number; text: string }[] }
+  | { kind: "para"; text: string };
+
+/**
+ * A block's lines as headings, lists and paragraphs: a list can follow its
+ * lead-in line ("Here's why:") without a blank line, and an indented line
+ * after an item continues that item.
+ */
+export function parts(lines: string[]): Part[] {
+  const out: Part[] = [];
+  for (const line of lines) {
+    const prev = out[out.length - 1];
+    const h = HEADING.exec(line);
+    const li = LIST.exec(line);
+    if (h) out.push({ kind: "heading", level: h[1]!.length, text: h[2]! });
+    else if (li) {
+      const item = { marker: /\d/.test(li[1]!) ? li[1]! : "•", depth: Math.min(3, Math.floor(/^\s*/.exec(line)![0].length / 2)), text: li[2]! };
+      if (prev?.kind === "list") prev.items.push(item);
+      else out.push({ kind: "list", items: [item] });
+    } else if (prev?.kind === "list" && /^\s+\S/.test(line)) {
+      const last = prev.items[prev.items.length - 1]!;
+      last.text += ` ${line.trim()}`;
+    } else if (prev?.kind === "para") prev.text += ` ${line.trim()}`;
+    else out.push({ kind: "para", text: line.trim() });
+  }
+  return out;
+}
 
 function Block({ lines }: { lines: string[] }) {
   const { colors } = useTheme();
@@ -65,31 +96,32 @@ function Block({ lines }: { lines: string[] }) {
         ))}
       </View>
     );
-  const h = /^(#{1,6})\s+(.*)$/.exec(first);
-  if (h && lines.length === 1)
-    return (
-      <Text style={{ fontFamily: font.semibold, fontSize: size + (h[1]!.length <= 2 ? 3 : 1), lineHeight: Math.round((size + 3) * 1.4), color: colors.ink }}>
-        <Inline text={h[2]!} />
-      </Text>
-    );
-  if (lines.every((l) => LIST.test(l)))
-    return (
-      <View style={{ gap: 4 }}>
-        {lines.map((l, j) => {
-          const m = LIST.exec(l)!;
-          const depth = Math.min(3, Math.floor((/^\s*/.exec(l)![0].length || 0) / 2));
-          return (
-            <View key={j} style={{ flexDirection: "row", gap: 8, paddingLeft: depth * 16 }}>
-              <Text variant="muted">{/\d/.test(m[1]!) ? m[1] : "•"}</Text>
+  const ps = parts(lines);
+  const rendered = ps.map((p, i) => {
+    if (p.kind === "heading")
+      return (
+        <Text key={i} style={{ fontFamily: font.semibold, fontSize: size + (p.level <= 2 ? 3 : 1), lineHeight: Math.round((size + 3) * 1.4), color: colors.ink }}>
+          <Inline text={p.text} />
+        </Text>
+      );
+    if (p.kind === "list")
+      return (
+        <View key={i} style={{ gap: 4 }}>
+          {p.items.map((it, j) => (
+            <View key={j} style={{ flexDirection: "row", gap: 8, paddingLeft: it.depth * 16 }}>
+              <Text variant="muted" style={{ fontSize: size, lineHeight: Math.round(size * 1.5) }}>
+                {it.marker}
+              </Text>
               <View style={{ flex: 1 }}>
-                <Body text={m[2]!} />
+                <Body text={it.text} />
               </View>
             </View>
-          );
-        })}
-      </View>
-    );
-  return <Body text={lines.join(" ").replace(/^#{1,6}\s+/, "")} />;
+          ))}
+        </View>
+      );
+    return <Body key={i} text={p.text} />;
+  });
+  return rendered.length === 1 ? rendered[0]! : <View style={{ gap: Math.round(size * 0.4) }}>{rendered}</View>;
 }
 
 function Body({ text, muted }: { text: string; muted?: boolean }) {
