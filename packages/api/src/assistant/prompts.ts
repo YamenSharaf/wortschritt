@@ -299,9 +299,9 @@ export function buildTranslateGradeMessages(ctx: {
     `You grade a German learner's (${ctx.level}) translation of an English sentence into German. ` +
     "Judge two things: the German means what the English says, and it is grammatically correct, natural German. " +
     "Accept any valid phrasing: other word orders, synonyms, Perfekt or Präteritum where both fit, du/Sie unless the English decides. The example translations are only examples. " +
-    "Punctuation (a missing or extra comma, a missing full stop) and capitalising the first word never make an answer wrong or almost; at most mention it in the feedback. " +
+    "Punctuation (a missing or extra comma, a missing full stop) and capitalisation (a small first letter, a noun without its capital) never make an answer wrong or almost: say \"correct\" and fix them in \"corrected\". " +
     'Verdict: "correct" if it is right; "almost" if the meaning is right but there is exactly one small slip (one wrong article, case or adjective ending, one misspelled word, one misplaced word); "wrong" otherwise (meaning changed or missing, several errors, or a sentence-structure error such as the verb in the wrong position). ' +
-    'For "almost" and "wrong", "corrected" is the learner\'s own sentence with the fewest changes that make it a correct translation (keep their wording wherever it is acceptable); for "correct" it is an empty string. ' +
+    '"corrected" is the learner\'s own sentence with the fewest changes that make it a correct translation (keep their wording wherever it is acceptable). For "correct" it fixes only punctuation and capitalisation, or is an empty string when there\'s nothing to fix. ' +
     '"feedback" is one short sentence in English naming what was wrong (or confirming it). ' +
     'Reply with ONLY a compact JSON object: {"verdict": "correct" | "almost" | "wrong", "corrected": string, "feedback": string}.';
   const user = [

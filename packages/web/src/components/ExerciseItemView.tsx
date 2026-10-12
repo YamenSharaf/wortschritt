@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import {
   gradeText,
   isCanonical,
+  matchIgnoringPunctuation,
   isOpenAnswer,
   modelAnswer,
   type AnswerVerdict,
@@ -753,20 +754,23 @@ function GermanWordCard({ word, sentence, onClose }: { word: TappedWord; sentenc
 function TranslationVerdict({ verdict, item, input }: { verdict: AnswerVerdict; item: Extract<ExerciseItem, { type: "translate" }>; input: string }) {
   const tone = verdict.correct ? "bg-success-soft text-success" : verdict.almost ? "bg-warning-soft text-warning" : "bg-danger-soft text-danger";
   const label = verdict.correct ? "Correct." : verdict.almost ? "Almost." : "Not quite.";
-  // The model answer is worth seeing unless the learner wrote exactly it.
+  // A pass that differs only in case or punctuation still shows the fix.
+  const corrected = verdict.corrected ?? (verdict.correct && verdict.grading === "auto" ? matchIgnoringPunctuation(input, item.answer) : null);
+  const showCorrected = corrected !== null && corrected.trim() !== input.trim();
+  // The model answer is worth seeing unless the learner wrote exactly it (or it's the correction).
   const model = modelAnswer(item.answer);
-  const showModel = !isCanonical(input, item.answer);
+  const showModel = !isCanonical(input, item.answer) && model !== corrected;
   return (
     <div className="mt-3">
       <p className={`flex items-center gap-2 rounded-control px-3 py-2 text-sm font-semibold ${tone}`}>
         {verdict.correct ? <CheckIcon className="h-4 w-4" /> : <CrossIcon className="h-4 w-4" />}
         {label}
       </p>
-      {verdict.corrected && (
+      {showCorrected && (
         <div className="mt-4">
           <Eyebrow>Your sentence, corrected</Eyebrow>
           <p className="text-base leading-7" lang="de">
-            {wordDiff(input, verdict.corrected).map((part, i) => (
+            {wordDiff(input, corrected).map((part, i) => (
               <span key={i}>
                 {part.gap ? " " : ""}
                 {part.kind === "same" ? (

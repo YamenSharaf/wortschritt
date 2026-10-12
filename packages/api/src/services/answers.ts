@@ -65,7 +65,8 @@ export async function answer(userId: number, a: AnswerBody, log?: FastifyBaseLog
         correct,
         grading: "ai",
         ...(ai.verdict === "almost" ? { almost: true } : {}),
-        ...(!correct && ai.corrected ? { corrected: ai.corrected } : {}),
+        // Shown even when right: the small things it fixed (a comma, a capital).
+        ...(ai.corrected && ai.corrected.trim() !== local.textMiss.text.trim() ? { corrected: ai.corrected } : {}),
         ...(ai.feedback ? { feedback: ai.feedback } : {}),
       });
     }

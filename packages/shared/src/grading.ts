@@ -44,9 +44,15 @@ export function gradeText(input: string, answer: TextAnswer): boolean {
  * not its commas. Words, their order and their spelling still must match.
  */
 export function gradeTextIgnoringPunctuation(input: string, answer: TextAnswer): boolean {
-  const bare = (s: string) => fold(s).replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
+  return matchIgnoringPunctuation(input, answer) !== null;
+}
+
+const bare = (s: string) => fold(s).replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
+
+/** The accepted answer the input matches apart from case, umlauts typed plain and punctuation; null if none. */
+export function matchIgnoringPunctuation(input: string, answer: TextAnswer): string | null {
   const got = bare(input);
-  return answer.accept.some((a) => bare(a) === got);
+  return answer.accept.find((a) => bare(a) === got) ?? null;
 }
 
 /** An open-ended task whose `accept` lists examples, not every right answer. */

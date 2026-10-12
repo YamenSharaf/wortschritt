@@ -3,6 +3,7 @@ import { Pressable, ScrollView, TextInput, View, type TextInputProps } from "rea
 import {
   gradeText,
   isCanonical,
+  matchIgnoringPunctuation,
   isOpenAnswer,
   modelAnswer,
   type AnswerVerdict,
@@ -722,18 +723,21 @@ function TranslationVerdict({ verdict, item, input }: { verdict: AnswerVerdict; 
   const { colors, radii } = useTheme();
   const fg = verdict.correct ? colors.success : verdict.almost ? colors.warning : colors.danger;
   const bg = verdict.correct ? colors.successSoft : verdict.almost ? colors.warningSoft : colors.dangerSoft;
-  const showModel = !isCanonical(input, item.answer);
+  // A pass that differs only in case or punctuation still shows the fix.
+  const corrected = verdict.corrected ?? (verdict.correct && verdict.grading === "auto" ? matchIgnoringPunctuation(input, item.answer) : null);
+  const showCorrected = corrected !== null && corrected.trim() !== input.trim();
+  const showModel = !isCanonical(input, item.answer) && modelAnswer(item.answer) !== corrected;
   return (
     <View style={{ marginTop: 12, gap: 10 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: radii.control, backgroundColor: bg }}>
         <Icon icon={verdict.correct ? Check : X} size={16} color={fg} />
         <Text style={{ fontFamily: font.semibold, color: fg }}>{verdict.correct ? "Correct." : verdict.almost ? "Almost." : "Not quite."}</Text>
       </View>
-      {verdict.corrected ? (
+      {showCorrected && corrected ? (
         <View>
           <Text variant="eyebrow">Your sentence, corrected</Text>
           <Text style={{ fontSize: 16, lineHeight: 26 }}>
-            {wordDiff(input, verdict.corrected).map((part, i) => (
+            {wordDiff(input, corrected).map((part, i) => (
               <Text key={i}>
                 {part.gap ? " " : ""}
                 {part.kind === "same" ? (

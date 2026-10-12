@@ -465,6 +465,11 @@ test("translations: the tutor says right, almost or wrong with a correction; wit
   res = await answer("Meine Schlüssel habe ich vergessen.");
   assert.deepEqual(res.json(), { correct: true, grading: "ai", feedback: "Good: object first is fine." });
 
+  // Right, with a small fix: it passes and the fix comes along.
+  provider = () => sse(['{"verdict": "correct", "corrected": "Meine Schlüssel habe ich vergessen.", "feedback": "Schlüssel is a noun: capital S."}']);
+  res = await answer("meine schlüssel habe ich vergessen");
+  assert.deepEqual(res.json(), { correct: true, grading: "ai", corrected: "Meine Schlüssel habe ich vergessen.", feedback: "Schlüssel is a noun: capital S." });
+
   // No usable verdict: the item's own rules decide.
   provider = () => sse(["I think it's fine."]);
   res = await answer("Schlüssel vergessen ich.");
