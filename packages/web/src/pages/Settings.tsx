@@ -10,6 +10,7 @@ import { api, ApiError } from "../lib/api";
 import { useAsync, useAuth, useAvatar } from "@mdb/client/react";
 import { timeAgo } from "@mdb/client";
 import { useAppearance } from "../lib/appearance";
+import { useAutoAdvance } from "../lib/autoAdvance";
 import {
   deviceVoices,
   getDeviceVoicePref,
@@ -53,6 +54,7 @@ export function SettingsPage() {
         <>
           <Learning />
           <Appearance />
+          <PracticeOnDevice />
         </>
       )}
       {current === "account" && <Account />}
@@ -222,6 +224,31 @@ function Appearance() {
           </span>
         </label>
       </div>
+    </section>
+  );
+}
+
+/** Practice on this device (as the app's Account → Practice). */
+function PracticeOnDevice() {
+  const [autoAdvance, setAutoAdvance] = useAutoAdvance();
+  return (
+    <section className="mt-10 max-w-md">
+      <h2 className="text-xl font-semibold tracking-[-0.01em]">Practice</h2>
+      <p className="mb-4 mt-1 text-sm text-ink-muted">On this device only.</p>
+      <label className="flex items-start gap-2">
+        <input
+          type="checkbox"
+          checked={autoAdvance}
+          onChange={(e) => setAutoAdvance(e.target.checked)}
+          className="mt-0.5 h-4 w-4"
+        />
+        <span>
+          <span className="block text-sm font-medium">Move on after a right answer</span>
+          <span className="block text-xs text-ink-subtle">
+            Wrong answers always wait, so you can read the answer or ask the tutor. Enter moves on too.
+          </span>
+        </span>
+      </label>
     </section>
   );
 }

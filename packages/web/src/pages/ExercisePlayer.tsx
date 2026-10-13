@@ -8,6 +8,7 @@ import { btn, card } from "../components/ui";
 import { TapToTranslate } from "../components/TapToTranslate";
 import { TutorMarkdown } from "../components/TutorMarkdown";
 import { describeItem } from "@mdb/client";
+import { useAutoAdvance } from "../lib/autoAdvance";
 import { StarButton } from "../components/StarButton";
 
 // Enter presses within this window of an answer resolving are treated as the
@@ -51,19 +52,8 @@ function Runner({
   // The numbered question navigator is collapsed by default (the score + bar
   // already summarise progress); clicking that summary expands it.
   const [navOpen, setNavOpen] = useState(false);
-  const [mobile, setMobile] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 767px)").matches,
-  );
+  const [autoAdvance] = useAutoAdvance();
   const cardRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const on = () => setMobile(mq.matches);
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, []);
 
   // Once an item is resolved, Enter advances — unless you're typing in a live
   // field (e.g. the tutor chat) or a button is focused (it handles Enter itself).
@@ -90,15 +80,16 @@ function Runner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answered, index, items.length]);
 
-  // On mobile, auto-advance after a correct answer (with a short pause so the
-  // result registers). Wrong answers wait — you may want to read the answer or
-  // ask the tutor. On desktop, Enter advances (above); nothing is automatic.
+  // Move on after a right answer when that's on (Settings → Learning; by
+  // default on phones only), with a short pause so the result registers.
+  // Wrong answers wait: you may want to read the answer or ask the tutor.
+  // Enter advances too (above).
   useEffect(() => {
-    if (!answered || !mobile || !lastCorrect) return;
+    if (!answered || !autoAdvance || !lastCorrect) return;
     const t = setTimeout(() => next(), 1100);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [answered, mobile, lastCorrect, index]);
+  }, [answered, autoAdvance, lastCorrect, index]);
 
   // When a new item is shown, focus its first text field so keyboard users can
   // keep typing after advancing (no-op for choice/flashcard items).
