@@ -34,12 +34,14 @@ let me: Client;
 const calls: Array<{ url: string; headers: Record<string, string>; body: string }> = [];
 /** What "Azure" sends back (tests can swap it). */
 let azureAudio = (_body: string): Uint8Array => new Uint8Array([0xff, 0xf3, 1, 2, 3]);
+/** The voices "Azure" says its region has. */
+let regionVoiceNames = ["de-DE-KatjaNeural", "de-DE-ConradNeural", "de-DE-Seraphina:DragonHDLatestNeural", "de-DE-Florian:DragonHDLatestNeural"];
 before(async () => {
   const { buildApp } = await import("../app");
   const { setTransportForTests } = await import("../assistant/egress");
   setTransportForTests(async (url, init) => {
     calls.push({ url, headers: init.headers as Record<string, string>, body: String(init.body) });
-    if (url.endsWith("/voices/list")) return new Response(JSON.stringify([{ ShortName: "de-DE-KatjaNeural" }]), { status: 200 }) as never;
+    if (url.endsWith("/voices/list")) return new Response(JSON.stringify(regionVoiceNames.map((ShortName) => ({ ShortName }))), { status: 200 }) as never;
     try {
       return new Response(azureAudio(String(init.body)), { status: 200, headers: { "content-type": "audio/mpeg" } }) as never;
     } catch (e) {
@@ -80,6 +82,8 @@ test("Azure: the admin stores a key; voices appear; synthesis is SSML to the reg
   assert.equal(status.available, true);
   assert.ok(status.voices.some((v: { id: string; provider: string }) => v.id === "azure:de-DE-KatjaNeural" && v.provider === "azure"));
   assert.ok(status.voices.some((v: { id: string }) => v.id === "azure:de-DE-Seraphina:DragonHDLatestNeural"), "and Azure's HD voices");
+  assert.ok(calls.some((c) => c.url.endsWith("/voices/list")), "after asking the region which it has");
+  calls.length = 0;
 
   const res = await tts("azure:de-DE-KatjaNeural", "Tom & Jerry <sagen> „Hallo“");
   assert.equal(res.statusCode, 200, res.body);
@@ -198,17 +202,22 @@ test("story audio: made on demand in the reading voice, timed by paragraph, serv
 });
 
 test("an Azure 400 for a voice the region doesn't offer says so", async () => {
-  // A fresh region, so the voice list is fetched for it.
-  await me("PUT", "/api/admin/tts", { azure: { region: "germanywestcentral" } });
+  // A fresh region without HD voices, so the voice list is fetched for it.
+  regionVoiceNames = ["de-DE-KatjaNeural"];
+  assert.equal((await me("PUT", "/api/admin/tts", { azure: { region: "northeurope" } })).statusCode, 200);
   azureAudio = (body) => {
     if (body.includes("DragonHD")) throw Object.assign(new Error("400"), { status: 400 });
     return new Uint8Array([0xff, 0xf3, 1, 2, 3]);
   };
   const res = await tts("azure:de-DE-Florian:DragonHDLatestNeural", "Guten Morgen");
   assert.equal(res.statusCode, 503, res.body);
-  assert.match(res.json().error, /isn't offered in your Azure region \(germanywestcentral\)/);
+  assert.match(res.json().error, /isn't offered in your Azure region \(northeurope\)/);
   const voicesCall = calls.find((c) => c.url.endsWith("/cognitiveservices/voices/list"));
   assert.ok(voicesCall, "it asked Azure which voices the region has");
   assert.match(calls.filter((c) => c.url.endsWith("/v1")).at(-1)!.body, /^<speak version='1.0' xmlns='http:\/\/www.w3.org\/2001\/10\/synthesis' xml:lang='de-DE'>/);
+  // …and the voice list leaves out HD voices the region doesn't have.
+  const ids = ((await me("GET", "/api/tts/status")).json().voices as { id: string }[]).map((v) => v.id);
+  assert.ok(ids.includes("azure:de-DE-KatjaNeural"));
+  assert.ok(!ids.some((id) => id.includes("DragonHD")), "no HD voices offered in this region");
   azureAudio = () => new Uint8Array([0xff, 0xf3, 1, 2, 3]);
 });

@@ -10,7 +10,7 @@ import {
   ttsAdminSettings,
   TtsUnavailable,
   updateTtsSettings,
-  usableVoices,
+  offeredVoices,
 } from "../tts/providers";
 
 export async function ttsRoutes(app: FastifyInstance) {
@@ -24,7 +24,7 @@ export async function ttsRoutes(app: FastifyInstance) {
       schema: { tags: ["tts"], response: { 200: ttsStatus } },
     },
     async () => {
-      const voices = usableVoices();
+      const voices = await offeredVoices();
       return {
         available: voices.length > 0,
         installed: voices.map((v) => v.id),

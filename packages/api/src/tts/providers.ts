@@ -89,6 +89,19 @@ export function usableVoices(): VoiceOption[] {
   return out;
 }
 
+/**
+ * The voices to offer: usableVoices, less Azure HD voices the region doesn't
+ * have (HD voices are in some regions only). If Azure can't be asked, all of them.
+ */
+export async function offeredVoices(): Promise<VoiceOption[]> {
+  const voices = usableVoices();
+  const cfg = azureConfig();
+  if (!cfg || !voices.some((v) => v.id.includes("DragonHD"))) return voices;
+  const inRegion = await regionVoices(cfg).catch(() => null);
+  if (!inRegion) return voices;
+  return voices.filter((v) => !(v.provider === "azure" && v.id.includes("DragonHD")) || inRegion.has(v.id.slice("azure:".length)));
+}
+
 const VOICE_NAMES = { azure: new Set(serverVoices("azure").map((v) => v.name)), edge: new Set(serverVoices("edge").map((v) => v.name)) };
 const xmlEscape = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
