@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { NEURAL_VOICES, ttsProviderOf, type TtsAdminSettings, type TtsProvider } from "@mdb/shared";
+import { serverVoices, ttsProviderOf, type TtsAdminSettings, type TtsProvider } from "@mdb/shared";
 import { guardedFetch } from "../assistant/egress";
 import { decryptSecret, encryptSecret, isEncryptionAvailable } from "../assistant/secrets";
 import { db, schema } from "../db/client";
@@ -84,12 +84,12 @@ export type VoiceOption = { id: string; label: string; provider: TtsProvider };
 /** Every voice usable right now. */
 export function usableVoices(): VoiceOption[] {
   const out: VoiceOption[] = [];
-  if (azureConfig()) for (const v of NEURAL_VOICES) out.push({ id: `azure:${v.name}`, label: `${v.label} · Azure`, provider: "azure" });
-  if (edgeEnabled()) for (const v of NEURAL_VOICES) out.push({ id: `edge:${v.name}`, label: `${v.label} · Edge`, provider: "edge" });
+  if (azureConfig()) for (const v of serverVoices("azure")) out.push({ id: `azure:${v.name}`, label: `${v.label} · Azure`, provider: "azure" });
+  if (edgeEnabled()) for (const v of serverVoices("edge")) out.push({ id: `edge:${v.name}`, label: `${v.label} · Edge`, provider: "edge" });
   return out;
 }
 
-const NEURAL_NAMES = new Set<string>(NEURAL_VOICES.map((v) => v.name));
+const VOICE_NAMES = { azure: new Set(serverVoices("azure").map((v) => v.name)), edge: new Set(serverVoices("edge").map((v) => v.name)) };
 const xmlEscape = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 
@@ -100,14 +100,14 @@ export async function synthesize(text: string, voice: string): Promise<{ audio: 
   const provider = ttsProviderOf(voice);
   if (!provider) throw new TtsUnavailable(`unknown voice "${voice}"`);
   const name = voice.slice(provider.length + 1);
-  if (!NEURAL_NAMES.has(name)) throw new TtsUnavailable(`unknown voice "${voice}"`);
+  if (!VOICE_NAMES[provider].has(name)) throw new TtsUnavailable(`unknown voice "${voice}"`);
   if (provider === "edge") {
     if (!edgeEnabled()) throw new TtsUnavailable("Edge voices are turned off");
     return { audio: await edgeSynthesize(text, name), type: "audio/mpeg", ext: "mp3" };
   }
   const cfg = azureConfig();
   if (!cfg) throw new TtsUnavailable("Azure Speech isn't set up");
-  const lang = name.split("-").slice(0, 2).join("-");
+  const lang = name.split("-").slice(0, 2).join("-"); // "de-DE" (HD names have ":DragonHD…" after the speaker)
   const res = await guardedFetch(`https://${cfg.region}.tts.speech.microsoft.com/cognitiveservices/v1`, {
     method: "POST",
     headers: {

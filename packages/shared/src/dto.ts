@@ -89,6 +89,15 @@ export const NEURAL_VOICES = [
   { name: "de-DE-AmalaNeural", label: "Amala (female)" },
   { name: "de-DE-KillianNeural", label: "Killian (male)" },
 ] as const;
+/** Azure's high-definition (Dragon HD) German voices: Azure only, not through Edge. */
+export const AZURE_HD_VOICES = [
+  { name: "de-DE-Seraphina:DragonHDLatestNeural", label: "Seraphina HD (female)" },
+  { name: "de-DE-Florian:DragonHDLatestNeural", label: "Florian HD (male)" },
+] as const;
+/** The voices a provider offers. */
+export function serverVoices(provider: "azure" | "edge"): readonly { name: string; label: string }[] {
+  return provider === "azure" ? [...NEURAL_VOICES, ...AZURE_HD_VOICES] : NEURAL_VOICES;
+}
 export const ttsProvider = z.enum(["azure", "edge"]);
 export type TtsProvider = z.infer<typeof ttsProvider>;
 

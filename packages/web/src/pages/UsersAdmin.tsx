@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { MIN_PASSWORD_LENGTH, NEURAL_VOICES, type AdminUser, type RegistrationStatus, type TtsAdminSettings } from "@mdb/shared";
+import { MIN_PASSWORD_LENGTH, serverVoices, type AdminUser, type RegistrationStatus, type TtsAdminSettings } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "@mdb/client/react";
 import { timeAgo } from "@mdb/client";
@@ -395,7 +395,7 @@ function TtsProviders() {
             {(["azure", "edge"] as const)
               .filter((p) => (p === "azure" ? cfg.azure.configured : cfg.edge.enabled))
               .flatMap((p) =>
-                NEURAL_VOICES.map((v) => (
+                serverVoices(p).map((v) => (
                   <option key={`${p}:${v.name}`} value={`${p}:${v.name}`}>
                     {v.label} · {p === "azure" ? "Azure" : "Edge"}
                   </option>

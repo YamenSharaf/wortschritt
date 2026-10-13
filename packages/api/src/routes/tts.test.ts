@@ -72,6 +72,7 @@ test("Azure: the admin stores a key; voices appear; synthesis is SSML to the reg
   const status = (await me("GET", "/api/tts/status")).json();
   assert.equal(status.available, true);
   assert.ok(status.voices.some((v: { id: string; provider: string }) => v.id === "azure:de-DE-KatjaNeural" && v.provider === "azure"));
+  assert.ok(status.voices.some((v: { id: string }) => v.id === "azure:de-DE-Seraphina:DragonHDLatestNeural"), "and Azure's HD voices");
 
   const res = await tts("azure:de-DE-KatjaNeural", "Tom & Jerry <sagen> „Hallo“");
   assert.equal(res.statusCode, 200, res.body);
@@ -84,6 +85,8 @@ test("Azure: the admin stores a key; voices appear; synthesis is SSML to the reg
   assert.equal(calls.length, 1, "served from the cache");
 
   assert.equal((await tts("azure:de-DE-NotAVoice", "Hallo")).statusCode, 503, "only known voices");
+  assert.equal((await tts("azure:de-DE-Florian:DragonHDLatestNeural", "Hallo")).statusCode, 200, "an HD voice");
+  assert.match(calls.at(-1)!.body, /xml:lang='de-DE'><voice name='de-DE-Florian:DragonHDLatestNeural'>Hallo</);
   // Changing the region keeps the stored key.
   assert.equal((await me("PUT", "/api/admin/tts", { azure: { region: "germanywestcentral" } })).statusCode, 200);
   await me("POST", "/api/admin/tts/test", { voice: "azure:de-DE-ConradNeural" });
@@ -95,6 +98,7 @@ test("Edge voices are opt-in", async () => {
   assert.ok(!(await me("GET", "/api/tts/status")).json().voices.some((v: { provider: string }) => v.provider === "edge"));
   assert.equal((await me("PUT", "/api/admin/tts", { edge: true })).json().edge.enabled, true);
   assert.ok((await me("GET", "/api/tts/status")).json().installed.includes("edge:de-DE-SeraphinaMultilingualNeural"));
+  assert.equal((await tts("edge:de-DE-Florian:DragonHDLatestNeural", "Hallo")).statusCode, 503, "HD voices are Azure's only");
   await me("PUT", "/api/admin/tts", { edge: false });
 });
 
