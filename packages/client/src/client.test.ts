@@ -5,6 +5,7 @@ import {
   chunkText,
   createApi,
   createSpeech,
+  serverTtsFor,
   createSseParser,
   pickVoice,
   type FetchLike,
@@ -106,9 +107,20 @@ test("speakSequence reads by server clip, falls back to the device, and reports 
       prefetch: async (url) => void log.push(`prefetch ${url}`),
     },
   });
-  speech.setServerTts({ enabled: true, voice: "v" });
+  speech.setServerTts({ enabled: true, voice: "w", readerEnabled: true, readerVoice: "v" });
+  speech.speak("Wort");
   const indexes: number[] = [];
   await new Promise<void>((done) => speech.speakSequence(["Eins.", "Zwei."], { onIndex: (i) => indexes.push(i), onEnd: done }));
   assert.deepEqual(indexes, [0, 1]);
-  assert.deepEqual(log, ["prefetch v:Zwei.", "clip v:Eins.", "device Zwei."]);
+  assert.deepEqual(log, ["clip w:Wort", "prefetch v:Zwei.", "clip v:Eins.", "device Zwei."], "words in their voice, the story in the reading voice");
+});
+
+test("serverTtsFor: the reading voice is the words voice unless chosen; device or unavailable voices aren't used", () => {
+  const status = { available: true, installed: ["azure:a", "azure:hd"] };
+  assert.deepEqual(serverTtsFor(status, { ttsVoice: "azure:a", readerVoice: "" }), { enabled: true, voice: "azure:a", readerEnabled: true, readerVoice: "azure:a" });
+  assert.deepEqual(serverTtsFor(status, { ttsVoice: "azure:a", readerVoice: "azure:hd" }), { enabled: true, voice: "azure:a", readerEnabled: true, readerVoice: "azure:hd" });
+  assert.deepEqual(serverTtsFor(status, { ttsVoice: "", readerVoice: "azure:hd" }), { enabled: false, voice: "", readerEnabled: true, readerVoice: "azure:hd" });
+  assert.equal(serverTtsFor(status, { ttsVoice: "azure:a", readerVoice: "device" }).readerEnabled, false);
+  assert.equal(serverTtsFor(status, { ttsVoice: "azure:a", readerVoice: "azure:gone" }).readerEnabled, false);
+  assert.equal(serverTtsFor({ ...status, available: false }, { ttsVoice: "azure:a", readerVoice: "" }).enabled, false);
 });

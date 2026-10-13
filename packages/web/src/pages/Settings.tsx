@@ -8,7 +8,7 @@ import {
 } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
 import { useAsync, useAuth, useAvatar } from "@mdb/client/react";
-import { timeAgo } from "@mdb/client";
+import { serverTtsFor, timeAgo } from "@mdb/client";
 import { useAppearance } from "../lib/appearance";
 import { useAutoAdvance } from "../lib/autoAdvance";
 import {
@@ -18,6 +18,7 @@ import {
   setDeviceVoicePref,
   setServerTts,
   speak,
+  speech,
 } from "../lib/tts";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { TabPills } from "../components/TabPills";
@@ -153,11 +154,10 @@ function Learning() {
           The default count for “Generate more” after finishing an exercise. You
           can still change it there each time.
         </p>
-        <PronunciationSetting
-          value={form.ttsVoice}
-          onChange={(v) => {
-            setForm({ ...form, ttsVoice: v });
-          }}
+        <VoiceSettings
+          ttsVoice={form.ttsVoice}
+          readerVoice={form.readerVoice}
+          onChange={(change) => setForm({ ...form, ...change })}
         />
         <label className="flex items-center gap-2">
           <input
@@ -258,74 +258,95 @@ const PROVIDER_LABEL = {
   edge: "Natural voices (Edge, unofficial)",
 } as const;
 
-/** Choose the voice: the device's own, or a server voice (Azure or Edge). */
-function PronunciationSetting({
-  value,
+/**
+ * The voices: one for words (speaker buttons, tapped words) and one for a
+ * story's "Read aloud" (by default the same). Each is the device's own or a
+ * server voice (Azure or Edge).
+ */
+function VoiceSettings({
+  ttsVoice,
+  readerVoice,
   onChange,
 }: {
-  value: string;
-  onChange: (v: string) => void;
+  ttsVoice: string;
+  readerVoice: string;
+  onChange: (change: { ttsVoice?: string; readerVoice?: string }) => void;
 }) {
   const status = useAsync(() => api.ttsStatus(), []);
-  const [installed, setInstalled] = useState<string[]>([]);
+  const ready = status.status === "ready" ? status.data : null;
+  const available = !!ready?.available;
+  const installed = ready?.installed ?? [];
 
-  useEffect(() => {
-    if (status.status === "ready") setInstalled(status.data.installed);
-  }, [status.status]);
-
-  const available = status.status === "ready" && status.data.available;
-
-  function select(v: string) {
-    onChange(v);
-    setServerTts({ enabled: available && installed.includes(v), voice: v });
+  function change(next: { ttsVoice?: string; readerVoice?: string }) {
+    onChange(next);
+    // Hear the choice at once (it's kept for the account on Save).
+    if (ready) setServerTts(serverTtsFor(ready, { ttsVoice, readerVoice, ...next }));
   }
 
+  const serverOptions = (value: string) => (
+    <>
+      {available &&
+        (["azure", "edge"] as const).map((provider) => {
+          const list = (ready?.voices ?? []).filter((v) => v.provider === provider && installed.includes(v.id));
+          if (!list.length) return null;
+          return (
+            <optgroup key={provider} label={PROVIDER_LABEL[provider]}>
+              {list.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.label.replace(/ · (Azure|Edge)$/, "")}
+                </option>
+              ))}
+            </optgroup>
+          );
+        })}
+      {value && value !== "device" && !installed.includes(value) && <option value={value}>{value} (not available now)</option>}
+    </>
+  );
+
   return (
-    <Field label="Pronunciation voice">
-      <select
-        value={value}
-        onChange={(e) => select(e.target.value)}
-        className="input"
-      >
-        <option value="">Device voice (this browser)</option>
-        {available &&
-          (["azure", "edge"] as const).map((provider) => {
-            const list = (status.status === "ready" ? status.data.voices : []).filter(
-              (v) => v.provider === provider && installed.includes(v.id),
-            );
-            if (!list.length) return null;
-            return (
-              <optgroup key={provider} label={PROVIDER_LABEL[provider]}>
-                {list.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.label.replace(/ · (Azure|Edge)$/, "")}
-                  </option>
-                ))}
-              </optgroup>
-            );
-          })}
-        {value && !installed.includes(value) && <option value={value}>{value} (not available now)</option>}
-      </select>
-
-      {value === "" && <DeviceVoicePicker />}
-
-      <div className="mt-2 space-y-2">
-        <button
-          type="button"
-          onClick={() => speak("Guten Tag! Ich lerne Deutsch mit dem Baby.")}
-          className="rounded-control border border-line-control px-3 py-1.5 text-sm hover:border-line-strong "
-        >
-          <SpeakerIcon className="h-4 w-4" />
-          Test
-        </button>
-        {!available && (
-          <p className="text-xs text-ink-subtle">
-            Natural German voices can be set up by the admin (Administration → Server → Read-aloud
-            voices).
-          </p>
-        )}
+    <>
+      <Field label="Voice for words">
+        <select value={ttsVoice} onChange={(e) => change({ ttsVoice: e.target.value })} className="input">
+          <option value="">Device voice (this browser)</option>
+          {serverOptions(ttsVoice)}
+        </select>
+        {(ttsVoice === "" || readerVoice === "device") && <DeviceVoicePicker />}
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={() => speak("Guten Tag! Ich lerne Deutsch mit dem Baby.")}
+            className="rounded-control border border-line-control px-3 py-1.5 text-sm hover:border-line-strong "
+          >
+            <SpeakerIcon className="h-4 w-4" />
+            Test
+          </button>
         </div>
-    </Field>
+      </Field>
+      <p className="-mt-2 text-xs text-ink-subtle">Speaker buttons in Vocab and flashcards, and words you tap.</p>
+      <Field label="Voice for reading aloud">
+        <select value={readerVoice} onChange={(e) => change({ readerVoice: e.target.value })} className="input">
+          <option value="">Same as for words</option>
+          <option value="device">Device voice (this browser)</option>
+          {serverOptions(readerVoice)}
+        </select>
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={() => void speech.speakSequence(["Es war einmal ein kleines Dorf am Rand eines großen Waldes."])}
+            className="rounded-control border border-line-control px-3 py-1.5 text-sm hover:border-line-strong "
+          >
+            <SpeakerIcon className="h-4 w-4" />
+            Test
+          </button>
+        </div>
+      </Field>
+      <p className="-mt-2 text-xs text-ink-subtle">
+        A story's “Read aloud”, paragraph by paragraph.
+        {available
+          ? (ready?.voices ?? []).some((v) => v.id.includes("DragonHD") && installed.includes(v.id)) && " The HD voices sound most natural here."
+          : " Natural German voices can be set up by the admin (Administration → Server → Read-aloud voices)."}
+      </p>
+    </>
   );
 }
 

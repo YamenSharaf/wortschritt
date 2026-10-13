@@ -12,6 +12,7 @@ import {
   StoriesIcon,
   VocabIcon,
 } from "./components/icons";
+import { serverTtsFor } from "@mdb/client";
 import { setServerTts } from "./lib/tts";
 import { VocabProvider } from "./lib/vocab";
 
@@ -38,12 +39,7 @@ export function App() {
   useEffect(() => {
     if (!authenticated) return;
     Promise.all([api.ttsStatus(), api.settings()])
-      .then(([st, se]) =>
-        setServerTts({
-          enabled: st.available && st.installed.includes(se.ttsVoice),
-          voice: se.ttsVoice,
-        }),
-      )
+      .then(([st, se]) => setServerTts(serverTtsFor(st, se)))
       .catch(() => {});
   }, [authenticated]);
 

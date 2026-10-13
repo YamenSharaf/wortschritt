@@ -59,6 +59,8 @@ export const settingsSchema = z.object({
   /** Preferred pronunciation voice. "" = the device's built-in TTS; otherwise
    *  a server voice id ("azure:…" or "edge:…"). */
   ttsVoice: z.string().default(""),
+  /** The story reader's "Read aloud": "" = the same as ttsVoice, "device" = the device's own, else a server voice id. */
+  readerVoice: z.string().default(""),
   reader: readerSettings.default({}),
   /** The account icon: a pixel pattern from the name (the seed picks another one) or the initial. */
   avatar: z

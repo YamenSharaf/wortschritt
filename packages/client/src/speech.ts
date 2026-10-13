@@ -24,7 +24,18 @@ export type ClipPlayer = {
   prefetch(url: string): Promise<void>;
 };
 
-export type ServerTts = { enabled: boolean; voice: string };
+/** The server voice for words (`voice`) and for reading a story aloud (`reader*`), when usable. */
+export type ServerTts = { enabled: boolean; voice: string; readerEnabled: boolean; readerVoice: string };
+
+/** Which server voices to use, from the server's TTS status and the account's settings. */
+export function serverTtsFor(
+  status: { available: boolean; installed: string[] },
+  settings: { ttsVoice: string; readerVoice: string },
+): ServerTts {
+  const usable = (v: string) => status.available && !!v && status.installed.includes(v);
+  const reader = settings.readerVoice === "" ? settings.ttsVoice : settings.readerVoice === "device" ? "" : settings.readerVoice;
+  return { enabled: usable(settings.ttsVoice), voice: settings.ttsVoice, readerEnabled: usable(reader), readerVoice: reader };
+}
 
 /** The fields of a device voice that `pickVoice` looks at. */
 export type VoiceLike = { name: string; lang: string; localService?: boolean };
@@ -77,8 +88,9 @@ export function createSpeech(o: {
   clipUrl: (voice: string, text: string) => string;
 }) {
   const { device, clips, clipUrl } = o;
-  let server: ServerTts = { enabled: false, voice: "" };
+  let server: ServerTts = { enabled: false, voice: "", readerEnabled: false, readerVoice: "" };
   const useServer = () => server.enabled && !!server.voice;
+  const useServerForReading = () => server.readerEnabled && !!server.readerVoice;
 
   let sequenceToken = 0;
   /** The latest started sequence (an older one never reports onEnd). */
@@ -106,7 +118,7 @@ export function createSpeech(o: {
       server = { ...server, ...next };
     },
 
-    supported: () => useServer() || device.supported(),
+    supported: () => useServer() || useServerForReading() || device.supported(),
 
     /** Say a word or a sentence. */
     speak(text: string, lang = "de-DE"): void {
@@ -129,7 +141,8 @@ export function createSpeech(o: {
     /**
      * Read texts one after another (a story's paragraphs). `onIndex(i)` fires as
      * paragraph i starts, `onEnd` once when finished or stopped. Returns a stop
-     * function. Uses the server voice when set up, the device voice otherwise.
+     * function. Uses the reading voice (its own setting, else the words voice)
+     * when it's a server voice, the device voice otherwise.
      */
     speakSequence(
       texts: string[],
@@ -150,12 +163,12 @@ export function createSpeech(o: {
             current = i;
             opts.onIndex?.(i);
           }
-          if (useServer()) {
+          if (useServerForReading()) {
             // Have the server make the next clips while this one plays, so a new
             // paragraph doesn't wait for its first synthesis.
-            for (const next of parts.slice(k + 1, k + 3)) prefetch(next.text, server.voice);
+            for (const next of parts.slice(k + 1, k + 3)) prefetch(next.text, server.readerVoice);
             try {
-              await clips.play(clipUrl(server.voice, text), rate);
+              await clips.play(clipUrl(server.readerVoice, text), rate);
               continue;
             } catch {
               if (!live()) break;
