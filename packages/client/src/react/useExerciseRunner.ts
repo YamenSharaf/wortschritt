@@ -142,14 +142,30 @@ export function useExerciseRunner({
     saveProgress(i);
   }
 
+  /** Items not answered in this run (skipped, or generated after the run began). */
+  const remaining = items.filter((i) => results[i.id] === undefined).length;
+
   function next() {
     if (index + 1 >= items.length) {
-      doneRef.current = true;
-      void api.finishRun(setId, true).catch(() => {});
+      // Past the last item. With everything answered the run is finished;
+      // otherwise the end screen offers the rest, and leaving keeps the run
+      // open to resume, as leaving partway does.
+      if (remaining === 0) {
+        doneRef.current = true;
+        void api.finishRun(setId, true).catch(() => {});
+      }
       setDone(true);
     } else {
       goTo(index + 1);
     }
+  }
+
+  /** From the end screen: back to the first item not answered yet. */
+  function answerRemaining() {
+    const i = items.findIndex((it) => results[it.id] === undefined);
+    if (i < 0) return;
+    setDone(false);
+    goTo(i);
   }
 
   async function generateMore() {
@@ -225,6 +241,8 @@ export function useExerciseRunner({
     submit,
     goTo,
     next,
+    remaining,
+    answerRemaining,
     extraCount,
     removeExtras,
     isGenerated,

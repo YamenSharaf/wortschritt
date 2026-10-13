@@ -116,7 +116,9 @@ function Runner({
             {correctCount}/{answeredCount}
           </span>
         </div>
-        <h1 className="mb-1 text-[28px] font-semibold leading-[34px] tracking-[-0.02em]">Set finished</h1>
+        <h1 className="mb-1 text-[28px] font-semibold leading-[34px] tracking-[-0.02em]">
+          {run.remaining > 0 ? "End of the set" : "Set finished"}
+        </h1>
         <p className="mb-1 text-ink-muted">
           {correctCount} of {answeredCount} correct
         </p>
@@ -125,6 +127,12 @@ function Runner({
             ? "Whole set completed."
             : `${answeredCount} of ${items.length} questions answered.`}
         </p>
+        {run.remaining > 0 && (
+          <button type="button" onClick={run.answerRemaining} className={`${btn.primary} mb-4 w-full`}>
+            Answer the {run.remaining} left
+            <ChevronRightIcon className="h-4 w-4" />
+          </button>
+        )}
         {run.assistantEnabled && (
           <div className="mb-4">
             <div className="flex items-stretch gap-2">
@@ -168,7 +176,7 @@ function Runner({
         )}
         <Link
           to="/exercises"
-          className={btn.primary}
+          className={run.remaining > 0 ? btn.secondary : btn.primary}
         >
           Back to practice
         </Link>

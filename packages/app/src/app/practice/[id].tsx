@@ -117,11 +117,21 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
               {correctCount}/{answeredCount}
             </Text>
           </View>
-          <Text variant="title">Set finished</Text>
+          <Text variant="title">{run.remaining > 0 ? "End of the set" : "Set finished"}</Text>
           <Text variant="muted">
             {correctCount} of {answeredCount} correct
           </Text>
           <Text variant="subtle">{answeredCount === items.length ? "Whole set completed." : `${answeredCount} of ${items.length} questions answered.`}</Text>
+          {run.remaining > 0 && (
+            <View style={{ alignSelf: "stretch", marginTop: 8 }}>
+              <Button
+                kind="primary"
+                label={`Answer the ${run.remaining} left`}
+                icon={<Icon icon={ChevronRight} size={16} color={colors.brandInk} />}
+                onPress={run.answerRemaining}
+              />
+            </View>
+          )}
           {run.assistantEnabled && (
             <View style={{ alignSelf: "stretch", gap: 8, marginTop: 8 }}>
               <Button
@@ -165,7 +175,7 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
               </Text>
             </Text>
           )}
-          <Button kind="primary" label="Back to practice" onPress={() => router.back()} />
+          <Button kind={run.remaining > 0 ? "secondary" : "primary"} label="Back to practice" onPress={() => router.back()} />
         </Card>
       </Screen>
     );

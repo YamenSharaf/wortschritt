@@ -108,3 +108,22 @@ test("useTutorChat: streams a hint, then a why-wrong chat with follow-ups", asyn
   assert.equal(h.current().chat, null);
   h.unmount();
 });
+
+test("useExerciseRunner: past the end with items left, it offers them and keeps the run open", async () => {
+  const calls: string[] = [];
+  const h = renderHook(() => useExerciseRunner({ set, extra: [], initial: { index: 1, results: {}, responses: {} } as never }), fakeApi(calls));
+  await flush();
+  await act(async () => void (await h.current().submit({ type: "multiple_choice", choice: 1 })));
+  act(() => h.current().next());
+  assert.equal(h.current().done, true);
+  assert.equal(h.current().remaining, 1, "a was never answered");
+  act(() => h.current().answerRemaining());
+  assert.equal(h.current().done, false);
+  assert.equal(h.current().index, 0);
+  await act(async () => void (await h.current().submit({ type: "true_false", value: true })));
+  act(() => h.current().goTo(1));
+  act(() => h.current().next());
+  assert.equal(h.current().remaining, 0);
+  h.unmount();
+  assert.deepEqual(calls, ["answer b", "progress 0", "answer a", "progress 1", "finish true"], "finished once, when everything was answered");
+});
