@@ -1,0 +1,33 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import type { StoryAudio } from "@mdb/shared";
+import { paragraphAt, prepareStoryAudio } from "./storyAudio";
+
+const base: StoryAudio = { state: "none", voice: "v", done: 0, total: 0, error: null, key: null, duration: 0, bytes: 0, starts: [] };
+
+test("paragraphAt: the last paragraph started (an empty one is passed over)", () => {
+  const starts = [0, 2.5, 6, 6, 9];
+  assert.equal(paragraphAt(starts, 0), 0);
+  assert.equal(paragraphAt(starts, 2.49), 1, "a moment early counts");
+  assert.equal(paragraphAt(starts, 7), 3);
+  assert.equal(paragraphAt(starts, 100), 4);
+});
+
+test("prepareStoryAudio: starts it, reports progress until ready, or says why not", async () => {
+  const seen: string[] = [];
+  let polls = 0;
+  const ready = await prepareStoryAudio(
+    {
+      storyAudio: async () => (++polls < 3 ? { ...base, state: polls === 1 ? "none" : "building", done: 2, total: 4 } : { ...base, state: "ready", key: "k" }),
+      startStoryAudio: async () => ({ ...base, state: "building", done: 0, total: 4 }),
+    },
+    "s",
+    { interval: 1, onProgress: (d, t) => seen.push(`${d}/${t}`) },
+  );
+  assert.equal(ready.key, "k");
+  assert.deepEqual(seen, ["0/4", "2/4"]);
+  await assert.rejects(
+    prepareStoryAudio({ storyAudio: async () => base, startStoryAudio: async () => ({ ...base, state: "error", error: "Azure said no" }) }, "s"),
+    /Azure said no/,
+  );
+});

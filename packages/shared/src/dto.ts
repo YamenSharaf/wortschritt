@@ -100,6 +100,26 @@ export const AZURE_HD_VOICES = [
 export function serverVoices(provider: "azure" | "edge"): readonly { name: string; label: string }[] {
   return provider === "azure" ? [...NEURAL_VOICES, ...AZURE_HD_VOICES] : NEURAL_VOICES;
 }
+/**
+ * A story read aloud as one audio file (an audiobook), made on demand in the
+ * reading voice. `key` names the file and changes with the text or the voice;
+ * `starts[i]` is where paragraph i (storyParagraphs) begins, in seconds.
+ */
+export const storyAudio = z.object({
+  state: z.enum(["none", "building", "ready", "error"]),
+  /** The reading voice, or null when it isn't a server voice (no file can be made). */
+  voice: z.string().nullable(),
+  /** While building: clips made so far, of how many. */
+  done: z.number().int(),
+  total: z.number().int(),
+  error: z.string().nullable(),
+  key: z.string().nullable(),
+  duration: z.number(),
+  bytes: z.number().int(),
+  starts: z.array(z.number()),
+});
+export type StoryAudio = z.infer<typeof storyAudio>;
+
 export const ttsProvider = z.enum(["azure", "edge"]);
 export type TtsProvider = z.infer<typeof ttsProvider>;
 

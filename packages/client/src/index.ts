@@ -13,3 +13,4 @@ export * from "./tokens";
 export * from "./oauth";
 export * from "./offline";
 export * from "./avatar";
+export * from "./storyAudio";

@@ -32,11 +32,18 @@ import {
   RetryIcon,
   SpeakerIcon,
   StopIcon,
+  CrossIcon,
+  HeadphonesIcon,
+  PauseIcon,
+  PlayIcon,
+  SkipBackIcon,
+  SkipForwardIcon,
   TypeIcon,
 } from "../components/icons";
 import { TapToTranslate } from "../components/TapToTranslate";
 import { btn, card } from "../components/ui";
 import { api } from "../lib/api";
+import { listen, pause as pauseListening, resume as resumeListening, seekParagraph, setListeningRate, stop as stopListening, useListening } from "../lib/listening";
 import { isEink, scrollBehavior } from "../lib/appearance";
 import { useVocab } from "../lib/vocab";
 
@@ -84,7 +91,11 @@ function StoryReaderView() {
   const { reader, change: changeReader, flush: flushSettings } = useReaderSettings();
   const aiEnabled = useAssistantEnabled();
   const aloud = useReadAloud();
-  const speaking = aloud.speaking;
+  const navigate = useNavigate();
+  // Listening (a server reading voice): one audio file, the page-wide player (lib/listening).
+  const ls = useListening();
+  const listeningHere = ls.storyId === id && ls.phase !== "idle";
+  const speaking = listeningHere ? ls.paragraph : aloud.speaking;
   const articleRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<(HTMLDivElement | null)[]>([]);
   const { words: savedWords } = useVocab();
@@ -353,29 +364,46 @@ function StoryReaderView() {
   }
 
   // --- read aloud: follows along by turning pages / scrolling.
+  function follow(idx: number) {
+    if (paged) {
+      const p = blockPagesRef.current[idx];
+      if (p !== undefined && p !== pageRef.current) setPage(p);
+      return;
+    }
+    const sc = scrollerRef.current;
+    const el = blockRefs.current[idx];
+    if (sc && el && (el.offsetTop < sc.scrollTop + 64 || el.offsetTop + el.offsetHeight > sc.scrollTop + sc.clientHeight - 48)) {
+      el.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
+    }
+  }
   function readFrom(start: number) {
-    aloud.read(blockRefs.current.map(germanText), start, {
-      rate: reader.speechRate,
-      onParagraph: (idx) => {
-        if (paged) {
-          const p = blockPagesRef.current[idx];
-          if (p !== undefined && p !== pageRef.current) setPage(p);
-          return;
-        }
-        const sc = scrollerRef.current;
-        const el = blockRefs.current[idx];
-        if (sc && el && (el.offsetTop < sc.scrollTop + 64 || el.offsetTop + el.offsetHeight > sc.scrollTop + sc.clientHeight - 48)) {
-          el.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
-        }
-      },
-    });
+    if (ls.enabled && view) {
+      // A server reading voice: listen to the story's audio file instead.
+      aloud.stop();
+      setListeningRate(reader.speechRate);
+      if (listeningHere) return seekParagraph(start);
+      return void listen({ id: view.story.id, title: view.story.title, book: view.series?.title ?? null }, start);
+    }
+    aloud.read(blockRefs.current.map(germanText), start, { rate: reader.speechRate, onParagraph: follow });
   }
   function playFromView() {
+    if (listeningHere) return ls.phase === "playing" ? pauseListening() : resumeListening();
     readFrom(anchor.current);
   }
-  const stop = aloud.stop;
+  const stop = () => (listeningHere ? stopListening() : aloud.stop());
+  useEffect(() => {
+    if (listeningHere && ls.phase === "playing") follow(ls.paragraph);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listeningHere, ls.phase, ls.paragraph]);
+  useEffect(() => setListeningRate(reader.speechRate), [reader.speechRate]);
+  // The player went on to the next chapter: so does the reader.
+  const wasListening = useRef(false);
+  useEffect(() => {
+    if (wasListening.current && ls.storyId && ls.storyId !== id && ls.storyId === view?.series?.next) navigate(`/stories/${ls.storyId}`);
+    wasListening.current = ls.storyId === id;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ls.storyId, id, view?.series?.next]);
 
-  const navigate = useNavigate();
   async function nextChapter() {
     const next = await toNextChapter();
     if (next) navigate(`/stories/${next}`);
@@ -549,7 +577,18 @@ function StoryReaderView() {
             <ChevronLeftIcon className="h-4 w-4 shrink-0" />
             <span className="truncate">{book ? book.title : "Stories"}</span>
           </Link>
-          {canSpeak &&
+          {ls.enabled ? (
+            <button
+              type="button"
+              onClick={playFromView}
+              className={iconBtn}
+              title={listeningHere && ls.phase === "playing" ? "Pause" : "Listen from here"}
+              aria-label={listeningHere && ls.phase === "playing" ? "Pause listening" : "Listen from here"}
+            >
+              {listeningHere && ls.phase === "playing" ? <PauseIcon className="h-[18px] w-[18px]" /> : <HeadphonesIcon className="h-[18px] w-[18px]" />}
+            </button>
+          ) : (
+            canSpeak &&
             (speaking === null ? (
               <button type="button" onClick={playFromView} className={iconBtn} title="Read aloud from here" aria-label="Read aloud">
                 <SpeakerIcon className="h-[18px] w-[18px]" />
@@ -558,7 +597,8 @@ function StoryReaderView() {
               <button type="button" onClick={stop} className={iconBtn} aria-label="Stop reading aloud">
                 <StopIcon className="h-[18px] w-[18px]" />
               </button>
-            ))}
+            ))
+          )}
           {(aiEnabled || hasAnyLines) && (
             <button
               type="button"
@@ -720,16 +760,45 @@ function StoryReaderView() {
         </div>
       ) : null}
 
-      {speaking !== null && (
-        <button
-          type="button"
-          onClick={stop}
-          className="ws-dock absolute bottom-12 right-4 z-30 inline-flex items-center gap-2 px-4 py-2 font-sans text-sm font-medium text-ink"
-          lang="en"
-        >
-          <StopIcon className="h-4 w-4" />
-          Stop reading
-        </button>
+      {listeningHere ? (
+        <div className="ws-dock absolute bottom-12 right-4 z-30 inline-flex max-w-[calc(100%-2rem)] items-center gap-1 px-2 py-1.5 font-sans text-sm font-medium text-ink" lang="en">
+          {ls.phase === "preparing" || ls.phase === "error" ? (
+            <span className={`px-2 ${ls.phase === "error" ? "text-danger" : "text-ink-muted"}`}>
+              {ls.phase === "error"
+                ? `Couldn't play: ${ls.error}`
+                : ls.progress
+                  ? `Preparing the audio… ${ls.progress.done} of ${ls.progress.total}`
+                  : "Preparing the audio…"}
+            </span>
+          ) : (
+            <>
+              <button type="button" onClick={() => seekParagraph(Math.max(0, ls.paragraph - 1))} className="grid h-8 w-8 place-items-center rounded-full hover:bg-surface-sunken" aria-label="Previous paragraph">
+                <SkipBackIcon className="h-4 w-4" />
+              </button>
+              <button type="button" onClick={playFromView} className="grid h-8 w-8 place-items-center rounded-full hover:bg-surface-sunken" aria-label={ls.phase === "playing" ? "Pause" : "Play"}>
+                {ls.phase === "playing" ? <PauseIcon className="h-4 w-4" /> : <PlayIcon className="h-4 w-4" />}
+              </button>
+              <button type="button" onClick={() => seekParagraph(ls.paragraph + 1)} className="grid h-8 w-8 place-items-center rounded-full hover:bg-surface-sunken" aria-label="Next paragraph">
+                <SkipForwardIcon className="h-4 w-4" />
+              </button>
+            </>
+          )}
+          <button type="button" onClick={stop} className="grid h-8 w-8 place-items-center rounded-full hover:bg-surface-sunken" aria-label="Stop listening">
+            <CrossIcon className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        speaking !== null && (
+          <button
+            type="button"
+            onClick={stop}
+            className="ws-dock absolute bottom-12 right-4 z-30 inline-flex items-center gap-2 px-4 py-2 font-sans text-sm font-medium text-ink"
+            lang="en"
+          >
+            <StopIcon className="h-4 w-4" />
+            Stop reading
+          </button>
+        )
       )}
     </div>
   );

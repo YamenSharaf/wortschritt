@@ -100,6 +100,7 @@ Series      GET|POST /api/series   GET|DELETE /api/series/:id   PUT /api/series/
             POST /api/stories/generate (SSE: progress, then the new story's id)
 Dictionary  GET /api/dict/status   GET /api/dict/:word[/details]   POST /api/dict/lemmas
 TTS         GET /api/tts/status    GET /api/tts    POST /api/tts/download
+Listening   GET|POST /api/stories/:id/audio   GET /api/stories/:id/audio/:key.mp3 (Range)
 Assistant   GET /api/assistant/status
             POST /api/assistant/ask (SSE) | word | cleanup-notes | test
             GET|DELETE /api/assistant/settings   PUT /api/assistant/models (fallback order)

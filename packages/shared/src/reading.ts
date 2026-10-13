@@ -47,11 +47,33 @@ export function splitSentences(block: string): string[] {
   return out;
 }
 
-/** Markdown emphasis, links and markers removed (for sending to an AI). */
+/** Markdown emphasis, links and markers removed (for sending to an AI, or for speech). */
 export function plainText(md: string): string {
   return md
     .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/^#{1,6}\s+|^[-*+]\s+|^>\s?/gm, "")
     .replace(/(\*\*|__|\*|_|`)/g, "")
     .trim();
+}
+
+/** Split text into chunks of at most `max` characters at sentence ends
+ *  (server clips cap at 500; long device utterances get cut off too). */
+export function chunkText(text: string, max = 480): string[] {
+  const sentences = text.replace(/\s+/g, " ").trim().match(/[^.!?…]+[.!?…]+["“”»«]*\s*|[^.!?…]+$/g) ?? [];
+  const out: string[] = [];
+  let cur = "";
+  for (const s of sentences) {
+    if ((cur + s).length > max && cur) {
+      out.push(cur.trim());
+      cur = "";
+    }
+    // A single overlong sentence: split it hard.
+    if (s.length > max) {
+      for (let i = 0; i < s.length; i += max) out.push(s.slice(i, i + max).trim());
+      continue;
+    }
+    cur += s;
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out.filter(Boolean);
 }

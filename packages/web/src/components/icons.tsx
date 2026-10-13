@@ -12,6 +12,10 @@ import {
   ChevronRight,
   CircleAlert,
   Copy,
+  Headphones,
+  Pause,
+  SkipBack,
+  SkipForward,
   Shuffle,
   Star,
   Ellipsis,
@@ -61,6 +65,10 @@ export const VocabIcon = wrap(Layers);
 export const NotesIcon = wrap(NotebookPen);
 export const SettingsIcon = wrap(Settings);
 export const PlayIcon = wrap(Play);
+export const PauseIcon = wrap(Pause);
+export const HeadphonesIcon = wrap(Headphones);
+export const SkipBackIcon = wrap(SkipBack);
+export const SkipForwardIcon = wrap(SkipForward);
 export const LogOutIcon = wrap(LogOut);
 export const ChevronRightIcon = wrap(ChevronRight);
 export const ChevronLeftIcon = wrap(ChevronLeft);

@@ -33,6 +33,7 @@ import type {
   SeriesView,
   SheetView,
   Story,
+  StoryAudio,
   StoryContext,
   StoryContextOptions,
   StoryTranslations,
@@ -462,6 +463,10 @@ export function createApi(o: ClientOptions) {
       url(`/api/${kind === "series" ? "series" : "stories"}/${id}/cover.png?w=${Math.round(width)}&v=${encodeURIComponent(version)}`),
     epubUrl: (kind: "story" | "series", id: string) =>
       url(`/api/${kind === "series" ? "series" : "stories"}/${id}/epub`),
+    /** A story as one audio file: where it stands, making it (poll storyAudio after), and the file. */
+    storyAudio: (id: string) => req<StoryAudio>(`/api/stories/${encodeURIComponent(id)}/audio`),
+    startStoryAudio: (id: string) => req<StoryAudio>(`/api/stories/${encodeURIComponent(id)}/audio`, { method: "POST" }),
+    storyAudioUrl: (id: string, key: string) => url(`/api/stories/${encodeURIComponent(id)}/audio/${key}.mp3`),
     ttsUrl: (voice: string, text: string) =>
       url(`/api/tts?voice=${encodeURIComponent(voice)}&text=${encodeURIComponent(text)}`),
 

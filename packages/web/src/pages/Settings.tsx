@@ -11,6 +11,7 @@ import { useAsync, useAuth, useAvatar } from "@mdb/client/react";
 import { serverTtsFor, timeAgo } from "@mdb/client";
 import { useAppearance } from "../lib/appearance";
 import { useAutoAdvance } from "../lib/autoAdvance";
+import { setListeningEnabled } from "../lib/listening";
 import {
   deviceVoices,
   getDeviceVoicePref,
@@ -280,7 +281,11 @@ function VoiceSettings({
   function change(next: { ttsVoice?: string; readerVoice?: string }) {
     onChange(next);
     // Hear the choice at once (it's kept for the account on Save).
-    if (ready) setServerTts(serverTtsFor(ready, { ttsVoice, readerVoice, ...next }));
+    if (ready) {
+      const tts = serverTtsFor(ready, { ttsVoice, readerVoice, ...next });
+      setServerTts(tts);
+      setListeningEnabled(tts.readerEnabled);
+    }
   }
 
   const serverOptions = (value: string) => (

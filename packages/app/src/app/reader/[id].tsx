@@ -32,9 +32,11 @@ import { RNReader, type ReaderControls } from "@/reader/RNReader";
 import { LINE_HEIGHTS, READER_FONTS, WIDTHS, readerColors, type ReaderColors } from "@/reader/style";
 import { StoryQuiz } from "@/reader/StoryQuiz";
 import { WordSheet } from "@/reader/WordSheet";
+import { DownloadRow, ListenBar } from "@/reader/Listen";
+import { useListening } from "@/lib/listening";
 import { Icon } from "@/ui/icons";
 import { Text } from "@/ui/Text";
-import { BookOpenText, Check, ChevronLeft, ChevronRight, Languages, Square, Type, Volume2 } from "lucide-react-native";
+import { BookOpenText, Check, ChevronLeft, ChevronRight, Headphones, Languages, Pause, Square, Type, Volume2 } from "lucide-react-native";
 import { useVolumeKeys, volumeKeysSupported } from "../../../modules/volume-keys";
 
 /** One reader per story, so the next chapter starts fresh. */
@@ -83,6 +85,8 @@ function Reader({ id }: { id: string }) {
   const [round, setRound] = useState(0);
   const controls = useRef<ReaderControls>(null);
   const aloud = useReadAloud();
+  // Listening (a server reading voice): one audio file, the app-wide player.
+  const { controller: listening, state: ls } = useListening();
   // Volume down is the next page (up with "invert"); only on pages, with nothing open on top.
   useVolumeKeys(volumeKeys && reader.layout === "pages" && !sheet && !word, (key) =>
     controls.current?.turn((key === "down") !== volumeInvert ? 1 : -1),
@@ -113,10 +117,32 @@ function Reader({ id }: { id: string }) {
     for (const x of pieces) if (x.kind === "de" && x.para >= 0) out[x.para] = out[x.para] ? `${out[x.para]} ${x.text}` : x.text;
     return Array.from(out, (t) => t ?? "");
   }, [pieces]);
+  const storyId = view?.story.id ?? id;
+  const canListen = !!listening && (ls.enabled || ls.downloaded.includes(storyId));
+  const listeningHere = ls.storyId === storyId && ls.phase !== "idle";
   const readAloud = () => {
+    if (canListen && listening && view) {
+      if (listeningHere) return ls.phase === "playing" ? listening.pause() : ls.phase === "paused" ? listening.resume() : undefined;
+      aloud.stop();
+      listening.setRate(reader.speechRate);
+      return void listening.listen({ id: view.story.id, title: view.story.title, book: view.series?.title ?? null }, controls.current?.firstPara() ?? 0);
+    }
     if (aloud.speaking !== null) return aloud.stop();
     aloud.read(paragraphs, controls.current?.firstPara() ?? 0, { rate: reader.speechRate, onParagraph: (i) => controls.current?.showPara(i) });
   };
+  // Follow the paragraph being listened to.
+  useEffect(() => {
+    if (listeningHere && ls.phase === "playing") controls.current?.showPara(ls.paragraph);
+  }, [listeningHere, ls.phase, ls.paragraph]);
+  // The player went on to the next chapter: so does the reader.
+  const wasListening = useRef(false);
+  useEffect(() => {
+    if (wasListening.current && ls.storyId && ls.storyId !== storyId && ls.storyId === view?.series?.next) router.replace(`/reader/${ls.storyId}`);
+    wasListening.current = ls.storyId === storyId;
+  }, [ls.storyId, storyId, view?.series?.next]);
+  useEffect(() => {
+    if (listening) listening.setRate(reader.speechRate);
+  }, [listening, reader.speechRate]);
   const isSaved = useCallback((w: string) => isSavedWord(w, vocab.words, lemmas), [vocab.words, lemmas]);
   const { request } = tr;
   const onVisible = useCallback((paras: number[]) => reader.translations !== "off" && request(paras), [reader.translations, request]);
@@ -190,7 +216,7 @@ function Reader({ id }: { id: string }) {
             onProgress={reading.see}
             onVisible={onVisible}
             onCenter={() => setChrome((c) => !c)}
-            speaking={aloud.speaking}
+            speaking={listeningHere ? ls.paragraph : aloud.speaking}
             animated={theme.motion.base > 0}
             tapToTurn={tapToTurn}
             onPage={(page, count) => {
@@ -258,13 +284,22 @@ function Reader({ id }: { id: string }) {
                 }}
               />
             )}
-            {aloud.supported && (
+            {canListen ? (
               <BarButton
-                icon={aloud.speaking !== null ? Square : Volume2}
-                color={aloud.speaking !== null ? colors.fg : colors.muted}
-                a11y={aloud.speaking !== null ? "Stop reading aloud" : "Read aloud from here"}
+                icon={listeningHere && ls.phase === "playing" ? Pause : Headphones}
+                color={listeningHere ? colors.fg : colors.muted}
+                a11y={listeningHere && ls.phase === "playing" ? "Pause listening" : "Listen from here"}
                 onPress={readAloud}
               />
+            ) : (
+              aloud.supported && (
+                <BarButton
+                  icon={aloud.speaking !== null ? Square : Volume2}
+                  color={aloud.speaking !== null ? colors.fg : colors.muted}
+                  a11y={aloud.speaking !== null ? "Stop reading aloud" : "Read aloud from here"}
+                  onPress={readAloud}
+                />
+              )
             )}
             {story.glossary.length > 0 && <BarButton icon={BookOpenText} color={colors.muted} a11y="Glossary" onPress={() => setSheet("glossary")} />}
             <BarButton icon={Type} color={colors.muted} a11y="Text settings" onPress={() => setSheet("settings")} />
@@ -308,7 +343,20 @@ function Reader({ id }: { id: string }) {
               volumeKeys: volumeKeysSupported ? { on: volumeKeys, set: setVolumeKeys, invert: volumeInvert, setInvert: setVolumeInvert } : null,
             }}
           />
+          {canListen && listening && (
+            <DownloadRow state={ls} controller={listening} story={{ id: story.id, title: story.title, book: book?.title ?? null }} colors={{ fg: theme.colors.ink, muted: theme.colors.inkMuted }} />
+          )}
         </Sheet>
+      )}
+      {listeningHere && listening && (
+        <ListenBar
+          state={ls}
+          controller={listening}
+          story={{ id: story.id, title: story.title, book: book?.title ?? null }}
+          paragraphs={paragraphs.length}
+          colors={colors}
+          bottom={insets.bottom + (reader.layout === "pages" ? 28 : 0)}
+        />
       )}
       {sheet === "glossary" && (
         <Sheet title="Glossary" onClose={() => setSheet(null)}>

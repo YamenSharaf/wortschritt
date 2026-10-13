@@ -6,6 +6,10 @@
  */
 
 /** The device's speech synthesis (Web Speech in the browser, expo-speech in the app). */
+import { chunkText } from "@mdb/shared";
+
+export { chunkText };
+
 export type DeviceSpeech = {
   supported(): boolean;
   /** Speak `text`; resolves when it ends or fails. */
@@ -55,28 +59,6 @@ export function pickVoice<V extends VoiceLike>(list: V[], lang: string): V | und
     matching.find((v) => v.localService === false) ??
     matching[0]
   );
-}
-
-/** Split text into chunks of at most `max` characters at sentence ends
- *  (server clips cap at 500; long device utterances get cut off too). */
-export function chunkText(text: string, max = 480): string[] {
-  const sentences = text.replace(/\s+/g, " ").trim().match(/[^.!?…]+[.!?…]+["“”»«]*\s*|[^.!?…]+$/g) ?? [];
-  const out: string[] = [];
-  let cur = "";
-  for (const s of sentences) {
-    if ((cur + s).length > max && cur) {
-      out.push(cur.trim());
-      cur = "";
-    }
-    // A single overlong sentence: split it hard.
-    if (s.length > max) {
-      for (let i = 0; i < s.length; i += max) out.push(s.slice(i, i + max).trim());
-      continue;
-    }
-    cur += s;
-  }
-  if (cur.trim()) out.push(cur.trim());
-  return out.filter(Boolean);
 }
 
 export type Speech = ReturnType<typeof createSpeech>;

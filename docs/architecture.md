@@ -371,8 +371,20 @@ computes, like the web does with HTML; it keeps no business logic.
   Administration → Server, key encrypted like AI keys, called through the egress
   guard), or the unofficial Edge "Read aloud" endpoint (`edge:…`, admin
   opt-in, `tts/edge.ts` WebSocket protocol as in edge-tts). Cloud voices are
-  limited to `NEURAL_VOICES` (`@mdb/shared`). Clips are cached on disk by
-  voice + text; no server voice → the browser's speech synthesis.
+  limited to `serverVoices()` (`@mdb/shared`: the neural voices, plus Azure's
+  HD voices on Azure). Clips are cached on disk by voice + text
+  (`tts/cache.ts`); no server voice → the device's speech synthesis. Two voice
+  settings: `ttsVoice` for words, `readerVoice` for a story's read-aloud
+  ("" = the same, "device" = the device's own).
+- Listening (`services/storyAudio.ts`, `routes/storyAudio.ts`): when the
+  reading voice is a server voice, a story is one MP3, made on demand (POST
+  starts it in the background, GET polls progress) from the same cached clips,
+  joined frame by frame (`tts/mp3.ts`, which also times them) with each
+  paragraph's start time; named by a hash of voice + text and served with
+  Range. Web: `lib/listening.ts` (an <audio> element, Media Session); app:
+  `lib/listening.tsx` (expo-audio with background playback and lock-screen
+  controls; files kept in the app's documents as "Download for listening").
+  Both highlight the paragraph by time and go on to the next chapter of a book.
 - Settings: single JSON row (`services/settings.ts`), including the account
   icon (`avatar`: a pixel pattern from the username and a shuffle seed, or the
   initial; drawn by `@mdb/client`'s `avatarFor` on web and app alike).

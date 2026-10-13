@@ -3,6 +3,7 @@ import { fetch as expoFetch } from "expo/fetch";
 import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import { Image } from "expo-image";
+import { clearStoryAudio } from "./listening";
 import { clearClips } from "./speech";
 import {
   createApi,
@@ -187,6 +188,7 @@ export function ServerProvider({ children }: { children: ReactNode }) {
     await store.reset();
     await Image.clearDiskCache().catch(() => false);
     clearClips();
+    clearStoryAudio();
     await Image.clearMemoryCache().catch(() => false);
     setStatus("signed-out");
   }, [server, auth, session, store, sync]);

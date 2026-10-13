@@ -22,6 +22,7 @@ import { registerBackgroundSync } from "@/lib/backgroundSync";
 import { ServerProvider, useServer } from "@/lib/server";
 import { deviceStore } from "@/lib/storage";
 import { SyncProvider } from "@/lib/sync";
+import { ListeningProvider, useListening } from "@/lib/listening";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 import { checkForUpdate, updatesSupported } from "@/lib/updates";
 
@@ -54,8 +55,10 @@ function Providers({ children }: { children: ReactNode }) {
       <ThemeProvider>
         {status === "signed-in" ? (
           <AuthProvider>
-            <SpeechSetup />
-            <SyncProvider>{children}</SyncProvider>
+            <ListeningProvider api={api} headers={mediaHeaders}>
+              <SpeechSetup />
+              <SyncProvider>{children}</SyncProvider>
+            </ListeningProvider>
           </AuthProvider>
         ) : (
           children
@@ -69,14 +72,20 @@ function Providers({ children }: { children: ReactNode }) {
 function SpeechSetup() {
   const api = useApi();
   const speech = useSpeech();
+  const { controller: listening } = useListening();
   useEffect(() => {
     registerBackgroundSync().catch(() => {});
   }, []);
   useEffect(() => {
     Promise.all([api.ttsStatus(), api.settings()])
-      .then(([st, se]) => speech.setServerTts(serverTtsFor(st, se)))
+      .then(([st, se]) => {
+        const tts = serverTtsFor(st, se);
+        speech.setServerTts(tts);
+        // A server reading voice: stories are listened to as one file (background, lock screen, downloads).
+        listening?.setEnabled(tts.readerEnabled);
+      })
       .catch(() => {});
-  }, [api, speech]);
+  }, [api, speech, listening]);
   return null;
 }
 

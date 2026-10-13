@@ -14,6 +14,7 @@ import {
 } from "./components/icons";
 import { serverTtsFor } from "@mdb/client";
 import { setServerTts } from "./lib/tts";
+import { setListeningEnabled } from "./lib/listening";
 import { VocabProvider } from "./lib/vocab";
 
 const navItems = [
@@ -39,7 +40,12 @@ export function App() {
   useEffect(() => {
     if (!authenticated) return;
     Promise.all([api.ttsStatus(), api.settings()])
-      .then(([st, se]) => setServerTts(serverTtsFor(st, se)))
+      .then(([st, se]) => {
+        const tts = serverTtsFor(st, se);
+        setServerTts(tts);
+        // A server reading voice: stories are listened to as one file (lib/listening).
+        setListeningEnabled(tts.readerEnabled);
+      })
       .catch(() => {});
   }, [authenticated]);
 

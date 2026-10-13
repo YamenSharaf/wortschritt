@@ -1,7 +1,9 @@
-import { Pressable, View } from "react-native";
+import { useState } from "react";
+import { Alert, Pressable, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useApi, useAsync } from "@mdb/client/react";
 import { useSync } from "@/lib/sync";
+import { useListening } from "@/lib/listening";
 import { font, useTheme } from "@/lib/theme";
 import { Pill } from "@/ui/Pill";
 import { Button } from "@/ui/Button";
@@ -10,7 +12,7 @@ import { Cover } from "@/ui/Cover";
 import { Icon } from "@/ui/icons";
 import { Screen } from "@/ui/Screen";
 import { Text } from "@/ui/Text";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, Download, Headphones } from "lucide-react-native";
 
 /** A book: what it's about, how far you are, and its chapters (as on the web). */
 export default function BookScreen() {
@@ -19,6 +21,8 @@ export default function BookScreen() {
   const { colors, radii } = useTheme();
   const { status } = useSync();
   const book = useAsync(() => api.series(id), [api, id, status.revision], { keep: true });
+  const { controller: listening, state: ls } = useListening();
+  const [downloading, setDownloading] = useState<{ done: number; total: number } | null>(null);
 
   return (
     <Screen>
@@ -65,6 +69,48 @@ export default function BookScreen() {
                         <Button kind="primary" label={started ? "Continue reading" : "Start reading"} onPress={() => router.push(`/reader/${b.continueId}`)} />
                       </View>
                     )}
+                    {listening && (ls.enabled || b.chapters.some((c) => c.storyId && ls.downloaded.includes(c.storyId))) && (() => {
+                      const written = b.chapters.filter((c): c is typeof c & { storyId: string } => !!c.storyId);
+                      const missing = written.filter((c) => !ls.downloaded.includes(c.storyId));
+                      const from = written.find((c) => c.storyId === b.continueId) ?? written[0];
+                      return (
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                          {from && (
+                            <Button
+                              label="Listen"
+                              icon={<Icon icon={Headphones} size={16} />}
+                              onPress={() => {
+                                void listening.listen({ id: from.storyId, title: from.title, book: b.title }, 0);
+                                router.push(`/reader/${from.storyId}`);
+                              }}
+                            />
+                          )}
+                          <Button
+                            label={
+                              downloading
+                                ? `Downloading ${downloading.done + 1} of ${downloading.total}…`
+                                : missing.length === 0
+                                  ? "Downloaded for listening"
+                                  : `Download for listening (${missing.length})`
+                            }
+                            icon={<Icon icon={Download} size={16} />}
+                            disabled={!!downloading || missing.length === 0}
+                            onPress={async () => {
+                              try {
+                                for (let i = 0; i < missing.length; i++) {
+                                  setDownloading({ done: i, total: missing.length });
+                                  await listening.download({ id: missing[i]!.storyId, title: missing[i]!.title, book: b.title });
+                                }
+                              } catch (e) {
+                                Alert.alert("Couldn't download the audio", e instanceof Error ? e.message : String(e));
+                              } finally {
+                                setDownloading(null);
+                              }
+                            }}
+                          />
+                        </View>
+                      );
+                    })()}
                   </View>
                 )}
               </Card>

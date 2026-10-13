@@ -37,6 +37,7 @@ import { syncRoutes } from "./routes/sync";
 import { pruneSync } from "./services/sync";
 import { settingsRoutes } from "./routes/settings";
 import { favoritesRoutes } from "./routes/favorites";
+import { storyAudioRoutes } from "./routes/storyAudio";
 import { storyRoutes } from "./routes/stories";
 import { ttsRoutes } from "./routes/tts";
 import { vocabRoutes } from "./routes/vocab";
@@ -117,6 +118,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(ttsRoutes);
   await app.register(settingsRoutes);
   await app.register(favoritesRoutes);
+  await app.register(storyAudioRoutes);
   await app.register(importRoutes);
   await app.register(notesRoutes);
   await app.register(storyRoutes);
