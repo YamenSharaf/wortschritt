@@ -53,9 +53,12 @@ export async function ttsRoutes(app: FastifyInstance) {
         const { audio, type } = await clip(text, voice);
         return reply.type(type).header("cache-control", "public, max-age=31536000, immutable").send(audio);
       } catch (err) {
-        if (err instanceof TtsUnavailable) return reply.code(503).send({ error: err.message });
+        if (err instanceof TtsUnavailable) {
+          app.log.warn({ voice, reason: err.message }, "tts voice unavailable");
+          return reply.code(503).send({ error: err.message });
+        }
         app.log.error(err, "tts synthesis failed");
-        return reply.code(502).send({ error: "synthesis failed" });
+        return reply.code(502).send({ error: err instanceof Error ? err.message : "synthesis failed" });
       }
     },
   );

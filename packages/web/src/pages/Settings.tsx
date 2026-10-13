@@ -278,7 +278,26 @@ function VoiceSettings({
   const available = !!ready?.available;
   const installed = ready?.installed ?? [];
 
+  const [problem, setProblem] = useState<{ which: "words" | "reading"; text: string } | null>(null);
+  /** Play a sample in a voice; a server voice that fails says why (rather than the device voice standing in). */
+  async function test(which: "words" | "reading", voice: string, text: string) {
+    setProblem(null);
+    const server = voice !== "" && voice !== "device" && installed.includes(voice);
+    if (server) {
+      const res = await fetch(api.ttsUrl(voice, text), { credentials: "include" }).catch(() => null);
+      if (!res?.ok) {
+        const reason = res ? ((await res.json().catch(() => null)) as { error?: string } | null)?.error : null;
+        return setProblem({ which, text: `Couldn't play this voice: ${reason ?? "the server didn't answer"}.` });
+      }
+    }
+    if (which === "words") speak(text);
+    else void speech.speakSequence([text]);
+  }
+  const problemFor = (which: "words" | "reading") =>
+    problem?.which === which ? <p className="mt-2 text-sm text-danger">{problem.text}</p> : null;
+
   function change(next: { ttsVoice?: string; readerVoice?: string }) {
+    setProblem(null);
     onChange(next);
     // Hear the choice at once (it's kept for the account on Save).
     if (ready) {
@@ -319,12 +338,13 @@ function VoiceSettings({
         <div className="mt-2">
           <button
             type="button"
-            onClick={() => speak("Guten Tag! Ich lerne Deutsch mit dem Baby.")}
+            onClick={() => void test("words", ttsVoice, "Guten Tag! Ich lerne Deutsch mit dem Baby.")}
             className="rounded-control border border-line-control px-3 py-1.5 text-sm hover:border-line-strong "
           >
             <SpeakerIcon className="h-4 w-4" />
             Test
           </button>
+          {problemFor("words")}
         </div>
       </Field>
       <p className="-mt-2 text-xs text-ink-subtle">Speaker buttons in Vocab and flashcards, and words you tap.</p>
@@ -337,12 +357,15 @@ function VoiceSettings({
         <div className="mt-2">
           <button
             type="button"
-            onClick={() => void speech.speakSequence(["Es war einmal ein kleines Dorf am Rand eines großen Waldes."])}
+            onClick={() =>
+              void test("reading", readerVoice === "" ? ttsVoice : readerVoice, "Es war einmal ein kleines Dorf am Rand eines großen Waldes.")
+            }
             className="rounded-control border border-line-control px-3 py-1.5 text-sm hover:border-line-strong "
           >
             <SpeakerIcon className="h-4 w-4" />
             Test
           </button>
+          {problemFor("reading")}
         </div>
       </Field>
       <p className="-mt-2 text-xs text-ink-subtle">

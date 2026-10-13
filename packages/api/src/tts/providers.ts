@@ -95,6 +95,20 @@ const xmlEscape = (s: string) =>
 
 export class TtsUnavailable extends Error {}
 
+// The voices an Azure region offers (its voices/list), kept for an hour.
+let regionList: { region: string; at: number; names: Set<string> } | null = null;
+async function regionVoices(cfg: AzureConfig): Promise<Set<string>> {
+  if (regionList && regionList.region === cfg.region && Date.now() - regionList.at < 3_600_000) return regionList.names;
+  const res = await guardedFetch(`https://${cfg.region}.tts.speech.microsoft.com/cognitiveservices/voices/list`, {
+    headers: { "Ocp-Apim-Subscription-Key": cfg.key, "User-Agent": "wortschritt" },
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (!res.ok) throw new Error(`voices/list ${res.status}`);
+  const list = (await res.json()) as { ShortName?: string }[];
+  regionList = { region: cfg.region, at: Date.now(), names: new Set(list.map((v) => v.ShortName ?? "")) };
+  return regionList.names;
+}
+
 /** Synthesize with whichever provider the voice belongs to. */
 export async function synthesize(text: string, voice: string): Promise<{ audio: Buffer; type: string; ext: string }> {
   const provider = ttsProviderOf(voice);
@@ -116,10 +130,17 @@ export async function synthesize(text: string, voice: string): Promise<{ audio: 
       "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3",
       "User-Agent": "wortschritt",
     },
-    body: `<speak version='1.0' xml:lang='${lang}'><voice name='${name}'>${xmlEscape(text)}</voice></speak>`,
+    body: `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${lang}'><voice name='${name}'>${xmlEscape(text)}</voice></speak>`,
     signal: AbortSignal.timeout(20_000),
   });
-  if (!res.ok) throw new Error(`azure ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`);
+  if (!res.ok) {
+    const detail = (await res.text().catch(() => "")).slice(0, 200);
+    // Azure says nothing on a 400; a voice the region doesn't offer is the usual reason.
+    if (res.status === 400 && !(await regionVoices(cfg).catch(() => null))?.has(name)) {
+      throw new TtsUnavailable(`${name} isn't offered in your Azure region (${cfg.region})`);
+    }
+    throw new Error(`Azure answered ${res.status}${detail ? `: ${detail}` : ""}`);
+  }
   const audio = Buffer.from(await res.arrayBuffer());
   if (audio.length > 8 * 1024 * 1024) throw new Error("azure returned too much audio");
   return { audio, type: "audio/mpeg", ext: "mp3" };
