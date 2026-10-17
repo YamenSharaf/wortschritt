@@ -10,6 +10,7 @@ import { Button } from "@/ui/Button";
 import { Chip } from "@/ui/Chip";
 import { Icon, sections } from "@/ui/icons";
 import { Markdown } from "@/ui/Markdown";
+import { NoteAttachments } from "@/ui/NoteAttachments";
 import { Screen } from "@/ui/Screen";
 import { Text } from "@/ui/Text";
 import { ChevronLeft, Sparkles, Undo2 } from "lucide-react-native";
@@ -151,6 +152,8 @@ export default function NoteScreen() {
             )}
           </View>
         )}
+
+        <NoteAttachments attachments={note.attachments} onRemove={(attachmentId) => void note.removeAttachment(attachmentId)} />
 
         <View style={{ flexDirection: "row" }}>
           <Button
