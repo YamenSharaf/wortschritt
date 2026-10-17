@@ -162,6 +162,19 @@ export const notes = sqliteTable("notes", {
     .default(sql`(unixepoch())`),
 });
 
+/** Files kept with a note; the bytes live on the data volume (migration 20). */
+export const noteAttachments = sqliteTable("note_attachments", {
+  id: text("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  noteId: text("note_id").notNull(),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  size: integer("size").notNull(),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 /**
  * Content added at runtime via the import screen. Git-versioned JSON in
  * CONTENT_DIR is the other source; the API merges both.

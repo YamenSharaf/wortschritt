@@ -765,6 +765,33 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 20,
+    // Files kept with a note. The bytes live on the data volume next to the
+    // database; adding or removing one counts as a change to the note, so the
+    // app's copy of the note picks up the new list.
+    name: "note-attachments",
+    up(db) {
+      db.exec(`
+        CREATE TABLE note_attachments (
+          id TEXT PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          note_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          type TEXT NOT NULL,
+          size INTEGER NOT NULL,
+          created_at INTEGER NOT NULL DEFAULT (unixepoch())
+        );
+        CREATE INDEX note_attachments_note ON note_attachments (user_id, note_id);
+        CREATE TRIGGER sync_note_attachments_insert AFTER INSERT ON note_attachments BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (NEW.user_id, 'note', NEW.note_id);
+        END;
+        CREATE TRIGGER sync_note_attachments_delete AFTER DELETE ON note_attachments BEGIN
+          INSERT INTO sync_log (user_id, kind, item_id) VALUES (OLD.user_id, 'note', OLD.note_id);
+        END;
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

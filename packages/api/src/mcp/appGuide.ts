@@ -13,7 +13,7 @@ A small self-hosted app for learning German, used by a few people (one admin). Y
 - Practice (shared): exercise sets — multiple choice, cloze, flashcard, sentence building, transform, true/false, conjugation tables. Answers are graded by the server (forgiving: case, punctuation, ä→a are ignored unless an item says "exact"); a free-text miss can be judged by the learner's AI tutor if they enabled it. Every answer is recorded. AI helpers in the player: hint, translate the task, "why was I wrong?", and "generate more" items at the end (kept for that learner as part of their copy of the set, so they show up in mistakes).
 - Stories (private): reading texts with a glossary and comprehension questions at the end, and Books (series of chapters) shown as a grid of covers or a list. The reader has pages or scroll, tap-a-word dictionary popup (save to vocab from there), English line by line (off / peek / always), read-aloud, text settings, and EPUB download. Stories can also be generated in the app from a short prompt (Stories → Generate) or written by hand.
 - Vocab (private): saved words (by base form) with groups, and flashcards (all words or a group, DE↔EN, "know / don't know"). There is no spaced-repetition schedule: each word keeps known/missed counts and its last result.
-- Notes (private): Markdown notes with free-form categories; "Clean up" tidies a note with AI.
+- Notes (private): Markdown notes with free-form categories; "Clean up" tidies a note with AI. A note can carry attachments (files such as a class transcript, a photo, a PDF or a recording), shown under it.
 - Settings (account menu): Learning (level, daily goal, batch size, voice), Account (display name, password), Connections (AI tutor: each user brings their own OpenAI-compatible provider; connected apps; API tokens). Administration (admin only): users and registration; server time zone and read-aloud voices.
 - Import (button on Practice and Cheat sheets): paste JSON content (the same format as get_authoring_guide).
 
@@ -31,7 +31,7 @@ Exercise sets and cheat sheets are a shared library: built-in ones are read-only
 - A story for them: get_story_context → get_authoring_guide kind "story" → save_story → save_story_translations (English line by line).
 - A book: get_authoring_guide kind "series" → save_series (bible + outline) → per chapter (also in parallel by sub-agents): get_series → save_chapter → save_story_translations. Then read the summaries for continuity and fix chapters with overwrite. Covers: get_authoring_guide kind "cover" → set_cover for the book and each chapter, as one consistent set.
 - Vocabulary: save_vocab, create_vocab_group, add_words_to_group (e.g. a group of the words from a story).
-- Notes: list_notes / get_note, update_note (keep their content; tidy and correct it).
+- Notes: list_notes / get_note, update_note (keep their content; tidy and correct it). Attachments: add_note_attachment, read_note_attachment, delete_note_attachment; move_note_text_to_attachment moves raw material (e.g. a pasted transcript) out of a note body into a text attachment.
 
 ## House rules
 - German at the learner's level; weave grammar they struggle with in naturally, never name or lecture it in the text.

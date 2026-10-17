@@ -21,6 +21,10 @@ import {
   Ellipsis,
   Download,
   FileText,
+  File as FileGeneric,
+  FileAudio,
+  FileImage,
+  Paperclip,
   Languages,
   Lightbulb,
   House,
@@ -101,3 +105,8 @@ export const AdminIcon = wrap(ShieldCheck);
 export const LearningIcon = wrap(GraduationCap);
 export const AccountIcon = wrap(UserRound);
 export const ConnectionsIcon = wrap(Plug);
+export const PaperclipIcon = wrap(Paperclip);
+export const FileIcon = wrap(FileGeneric);
+export const FileTextIcon = wrap(FileText);
+export const FileImageIcon = wrap(FileImage);
+export const FileAudioIcon = wrap(FileAudio);

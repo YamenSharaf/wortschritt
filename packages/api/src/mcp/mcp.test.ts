@@ -112,11 +112,11 @@ test("initialize: instructions and every tool, with annotations", async () => {
   const { tools } = await admin.client.listTools();
   const names = tools.map((t) => t.name).sort();
   assert.deepEqual(names, [
-    "add_words_to_group", "create_note", "create_vocab_group", "delete_content", "delete_note",
+    "add_note_attachment", "add_words_to_group", "create_note", "create_vocab_group", "delete_content", "delete_note", "delete_note_attachment",
     "delete_series", "delete_story", "delete_vocab", "delete_vocab_group", "get_activity", "get_app_guide", "get_authoring_guide",
     "get_cheatsheet", "get_cover", "get_exercise_set", "get_mistakes", "get_note", "get_progress", "get_series", "get_set_history",
     "get_story", "get_story_context", "get_vocab", "list_cheatsheets", "list_exercise_sets", "list_notes", "list_series", "list_stories",
-    "list_vocab", "list_vocab_groups", "lookup_word", "remove_word_from_group", "save_chapter", "save_cheatsheet", "save_exercise_set", "save_series",
+    "list_vocab", "list_vocab_groups", "lookup_word", "move_note_text_to_attachment", "read_note_attachment", "remove_word_from_group", "save_chapter", "save_cheatsheet", "save_exercise_set", "save_series",
     "save_story", "save_story_translations", "save_vocab", "set_cover", "update_note", "validate_content", "whoami",
   ]);
   const save = tools.find((t) => t.name === "save_exercise_set")!;
@@ -246,6 +246,35 @@ test("notes: CRUD, private to the user", async () => {
 
   await anna.ok("delete_note", { id: note.id });
   assert.deepEqual(await anna.ok("list_notes"), []);
+});
+
+test("note attachments: add, move text out of the body, read in parts, private, delete", async () => {
+  const body = ["# Etwas mit Adjektiven", "", "etwas Neues", "", "[11:30] Speaker 1: Hallo", "[11:31] Speaker 2: Guten Tag", "", "Ende"].join("\n");
+  const note = await anna.ok("create_note", { title: "Kurs", body });
+  const moved = await anna.ok("move_note_text_to_attachment", { note_id: note.id, start_line: 5, end_line: 6, name: "Transkript.txt" });
+  assert.equal(moved.attachment.name, "Transkript.txt");
+  assert.equal(moved.attachment.type, "text/plain");
+  assert.equal(moved.note.body, "# Etwas mit Adjektiven\n\netwas Neues\n\nEnde");
+  assert.deepEqual(moved.note.attachments.map((a: { id: string }) => a.id), [moved.attachment.id]);
+
+  const part = await anna.ok("read_note_attachment", { id: moved.attachment.id, limit: 10 });
+  assert.equal(part.text, "[11:30] Sp");
+  assert.equal(part.next_offset, 10);
+  const rest = await anna.ok("read_note_attachment", { id: moved.attachment.id, offset: 10 });
+  assert.equal(part.text + rest.text, "[11:30] Speaker 1: Hallo\n[11:31] Speaker 2: Guten Tag\n");
+  assert.equal(rest.next_offset, undefined);
+
+  const added = await anna.ok("add_note_attachment", { note_id: note.id, name: "Wörter.md", content: "- das Neue", type: "text/markdown" });
+  assert.equal((await anna.ok("get_note", { id: note.id })).attachments.length, 2);
+  assert.match(await admin.err("read_note_attachment", { id: added.id }), /No text attachment/);
+  assert.match(await admin.err("add_note_attachment", { note_id: note.id, name: "x.txt", content: "x" }), /No note/);
+  assert.match(await admin.err("delete_note_attachment", { id: added.id }), /No attachment/);
+  assert.match(await anna.err("move_note_text_to_attachment", { note_id: note.id, start_line: 9, name: "x.txt" }), /lines/);
+
+  await anna.ok("delete_note_attachment", { id: added.id });
+  assert.equal((await anna.ok("get_note", { id: note.id })).attachments.length, 1);
+  await anna.ok("delete_note", { id: note.id });
+  assert.match(await anna.err("read_note_attachment", { id: moved.attachment.id }), /No text attachment/);
 });
 
 test("lookup_word: the offline entry (online details off in tests)", async () => {

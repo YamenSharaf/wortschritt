@@ -2,29 +2,34 @@ import { randomUUID } from "node:crypto";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { CreateNoteBody, Note, SaveNoteBody } from "@mdb/shared";
 import { db, schema } from "../db/client";
+import { attachmentsByNote, noteAttachments, removeNoteAttachments } from "./attachments";
 
 /** Notes are private: every query is scoped to the owner. */
 const owned = (userId: number, id: string) =>
   and(eq(schema.notes.userId, userId), eq(schema.notes.id, id));
 
-/** Strip the owner column from API results. */
-function toNote({ userId: _owner, ...note }: typeof schema.notes.$inferSelect): Note {
-  return note;
+/** Strip the owner column from API results, and add the note's files. */
+function toNote(
+  { userId: _owner, ...note }: typeof schema.notes.$inferSelect,
+  attachments: Note["attachments"] = [],
+): Note {
+  return { ...note, attachments };
 }
 
 export function listNotes(userId: number): Note[] {
+  const files = attachmentsByNote(userId);
   return db
     .select()
     .from(schema.notes)
     .where(eq(schema.notes.userId, userId))
     .orderBy(desc(schema.notes.updatedAt))
     .all()
-    .map(toNote);
+    .map((row) => toNote(row, files.get(row.id)));
 }
 
 export function getNote(userId: number, id: string): Note | null {
   const row = db.select().from(schema.notes).where(owned(userId, id)).get();
-  return row ? toNote(row) : null;
+  return row ? toNote(row, noteAttachments(userId, id)) : null;
 }
 
 export function createNote(userId: number, body: CreateNoteBody): Note {
@@ -48,5 +53,6 @@ export function updateNote(userId: number, id: string, body: SaveNoteBody): Note
 }
 
 export function removeNote(userId: number, id: string): void {
+  removeNoteAttachments(userId, id);
   db.delete(schema.notes).where(owned(userId, id)).run();
 }

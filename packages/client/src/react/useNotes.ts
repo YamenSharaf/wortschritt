@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { Cheatsheet, Note } from "@mdb/shared";
+import { ATTACHMENT_MAX_BYTES, type Cheatsheet, type Note, type NoteAttachment } from "@mdb/shared";
 import { timers, type TimerId } from "../timers";
 import { useApi } from "./context";
 import { useAsync } from "./useAsync";
@@ -87,6 +87,8 @@ export function useNoteEditor(id: string) {
   const [error, setError] = useState<string | null>(null);
   const [undoBody, setUndoBody] = useState<string | null>(null);
   const [savingSheet, setSavingSheet] = useState(false);
+  const [attachments, setAttachments] = useState<NoteAttachment[]>([]);
+  const [attaching, setAttaching] = useState(0);
   const ready = useRef(false);
   const saveTimer = useRef<TimerId | undefined>(undefined);
   /** The fields as last loaded or saved: only a difference is saved. */
@@ -99,6 +101,7 @@ export function useNoteEditor(id: string) {
       setCategory(loaded.data.category);
       setBody(loaded.data.body);
       setMode(loaded.data.body.trim() ? "preview" : "write");
+      setAttachments(loaded.data.attachments ?? []);
       saved.current = JSON.stringify([loaded.data.title, loaded.data.category, loaded.data.body]);
       ready.current = true;
     }
@@ -197,6 +200,38 @@ export function useNoteEditor(id: string) {
         return null;
       } finally {
         setSavingSheet(false);
+      }
+    },
+    /** Files kept with the note, oldest first. */
+    attachments,
+    /** How many uploads are under way. */
+    attaching,
+    /** Upload files to keep with the note (needs the server; a failure shows in `error`). */
+    async attach(files: Array<{ name: string; type: string; size: number; body: object }>) {
+      setError(null);
+      for (const f of files) {
+        if (f.size > ATTACHMENT_MAX_BYTES) {
+          setError(`"${f.name}" is larger than ${ATTACHMENT_MAX_BYTES / 1024 / 1024} MB.`);
+          continue;
+        }
+        setAttaching((n) => n + 1);
+        try {
+          const a = await api.uploadAttachment(id, f);
+          setAttachments((list) => [...list, a]);
+        } catch (e) {
+          setError(`Couldn't attach "${f.name}": ${msgOf(e)}`);
+        } finally {
+          setAttaching((n) => n - 1);
+        }
+      }
+    },
+    async removeAttachment(attachmentId: string) {
+      setError(null);
+      try {
+        await api.removeAttachment(attachmentId);
+        setAttachments((list) => list.filter((a) => a.id !== attachmentId));
+      } catch (e) {
+        setError(msgOf(e));
       }
     },
     /** Delete the note (ask first); a pending save is dropped so it can't recreate it. */

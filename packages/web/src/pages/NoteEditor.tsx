@@ -2,6 +2,7 @@ import Markdown from "markdown-to-jsx";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { NOTE_FONT_SIZE, preferences } from "@mdb/client";
 import { useNoteEditor, usePreference, type NoteSaveState } from "@mdb/client/react";
+import { NoteAttachments } from "../components/NoteAttachments";
 import { TapToTranslate } from "../components/TapToTranslate";
 import { ChevronLeftIcon, SheetsIcon, SparklesIcon } from "../components/icons";
 import { btn } from "../components/ui";
@@ -182,6 +183,13 @@ export function NoteEditor() {
           </div>
         )}
       </div>
+
+      <NoteAttachments
+        attachments={note.attachments}
+        attaching={note.attaching}
+        onAttach={(files) => void note.attach(files.map((f) => ({ name: f.name, type: f.type, size: f.size, body: f })))}
+        onRemove={(attachmentId) => void note.removeAttachment(attachmentId)}
+      />
 
       <div className="mt-4">
         <button

@@ -22,6 +22,7 @@ import { latestRunsPerSet } from "../services/activity";
 import { getActivity, getMistakes, getSetHistory } from "../services/history";
 import { deleteImport, listImports, saveImport } from "../services/library";
 import { createNote, getNote, listNotes, removeNote, updateNote } from "../services/notes";
+import { addAttachment, AttachmentError, attachmentText, removeAttachment } from "../services/attachments";
 import { lookupWord } from "../services/dict";
 import { getProgressSummary } from "../services/progress";
 import { wordDetails } from "../services/wiktionary";
@@ -751,6 +752,89 @@ export function createMcpServer(user: AuthUser): McpServer {
       removeNote(user.id, id);
       return json({ deleted: id });
     },
+  );
+
+  // --- note attachments (private) --------------------------------------------
+  // get_note / list_notes list each note's attachments (id, name, type, size).
+  tool(
+    "add_note_attachment",
+    {
+      title: "Attach text to a note",
+      description:
+        "Keep a text file with a note (a transcript, a word list, raw material the note is based on). The note's body stays as it is. To move text that is already in the note's body, use move_note_text_to_attachment instead of sending it again.",
+      inputSchema: {
+        note_id: z.string().min(1),
+        name: z.string().min(1).max(200).describe('File name shown in the app, e.g. "Transcript 11.10.txt"'),
+        content: z.string().min(1),
+        type: z.enum(["text/plain", "text/markdown"]).default("text/plain"),
+      },
+      annotations: WRITE,
+    },
+    async ({ note_id, name, content, type }) => {
+      try {
+        return json(addAttachment(user.id, note_id, { name, type, data: Buffer.from(content, "utf8") }));
+      } catch (err) {
+        if (err instanceof AttachmentError) return fail(err.message === "note not found" ? `No note "${note_id}". Use list_notes.` : err.message);
+        throw err;
+      }
+    },
+  );
+
+  tool(
+    "move_note_text_to_attachment",
+    {
+      title: "Move part of a note into an attachment",
+      description:
+        "Cut lines start_line..end_line (1-based, inclusive; end_line defaults to the last line) out of a note's body and keep them as a text attachment of that note. Use get_note first and count lines in its body. Returns the attachment and the note's new body.",
+      inputSchema: {
+        note_id: z.string().min(1),
+        start_line: z.number().int().min(1),
+        end_line: z.number().int().min(1).optional(),
+        name: z.string().min(1).max(200).describe('File name shown in the app, e.g. "Transcript.txt"'),
+        type: z.enum(["text/plain", "text/markdown"]).default("text/plain"),
+      },
+      annotations: WRITE,
+    },
+    async ({ note_id, start_line, end_line, name, type }) => {
+      const note = getNote(user.id, note_id);
+      if (!note) return fail(`No note "${note_id}". Use list_notes.`);
+      const lines = note.body.split("\n");
+      const end = Math.min(end_line ?? lines.length, lines.length);
+      if (start_line > end) return fail(`The note has ${lines.length} lines; start_line must be at most end_line.`);
+      const moved = lines.slice(start_line - 1, end).join("\n").trim();
+      if (!moved) return fail("Those lines are empty.");
+      const attachment = addAttachment(user.id, note_id, { name, type, data: Buffer.from(moved + "\n", "utf8") });
+      const body = [...lines.slice(0, start_line - 1), ...lines.slice(end)].join("\n").replace(/\n{3,}/g, "\n\n").trimEnd();
+      const updated = updateNote(user.id, note_id, { body });
+      return json({ attachment, note: updated });
+    },
+  );
+
+  tool(
+    "read_note_attachment",
+    {
+      title: "Read a note attachment",
+      description: "The text of a text attachment (get_note lists a note's attachments). Long files come in parts: pass offset (in characters) to read on.",
+      inputSchema: {
+        id: z.string().min(1),
+        offset: z.number().int().min(0).default(0),
+        limit: z.number().int().min(1).max(100_000).default(40_000),
+      },
+      annotations: READ,
+    },
+    async ({ id, offset, limit }) => {
+      const file = attachmentText(user.id, id);
+      if (!file) return fail(`No text attachment "${id}". Use get_note to list a note's attachments.`);
+      const text = file.text.slice(offset, offset + limit);
+      const next = offset + text.length;
+      return json({ ...file.attachment, offset, length: file.text.length, text, ...(next < file.text.length ? { next_offset: next } : {}) });
+    },
+  );
+
+  tool(
+    "delete_note_attachment",
+    { title: "Delete a note attachment", description: "Delete one attachment of a note.", inputSchema: { id: z.string().min(1) }, annotations: DELETE },
+    async ({ id }) => (removeAttachment(user.id, id) ? json({ deleted: id }) : fail(`No attachment "${id}".`)),
   );
 
   // --- progress (private, read-only) -----------------------------------------

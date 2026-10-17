@@ -160,9 +160,9 @@ test("the app's sign-in helpers (@mdb/client) against this server: sign in, refr
   const { createApi, createTokenSession, exchangeCode, fetchServerAuth, memoryStore, refreshTokens, registerApp, revokeToken } =
     await import("@mdb/client");
   // The app's fetch, delivered to this server in-process.
-  const fetch = async (url: string, init: { method?: string; headers?: Record<string, string>; body?: string }) => {
+  const fetch = async (url: string, init: { method?: string; headers?: Record<string, string>; body?: string | object }) => {
     const u = new URL(url);
-    const res = await send({ method: (init.method ?? "GET") as "GET", url: u.pathname + u.search, headers: init.headers, payload: init.body });
+    const res = await send({ method: (init.method ?? "GET") as "GET", url: u.pathname + u.search, headers: init.headers, payload: init.body as string | undefined });
     return { ok: res.statusCode < 300, status: res.statusCode, statusText: res.statusMessage, body: null, json: async () => res.json() };
   };
 

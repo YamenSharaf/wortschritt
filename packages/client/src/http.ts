@@ -5,7 +5,8 @@
 export type RequestInitLike = {
   method?: string;
   headers?: Record<string, string>;
-  body?: string;
+  /** JSON text, or raw bytes (a File or Blob) sent with their own content type. */
+  body?: string | object;
   signal?: unknown;
   keepalive?: boolean;
 };
@@ -76,7 +77,7 @@ export function createHttp(o: ClientOptions): Http {
     // Only advertise a JSON body when we actually send one — Fastify rejects an
     // empty body sent with content-type: application/json (e.g. DELETE requests).
     const headers: Record<string, string> = {
-      ...(init.body != null ? { "content-type": "application/json" } : {}),
+      ...(typeof init.body === "string" ? { "content-type": "application/json" } : {}),
       ...(o.headers ? await o.headers() : {}),
       ...(init.headers ?? {}),
     };

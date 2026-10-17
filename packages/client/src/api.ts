@@ -23,6 +23,7 @@ import type {
   GenerateStoryBody,
   ImportBody,
   Note,
+  NoteAttachment,
   ProgressSummary,
   SaveNoteBody,
   RunSummary,
@@ -359,6 +360,18 @@ export function createApi(o: ClientOptions) {
       req<{ ok: true }>(`/api/notes/${encodeURIComponent(id)}`, {
         method: "DELETE",
       }),
+    /** Keep a file with a note: `body` is the file itself (a File or Blob on the web). */
+    uploadAttachment: (noteId: string, file: { name: string; type: string; body: object }) =>
+      req<NoteAttachment>(`/api/notes/${encodeURIComponent(noteId)}/attachments?name=${encodeURIComponent(file.name)}`, {
+        method: "POST",
+        headers: { "content-type": file.type || "application/octet-stream" },
+        body: file.body,
+      }),
+    removeAttachment: (id: string) =>
+      req<{ ok: true }>(`/api/attachments/${encodeURIComponent(id)}`, { method: "DELETE" }),
+    /** Where an attachment's file is (`download` asks the browser to save it). */
+    attachmentUrl: (id: string, download = false) =>
+      url(`/api/attachments/${encodeURIComponent(id)}${download ? "?download=1" : ""}`),
     cleanupNotes: (text: string) =>
       req<{ text: string }>("/api/assistant/cleanup-notes", {
         method: "POST",

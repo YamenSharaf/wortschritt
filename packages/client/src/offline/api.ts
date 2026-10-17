@@ -520,6 +520,22 @@ export function createOfflineApi(o: {
         edited,
       );
     },
+    // Online only (files aren't queued); the local copy of the note follows at once.
+    async uploadAttachment(noteId, file) {
+      const a = await api.uploadAttachment(noteId, file);
+      const cur = await store.get<Note>("notes", noteId);
+      if (cur) await store.put("notes", noteId, { ...cur, attachments: [...(cur.attachments ?? []), a] });
+      return a;
+    },
+    async removeAttachment(id) {
+      const r = await api.removeAttachment(id);
+      for (const n of await store.all<Note>("notes")) {
+        if (n.attachments?.some((a) => a.id === id)) {
+          await store.put("notes", n.id, { ...n, attachments: n.attachments.filter((a) => a.id !== id) });
+        }
+      }
+      return r;
+    },
     async removeNote(given: string) {
       const create = isLocalNote(given) ? await pendingCreate(given) : undefined;
       const id = create ? given : await resolveNote(given);

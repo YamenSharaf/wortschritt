@@ -572,6 +572,20 @@ export const germanWordBody = z.object({
   context: z.string().max(400).optional(),
 });
 
+/** Largest file a note can carry. */
+export const ATTACHMENT_MAX_BYTES = 25 * 1024 * 1024;
+
+/** A file kept with a note (a transcript, a photo of the board, a PDF, a recording). */
+export const noteAttachment = z.object({
+  id: z.string(),
+  name: z.string(),
+  /** Media type, e.g. "text/plain", "image/jpeg", "application/pdf". */
+  type: z.string(),
+  size: z.number().int(),
+  createdAt: z.number().int(),
+});
+export type NoteAttachment = z.infer<typeof noteAttachment>;
+
 /** A free-form learning note (Markdown body), auto-saved. */
 export const note = z.object({
   id: z.string(),
@@ -580,6 +594,8 @@ export const note = z.object({
   body: z.string(),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
+  /** Files kept with it, oldest first (left out by older servers, and on notes made offline). */
+  attachments: z.array(noteAttachment).optional(),
 });
 export type Note = z.infer<typeof note>;
 
