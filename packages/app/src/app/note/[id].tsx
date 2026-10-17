@@ -16,6 +16,9 @@ import { ChevronLeft, Sparkles, Undo2 } from "lucide-react-native";
 
 const { min: MIN_FONT, max: MAX_FONT } = NOTE_FONT_SIZE;
 
+/** Blocks of a long note shown at first, and added each time you scroll near the end. */
+const PREVIEW_STEP = 15;
+
 /** Writing one note: saves itself, Markdown preview with tappable words, AI clean-up, save as a cheat sheet. */
 export default function NoteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -26,6 +29,8 @@ export default function NoteScreen() {
   const vocab = useVocabState();
   const [word, setWord] = useState<{ word: string; context: string } | null>(null);
   const [categoryFocus, setCategoryFocus] = useState(false);
+  // The preview shows a long note a part at a time, more as you scroll (see Markdown's `limit`).
+  const [shownBlocks, setShownBlocks] = useState(PREVIEW_STEP);
 
   const back = (
     <Pressable onPress={() => router.back()} accessibilityRole="button" style={{ flexDirection: "row", alignItems: "center", gap: 4, minHeight: 44 }}>
@@ -52,7 +57,7 @@ export default function NoteScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <Screen dock={false}>
+      <Screen dock={false} onNearEnd={mode === "preview" ? () => setShownBlocks((n) => n + PREVIEW_STEP) : undefined}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
           {back}
           <SaveIndicator state={saveState} />
@@ -138,7 +143,7 @@ export default function NoteScreen() {
         ) : (
           <View style={{ minHeight: 320, padding: 16, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border }}>
             {body.trim() ? (
-              <Markdown text={body} size={fontSize} onWord={(w, context) => setWord({ word: w, context })} />
+              <Markdown text={body} size={fontSize} limit={shownBlocks} onWord={(w, context) => setWord({ word: w, context })} />
             ) : (
               <Text variant="subtle" style={{ fontStyle: "italic" }}>
                 Nothing to preview yet.

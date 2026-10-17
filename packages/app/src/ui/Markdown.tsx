@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { ScrollView, Text as RNText, View } from "react-native";
 import { font, useTheme } from "@/lib/theme";
 import { sentenceAround, tokens } from "@/reader/text";
@@ -15,12 +15,16 @@ const Size = createContext(15);
  * *italic* and `code`; not a general renderer. With `onWord`, each word can
  * be tapped (to look it up).
  */
-export function Markdown({ text, onWord, size = 15 }: { text: string; onWord?: OnWord; size?: number }) {
+export function Markdown({ text, onWord, size = 15, limit }: { text: string; onWord?: OnWord; size?: number; limit?: number }) {
+  // A long text shows its first `limit` blocks (the screen asks for more as you scroll): every
+  // tappable word is a view of its own, and tens of thousands at once is more than a phone manages.
+  const all = useMemo(() => blocks(text), [text]);
+  const shown = limit === undefined ? all : all.slice(0, limit);
   return (
     <WordTap.Provider value={onWord}>
       <Size.Provider value={size}>
         <View style={{ gap: Math.round(size * 0.66) }}>
-          {blocks(text).map((b, i) => (
+          {shown.map((b, i) => (
             <Block key={i} lines={b} />
           ))}
         </View>
@@ -28,6 +32,8 @@ export function Markdown({ text, onWord, size = 15 }: { text: string; onWord?: O
     </WordTap.Provider>
   );
 }
+
+const MAX_BLOCK_LINES = 24;
 
 /** Blocks: runs of lines between blank lines, with a table or quote kept as its own block. */
 function blocks(text: string): string[][] {
@@ -40,7 +46,9 @@ function blocks(text: string): string[][] {
       cur = [];
       continue;
     }
-    if (cur.length && kind(cur[cur.length - 1]!) !== kind(line)) {
+    // A new kind starts a block; so does a very long run of lines (a note written without blank
+    // lines would otherwise be one paragraph of thousands of words, too much for one text view).
+    if (cur.length && (kind(cur[cur.length - 1]!) !== kind(line) || (kind(line) === "text" && cur.length >= MAX_BLOCK_LINES))) {
       out.push(cur);
       cur = [];
     }
