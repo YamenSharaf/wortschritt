@@ -11,7 +11,7 @@ Object.assign(process.env, {
   SESSION_SECRET: "test-session-secret",
   DATABASE_PATH: join(mkdtempSync(join(tmpdir(), "mdb-grade-")), "app.db"),
 });
-const { parseTranslationVerdict } = await import("./grade");
+const { parseTranslationVerdict, parseVerdict } = await import("./grade");
 
 test("translation verdicts: read from fences, prose and other wordings", () => {
   const want = { verdict: "almost", corrected: "Ich habe meine Schlüssel vergessen.", feedback: "Plural: meine." };
@@ -25,4 +25,13 @@ test("translation verdicts: read from fences, prose and other wordings", () => {
   assert.deepEqual(parseTranslationVerdict('{"verdict": "almost", "feedback": "Use {den}."}')?.feedback, "Use {den}.", "braces inside strings");
   assert.equal(parseTranslationVerdict("Looks fine to me."), null);
   assert.equal(parseTranslationVerdict('{"verdict": "maybe"}'), null);
+});
+
+test("answer verdicts: JSON, a reply cut off mid-JSON (never shown raw), prose", () => {
+  assert.deepEqual(parseVerdict('{"correct": false, "feedback": "Use „würde“."}'), { correct: false, feedback: "Use „würde“." });
+  assert.deepEqual(parseVerdict('Thinking {a}. ```json\n{"correct": true, "feedback": "Gut."}\n```'), { correct: true, feedback: "Gut." });
+  assert.deepEqual(parseVerdict('{"correct": false, "feedback'), { correct: false, feedback: "" });
+  assert.deepEqual(parseVerdict('{"correct": false, "feedback": "Mit \\"essen\\" brauchst du'), { correct: false, feedback: 'Mit "essen" brauchst du…' });
+  assert.deepEqual(parseVerdict('{"correct": tr'), { correct: false, feedback: "" });
+  assert.deepEqual(parseVerdict("Das ist richtig."), { correct: true, feedback: "Das ist richtig." });
 });

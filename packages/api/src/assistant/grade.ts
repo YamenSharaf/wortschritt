@@ -3,23 +3,36 @@ import { collectCompletion } from "./client";
 import { getAiChain } from "./config";
 import { buildGradeMessages, buildTranslateGradeMessages } from "./prompts";
 
-/** Read a verdict from the model's reply (JSON, or a best guess from prose). */
+/**
+ * Read a verdict from the model's reply: its JSON; else what made it of a
+ * reply cut off mid-JSON (never shown raw); else a best guess from prose.
+ */
 export function parseVerdict(content: string): { correct: boolean; feedback: string } {
-  const match = content.match(/\{[\s\S]*\}/);
-  if (match) {
-    try {
-      const o = JSON.parse(match[0]) as { correct?: unknown; feedback?: unknown };
-      if (typeof o.correct === "boolean") {
-        return { correct: o.correct, feedback: String(o.feedback ?? "") };
-      }
-    } catch {
-      /* fall through to heuristic */
-    }
+  for (const o of jsonObjects(content)) {
+    const r = o as { correct?: unknown; feedback?: unknown } | null;
+    if (r && typeof r.correct === "boolean") return { correct: r.correct, feedback: typeof r.feedback === "string" ? r.feedback.trim() : "" };
   }
-  const correct =
-    /"?correct"?\s*[:=]\s*true/i.test(content) ||
-    (/\brichtig\b/i.test(content) && !/falsch|nicht richtig/i.test(content));
+  const flag = /"?correct"?\s*[:=]\s*(true|false)/i.exec(content);
+  if (flag || /^\s*(```(?:json)?\s*)?\{/.test(content)) {
+    return { correct: flag?.[1]!.toLowerCase() === "true", feedback: partialString(content, "feedback") };
+  }
+  const correct = /\brichtig\b/i.test(content) && !/falsch|nicht richtig/i.test(content);
   return { correct, feedback: content.slice(0, 200).trim() };
+}
+
+/** A string field of a JSON reply that may stop part-way ("…" marks the cut). */
+function partialString(content: string, field: string): string {
+  const m = new RegExp(`"${field}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)("?)`).exec(content);
+  if (!m) return "";
+  const raw = m[1]!.replace(/\\$/, "");
+  let text: string;
+  try {
+    text = JSON.parse(`"${raw}"`) as string;
+  } catch {
+    text = raw;
+  }
+  text = text.trim();
+  return text && !m[2] ? `${text}…` : text;
 }
 
 /**
@@ -116,7 +129,8 @@ async function ask(userId: number, { system, user }: { system: string; user: str
       ],
       {
         temperature: 0,
-        maxTokens: 256,
+        // Room for models that think before answering (their thinking counts too).
+        maxTokens: 1024,
         onFallback: (failed, error) =>
           log?.warn({ provider: failed.provider, model: failed.model, error: error.publicMessage }, "AI model failed, trying the next one"),
       },
