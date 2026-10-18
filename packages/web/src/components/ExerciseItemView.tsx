@@ -225,6 +225,20 @@ function MultipleChoice({
 
 type Segment = { kind: "text"; value: string } | { kind: "blank"; ref: string };
 
+/**
+ * Enter in one of an item's several fields moves on to the next one (in
+ * `[data-fields]`); in the last, it does `last` (checks the answer).
+ */
+function enterToNext(e: React.KeyboardEvent<HTMLInputElement>, last: () => void) {
+  if (e.key !== "Enter") return;
+  e.preventDefault();
+  const scope = e.currentTarget.closest("[data-fields]");
+  const fields = scope ? [...scope.querySelectorAll<HTMLInputElement>("input:not(:disabled)")] : [];
+  const next = fields[fields.indexOf(e.currentTarget) + 1];
+  if (next) next.focus();
+  else last();
+}
+
 function Cloze({
   item,
   submit,
@@ -255,6 +269,9 @@ function Cloze({
     [item.blanks],
   );
 
+  const blankCount = segments.filter((seg) => seg.kind === "blank").length;
+  let seen = 0;
+
   function check() {
     setDone(true);
     void submit({ type: "cloze", blanks: Object.fromEntries(item.blanks.map((b) => [b.ref, values[b.ref] ?? ""])) });
@@ -265,10 +282,11 @@ function Cloze({
       <Instructions text={item.instructions} />
       <Context text={item.context} />
       <ItemHint text={item.hint} />
-      <p className="text-lg leading-loose">
+      <p data-fields className="text-lg leading-loose">
         {segments.map((seg, i) => {
           if (seg.kind === "text") return <span key={i}>{seg.value}</span>;
           const blank = blankByRef[seg.ref];
+          const blankIndex = seen++;
           const value = values[seg.ref] ?? "";
           const ok = blank ? gradeText(value, blank.answer) : false;
           return (
@@ -283,7 +301,8 @@ function Cloze({
                 onChange={(e) =>
                   setValues((v) => ({ ...v, [seg.ref]: e.target.value }))
                 }
-                onKeyDown={(e) => e.key === "Enter" && !done && check()}
+                onKeyDown={(e) => !done && enterToNext(e, check)}
+                enterKeyHint={blankIndex === blankCount - 1 ? "done" : "next"}
                 {...answerInputProps}
                 className={`mx-1 h-9 w-32 rounded-[8px] border px-2.5 text-center text-base font-medium outline-none transition-colors placeholder:font-normal placeholder:text-ink-subtle ${
                   !done
@@ -908,7 +927,7 @@ function ConjugationTable({
       <Instructions text={item.instructions ?? "Fill in the conjugations."} />
       <Context text={item.context} />
       <ItemHint text={item.hint} />
-      <div className="overflow-x-auto">
+      <div data-fields className="overflow-x-auto">
         <table className="border-collapse text-sm">
           <thead>
             <tr>
@@ -935,6 +954,9 @@ function ConjugationTable({
                         onChange={(e) =>
                           setValues((v) => ({ ...v, [key(c, r)]: e.target.value }))
                         }
+                        // Row by row, as it reads; Enter in the last cell checks.
+                        onKeyDown={(e) => !done && enterToNext(e, check)}
+                        enterKeyHint={r === item.rows.length - 1 && c === item.columns.length - 1 ? "done" : "next"}
                         {...answerInputProps}
                         className={`h-9 w-28 rounded-[8px] border px-2 font-medium outline-none transition-colors ${
                           !done

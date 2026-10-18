@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode, type Ref } from "react";
 import { Pressable, ScrollView, TextInput, View, type TextInputProps } from "react-native";
 import {
   gradeText,
@@ -196,7 +196,27 @@ function Choice({ label, state, disabled, onPress }: { label: string; state: Cho
  * only reported (`onChangeText`); handing every keystroke back as `value`
  * makes typing lag on Android. Each item mounts fresh, so it starts empty.
  */
-function AnswerField(props: TextInputProps & { state?: ChoiceState; width?: number }) {
+/**
+ * An item with several fields: the keyboard's key says "next" and moves on
+ * to the following field; in the last it says "done" and does `last` (checks).
+ */
+function useFieldChain(count: number, last: () => void) {
+  const refs = useRef<Array<TextInput | null>>([]);
+  return (i: number): TextInputProps & { ref: (r: TextInput | null) => void } => {
+    const final = i >= count - 1;
+    return {
+      ref: (r) => {
+        refs.current[i] = r;
+      },
+      returnKeyType: final ? "done" : "next",
+      // Keep the keyboard up while moving between fields.
+      submitBehavior: final ? "blurAndSubmit" : "submit",
+      onSubmitEditing: () => (final ? last() : refs.current[i + 1]?.focus()),
+    };
+  };
+}
+
+function AnswerField(props: TextInputProps & { state?: ChoiceState; width?: number; ref?: Ref<TextInput> }) {
   const { colors, radii } = useTheme();
   const { state = "idle", width, style, value, ...rest } = props;
   return (
@@ -378,6 +398,12 @@ function Cloze({ item, submit }: { item: Extract<ExerciseItem, { type: "cloze" }
   const [done, setDone] = useState(false);
   const byRef = useMemo(() => Object.fromEntries(item.blanks.map((b) => [b.ref, b])), [item.blanks]);
 
+  const field = useFieldChain(
+    segments.filter((seg) => seg.kind === "blank").length,
+    () => !done && check(),
+  );
+  let seen = 0;
+
   function check() {
     setDone(true);
     void submit({ type: "cloze", blanks: Object.fromEntries(item.blanks.map((b) => [b.ref, values[b.ref] ?? ""])) });
@@ -404,6 +430,7 @@ function Cloze({ item, submit }: { item: Extract<ExerciseItem, { type: "cloze" }
               ),
             );
           const blank = byRef[seg.ref];
+          const index = seen++;
           const value = values[seg.ref] ?? "";
           const ok = blank ? gradeText(value, blank.answer) : false;
           return (
@@ -413,7 +440,7 @@ function Cloze({ item, submit }: { item: Extract<ExerciseItem, { type: "cloze" }
                 editable={!done}
                 placeholder={blank?.cue || "…"}
                 onChangeText={(t) => setValues((v) => ({ ...v, [seg.ref]: t }))}
-                onSubmitEditing={() => !done && check()}
+                {...field(index)}
                 state={!done ? "idle" : ok ? "correct" : "wrong"}
                 width={128}
                 style={{ textAlign: "center", minHeight: 40 }}
@@ -785,6 +812,8 @@ function ConjugationTable({ item, submit }: { item: Extract<ExerciseItem, { type
   const [done, setDone] = useState(false);
   const key = (c: number, r: number) => `${c}:${r}`;
   const ok = (c: number, r: number) => gradeText(values[key(c, r)] ?? "", { accept: [item.columns[c]?.answers[r] ?? ""], grading: "normalized" });
+  // Row by row, as it reads.
+  const field = useFieldChain(item.rows.length * item.columns.length, () => !done && check());
   function check() {
     setDone(true);
     void submit({ type: "conjugation_table", cells: item.columns.map((_, c) => item.rows.map((_, r) => values[key(c, r)] ?? "")) });
@@ -815,6 +844,7 @@ function ConjugationTable({ item, submit }: { item: Extract<ExerciseItem, { type
                     value={values[key(c, r)] ?? ""}
                     editable={!done}
                     onChangeText={(t) => setValues((v) => ({ ...v, [key(c, r)]: t }))}
+                    {...field(r * item.columns.length + c)}
                     state={!done ? "idle" : ok(c, r) ? "correct" : "wrong"}
                     style={{ minHeight: 40 }}
                   />
