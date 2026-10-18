@@ -470,6 +470,85 @@
   --reader-auto-vocab: 255 255 255;
 }
 
+/* Paper is white: printing uses the light colours, whatever the screen shows (beats every rule above). */
+@media print {
+  :root:root:root:root {
+    color-scheme: light;
+    --bg: #f6f7fa;
+    --surface: #ffffff;
+    --surface-raised: #ffffff;
+    --surface-sunken: #eef1f6;
+    --border: #e3e7ee;
+    --border-strong: #c9d0db;
+    --border-control: #838b9c;
+    --highlight: #ffffff00;
+    --ink: #0f1420;
+    --ink-muted: #566074;
+    --ink-subtle: #646d80;
+    --brand: #2b6cb0;
+    --brand-hover: #245c98;
+    --on-brand: #ffffff;
+    --brand-soft: #e8f1fb;
+    --brand-ink: #1f5a99;
+    --tile-from: #4a90e2;
+    --tile-to: #22589a;
+    --glow: #4a90e21f;
+    --reward-1: #ffd95a;
+    --reward-2: #ff8a65;
+    --reward-3: #f0508c;
+    --on-reward: #0f1420;
+    --success: #127a4b;
+    --success-soft: #e5f5ed;
+    --danger: #c2362b;
+    --danger-soft: #fbebe9;
+    --warning: #9a5b00;
+    --warning-soft: #fdf2dd;
+    --focus: #2b6cb0;
+    --on-section: #ffffff;
+    --section-practice: #2b6cb0;
+    --section-sheets: #0f8583;
+    --section-stories: #d4512a;
+    --section-vocab: #a8701a;
+    --section-notes: #6d4fd1;
+    --bar-from: #ffffffbf;
+    --bar-to: #ffffffe6;
+    --bar-highlight: #ffffff;
+    --tabs-track: #eef1f6;
+    --tabs-active-from: #ffffff;
+    --tabs-active-to: #f3f5f9;
+    --tabs-active-border: #d9dee7;
+    --dock-from: #ffffffb8;
+    --dock-to: #f6f7fa99;
+    --dock-border: #ffffffcc;
+    --dock-highlight: #ffffff;
+    --dock-shadow: #0f142021;
+    --glass-sheen: #ffffff66;
+    --glass-edge: #ffffffb3;
+    --scrim: #080a1052;
+    --shadow-card: 0 1px 2px #0f14200d, 0 2px 8px #0f142008;
+    --shadow-card-hover: 0 2px 4px #0f142010, 0 8px 24px #0f14200f;
+    --shadow-pop: 0 12px 32px #0f14201f, 0 2px 6px #0f142012;
+    --shadow-glass: 0 1px 2px #0f142014;
+    --blur-bar: 12px;
+    --blur-glass: 10px;
+    --blur-dock: 18px;
+    --blur-reader-bar: 6px;
+    --glass-fill: 14%;
+    --glass-fill-hover: 22%;
+    --glass-border: 34%;
+    --glass-icon-fill: 15%;
+    --glass-icon-border: 30%;
+    --glass-icon-lighten: 0%;
+    --peek-blur: 5px;
+    --reader-auto-bg: 255 255 255;
+    --reader-auto-fg: 30 41 59;
+    --reader-auto-muted: 100 116 139;
+    --reader-auto-rule: 226 232 240;
+    --reader-auto-mark: 37 99 235;
+    --reader-auto-vocab: 14 165 233;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root {
     --motion-fast: 0ms;

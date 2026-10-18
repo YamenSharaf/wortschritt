@@ -343,3 +343,33 @@ body {
   background: rgb(var(--r-muted) / 0.22);
   border-radius: 0.3em;
 }
+
+/* Printing (a cheat sheet): just the content on white paper. The app's bars
+   and buttons are hidden in the markup (print:hidden); colours are the light
+   ones (tokens.css). */
+@media print {
+  @page {
+    margin: 16mm 14mm;
+  }
+  body {
+    background: #fff;
+  }
+  .cheatsheet {
+    font-size: 11pt;
+  }
+  .cheatsheet h1,
+  .cheatsheet h2,
+  .cheatsheet h3 {
+    break-after: avoid;
+  }
+  .cheatsheet table,
+  .cheatsheet tr,
+  .cheatsheet pre,
+  .cheatsheet blockquote {
+    break-inside: avoid;
+  }
+  /* Tables print whole, not in a scroll box. */
+  .cheatsheet .overflow-x-auto {
+    overflow: visible;
+  }
+}

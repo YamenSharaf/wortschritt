@@ -25,6 +25,7 @@ import {
   FileAudio,
   FileImage,
   Paperclip,
+  Printer,
   Languages,
   Lightbulb,
   House,
@@ -106,6 +107,7 @@ export const LearningIcon = wrap(GraduationCap);
 export const AccountIcon = wrap(UserRound);
 export const ConnectionsIcon = wrap(Plug);
 export const PaperclipIcon = wrap(Paperclip);
+export const PrinterIcon = wrap(Printer);
 export const FileIcon = wrap(FileGeneric);
 export const FileTextIcon = wrap(FileText);
 export const FileImageIcon = wrap(FileImage);

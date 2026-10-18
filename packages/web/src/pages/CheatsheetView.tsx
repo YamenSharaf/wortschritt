@@ -5,9 +5,10 @@ import { api, askAssistant } from "../lib/api";
 import { TapToTranslate } from "../components/TapToTranslate";
 import { TutorMarkdown } from "../components/TutorMarkdown";
 import { useAsync } from "@mdb/client/react";
-import { ChevronLeftIcon, LanguagesIcon } from "../components/icons";
+import { ChevronLeftIcon, LanguagesIcon, PrinterIcon } from "../components/icons";
 import { btn } from "../components/ui";
 import { StarButton } from "../components/StarButton";
+import { APP_NAME } from "@mdb/shared";
 
 const mdOptions = {
   forceBlock: true,
@@ -43,7 +44,7 @@ export function CheatsheetView() {
 
   return (
     <div>
-      <Link to="/cheatsheets" className="inline-flex items-center gap-1 text-sm font-medium text-ink-muted hover:text-ink">
+      <Link to="/cheatsheets" className="inline-flex items-center gap-1 text-sm font-medium text-ink-muted hover:text-ink print:hidden">
         <ChevronLeftIcon className="h-4 w-4" />
         Cheat sheets
       </Link>
@@ -52,7 +53,13 @@ export function CheatsheetView() {
         <p className="mt-4 text-danger">Not found.</p>
       )}
       {sheet.status === "ready" && (
-        <article className="mt-3 space-y-6">
+        <article className="cheatsheet mt-3 space-y-6 print:mt-0">
+          {/* On paper: the app's mark and name over the sheet instead of the app around it. */}
+          <div aria-hidden className="hidden items-center gap-2 border-b border-line pb-3 print:flex">
+            <img src="/favicon.svg" alt="" className="h-6 w-6" />
+            <span className="text-base font-semibold tracking-tight">{APP_NAME}</span>
+            <span className="ml-auto text-xs text-ink-subtle">Cheat sheet</span>
+          </div>
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               <h1 className="text-[28px] font-semibold leading-[34px] tracking-[-0.02em]">{sheet.data.title}</h1>
@@ -60,7 +67,11 @@ export function CheatsheetView() {
                 <p className="text-sm text-ink-muted">{sheet.data.subtitle}</p>
               )}
             </div>
-            <StarButton kind="cheatsheet" id={sheet.data.id} title={sheet.data.title} className="mt-0.5" />
+            <button type="button" onClick={() => window.print()} className={`${btn.secondary} ${btn.sm} mt-0.5 shrink-0 print:hidden`}>
+              <PrinterIcon className="h-4 w-4" />
+              Print
+            </button>
+            <StarButton kind="cheatsheet" id={sheet.data.id} title={sheet.data.title} className="mt-0.5 print:hidden" />
           </div>
           {sheet.data.sections.map((sec, i) => (
             <Section
@@ -117,14 +128,14 @@ function Section({
   }
 
   return (
-    <section className="rounded-card border border-line bg-surface p-4 ">
+    <section className="rounded-card border border-line bg-surface p-4 print:rounded-none print:border-0 print:bg-transparent print:p-0">
       <div className="mb-2 flex items-start justify-between gap-2">
         <h2 className="text-xl font-semibold tracking-[-0.01em]">{heading}</h2>
         {canTranslate && (
           <button
             type="button"
             onClick={translate}
-            className={`${btn.secondary} ${btn.sm} shrink-0`}
+            className={`${btn.secondary} ${btn.sm} shrink-0 print:hidden`}
           >
             {text === null && <LanguagesIcon className="h-4 w-4" />}
             {text !== null ? "Hide" : "Translate"}

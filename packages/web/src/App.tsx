@@ -72,7 +72,7 @@ export function App() {
     <VocabProvider>
     <div className="min-h-screen">
       {/* A floating bar (Raycast-style): the mark left, sections centred, account right. */}
-      <div className="sticky top-0 z-30 px-3 pt-3 sm:px-4">
+      <div className="sticky top-0 z-30 px-3 pt-3 sm:px-4 print:hidden">
         <header className="ws-bar mx-auto grid h-14 max-w-5xl grid-cols-[1fr_auto] items-center gap-3 px-3 sm:px-4 md:grid-cols-[1fr_auto_1fr]">
           <NavLink to="/" className="min-w-0 justify-self-start rounded-control text-base font-semibold tracking-tight">
             <AppTitle />
@@ -99,12 +99,12 @@ export function App() {
         </header>
       </div>
 
-      <main className="mx-auto max-w-5xl px-4 pb-28 pt-6 sm:px-5 md:pb-16">
+      <main className="mx-auto max-w-5xl px-4 pb-28 pt-6 sm:px-5 md:pb-16 print:max-w-none print:p-0">
         <Outlet />
       </main>
 
       {/* Mobile dock: a floating glass pill; the active section sits in a soft pill. */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(env(safe-area-inset-bottom)+10px)] md:hidden">
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(env(safe-area-inset-bottom)+10px)] md:hidden print:hidden">
         <nav aria-label="Main" className="ws-dock pointer-events-auto mx-auto grid max-w-md grid-cols-6 p-1.5">
           {navItems.map(({ to, label, end, Icon }) => (
             <NavLink
