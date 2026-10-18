@@ -14,6 +14,7 @@ import { englishParts, wordDiff } from "@mdb/client";
 import { useGermanWord, type TappedWord } from "@mdb/client/react";
 import { CheckIcon, CrossIcon, LightbulbIcon, QuoteIcon } from "./icons";
 import { btn } from "./ui";
+import { WordOrder } from "./WordOrder";
 
 /**
  * German answers are often mid-sentence and lowercase (verbs like "geht",
@@ -464,9 +465,6 @@ function SentenceBuild({
   const [chosen, setChosen] = useState<number[]>([]);
   const { busy, verdict: result, error, send } = useVerdict(submit);
   const hasBank = !!item.tokens && item.tokens.length > 0;
-  const remaining = (item.tokens ?? [])
-    .map((_, i) => i)
-    .filter((i) => !chosen.includes(i));
   const built = hasBank
     ? chosen.map((i) => item.tokens![i]).join(" ")
     : text;
@@ -484,36 +482,7 @@ function SentenceBuild({
       <Context text={item.context} />
       <ItemHint text={item.hint} />
       {hasBank ? (
-        <>
-          <div className="mb-3 min-h-12 rounded-control border border-dashed border-line-control bg-surface-sunken p-2">
-            <div className="flex flex-wrap gap-2">
-              {chosen.map((tokenIdx, pos) => (
-                <button
-                  key={pos}
-                  type="button"
-                  disabled={result !== null}
-                  onClick={() => setChosen((c) => c.filter((_, i) => i !== pos))}
-                  className="rounded-[8px] border border-transparent bg-brand-soft px-3 py-1 font-medium text-brand-ink"
-                >
-                  {item.tokens![tokenIdx]}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {remaining.map((i) => (
-              <button
-                key={i}
-                type="button"
-                disabled={result !== null}
-                onClick={() => setChosen((c) => [...c, i])}
-                className="rounded-[8px] border border-line-control bg-surface px-3 py-1 hover:bg-surface-sunken"
-              >
-                {item.tokens![i]}
-              </button>
-            ))}
-          </div>
-        </>
+        <WordOrder tokens={item.tokens!} chosen={chosen} onChange={setChosen} disabled={result !== null} />
       ) : (
         <input
           value={text}

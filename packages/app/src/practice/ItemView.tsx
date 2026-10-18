@@ -17,6 +17,7 @@ import { Icon } from "@/ui/icons";
 import { Text } from "@/ui/Text";
 import { englishParts, wordDiff } from "@mdb/client";
 import { useGermanWord, type TappedWord } from "@mdb/client/react";
+import { WordOrder } from "./WordOrder";
 import { Check, Lightbulb, Quote, X } from "lucide-react-native";
 
 /**
@@ -514,36 +515,15 @@ function Flashcard({ item, submit }: { item: Extract<ExerciseItem, { type: "flas
 // --- sentence build / transform ----------------------------------------------
 
 function SentenceBuild({ item, submit }: { item: Extract<ExerciseItem, { type: "sentence_build" }>; submit: Submit }) {
-  const { colors, radii } = useTheme();
+  const { colors } = useTheme();
   const [text, setText] = useState("");
   const [chosen, setChosen] = useState<number[]>([]);
   const { busy, verdict, error, send } = useVerdict(submit);
   const tokens = item.tokens ?? [];
   const hasBank = tokens.length > 0;
-  const remaining = tokens.map((_, i) => i).filter((i) => !chosen.includes(i));
   const built = hasBank ? chosen.map((i) => tokens[i]).join(" ") : text;
   const locked = verdict !== null;
   const check = () => void send({ type: "sentence_build", text: built });
-
-  const chip = (label: string, onPress: () => void, picked: boolean, key: number) => (
-    <Pressable
-      key={key}
-      onPress={onPress}
-      disabled={locked}
-      accessibilityRole="button"
-      style={{
-        minHeight: 40,
-        paddingHorizontal: 12,
-        justifyContent: "center",
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: picked ? "transparent" : colors.borderControl,
-        backgroundColor: picked ? colors.brandSoft : colors.surface,
-      }}
-    >
-      <Text style={{ fontFamily: picked ? font.medium : font.regular, color: picked ? colors.brandInk : colors.ink }}>{label}</Text>
-    </Pressable>
-  );
 
   return (
     <View>
@@ -552,28 +532,7 @@ function SentenceBuild({ item, submit }: { item: Extract<ExerciseItem, { type: "
       <Context text={item.context} />
       <ItemHint text={item.hint} />
       {hasBank ? (
-        <>
-          <View
-            style={{
-              minHeight: 56,
-              marginBottom: 12,
-              padding: 8,
-              borderRadius: radii.control,
-              borderWidth: 1,
-              borderStyle: "dashed",
-              borderColor: colors.borderControl,
-              backgroundColor: colors.surfaceSunken,
-              flexDirection: "row",
-              flexWrap: "wrap",
-              gap: 8,
-            }}
-          >
-            {chosen.map((t, pos) => chip(tokens[t]!, () => setChosen((c) => c.filter((_, i) => i !== pos)), true, pos))}
-          </View>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {remaining.map((i) => chip(tokens[i]!, () => setChosen((c) => [...c, i]), false, i))}
-          </View>
-        </>
+        <WordOrder tokens={tokens} chosen={chosen} onChange={setChosen} disabled={locked} />
       ) : (
         <AnswerField value={text} editable={!locked} onChangeText={setText} onSubmitEditing={() => !locked && text.trim() && check()} placeholder="Type the sentence…" />
       )}
