@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, type ReactNode, type Ref } from "react";
 import { Pressable, ScrollView, TextInput, View, type TextInputProps } from "react-native";
+import Animated, { FadeIn, LinearTransition } from "react-native-reanimated";
 import {
   gradeText,
   isCanonical,
@@ -17,6 +18,7 @@ import { Icon } from "@/ui/icons";
 import { Text } from "@/ui/Text";
 import { englishParts, wordDiff } from "@mdb/client";
 import { useGermanWord, type TappedWord } from "@mdb/client/react";
+import { AnswerZone, TutorSlot, useCheckAction } from "./layout";
 import { WordOrder } from "./WordOrder";
 import { Check, Lightbulb, Quote, X } from "lucide-react-native";
 
@@ -128,7 +130,7 @@ function Explanation({ text }: { text?: string }) {
 }
 
 function Prompt({ children }: { children: ReactNode }) {
-  return <Text style={{ fontSize: 17, lineHeight: 28, marginBottom: 16 }}>{children}</Text>;
+  return <Text style={{ fontSize: 19, lineHeight: 30 }}>{children}</Text>;
 }
 
 /** Submit once and keep the verdict; a failed submission shows as an error. */
@@ -153,7 +155,7 @@ function useVerdict(submit: Submit) {
 type ChoiceState = "idle" | "correct" | "wrong";
 
 /** A choice button; its verdict is a mark as well as a colour (e-ink, colour blindness). */
-function Choice({ label, state, disabled, onPress }: { label: string; state: ChoiceState; disabled: boolean; onPress: () => void }) {
+function Choice({ label, state, disabled, onPress, mark }: { label: string; state: ChoiceState; disabled: boolean; onPress: () => void; mark?: ReactNode }) {
   const { colors, radii } = useTheme();
   const bg = state === "correct" ? colors.successSoft : state === "wrong" ? colors.dangerSoft : colors.surface;
   const fg = state === "correct" ? colors.success : state === "wrong" ? colors.danger : colors.ink;
@@ -164,12 +166,12 @@ function Choice({ label, state, disabled, onPress }: { label: string; state: Cho
       accessibilityRole="button"
       accessibilityLabel={state === "idle" ? label : `${label}, ${state === "correct" ? "right answer" : "your answer, wrong"}`}
       style={({ pressed }) => ({
-        minHeight: 48,
+        minHeight: 56,
         paddingHorizontal: 16,
         paddingVertical: 10,
         flexDirection: "row",
         alignItems: "center",
-        gap: 8,
+        gap: 12,
         borderRadius: radii.control,
         borderWidth: 1,
         borderColor: state === "idle" ? colors.borderControl : "transparent",
@@ -177,9 +179,11 @@ function Choice({ label, state, disabled, onPress }: { label: string; state: Cho
         opacity: disabled && state === "idle" ? 0.6 : 1,
       })}
     >
+      {mark}
       <Text
         style={{
           flex: 1,
+          fontSize: 17,
           color: fg,
           fontFamily: state === "correct" ? font.medium : font.regular,
           textDecorationLine: state === "wrong" ? "line-through" : "none",
@@ -300,30 +304,25 @@ function ResultBanner({ verdict, answer, input }: { verdict: AnswerVerdict; answ
   );
 }
 
-function CheckButton({ onPress, busy, disabled }: { onPress: () => void; busy?: boolean; disabled?: boolean }) {
-  return (
-    <View style={{ flexDirection: "row", marginTop: 16 }}>
-      <Button kind="primary" label={busy ? "Checking…" : "Check"} busy={busy} disabled={disabled} onPress={onPress} />
-    </View>
-  );
-}
-
 // --- multiple choice / true-false ----------------------------------------------
 
 function MultipleChoice({ item, submit }: { item: Extract<ExerciseItem, { type: "multiple_choice" }>; submit: Submit }) {
   const [picked, setPicked] = useState<number | null>(null);
   const done = picked !== null;
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       <Instructions text={item.instructions} />
       <Context text={item.context} />
       <ItemHint text={item.hint} />
       <Prompt>{item.prompt}</Prompt>
-      <View style={{ gap: 8 }}>
+      {done && <Explanation text={item.explanation} />}
+      <TutorSlot />
+      <AnswerZone>
         {item.choices.map((choice, i) => (
           <Choice
             key={i}
             label={choice}
+            mark={<Letter i={i} />}
             disabled={done}
             state={!done ? "idle" : i === item.answerIndex ? "correct" : i === picked ? "wrong" : "idle"}
             onPress={() => {
@@ -332,8 +331,7 @@ function MultipleChoice({ item, submit }: { item: Extract<ExerciseItem, { type: 
             }}
           />
         ))}
-      </View>
-      {done && <Explanation text={item.explanation} />}
+      </AnswerZone>
     </View>
   );
 }
@@ -343,36 +341,47 @@ function TrueFalse({ item, submit }: { item: Extract<ExerciseItem, { type: "true
   const [picked, setPicked] = useState<boolean | null>(null);
   const done = picked !== null;
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       <Instructions text={item.instructions ?? "Correct or incorrect?"} />
       <Context text={item.context} />
       <ItemHint text={item.hint} />
       <Prompt>{item.statement}</Prompt>
-      <View style={{ flexDirection: "row", gap: 8 }}>
-        {[
-          { label: "Correct", value: true },
-          { label: "Incorrect", value: false },
-        ].map((o) => (
-          <View key={o.label} style={{ flex: 1 }}>
-            <Choice
-              label={o.label}
-              disabled={done}
-              state={!done ? "idle" : o.value === item.correct ? "correct" : o.value === picked ? "wrong" : "idle"}
-              onPress={() => {
-                setPicked(o.value);
-                void submit({ type: "true_false", value: o.value });
-              }}
-            />
-          </View>
-        ))}
-      </View>
       {done && item.correction ? (
-        <Text style={{ marginTop: 12 }}>
+        <Text style={{ marginTop: 16 }}>
           <Text variant="muted">Correct form: </Text>
           <Text style={{ fontFamily: font.semibold, color: colors.success }}>{item.correction}</Text>
         </Text>
       ) : null}
       {done && <Explanation text={item.explanation} />}
+      <TutorSlot />
+      <AnswerZone>
+        {[
+          { label: "Correct", value: true, icon: Check, tint: colors.success },
+          { label: "Incorrect", value: false, icon: X, tint: colors.danger },
+        ].map((o) => (
+          <Choice
+            key={o.label}
+            label={o.label}
+            mark={<Icon icon={o.icon} size={20} color={o.tint} />}
+            disabled={done}
+            state={!done ? "idle" : o.value === item.correct ? "correct" : o.value === picked ? "wrong" : "idle"}
+            onPress={() => {
+              setPicked(o.value);
+              void submit({ type: "true_false", value: o.value });
+            }}
+          />
+        ))}
+      </AnswerZone>
+    </View>
+  );
+}
+
+/** A choice's letter (A, B, C…), so options are easy to tell apart and to talk about. */
+function Letter({ i }: { i: number }) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ width: 26, height: 26, borderRadius: 6, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" }}>
+      <Text style={{ fontFamily: font.mono, fontSize: 12, color: colors.inkMuted }}>{String.fromCharCode(65 + i)}</Text>
     </View>
   );
 }
@@ -405,13 +414,15 @@ function Cloze({ item, submit }: { item: Extract<ExerciseItem, { type: "cloze" }
   );
   let seen = 0;
 
+  useCheckAction(Object.values(values).some((v) => v.trim()), false, () => check(), !done);
+
   function check() {
     setDone(true);
     void submit({ type: "cloze", blanks: Object.fromEntries(item.blanks.map((b) => [b.ref, values[b.ref] ?? ""])) });
   }
 
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       <Instructions text={item.instructions} />
       <Context text={item.context} />
       <ItemHint text={item.hint} />
@@ -454,7 +465,8 @@ function Cloze({ item, submit }: { item: Extract<ExerciseItem, { type: "cloze" }
           );
         })}
       </View>
-      {!done ? <CheckButton onPress={check} /> : <Explanation text={item.explanation} />}
+      {done && <Explanation text={item.explanation} />}
+      <TutorSlot />
     </View>
   );
 }
@@ -470,7 +482,7 @@ function Flashcard({ item, submit }: { item: Extract<ExerciseItem, { type: "flas
     void submit({ type: "flashcard", knew });
   };
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       <Instructions text={item.instructions} />
       <Context text={item.context} />
       <Pressable
@@ -497,8 +509,11 @@ function Flashcard({ item, submit }: { item: Extract<ExerciseItem, { type: "flas
           Tap to flip
         </Text>
       )}
+      {rated && <Explanation text={item.explanation} />}
+      <TutorSlot />
       {flipped && !rated && (
-        <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+        <AnswerZone>
+        <View style={{ flexDirection: "row", gap: 8 }}>
           <View style={{ flex: 1 }}>
             <Button label="Didn't know" icon={<Icon icon={X} size={16} />} onPress={() => rate(false)} />
           </View>
@@ -506,8 +521,8 @@ function Flashcard({ item, submit }: { item: Extract<ExerciseItem, { type: "flas
             <Button kind="primary" label="Knew it" icon={<Icon icon={Check} size={16} color={colors.brandInk} />} onPress={() => rate(true)} />
           </View>
         </View>
+        </AnswerZone>
       )}
-      {rated && <Explanation text={item.explanation} />}
     </View>
   );
 }
@@ -524,19 +539,29 @@ function SentenceBuild({ item, submit }: { item: Extract<ExerciseItem, { type: "
   const built = hasBank ? chosen.map((i) => tokens[i]).join(" ") : text;
   const locked = verdict !== null;
   const check = () => void send({ type: "sentence_build", text: built });
+  useCheckAction(hasBank ? chosen.length > 0 : !!text.trim(), busy, check, !locked);
 
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       <Instructions text={item.instructions ?? "Put the words in the correct order."} />
       <OpenAnswerBadge answer={item.answer} />
       <Context text={item.context} />
       <ItemHint text={item.hint} />
+      {!locked && <TutorSlot />}
       {hasBank ? (
-        <WordOrder tokens={tokens} chosen={chosen} onChange={setChosen} disabled={locked} />
+        // Built near the word bank (short drags); once checked, it moves up under the task.
+        locked ? (
+          <Animated.View entering={FadeIn.duration(200)} layout={LinearTransition.duration(200)}>
+            <WordOrder tokens={tokens} chosen={chosen} onChange={setChosen} disabled />
+          </Animated.View>
+        ) : (
+          <AnswerZone>
+            <WordOrder tokens={tokens} chosen={chosen} onChange={setChosen} disabled={false} />
+          </AnswerZone>
+        )
       ) : (
         <AnswerField value={text} editable={!locked} onChangeText={setText} onSubmitEditing={() => !locked && text.trim() && check()} placeholder="Type the sentence…" />
       )}
-      {!locked && <CheckButton onPress={check} busy={busy} disabled={hasBank ? chosen.length === 0 : !text.trim()} />}
       {error ? <Text style={{ color: colors.danger, marginTop: 12 }}>{error}</Text> : null}
       {verdict && (
         <>
@@ -544,6 +569,7 @@ function SentenceBuild({ item, submit }: { item: Extract<ExerciseItem, { type: "
           <Explanation text={item.explanation} />
         </>
       )}
+      {locked && <TutorSlot />}
     </View>
   );
 }
@@ -556,8 +582,9 @@ function Transform({ item, submit }: { item: Extract<ExerciseItem, { type: "tran
   const [given, ...rest] = item.source.split("\n").map((s) => s.trim());
   const lead = rest.filter(Boolean).join(" ");
   const check = () => void send({ type: "transform", text });
+  useCheckAction(!!text.trim(), busy, check, verdict === null);
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       <Instructions text={item.instructions} />
       <OpenAnswerBadge answer={item.answer} />
       <Context text={item.context} />
@@ -565,7 +592,6 @@ function Transform({ item, submit }: { item: Extract<ExerciseItem, { type: "tran
       <Prompt>{given}</Prompt>
       {lead ? <Text style={{ fontSize: 18, lineHeight: 28, marginBottom: 12 }}>{lead}</Text> : null}
       <AnswerField value={text} editable={verdict === null} onChangeText={setText} onSubmitEditing={() => verdict === null && text.trim() && check()} placeholder="Your answer…" />
-      {verdict === null && <CheckButton onPress={check} busy={busy} disabled={!text.trim()} />}
       {error ? <Text style={{ color: colors.danger, marginTop: 12 }}>{error}</Text> : null}
       {verdict && (
         <>
@@ -573,6 +599,7 @@ function Transform({ item, submit }: { item: Extract<ExerciseItem, { type: "tran
           <Explanation text={item.explanation} />
         </>
       )}
+      <TutorSlot />
     </View>
   );
 }
@@ -584,8 +611,9 @@ function Translate({ item, submit }: { item: Extract<ExerciseItem, { type: "tran
   const [text, setText] = useState("");
   const { busy, verdict, error, send } = useVerdict(submit);
   const check = () => void send({ type: "translate", text });
+  useCheckAction(!!text.trim(), busy, check, verdict === null);
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       <Instructions text={item.instructions ?? "Translate into German."} />
       <Context text={item.context} />
       <ItemHint text={item.hint} />
@@ -602,7 +630,6 @@ function Translate({ item, submit }: { item: Extract<ExerciseItem, { type: "tran
         placeholder="Auf Deutsch…"
         style={{ minHeight: 72, paddingVertical: 10, textAlignVertical: "top", lineHeight: 24 }}
       />
-      {verdict === null && <CheckButton onPress={check} busy={busy} disabled={!text.trim()} />}
       {error ? <Text style={{ color: colors.danger, marginTop: 12 }}>{error}</Text> : null}
       {verdict && (
         <>
@@ -610,6 +637,7 @@ function Translate({ item, submit }: { item: Extract<ExerciseItem, { type: "tran
           <Explanation text={item.explanation} />
         </>
       )}
+      <TutorSlot />
     </View>
   );
 }
@@ -773,12 +801,13 @@ function ConjugationTable({ item, submit }: { item: Extract<ExerciseItem, { type
   const ok = (c: number, r: number) => gradeText(values[key(c, r)] ?? "", { accept: [item.columns[c]?.answers[r] ?? ""], grading: "normalized" });
   // Row by row, as it reads.
   const field = useFieldChain(item.rows.length * item.columns.length, () => !done && check());
+  useCheckAction(Object.values(values).some((v) => v.trim()), false, () => check(), !done);
   function check() {
     setDone(true);
     void submit({ type: "conjugation_table", cells: item.columns.map((_, c) => item.rows.map((_, r) => values[key(c, r)] ?? "")) });
   }
   return (
-    <View>
+    <View style={{ flex: 1 }}>
       <Instructions text={item.instructions ?? "Fill in the conjugations."} />
       <Context text={item.context} />
       <ItemHint text={item.hint} />
@@ -816,7 +845,8 @@ function ConjugationTable({ item, submit }: { item: Extract<ExerciseItem, { type
           ))}
         </View>
       </ScrollView>
-      {!done ? <CheckButton onPress={check} /> : <Explanation text={item.explanation} />}
+      {done && <Explanation text={item.explanation} />}
+      <TutorSlot />
     </View>
   );
 }

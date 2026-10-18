@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Alert, KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,7 +9,8 @@ import { useExerciseRunner, useExerciseSet, usePreference } from "@mdb/client/re
 import { useFeedback } from "@/lib/feedback";
 import { font, useTheme } from "@/lib/theme";
 import { ItemView } from "@/practice/ItemView";
-import { TutorHelp } from "@/practice/TutorHelp";
+import { TutorButtons, TutorPanel, useTutor } from "@/practice/TutorHelp";
+import { ExerciseLayout, type CheckSlot } from "@/practice/layout";
 import { QuestionSlide } from "@/practice/QuestionSlide";
 import { Segmented } from "@/reader/ReaderSheets";
 import { Button } from "@/ui/Button";
@@ -73,7 +74,7 @@ function BackLink({ label }: { label: string }) {
 function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem[]; initial: ExerciseProgress | null }) {
   const run = useExerciseRunner({ set, extra, initial });
   const { items, index, item, results, answered, lastCorrect, done, correctCount, answeredCount, next, goTo } = run;
-  const { colors, radii, motion, elevation } = useTheme();
+  const { colors, radii, motion } = useTheme();
   const insets = useSafeAreaInsets();
   const [navOpen, setNavOpen] = useState(false);
 
@@ -283,20 +284,66 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
         </View>
       )}
 
-      <QuestionSlide
+      <Question
         key={index}
+        run={run}
+        dir={dir}
+        answeredEarlier={answeredEarlier}
+        prior={prior}
+        onSwipeNext={() => {
+          feedback.tick();
+          // Answered: on (or finish); not yet: skip it, as the Skip button does.
+          if (answered) next();
+          else goTo(index + 1);
+        }}
+      />
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
+/**
+ * One question: the card (the task at the top, answer controls at the bottom
+ * in thumb reach, the tutor's reply between) and the bar under it: back,
+ * hint, translate and one main button (Skip; Check once there's an answer to
+ * check; Next). Keyed by question, so the tutor and the Check start afresh.
+ */
+function Question({
+  run,
+  dir,
+  answeredEarlier,
+  prior,
+  onSwipeNext,
+}: {
+  run: ReturnType<typeof useExerciseRunner>;
+  dir: 1 | -1;
+  answeredEarlier: boolean;
+  prior: boolean | undefined;
+  onSwipeNext: () => void;
+}) {
+  const { items, index, item, answered, lastCorrect, next, goTo } = run;
+  const { colors, radii, motion, elevation } = useTheme();
+  const insets = useSafeAreaInsets();
+  const tutor = useTutor(item, run.lastResponse);
+  const [check, setCheck] = useState<CheckSlot | null>(null);
+  const panel = run.assistantEnabled ? <TutorPanel tutor={tutor} answered={answered} lastCorrect={lastCorrect} lastResponse={run.lastResponse} /> : null;
+  const layout = useMemo(() => ({ panel, setCheck }), [panel]);
+
+  let main: ReactNode;
+  if (answered) main = <Button tall kind="primary" label={run.isLast ? "Finish" : "Next"} icon={<Icon icon={ChevronRight} size={16} color={colors.brandInk} />} onPress={next} />;
+  else if (check?.ready) main = <Button tall kind="primary" label={check.busy ? "Checking…" : "Check"} busy={check.busy} onPress={check.run} />;
+  else main = <Button tall kind="ghost" label="Skip" icon={<Icon icon={ChevronRight} size={16} />} disabled={index + 1 >= items.length} onPress={() => goTo(index + 1)} />;
+
+  return (
+    <ExerciseLayout.Provider value={layout}>
+      <QuestionSlide
         dir={dir}
         verdict={answered ? lastCorrect : null}
         animated={motion.base > 0}
         canPrev={index > 0}
         canNext={index + 1 < items.length || answered}
         onPrev={() => goTo(index - 1)}
-        onNext={() => {
-          feedback.tick();
-          // Answered: on (or finish); not yet: skip it, as the Skip button does.
-          if (answered) next();
-          else goTo(index + 1);
-        }}
+        onNext={onSwipeNext}
       >
         <View
           style={{
@@ -310,40 +357,20 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
           }}
         >
           {/* Scrolls a focused field (an answer, the tutor chat) above the keyboard. */}
-          <KeyboardAwareScrollView bottomOffset={24} contentContainerStyle={{ flexGrow: 1, padding: 20, paddingRight: run.isGenerated(item.id) ? 44 : 20, gap: 20 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-            <View>
-          {answeredEarlier && (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                marginBottom: 16,
-              }}
-            >
-              <Icon icon={RotateCcw} size={14} color={colors.inkSubtle} />
-              <Text variant="subtle" style={{ flex: 1 }}>
-                You answered this{" "}
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontFamily: font.medium,
-                    color: prior ? colors.success : colors.danger,
-                  }}
-                >
-                  {prior ? "correctly" : "incorrectly"}
-                </Text>{" "}
-                this run. Answer again to change it.
-              </Text>
-            </View>
-          )}
+          <KeyboardAwareScrollView bottomOffset={24} contentContainerStyle={{ flexGrow: 1, padding: 20, paddingRight: run.isGenerated(item.id) ? 44 : 20 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+            <View style={{ flex: 1 }}>
+              {answeredEarlier && (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                  <Icon icon={RotateCcw} size={14} color={colors.inkSubtle} />
+                  <Text variant="subtle" style={{ flex: 1 }}>
+                    You answered this{" "}
+                    <Text style={{ fontSize: 13, fontFamily: font.medium, color: prior ? colors.success : colors.danger }}>{prior ? "correctly" : "incorrectly"}</Text> this run.
+                    Answer again to change it.
+                  </Text>
+                </View>
+              )}
               <ItemView key={`${item.id}-${index}`} item={item} submit={run.submit} />
             </View>
-            {run.assistantEnabled && (
-              <View style={{ marginTop: "auto" }}>
-                <TutorHelp key={item.id} item={item} answered={answered} lastCorrect={lastCorrect} lastResponse={run.lastResponse} />
-              </View>
-            )}
           </KeyboardAwareScrollView>
           {run.isGenerated(item.id) && (
             <Pressable
@@ -369,18 +396,28 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
       </QuestionSlide>
 
       <View style={{ flexDirection: "row", gap: 8, paddingTop: 4, paddingBottom: insets.bottom + 12 }}>
-        <View style={{ flex: 1 }}>
-          <Button label="Prev" icon={<Icon icon={ChevronLeft} size={16} />} disabled={index === 0} onPress={() => goTo(index - 1)} accessibilityLabel="Previous question" />
-        </View>
-        <View style={{ flex: 2 }}>
-          {answered ? (
-            <Button kind="primary" label={run.isLast ? "Finish" : "Next"} icon={<Icon icon={ChevronRight} size={16} color={colors.brandInk} />} onPress={next} />
-          ) : (
-            <Button kind="ghost" label="Skip" icon={<Icon icon={ChevronRight} size={16} />} disabled={index + 1 >= items.length} onPress={() => goTo(index + 1)} />
-          )}
-        </View>
+        <Pressable
+          onPress={() => goTo(index - 1)}
+          disabled={index === 0}
+          accessibilityRole="button"
+          accessibilityLabel="Previous question"
+          style={({ pressed }) => ({
+            width: 52,
+            height: 52,
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: radii.control,
+            borderWidth: 1,
+            borderColor: colors.borderControl,
+            backgroundColor: pressed ? colors.surfaceSunken : "transparent",
+            opacity: index === 0 ? 0.45 : 1,
+          })}
+        >
+          <Icon icon={ChevronLeft} size={18} color={colors.ink} />
+        </Pressable>
+        {run.assistantEnabled && <TutorButtons tutor={tutor} />}
+        <View style={{ flex: 1, justifyContent: "center" }}>{main}</View>
       </View>
-      </View>
-    </KeyboardAvoidingView>
+    </ExerciseLayout.Provider>
   );
 }

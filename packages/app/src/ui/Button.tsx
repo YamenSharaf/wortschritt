@@ -21,11 +21,12 @@ export function Button({
   icon,
   busy,
   disabled,
+  tall,
   onPressIn,
   onPressOut,
   onPress,
   ...props
-}: PressableProps & { kind?: Kind; label: string; icon?: ReactNode; busy?: boolean }) {
+}: PressableProps & { kind?: Kind; label: string; icon?: ReactNode; busy?: boolean; /** 52px: a main action in a bottom bar. */ tall?: boolean }) {
   const { colors, effects, radii, elevation, motion } = useTheme();
   const feedback = useFeedback();
   const off = disabled || busy;
@@ -54,7 +55,7 @@ export function Button({
         }}
         style={({ pressed }) => [
           {
-            minHeight: 44,
+            minHeight: tall ? 52 : 44,
             paddingHorizontal: 16,
             borderRadius: radii.control,
             flexDirection: "row",
