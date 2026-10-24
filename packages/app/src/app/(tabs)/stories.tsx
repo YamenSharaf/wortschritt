@@ -7,6 +7,8 @@ import { useApi, useAsync, usePreference } from "@mdb/client/react";
 import { useSync } from "@/lib/sync";
 import { font, useTheme } from "@/lib/theme";
 import { Card } from "@/ui/Card";
+import { AudioChip } from "@/listen/AudioChip";
+import { useStoryAudio } from "@/lib/listening";
 import { Cover } from "@/ui/Cover";
 import { Screen } from "@/ui/Screen";
 import { Pill } from "@/ui/Pill";
@@ -22,6 +24,7 @@ export default function Stories() {
   const books = useAsync(() => api.seriesList(), [api, status.revision], { keep: true });
   const [refreshing, setRefreshing] = useState(false);
   const list = stories.status === "ready" ? stories.data.filter((s) => !s.seriesId) : [];
+  const { audio, refresh } = useStoryAudio(api);
   const shelf = books.status === "ready" ? books.data : [];
 
   return (
@@ -40,7 +43,7 @@ export default function Stories() {
       {list.length > 0 && (
         <Card>
           {list.map((s, i) => (
-            <StoryRow key={s.id} story={s} first={i === 0} />
+            <StoryRow key={s.id} story={s} first={i === 0} audio={<AudioChip story={{ id: s.id, title: s.title }} audio={audio[s.id]} onGenerated={refresh} />} />
           ))}
         </Card>
       )}
@@ -122,7 +125,7 @@ function Marker({ book }: { book: SeriesSummary }) {
   return <View style={{ position: "absolute", top: -6, right: 12, width: 10, height: 26, backgroundColor: colors.reward2 }} />;
 }
 
-function StoryRow({ story: s, first }: { story: StorySummary; first: boolean }) {
+function StoryRow({ story: s, first, audio }: { story: StorySummary; first: boolean; audio: ReactNode }) {
   return (
     <Row
       first={first}
@@ -133,6 +136,7 @@ function StoryRow({ story: s, first }: { story: StorySummary; first: boolean }) 
       pills={[s.level, `${s.minutes} min`, ...(s.questions > 0 ? [`${s.questions} ${s.questions === 1 ? "question" : "questions"}`] : [])]}
       status={s.status}
       progress={s.progress}
+      extra={audio}
     />
   );
 }
@@ -146,6 +150,7 @@ function Row({
   pills,
   status,
   progress,
+  extra,
 }: {
   first: boolean;
   onPress: () => void;
@@ -155,6 +160,8 @@ function Row({
   pills: string[];
   status: "unread" | "reading" | "read";
   progress: number;
+  /** Under the details (a story's audio). */
+  extra?: ReactNode;
 }) {
   const { colors, radii } = useTheme();
   return (
@@ -186,6 +193,7 @@ function Row({
             <View style={{ width: `${Math.round(progress * 100)}%`, height: "100%", backgroundColor: colors.brand }} />
           </View>
         )}
+        {extra ? <View style={{ marginTop: 10 }}>{extra}</View> : null}
       </View>
     </Pressable>
   );

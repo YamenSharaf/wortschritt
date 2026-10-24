@@ -4,12 +4,14 @@ import type { Tabs } from "expo-router";
 import type { ComponentProps } from "react";
 import { font, useTheme } from "@/lib/theme";
 import { Icon, sections } from "./icons";
+import { MiniPlayer } from "./MiniPlayer";
 import { Text } from "./Text";
 
 type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>["tabBar"]>>[0];
 
 /**
- * The phone dock: a floating pill with every section (design system: Dock).
+ * The phone dock: a floating pill with every section (design system: Dock),
+ * and over it, while a story plays, the mini-player.
  * Glass on a standard screen; on e-ink a plain outlined bar.
  */
 export function Dock({ state, navigation }: TabBarProps) {
@@ -20,6 +22,7 @@ export function Dock({ state, navigation }: TabBarProps) {
       pointerEvents="box-none"
       style={{ position: "absolute", left: 0, right: 0, bottom: insets.bottom + 12, alignItems: "center" }}
     >
+      <MiniPlayer />
       <View
         style={{
           flexDirection: "row",

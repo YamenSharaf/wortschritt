@@ -124,7 +124,6 @@ function Reader({ id }: { id: string }) {
     if (canListen && listening && view) {
       if (listeningHere) return ls.phase === "playing" ? listening.pause() : ls.phase === "paused" ? listening.resume() : undefined;
       aloud.stop();
-      listening.setRate(reader.speechRate);
       return void listening.listen({ id: view.story.id, title: view.story.title, book: view.series?.title ?? null }, controls.current?.firstPara() ?? 0);
     }
     if (aloud.speaking !== null) return aloud.stop();
@@ -140,9 +139,6 @@ function Reader({ id }: { id: string }) {
     if (wasListening.current && ls.storyId && ls.storyId !== storyId && ls.storyId === view?.series?.next) router.replace(`/reader/${ls.storyId}`);
     wasListening.current = ls.storyId === storyId;
   }, [ls.storyId, storyId, view?.series?.next]);
-  useEffect(() => {
-    if (listening) listening.setRate(reader.speechRate);
-  }, [listening, reader.speechRate]);
   const isSaved = useCallback((w: string) => isSavedWord(w, vocab.words, lemmas), [vocab.words, lemmas]);
   const { request } = tr;
   const onVisible = useCallback((paras: number[]) => reader.translations !== "off" && request(paras), [reader.translations, request]);

@@ -1,7 +1,9 @@
 import { useRef, type ReactNode } from "react";
 import { RefreshControl, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useListening } from "@/lib/listening";
 import { useTheme } from "@/lib/theme";
+import { MINI_PLAYER_SPACE } from "./MiniPlayer";
 
 /** A page: the page ground, safe areas, room for the dock, optional pull-to-refresh. */
 export function Screen({
@@ -25,6 +27,8 @@ export function Screen({
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const viewport = useRef(0);
+  // The mini-player sits over the dock while a story plays: room for it too.
+  const playing = useListening().state.phase !== "idle";
   return (
     <View style={{ flex: 1, backgroundColor: transparent ? "transparent" : colors.bg }}>
       <ScrollView
@@ -44,7 +48,7 @@ export function Screen({
         onContentSizeChange={onNearEnd ? (_w, h) => viewport.current > 0 && h < viewport.current * 2 && onNearEnd() : undefined}
         contentContainerStyle={{
           paddingTop: insets.top + 16,
-          paddingBottom: insets.bottom + (dock ? 112 : 24),
+          paddingBottom: insets.bottom + (dock ? 112 + (playing ? MINI_PLAYER_SPACE : 0) : 24),
           paddingHorizontal: 20,
           gap: 16,
           maxWidth: 720,

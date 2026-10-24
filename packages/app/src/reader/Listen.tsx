@@ -1,7 +1,8 @@
 import { Alert, Pressable, View } from "react-native";
-import { Check, Download, Pause, Play, SkipBack, SkipForward, X } from "lucide-react-native";
+import { router } from "expo-router";
+import { Check, ChevronUp, Download, Pause, Play, SkipBack, SkipForward, X } from "lucide-react-native";
 import { audioProgressText } from "@mdb/client";
-import type { ListeningController, ListeningState } from "@/lib/listening";
+import { clock, type ListeningController, type ListeningState } from "@/lib/listening";
 import { font } from "@/lib/theme";
 import { Icon } from "@/ui/icons";
 import { Text } from "@/ui/Text";
@@ -62,7 +63,15 @@ export function ListenBar({
           {button(SkipBack, "Previous paragraph", () => controller.seekParagraph(Math.max(0, state.paragraph - 1)))}
           {button(playing ? Pause : Play, playing ? "Pause" : "Play", () => (playing ? controller.pause() : controller.resume()), 26)}
           {button(SkipForward, "Next paragraph", () => controller.seekParagraph(Math.min(paragraphs - 1, state.paragraph + 1)))}
-          <View style={{ flex: 1 }} />
+          <Pressable
+            onPress={() => router.push("/player")}
+            accessibilityRole="button"
+            accessibilityLabel="Open the player"
+            style={{ flex: 1, alignSelf: "stretch", flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 6, paddingHorizontal: 6 }}
+          >
+            <Text style={{ fontFamily: font.mono, fontSize: 13, color: colors.muted }}>{clock(Math.max(0, state.duration - state.position))} left</Text>
+            <Icon icon={ChevronUp} size={18} color={colors.muted} />
+          </Pressable>
           {downloaded
             ? button(Check, "Downloaded for listening offline. Tap to remove the download", () =>
                 Alert.alert("Remove the download?", "You can listen again online; it downloads again then.", [
