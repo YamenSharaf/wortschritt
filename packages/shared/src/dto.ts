@@ -57,7 +57,7 @@ export const settingsSchema = z.object({
     .max(MAX_GENERATE_COUNT)
     .default(5),
   /** Preferred pronunciation voice. "" = the device's built-in TTS; otherwise
-   *  a server voice id ("azure:…" or "edge:…"). */
+   *  a server voice id ("azure:…", "edge:…" or "gemini:…"). */
   ttsVoice: z.string().default(""),
   /** The story reader's "Read aloud": "" = the same as ttsVoice, "device" = the device's own, else a server voice id. */
   readerVoice: z.string().default(""),
@@ -96,8 +96,29 @@ export const AZURE_HD_VOICES = [
   { name: "de-DE-Seraphina:DragonHDLatestNeural", label: "Seraphina HD (female)" },
   { name: "de-DE-Florian:DragonHDLatestNeural", label: "Florian HD (male)" },
 ] as const;
+/**
+ * Gemini's prebuilt voices (they speak German too), with Google's own word
+ * for how each sounds. A choice of the calmer, clearer ones for learning.
+ */
+export const GEMINI_VOICES = [
+  { name: "Kore", label: "Kore (firm)" },
+  { name: "Aoede", label: "Aoede (breezy)" },
+  { name: "Leda", label: "Leda (youthful)" },
+  { name: "Sulafat", label: "Sulafat (warm)" },
+  { name: "Achernar", label: "Achernar (soft)" },
+  { name: "Vindemiatrix", label: "Vindemiatrix (gentle)" },
+  { name: "Charon", label: "Charon (informative)" },
+  { name: "Iapetus", label: "Iapetus (clear)" },
+  { name: "Orus", label: "Orus (firm)" },
+  { name: "Schedar", label: "Schedar (even)" },
+  { name: "Gacrux", label: "Gacrux (mature)" },
+  { name: "Puck", label: "Puck (upbeat)" },
+] as const;
+/** Gemini text-to-speech models to choose from (the newest first). */
+export const GEMINI_TTS_MODELS = ["gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts"] as const;
 /** The voices a provider offers. */
-export function serverVoices(provider: "azure" | "edge"): readonly { name: string; label: string }[] {
+export function serverVoices(provider: TtsProvider): readonly { name: string; label: string }[] {
+  if (provider === "gemini") return GEMINI_VOICES;
   return provider === "azure" ? [...NEURAL_VOICES, ...AZURE_HD_VOICES] : NEURAL_VOICES;
 }
 /**
@@ -120,13 +141,14 @@ export const storyAudio = z.object({
 });
 export type StoryAudio = z.infer<typeof storyAudio>;
 
-export const ttsProvider = z.enum(["azure", "edge"]);
+export const ttsProvider = z.enum(["azure", "edge", "gemini"]);
 export type TtsProvider = z.infer<typeof ttsProvider>;
 
 /** Which provider a voice id belongs to (null: not a server voice). */
 export function ttsProviderOf(voice: string): TtsProvider | null {
   if (voice.startsWith("azure:")) return "azure";
   if (voice.startsWith("edge:")) return "edge";
+  if (voice.startsWith("gemini:")) return "gemini";
   return null;
 }
 
@@ -1009,10 +1031,11 @@ export const ttsAdminSettings = z.object({
     canStoreKey: z.boolean(),
   }),
   edge: z.object({ enabled: z.boolean() }),
+  gemini: z.object({ configured: z.boolean(), model: z.enum(GEMINI_TTS_MODELS) }),
 });
 export type TtsAdminSettings = z.infer<typeof ttsAdminSettings>;
 
-/** Change providers: Azure (key optional to keep the stored one; null removes it), Edge on/off. */
+/** Change providers: Azure (key optional to keep the stored one; null removes it), Edge on/off, Gemini. */
 export const ttsAdminBody = z.object({
   azure: z
     .object({
@@ -1022,6 +1045,14 @@ export const ttsAdminBody = z.object({
     .nullable()
     .optional(),
   edge: z.boolean().optional(),
+  /** Gemini: key optional to keep the stored one; null removes it. */
+  gemini: z
+    .object({
+      key: z.string().trim().min(10).max(200).optional(),
+      model: z.enum(GEMINI_TTS_MODELS).default(GEMINI_TTS_MODELS[0]),
+    })
+    .nullable()
+    .optional(),
 });
 
 /** Try a voice: synthesizes a short sentence. */

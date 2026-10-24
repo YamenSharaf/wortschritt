@@ -335,7 +335,7 @@ Apache License
 
 CC-BY-SA-4.0. Shown with their source in the word panel; via freedictionaryapi.com. https://creativecommons.org/licenses/by-sa/4.0/
 
-## Packages (695)
+## Packages (696)
 
 ### @babel/code-frame 7.29.7, @babel/compat-data 7.29.7, @babel/core 7.29.7, @babel/generator 7.29.8, @babel/helper-annotate-as-pure 7.29.7, @babel/helper-compilation-targets 7.29.7, @babel/helper-create-class-features-plugin 7.29.7, @babel/helper-create-regexp-features-plugin 7.29.10, @babel/helper-globals 7.29.7, @babel/helper-member-expression-to-functions 7.29.7, @babel/helper-module-imports 7.29.7, @babel/helper-module-transforms 7.29.7, @babel/helper-optimise-call-expression 7.29.7, @babel/helper-plugin-utils 7.29.7, @babel/helper-remap-async-to-generator 7.29.7, @babel/helper-replace-supers 7.29.7, @babel/helper-skip-transparent-expression-wrappers 7.29.7, @babel/helper-string-parser 7.29.7, @babel/helper-validator-identifier 7.29.7, @babel/helper-validator-option 7.29.7, @babel/helper-wrap-function 7.29.7, @babel/plugin-proposal-decorators 7.29.7, @babel/plugin-proposal-export-default-from 7.29.7, @babel/plugin-syntax-decorators 7.29.7, @babel/plugin-syntax-dynamic-import 7.8.3, @babel/plugin-syntax-export-default-from 7.29.7, @babel/plugin-syntax-flow 7.29.7, @babel/plugin-syntax-jsx 7.29.7, @babel/plugin-syntax-nullish-coalescing-operator 7.8.3, @babel/plugin-syntax-optional-chaining 7.8.3, @babel/plugin-syntax-typescript 7.29.7, @babel/plugin-transform-arrow-functions 7.29.7, @babel/plugin-transform-async-generator-functions 7.29.7, @babel/plugin-transform-async-to-generator 7.29.7, @babel/plugin-transform-block-scoping 7.29.7, @babel/plugin-transform-class-properties 7.29.7, @babel/plugin-transform-class-static-block 7.29.7, @babel/plugin-transform-classes 7.29.7, @babel/plugin-transform-destructuring 7.29.7, @babel/plugin-transform-export-namespace-from 7.29.7, @babel/plugin-transform-flow-strip-types 7.29.7, @babel/plugin-transform-for-of 7.29.7, @babel/plugin-transform-logical-assignment-operators 7.29.7, @babel/plugin-transform-modules-commonjs 7.29.7, @babel/plugin-transform-named-capturing-groups-regex 7.29.7, @babel/plugin-transform-nullish-coalescing-operator 7.29.7, @babel/plugin-transform-object-rest-spread 7.29.7, @babel/plugin-transform-optional-catch-binding 7.29.7, @babel/plugin-transform-optional-chaining 7.29.7, @babel/plugin-transform-parameters 7.29.7, @babel/plugin-transform-private-methods 7.29.7, @babel/plugin-transform-private-property-in-object 7.29.7, @babel/plugin-transform-react-display-name 7.29.7, @babel/plugin-transform-react-jsx 7.29.7, @babel/plugin-transform-react-jsx-development 7.29.7, @babel/plugin-transform-react-jsx-self 7.29.7, @babel/plugin-transform-react-jsx-source 7.29.7, @babel/plugin-transform-react-pure-annotations 7.29.7, @babel/plugin-transform-runtime 7.29.7, @babel/plugin-transform-shorthand-properties 7.29.7, @babel/plugin-transform-template-literals 7.29.7, @babel/plugin-transform-typescript 7.29.9, @babel/plugin-transform-unicode-regex 7.29.7, @babel/preset-typescript 7.29.7, @babel/runtime 7.29.10, @babel/template 7.29.7, @babel/traverse 7.29.8, @babel/types 7.29.8
 
@@ -497,6 +497,29 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+</details>
+
+### @breezystack/lamejs 1.2.7
+
+LGPL-3.0
+
+<details><summary>Licence</summary>
+
+```
+Can I use LAME in my commercial program?  
+
+Yes, you can, under the restrictions of the LGPL.  The easiest
+way to do this is to:
+
+1. Link to LAME as separate jar (lame.min.js or lame.all.js)
+
+2. Fully acknowledge that you are using LAME, and give a link
+   to our web site, lame.sourceforge.net
+
+3. If you make modifications to LAME, you *must* release these
+   these modifications back to the LAME project, under the LGPL.
 ```
 
 </details>

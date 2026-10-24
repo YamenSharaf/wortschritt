@@ -22,6 +22,7 @@ import type {
   FavoriteKind,
   GenerateStoryBody,
   ImportBody,
+  GEMINI_TTS_MODELS,
   Note,
   NoteAttachment,
   ProgressSummary,
@@ -263,7 +264,7 @@ export function createApi(o: ClientOptions) {
       req<{ ok: true }>(`/api/admin/users/${id}`, { method: "DELETE" }),
     adminRegistration: () => req<RegistrationStatus>("/api/admin/registration"),
     adminTts: () => req<TtsAdminSettings>("/api/admin/tts"),
-    adminSetTts: (body: { azure?: { region: string; key?: string } | null; edge?: boolean }) =>
+    adminSetTts: (body: { azure?: { region: string; key?: string } | null; edge?: boolean; gemini?: { key?: string; model: (typeof GEMINI_TTS_MODELS)[number] } | null }) =>
       req<TtsAdminSettings>("/api/admin/tts", { method: "PUT", body: JSON.stringify(body) }),
     adminTestTts: (voice: string) =>
       req<{ ok: true; bytes: number }>("/api/admin/tts/test", { method: "POST", body: JSON.stringify({ voice }) }),

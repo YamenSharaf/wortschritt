@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { MIN_PASSWORD_LENGTH, serverVoices, type AdminUser, type RegistrationStatus, type TtsAdminSettings } from "@mdb/shared";
+import { GEMINI_TTS_MODELS, MIN_PASSWORD_LENGTH, serverVoices, type AdminUser, type RegistrationStatus, type TtsAdminSettings } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "@mdb/client/react";
 import { timeAgo } from "@mdb/client";
@@ -265,13 +265,15 @@ function UserRow({
 
 /**
  * Read-aloud voices for everyone on this server: Azure Speech neural voices
- * (the admin's key; free tier 0.5M characters a month) and the unofficial
- * Edge voices.
+ * (the admin's key; free tier 0.5M characters a month), the unofficial Edge
+ * voices, and Gemini's voices (a Google AI Studio key).
  */
 function TtsProviders() {
   const [cfg, setCfg] = useState<TtsAdminSettings | null>(null);
   const [region, setRegion] = useState("westeurope");
   const [key, setKey] = useState("");
+  const [geminiKey, setGeminiKey] = useState("");
+  const [geminiModel, setGeminiModel] = useState<(typeof GEMINI_TTS_MODELS)[number]>(GEMINI_TTS_MODELS[0]);
   const [voice, setVoice] = useState("azure:de-DE-KatjaNeural");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -282,7 +284,9 @@ function TtsProviders() {
       .then((c) => {
         setCfg(c);
         if (c.azure.region) setRegion(c.azure.region);
+        setGeminiModel(c.gemini.model);
         if (!c.azure.configured && c.edge.enabled) setVoice("edge:de-DE-KatjaNeural");
+        else if (!c.azure.configured && !c.edge.enabled && c.gemini.configured) setVoice("gemini:Kore");
       })
       .catch(() => setMsg({ ok: false, text: "Couldn't load the voice settings." }));
   }, []);
@@ -293,6 +297,7 @@ function TtsProviders() {
     try {
       setCfg(await fn());
       setKey("");
+      setGeminiKey("");
       setMsg({ ok: true, text: done });
     } catch (err) {
       setMsg({ ok: false, text: err instanceof ApiError ? err.message : "Something went wrong." });
@@ -318,7 +323,9 @@ function TtsProviders() {
   }
 
   if (!cfg) return msg ? <p className="text-sm text-danger">{msg.text}</p> : null;
-  const testable = cfg.azure.configured || cfg.edge.enabled;
+  const testable = cfg.azure.configured || cfg.edge.enabled || cfg.gemini.configured;
+  const providerOn = { azure: cfg.azure.configured, edge: cfg.edge.enabled, gemini: cfg.gemini.configured };
+  const providerName = { azure: "Azure", edge: "Edge", gemini: "Gemini" };
 
   return (
     <section className="space-y-4">
@@ -389,15 +396,63 @@ function TtsProviders() {
         </label>
       </div>
 
+      <div className="space-y-2 rounded-card border border-line p-4 ">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="font-medium">Gemini</h3>
+          <span className={`text-xs ${cfg.gemini.configured ? "text-success" : "text-ink-subtle"}`}>
+            {cfg.gemini.configured ? "Set up" : "Not set up"}
+          </span>
+        </div>
+        <p className="text-xs text-ink-muted">
+          Google's expressive voices (Kore, Aoede, Charon…), read calmly for learners. Create an API key in Google AI
+          Studio; its free tier has daily limits (clips are cached), and on it Google may use what's read to improve
+          its products.
+        </p>
+        {!cfg.azure.canStoreKey ? (
+          <p className="text-xs text-warning">Set ENCRYPTION_KEY on the server to store a key.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            <select value={geminiModel} onChange={(e) => setGeminiModel(e.target.value as typeof geminiModel)} className="input w-auto">
+              {GEMINI_TTS_MODELS.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+            <input
+              value={geminiKey}
+              onChange={(e) => setGeminiKey(e.target.value)}
+              placeholder={cfg.gemini.configured ? "API key (leave empty to keep)" : "API key"}
+              type="password"
+              autoComplete="off"
+              className="input min-w-0 flex-1"
+            />
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => run(() => api.adminSetTts({ gemini: { model: geminiModel, ...(geminiKey ? { key: geminiKey } : {}) } }), "Saved.")}
+              className={smallBtn}
+            >
+              Save
+            </button>
+            {cfg.gemini.configured && (
+              <button type="button" disabled={busy} onClick={() => run(() => api.adminSetTts({ gemini: null }), "Removed.")} className={smallBtn}>
+                Remove
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       {testable && (
         <div className="flex flex-wrap items-center gap-2">
           <select value={voice} onChange={(e) => setVoice(e.target.value)} className="input w-auto">
-            {(["azure", "edge"] as const)
-              .filter((p) => (p === "azure" ? cfg.azure.configured : cfg.edge.enabled))
+            {(["azure", "edge", "gemini"] as const)
+              .filter((p) => providerOn[p])
               .flatMap((p) =>
                 serverVoices(p).map((v) => (
                   <option key={`${p}:${v.name}`} value={`${p}:${v.name}`}>
-                    {v.label} · {p === "azure" ? "Azure" : "Edge"}
+                    {v.label} · {providerName[p]}
                   </option>
                 )),
               )}

@@ -2,6 +2,8 @@ import { useEffect, useReducer, useState } from "react";
 import {
   generateCounts,
   MIN_PASSWORD_LENGTH,
+  serverVoices,
+  ttsProviderOf,
   type ApiTokenView,
   type OAuthGrantView,
   type Settings,
@@ -257,7 +259,15 @@ function PracticeOnDevice() {
 const PROVIDER_LABEL = {
   azure: "Natural voices (Azure)",
   edge: "Natural voices (Edge, unofficial)",
+  gemini: "Gemini voices",
 } as const;
+
+/** A voice id as a name ("azure:de-DE-Seraphina:DragonHDLatestNeural" → "Seraphina HD (female) · Azure"). */
+function voiceName(id: string): string {
+  const provider = ttsProviderOf(id);
+  const found = provider && serverVoices(provider).find((v) => `${provider}:${v.name}` === id);
+  return found ? `${found.label} · ${provider[0]!.toUpperCase()}${provider.slice(1)}` : id;
+}
 
 /**
  * The voices: one for words (speaker buttons, tapped words) and one for a
@@ -310,20 +320,20 @@ function VoiceSettings({
   const serverOptions = (value: string) => (
     <>
       {available &&
-        (["azure", "edge"] as const).map((provider) => {
+        (["azure", "edge", "gemini"] as const).map((provider) => {
           const list = (ready?.voices ?? []).filter((v) => v.provider === provider && installed.includes(v.id));
           if (!list.length) return null;
           return (
             <optgroup key={provider} label={PROVIDER_LABEL[provider]}>
               {list.map((v) => (
                 <option key={v.id} value={v.id}>
-                  {v.label.replace(/ · (Azure|Edge)$/, "")}
+                  {v.label.replace(/ · (Azure|Edge|Gemini)$/, "")}
                 </option>
               ))}
             </optgroup>
           );
         })}
-      {value && value !== "device" && !installed.includes(value) && <option value={value}>{value} (not available now)</option>}
+      {value && value !== "device" && !installed.includes(value) && <option value={value}>{voiceName(value)} (not available now)</option>}
     </>
   );
 

@@ -36,11 +36,15 @@ const calls: Array<{ url: string; headers: Record<string, string>; body: string 
 let azureAudio = (_body: string): Uint8Array => new Uint8Array([0xff, 0xf3, 1, 2, 3]);
 /** The voices "Azure" says its region has. */
 let regionVoiceNames = ["de-DE-KatjaNeural", "de-DE-ConradNeural", "de-DE-Seraphina:DragonHDLatestNeural", "de-DE-Florian:DragonHDLatestNeural"];
+/** What "Gemini" answers (tests swap it): by default a second of quiet PCM. */
+let geminiReply = (): Response =>
+  new Response(JSON.stringify({ candidates: [{ content: { parts: [{ inlineData: { data: Buffer.alloc(48_000).toString("base64") } }] } }] }), { status: 200 });
 before(async () => {
   const { buildApp } = await import("../app");
   const { setTransportForTests } = await import("../assistant/egress");
   setTransportForTests(async (url, init) => {
     calls.push({ url, headers: init.headers as Record<string, string>, body: String(init.body) });
+    if (url.startsWith("https://generativelanguage.googleapis.com/")) return geminiReply() as never;
     if (url.endsWith("/voices/list")) return new Response(JSON.stringify(regionVoiceNames.map((ShortName) => ({ ShortName }))), { status: 200 }) as never;
     try {
       return new Response(azureAudio(String(init.body)), { status: 200, headers: { "content-type": "audio/mpeg" } }) as never;
@@ -67,6 +71,7 @@ test("no providers: no server voices, and cloud voices are refused", async () =>
   assert.deepEqual((await me("GET", "/api/admin/tts")).json(), {
     azure: { configured: false, region: "", canStoreKey: true },
     edge: { enabled: false },
+    gemini: { configured: false, model: "gemini-3.8-flash-tts" },
   });
 });
 
@@ -220,4 +225,39 @@ test("an Azure 400 for a voice the region doesn't offer says so", async () => {
   assert.ok(ids.includes("azure:de-DE-KatjaNeural"));
   assert.ok(!ids.some((id) => id.includes("DragonHD")), "no HD voices offered in this region");
   azureAudio = () => new Uint8Array([0xff, 0xf3, 1, 2, 3]);
+});
+
+test("Gemini: a stored key adds its voices; PCM comes back as MP3 of the same length; its limit is said plainly", async () => {
+  assert.equal((await me("PUT", "/api/admin/tts", { gemini: {} })).statusCode, 400, "a key is needed");
+  const set = await me("PUT", "/api/admin/tts", { gemini: { key: "secret-gemini-key-123", model: "gemini-3.8-flash-lite-tts" } });
+  assert.equal(set.statusCode, 200, set.body);
+  assert.deepEqual(set.json().gemini, { configured: true, model: "gemini-3.8-flash-lite-tts" });
+  assert.ok(!set.body.includes("secret-gemini"), "the key is never sent back");
+  const status = (await me("GET", "/api/tts/status")).json();
+  assert.ok(status.voices.some((v: { id: string; provider: string }) => v.id === "gemini:Kore" && v.provider === "gemini"));
+
+  calls.length = 0;
+  const clip = await tts("gemini:Kore", "Guten Morgen!");
+  assert.equal(clip.statusCode, 200, clip.body);
+  assert.equal(clip.headers["content-type"], "audio/mpeg");
+  const call = calls.find((c) => c.url.includes("generativelanguage"))!;
+  assert.equal(call.url, "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-lite-tts:generateContent");
+  assert.equal(call.headers["x-goog-api-key"], "secret-gemini-key-123");
+  const body = JSON.parse(call.body);
+  assert.equal(body.contents[0].parts[0].text, "Guten Morgen!");
+  assert.equal(body.generationConfig.speechConfig.voiceConfig.voice, "Kore");
+  assert.deepEqual(body.generationConfig.responseFormat.audio, { mimeType: "AUDIO_L16", sampleRate: 24000 });
+  const { mp3Frames } = await import("../tts/mp3");
+  const seconds = mp3Frames(clip.rawPayload).seconds;
+  assert.ok(seconds > 0.95 && seconds < 1.15, `about a second of audio, got ${seconds}`);
+
+  geminiReply = () => new Response(JSON.stringify({ error: { code: 429, details: [{ "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "3600s" }] } }), { status: 429 });
+  const limited = await tts("gemini:Aoede", "Noch ein Satz.");
+  assert.equal(limited.statusCode, 503);
+  assert.match(limited.json().error, /Gemini's limit is used up/);
+
+  const { retryDelay } = await import("../tts/gemini");
+  assert.equal(retryDelay({ error: { details: [{ "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "12.4s" }] } }), 13);
+  assert.equal(retryDelay(null), null);
+  assert.equal((await me("PUT", "/api/admin/tts", { gemini: null })).json().gemini.configured, false);
 });
