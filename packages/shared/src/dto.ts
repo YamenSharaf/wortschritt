@@ -143,6 +143,9 @@ export const storyAudio = z.object({
   retryAt: z.number().int().nullable().default(null),
 });
 export type StoryAudio = z.infer<typeof storyAudio>;
+/** A story's audio in short, for lists (cards, a book's chapters). */
+export const storyAudioBrief = storyAudio.pick({ state: true, done: true, total: true, duration: true, retryAt: true });
+export type StoryAudioBrief = z.infer<typeof storyAudioBrief>;
 
 export const ttsProvider = z.enum(["azure", "edge", "gemini"]);
 export type TtsProvider = z.infer<typeof ttsProvider>;

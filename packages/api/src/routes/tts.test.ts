@@ -251,6 +251,42 @@ test("story audio: a voice's limit makes it wait, not fail; it carries on where 
   azureAudio = () => new Uint8Array([0xff, 0xf3, 1, 2, 3]);
 });
 
+test("story audio for lists, and generating a whole book's in chapter order", async () => {
+  const { EXAMPLE_SERIES, EXAMPLE_STORY } = await import("@mdb/shared");
+  const settings = (await me("GET", "/api/settings")).json();
+  await me("PUT", "/api/settings", { ...settings, ttsVoice: "", readerVoice: "azure:de-DE-ConradNeural" });
+  azureAudio = () => frame();
+  const all = (await me("GET", "/api/story-audio")).json();
+  assert.equal(all.warten.state, "ready", "made in the last test");
+  assert.ok(all.warten.duration > 0);
+
+  assert.equal((await me("POST", "/api/series", { series: EXAMPLE_SERIES })).statusCode, 200);
+  for (const [n, title] of [[2, "Zwei"], [1, "Eins"]] as const) {
+    const res = await me("PUT", `/api/series/${EXAMPLE_SERIES.id}/chapters/${n}`, { story: { ...EXAMPLE_STORY, id: "x", title, body: `Kapitel ${title} beginnt hier.` }, summary: `Kapitel ${n}.` });
+    assert.equal(res.statusCode, 200, res.body);
+  }
+  // Made in the background (nobody waits for it), which would pause after the live clips above.
+  const { setLivePauseForTests } = await import("../services/storyAudio");
+  setLivePauseForTests(0);
+  calls.length = 0;
+  const queued = await me("POST", `/api/series/${EXAMPLE_SERIES.id}/audio`);
+  assert.equal(queued.statusCode, 200, queued.body);
+  const ids = Object.keys(queued.json());
+  assert.equal(ids.length, 2);
+  for (let i = 0; i < 100 && Object.values((await me("GET", "/api/story-audio")).json()).some((a) => (a as { state: string }).state !== "ready" && (a as { state: string }).state !== "none"); i++) {
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  const after = (await me("GET", "/api/story-audio")).json();
+  for (const id of ids) assert.equal(after[id].state, "ready", id);
+  // Chapter 1 was made first (the order of the book, not of writing).
+  const first = calls.findIndex((c) => c.body.includes("Kapitel Eins"));
+  const second = calls.findIndex((c) => c.body.includes("Kapitel Zwei"));
+  assert.ok(first >= 0 && first < second, `${first} < ${second}`);
+  assert.equal((await me("POST", "/api/series/nope/audio")).statusCode, 404);
+  await me("PUT", "/api/settings", settings);
+  azureAudio = () => new Uint8Array([0xff, 0xf3, 1, 2, 3]);
+});
+
 test("an Azure 400 for a voice the region doesn't offer says so", async () => {
   // A fresh region without HD voices, so the voice list is fetched for it.
   regionVoiceNames = ["de-DE-KatjaNeural"];

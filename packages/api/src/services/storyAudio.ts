@@ -2,14 +2,15 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import type { FastifyBaseLogger } from "fastify";
-import { and, asc, eq, isNotNull, isNull, lte, ne } from "drizzle-orm";
-import { chunkText, plainText, storyParagraphs, type StoryAudio } from "@mdb/shared";
+import { and, asc, eq, isNotNull, isNull, lte, ne, sql } from "drizzle-orm";
+import { chunkText, plainText, storyParagraphs, type StoryAudio, type StoryAudioBrief } from "@mdb/shared";
 import { db, schema } from "../db/client";
 import { env } from "../env";
 import { clip, isCached, liveSince } from "../tts/cache";
 import { mp3Frames } from "../tts/mp3";
 import { TtsRateLimited, usableVoices } from "../tts/providers";
 import { getSettings } from "./settings";
+import { getSeriesView } from "./series";
 import { getStory } from "./stories";
 
 /**
@@ -37,7 +38,10 @@ let log: FastifyBaseLogger | null = null;
 
 const nowS = () => Math.floor(Date.now() / 1000);
 /** Live use within this long pauses the queue. */
-const LIVE_PAUSE_MS = 3 * 60_000;
+let LIVE_PAUSE_MS = 3 * 60_000;
+export function setLivePauseForTests(ms: number): void {
+  LIVE_PAUSE_MS = ms;
+}
 /** A limit that doesn't say when it resets (a daily one): try again this often. */
 const LIMIT_RETRY_S = 30 * 60;
 /** When someone last checked on a story's audio (they're waiting for it: no pausing for them). */
@@ -86,17 +90,23 @@ const empty = (voice: string | null): StoryAudio => ({
   retryAt: null,
 });
 
-/** Where a story's audio stands for this learner; null when there's no such story. */
-export function storyAudioStatus(userId: number, storyId: string): StoryAudio | null {
+/**
+ * Where a story's audio stands for this learner; null when there's no such
+ * story. Asked by someone waiting for it (`watch`), it isn't paused for live use.
+ */
+export function storyAudioStatus(userId: number, storyId: string, watch = true): StoryAudio | null {
   const view = getStory(userId, storyId);
   if (!view) return null;
-  const voice = readingVoice(userId);
+  return statusOf(readingVoice(userId), view.story.body, watch);
+}
+
+function statusOf(voice: string | null, body: string, watch: boolean): StoryAudio {
   if (!voice) return empty(null);
-  const paras = spoken(view.story.body);
+  const paras = spoken(body);
   const key = keyFor(voice, paras);
   const meta = readMeta(key);
   if (meta) return { ...empty(voice), state: "ready", key, ...meta };
-  watched.set(key, Date.now());
+  if (watch) watched.set(key, Date.now());
   if (running?.key === key) return { ...empty(voice), state: "building", done: running.job.done, total: running.job.total };
   const row = queued(key);
   if (!row) return empty(voice);
@@ -108,8 +118,34 @@ export function storyAudioStatus(userId: number, storyId: string): StoryAudio | 
 
 export class StoryAudioError extends Error {}
 
-/** Queue a story's audio (once; asked again while it's being made it just reports; a failed or waiting one is tried again). */
-export function startStoryAudio(userId: number, storyId: string, logger: FastifyBaseLogger): StoryAudio | null {
+/** Every story's audio in short, by story id (for the story cards and a book's chapters). */
+export function allStoryAudio(userId: number): Record<string, StoryAudioBrief> {
+  const voice = readingVoice(userId);
+  const out: Record<string, StoryAudioBrief> = {};
+  for (const row of db.select({ id: schema.stories.id, data: schema.stories.data }).from(schema.stories).where(eq(schema.stories.userId, userId)).all()) {
+    const body = (row.data as { body?: unknown } | null)?.body;
+    if (typeof body !== "string") continue;
+    const { state, done, total, duration, retryAt } = statusOf(voice, body, false);
+    out[row.id] = { state, done, total, duration, retryAt };
+  }
+  return out;
+}
+
+/** Queue every written chapter of a book, in order; null when there's no such book. */
+export function startSeriesAudio(userId: number, seriesId: string, logger: FastifyBaseLogger): Record<string, StoryAudioBrief> | null {
+  const view = getSeriesView(userId, seriesId);
+  if (!view) return null;
+  for (const c of view.chapters) if (c.storyId) startStoryAudio(userId, c.storyId, logger, false);
+  const all = allStoryAudio(userId);
+  return Object.fromEntries(view.chapters.flatMap((c) => (c.storyId && all[c.storyId] ? [[c.storyId, all[c.storyId]!]] : [])));
+}
+
+/**
+ * Queue a story's audio (once; asked again while it's being made it just
+ * reports; a failed or waiting one is tried again). `waiting`: someone is
+ * waiting to hear it now (else it's made in the background, like a book's).
+ */
+export function startStoryAudio(userId: number, storyId: string, logger: FastifyBaseLogger, waiting = true): StoryAudio | null {
   log = logger;
   const view = getStory(userId, storyId);
   if (!view) return null;
@@ -118,7 +154,7 @@ export function startStoryAudio(userId: number, storyId: string, logger: Fastify
   const paras = spoken(view.story.body);
   const key = keyFor(voice, paras);
   if (!readMeta(key)) {
-    watched.set(key, Date.now()); // asked for now: someone is waiting for it
+    if (waiting) watched.set(key, Date.now());
     // An older version of this story (other text or voice) needn't be made any more.
     db.delete(schema.storyAudioQueue)
       .where(and(eq(schema.storyAudioQueue.userId, userId), eq(schema.storyAudioQueue.storyId, storyId), ne(schema.storyAudioQueue.key, key)))
@@ -133,7 +169,7 @@ export function startStoryAudio(userId: number, storyId: string, logger: Fastify
     }
     kick();
   }
-  return storyAudioStatus(userId, storyId);
+  return storyAudioStatus(userId, storyId, waiting);
 }
 
 /** Carry on with the queue after a restart. */
@@ -148,7 +184,8 @@ function kick(): void {
   if (timer) clearTimeout(timer);
   timer = null;
   const q = schema.storyAudioQueue;
-  const due = db.select().from(q).where(and(isNull(q.error), lte(q.nextTryAt, nowS()))).orderBy(asc(q.queuedAt)).get();
+  // Oldest first; a book's chapters, queued together, in their order.
+  const due = db.select().from(q).where(and(isNull(q.error), lte(q.nextTryAt, nowS()))).orderBy(asc(q.queuedAt), sql`rowid`).get();
   if (!due) {
     const next = db.select().from(q).where(and(isNull(q.error), isNotNull(q.nextTryAt))).orderBy(asc(q.nextTryAt)).get();
     if (next) wake(next.nextTryAt! - nowS());

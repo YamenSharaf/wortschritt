@@ -2,15 +2,44 @@ import { createReadStream } from "node:fs";
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { storyAudio } from "@mdb/shared";
+import { storyAudio, storyAudioBrief } from "@mdb/shared";
 import { requireAuth } from "../auth/session";
-import { startStoryAudio, StoryAudioError, storyAudioPath, storyAudioStatus } from "../services/storyAudio";
+import { allStoryAudio, startSeriesAudio, startStoryAudio, StoryAudioError, storyAudioPath, storyAudioStatus } from "../services/storyAudio";
 
 /** A story as one audio file: its status, making it, and the file (with Range, so players can seek). */
 export async function storyAudioRoutes(app: FastifyInstance) {
   const r = app.withTypeProvider<ZodTypeProvider>();
   const params = z.object({ id: z.string().min(1) });
   const failure = z.object({ error: z.string() });
+
+  const briefs = z.record(z.string(), storyAudioBrief);
+
+  r.get(
+    "/api/story-audio",
+    { preHandler: requireAuth, schema: { tags: ["stories"], description: "Every story's audio in short, by story id.", response: { 200: briefs } } },
+    async (req) => allStoryAudio(req.user!.id),
+  );
+
+  r.post(
+    "/api/series/:id/audio",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["series"],
+        description: "Generate the audiobook: queue every written chapter, in order; returns the chapters' audio by story id.",
+        params,
+        response: { 200: briefs, 404: failure, 409: failure },
+      },
+    },
+    async (req, reply) => {
+      try {
+        return startSeriesAudio(req.user!.id, req.params.id, req.log) ?? reply.code(404).send({ error: "not found" });
+      } catch (err) {
+        if (err instanceof StoryAudioError) return reply.code(409).send({ error: err.message });
+        throw err;
+      }
+    },
+  );
 
   r.get(
     "/api/stories/:id/audio",

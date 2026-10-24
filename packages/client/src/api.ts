@@ -36,6 +36,7 @@ import type {
   SheetView,
   Story,
   StoryAudio,
+  StoryAudioBrief,
   StoryContext,
   StoryContextOptions,
   StoryTranslations,
@@ -480,6 +481,10 @@ export function createApi(o: ClientOptions) {
     /** A story as one audio file: where it stands, making it (poll storyAudio after), and the file. */
     storyAudio: (id: string) => req<StoryAudio>(`/api/stories/${encodeURIComponent(id)}/audio`),
     startStoryAudio: (id: string) => req<StoryAudio>(`/api/stories/${encodeURIComponent(id)}/audio`, { method: "POST" }),
+    /** Every story's audio in short, by story id; and generating a book's (all its chapters, queued in order). */
+    allStoryAudio: () => req<Record<string, StoryAudioBrief>>("/api/story-audio"),
+    startSeriesAudio: (id: string) =>
+      req<Record<string, StoryAudioBrief>>(`/api/series/${encodeURIComponent(id)}/audio`, { method: "POST" }),
     storyAudioUrl: (id: string, key: string) => url(`/api/stories/${encodeURIComponent(id)}/audio/${key}.mp3`),
     ttsUrl: (voice: string, text: string) =>
       url(`/api/tts?voice=${encodeURIComponent(voice)}&text=${encodeURIComponent(text)}`),
