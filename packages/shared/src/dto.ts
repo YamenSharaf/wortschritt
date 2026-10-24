@@ -127,7 +127,8 @@ export function serverVoices(provider: TtsProvider): readonly { name: string; la
  * `starts[i]` is where paragraph i (storyParagraphs) begins, in seconds.
  */
 export const storyAudio = z.object({
-  state: z.enum(["none", "building", "ready", "error"]),
+  /** "waiting": the voice's limit is used up for now; it carries on by itself at `retryAt`. */
+  state: z.enum(["none", "building", "waiting", "ready", "error"]),
   /** The reading voice, or null when it isn't a server voice (no file can be made). */
   voice: z.string().nullable(),
   /** While building: clips made so far, of how many. */
@@ -138,6 +139,8 @@ export const storyAudio = z.object({
   duration: z.number(),
   bytes: z.number().int(),
   starts: z.array(z.number()),
+  /** While waiting: when it tries again (unix seconds). */
+  retryAt: z.number().int().nullable().default(null),
 });
 export type StoryAudio = z.infer<typeof storyAudio>;
 

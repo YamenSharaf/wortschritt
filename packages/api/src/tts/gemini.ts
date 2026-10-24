@@ -11,7 +11,15 @@ const RATE = 24_000;
 /** How every clip is read: for learners, calm and clear. */
 const STYLE = "calm, clear and natural, at an unhurried pace, like a teacher reading to a learner";
 
-export class GeminiLimitError extends Error {}
+/** Over the free tier's limit; `retryAfter` is how long Google says to wait (seconds), if it says. */
+export class GeminiLimitError extends Error {
+  constructor(
+    message: string,
+    public retryAfter: number | null,
+  ) {
+    super(message);
+  }
+}
 
 export async function geminiSynthesize(text: string, voice: string, cfg: { key: string; model: string }): Promise<Buffer> {
   for (let attempt = 0; ; attempt++) {
@@ -35,7 +43,7 @@ export async function geminiSynthesize(text: string, voice: string, cfg: { key: 
         await new Promise((r) => setTimeout(r, (wait + 1) * 1000));
         continue;
       }
-      throw new GeminiLimitError("Gemini's limit is used up for now; try again later");
+      throw new GeminiLimitError("Gemini's limit is used up for now; try again later", wait);
     }
     if (!res.ok) {
       const detail = ((await res.json().catch(() => null)) as { error?: { message?: string } } | null)?.error?.message;

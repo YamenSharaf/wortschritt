@@ -1,5 +1,6 @@
 import { Alert, Pressable, View } from "react-native";
 import { Check, Download, Pause, Play, SkipBack, SkipForward, X } from "lucide-react-native";
+import { audioProgressText } from "@mdb/client";
 import type { ListeningController, ListeningState } from "@/lib/listening";
 import { font } from "@/lib/theme";
 import { Icon } from "@/ui/icons";
@@ -54,9 +55,7 @@ export function ListenBar({
         <Text numberOfLines={2} style={{ flex: 1, paddingHorizontal: 8, fontFamily: font.medium, color: state.phase === "error" ? colors.vocab : colors.muted }}>
           {state.phase === "error"
             ? `Couldn't play: ${state.error}`
-            : state.progress
-              ? `Preparing the audio… ${state.progress.done} of ${state.progress.total}`
-              : "Preparing the audio…"}
+            : audioProgressText(state.progress)}
         </Text>
       ) : (
         <>

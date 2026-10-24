@@ -147,6 +147,15 @@ const xmlEscape = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 
 export class TtsUnavailable extends Error {}
+/** The provider's limit is reached for now; `retryAfter` is when to try again (seconds), if it says. */
+export class TtsRateLimited extends TtsUnavailable {
+  constructor(
+    message: string,
+    public retryAfter: number | null,
+  ) {
+    super(message);
+  }
+}
 
 // The voices an Azure region offers (its voices/list), kept for an hour.
 let regionList: { region: string; at: number; names: Set<string> } | null = null;
@@ -178,7 +187,7 @@ export async function synthesize(text: string, voice: string): Promise<{ audio: 
     try {
       return { audio: await geminiSynthesize(text, name, cfg), type: "audio/mpeg", ext: "mp3" };
     } catch (err) {
-      if (err instanceof GeminiLimitError) throw new TtsUnavailable(err.message);
+      if (err instanceof GeminiLimitError) throw new TtsRateLimited(err.message, err.retryAfter);
       throw err;
     }
   }
@@ -196,6 +205,11 @@ export async function synthesize(text: string, voice: string): Promise<{ audio: 
     body: `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${lang}'><voice name='${name}'>${xmlEscape(text)}</voice></speak>`,
     signal: AbortSignal.timeout(20_000),
   });
+  if (res.status === 429) {
+    // The free tier's limit (Azure says when to try again).
+    const after = Number(res.headers.get("retry-after"));
+    throw new TtsRateLimited("Azure Speech's limit is used up for now; try again later", Number.isFinite(after) && after > 0 ? after : null);
+  }
   if (!res.ok) {
     const detail = (await res.text().catch(() => "")).slice(0, 200);
     // Azure says nothing on a 400; a voice the region doesn't offer is the usual reason.

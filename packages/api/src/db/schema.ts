@@ -371,6 +371,19 @@ export const favorites = sqliteTable(
   (t) => [primaryKey({ columns: [t.userId, t.kind, t.itemId] })],
 );
 
+/** Stories waiting for their audio (migration 21): due at next_try_at; null with an error = failed. */
+export const storyAudioQueue = sqliteTable("story_audio_queue", {
+  key: text("key").primaryKey(),
+  userId: integer("user_id").notNull(),
+  storyId: text("story_id").notNull(),
+  voice: text("voice").notNull(),
+  queuedAt: integer("queued_at").notNull(),
+  nextTryAt: integer("next_try_at"),
+  done: integer("done").notNull().default(0),
+  total: integer("total").notNull().default(0),
+  error: text("error"),
+});
+
 /** Which of a learner's items changed (filled by triggers, see migration 14). */
 export const syncLog = sqliteTable("sync_log", {
   seq: integer("seq").primaryKey({ autoIncrement: true }),

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { StoryAudio } from "@mdb/shared";
-import { paragraphAt, prepareStoryAudio } from "./storyAudio";
+import { audioProgressText, paragraphAt, prepareStoryAudio } from "./storyAudio";
 
-const base: StoryAudio = { state: "none", voice: "v", done: 0, total: 0, error: null, key: null, duration: 0, bytes: 0, starts: [] };
+const base: StoryAudio = { state: "none", voice: "v", done: 0, total: 0, error: null, key: null, duration: 0, bytes: 0, starts: [], retryAt: null };
 
 test("paragraphAt: the last paragraph started (an empty one is passed over)", () => {
   const starts = [0, 2.5, 6, 6, 9];
@@ -22,12 +22,33 @@ test("prepareStoryAudio: starts it, reports progress until ready, or says why no
       startStoryAudio: async () => ({ ...base, state: "building", done: 0, total: 4 }),
     },
     "s",
-    { interval: 1, onProgress: (d, t) => seen.push(`${d}/${t}`) },
+    { interval: 1, onProgress: (p) => seen.push(`${p.done}/${p.total}`) },
   );
   assert.equal(ready.key, "k");
   assert.deepEqual(seen, ["0/4", "2/4"]);
   await assert.rejects(
     prepareStoryAudio({ storyAudio: async () => base, startStoryAudio: async () => ({ ...base, state: "error", error: "Azure said no" }) }, "s"),
     /Azure said no/,
+  );
+});
+
+test("prepareStoryAudio: waits while the voice's limit is reached (the server carries on)", async () => {
+  const seen: (number | null)[] = [];
+  let polls = 0;
+  const ready = await prepareStoryAudio(
+    {
+      storyAudio: async () =>
+        ++polls < 3 ? { ...base, state: "waiting", done: 2, total: 4, retryAt: 1_000 } : { ...base, state: "ready", key: "k" },
+      startStoryAudio: async () => ({ ...base, state: "waiting", done: 2, total: 4, retryAt: 1_000 }),
+    },
+    "s",
+    { interval: 1, waitingInterval: 1, onProgress: (p) => seen.push(p.retryAt) },
+  );
+  assert.equal(ready.key, "k");
+  assert.deepEqual(seen, [1_000, 1_000]);
+  assert.equal(audioProgressText({ done: 2, total: 4, retryAt: null }), "Preparing the audio… · 2 of 4");
+  assert.equal(
+    audioProgressText({ done: 2, total: 4, retryAt: 1_000 + 25 * 60 }, 1_000_000),
+    "Waiting for the voice's limit · 2 of 4 · carries on by itself (next try in 25 min)",
   );
 });

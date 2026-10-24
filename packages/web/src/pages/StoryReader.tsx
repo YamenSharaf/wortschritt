@@ -8,6 +8,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import Markdown from "markdown-to-jsx";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { splitSentences, storyParagraphs, type ReaderSettings, type Story } from "@mdb/shared";
+import { audioProgressText } from "@mdb/client";
 import {
   isSavedWord,
   storyWordRe,
@@ -766,9 +767,7 @@ function StoryReaderView() {
             <span className={`px-2 ${ls.phase === "error" ? "text-danger" : "text-ink-muted"}`}>
               {ls.phase === "error"
                 ? `Couldn't play: ${ls.error}`
-                : ls.progress
-                  ? `Preparing the audio… ${ls.progress.done} of ${ls.progress.total}`
-                  : "Preparing the audio…"}
+                : audioProgressText(ls.progress)}
             </span>
           ) : (
             <>

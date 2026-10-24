@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { paragraphAt, prepareStoryAudio } from "@mdb/client";
+import { paragraphAt, prepareStoryAudio, type AudioProgress } from "@mdb/client";
 import { api } from "./api";
 
 /**
@@ -13,7 +13,7 @@ export type ListeningState = {
   storyId: string | null;
   title: string;
   phase: "idle" | "preparing" | "playing" | "paused" | "error";
-  progress: { done: number; total: number } | null;
+  progress: AudioProgress | null;
   paragraph: number;
   error: string | null;
   /** The reading voice is a server voice. */
@@ -79,7 +79,7 @@ export async function listen(story: StoryRef, from = 0) {
   set({ storyId: story.id, title: story.title, phase: "preparing", progress: null, paragraph: from, error: null });
   try {
     const ready = await prepareStoryAudio(api, story.id, {
-      onProgress: (done, total) => mine === run && set({ progress: { done, total } }),
+      onProgress: (p) => mine === run && set({ progress: p }),
       isCancelled: () => mine !== run,
     });
     if (mine !== run) return;

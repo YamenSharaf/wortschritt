@@ -206,6 +206,51 @@ test("story audio: made on demand in the reading voice, timed by paragraph, serv
   azureAudio = () => new Uint8Array([0xff, 0xf3, 1, 2, 3]);
 });
 
+test("story audio: a voice's limit makes it wait, not fail; it carries on where it stopped", async () => {
+  const { EXAMPLE_STORY } = await import("@mdb/shared");
+  const body = ["Erster Satz hier.", "Zweiter Satz hier.", "Dritter Satz hier.", "Vierter Satz hier."].join("\n\n");
+  assert.equal((await me("POST", "/api/stories", { story: { ...EXAMPLE_STORY, id: "warten", body } })).statusCode, 200);
+  const settings = (await me("GET", "/api/settings")).json();
+  await me("PUT", "/api/settings", { ...settings, ttsVoice: "", readerVoice: "azure:de-DE-ConradNeural" });
+  const status = async () => (await me("GET", "/api/stories/warten/audio")).json();
+  const until = async (state: string) => {
+    let s = await status();
+    for (let i = 0; i < 100 && s.state !== state; i++) {
+      await new Promise((r) => setTimeout(r, 20));
+      s = await status();
+    }
+    return s;
+  };
+
+  // The limit is reached after two clips.
+  let made = 0;
+  azureAudio = () => {
+    if (made >= 2) throw Object.assign(new Error("429"), { status: 429 });
+    made++;
+    return frame();
+  };
+  await me("POST", "/api/stories/warten/audio");
+  const waiting = await until("waiting");
+  assert.equal(waiting.state, "waiting", JSON.stringify(waiting));
+  assert.equal(waiting.done, 2);
+  assert.equal(waiting.total, 4);
+  assert.ok(waiting.retryAt > Date.now() / 1000 + 25 * 60, "a limit that doesn't say when: about half an hour");
+
+  // The limit lifts; asked again, it goes on, making only the clips it lacked.
+  azureAudio = () => {
+    made++;
+    return frame();
+  };
+  await me("POST", "/api/stories/warten/audio");
+  const ready = await until("ready");
+  assert.equal(ready.state, "ready", JSON.stringify(ready));
+  assert.equal(made, 4, "the first two clips came from the cache");
+  assert.equal(ready.duration, 0.096);
+
+  await me("PUT", "/api/settings", settings);
+  azureAudio = () => new Uint8Array([0xff, 0xf3, 1, 2, 3]);
+});
+
 test("an Azure 400 for a voice the region doesn't offer says so", async () => {
   // A fresh region without HD voices, so the voice list is fetched for it.
   regionVoiceNames = ["de-DE-KatjaNeural"];

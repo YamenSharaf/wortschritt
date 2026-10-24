@@ -792,6 +792,28 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 21,
+    // Stories waiting for their audio. A voice's free limit can stop one
+    // part-way; it waits here (next_try_at) and carries on later, also after
+    // a restart. The clips already made are cached, so nothing is redone.
+    name: "story-audio-queue",
+    up(db) {
+      db.exec(`
+        CREATE TABLE story_audio_queue (
+          key TEXT PRIMARY KEY,
+          user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          story_id TEXT NOT NULL,
+          voice TEXT NOT NULL,
+          queued_at INTEGER NOT NULL,
+          next_try_at INTEGER,
+          done INTEGER NOT NULL DEFAULT 0,
+          total INTEGER NOT NULL DEFAULT 0,
+          error TEXT
+        );
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

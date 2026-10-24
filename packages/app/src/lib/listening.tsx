@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo, useSyncExternalStore, type ReactNod
 import { Platform } from "react-native";
 import { createAudioPlayer, requestNotificationPermissionsAsync, setAudioModeAsync, type AudioPlayer, type AudioStatus } from "expo-audio";
 import { Directory, File, Paths } from "expo-file-system";
-import { isNetworkError, paragraphAt, prepareStoryAudio, type Api } from "@mdb/client";
+import { isNetworkError, paragraphAt, prepareStoryAudio, type Api, type AudioProgress } from "@mdb/client";
 
 /**
  * Listening to a story like an audiobook: the server makes one file per story
@@ -19,7 +19,7 @@ export type ListeningState = {
   title: string;
   phase: ListeningPhase;
   /** While the server makes the audio: clips made, of how many. */
-  progress: { done: number; total: number } | null;
+  progress: AudioProgress | null;
   /** The paragraph being read (storyParagraphs index). */
   paragraph: number;
   error: string | null;
@@ -78,7 +78,7 @@ export function createListening(api: Api, headers: () => Record<string, string>)
   }
 
   /** The story's audio as a local file: made by the server and downloaded if needed; offline, the kept one. */
-  async function fetchAudio(story: StoryRef, onProgress?: (done: number, total: number) => void, isCancelled?: () => boolean): Promise<Entry> {
+  async function fetchAudio(story: StoryRef, onProgress?: (p: AudioProgress) => void, isCancelled?: () => boolean): Promise<Entry> {
     const kept = index[story.id];
     let ready;
     try {
@@ -147,7 +147,7 @@ export function createListening(api: Api, headers: () => Record<string, string>)
     player?.pause();
     set({ storyId: story.id, title: story.title, phase: "preparing", progress: null, paragraph: from, error: null });
     try {
-      const entry = await fetchAudio(story, (done, total) => mine === run && set({ progress: { done, total } }), () => mine !== run);
+      const entry = await fetchAudio(story, (p) => mine === run && set({ progress: p }), () => mine !== run);
       if (mine !== run) return;
       const p = await ensurePlayer();
       current = { ...entry, id: story.id, book: story.book ?? null };
