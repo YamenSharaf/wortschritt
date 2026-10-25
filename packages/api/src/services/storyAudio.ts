@@ -33,7 +33,8 @@ import { getStory, listStories } from "./stories";
  *
  * Background audio (an admin setting): when nothing else is due, the server
  * queues a story itself, for everyone whose reading voice is Gemini's: the
- * next chapters of books being read first, then the newest unread stories.
+ * next chapters of books being read first, then the newest unread stories,
+ * then (to listen to again) the ones already read.
  * Those go behind anything asked for, and use only the entries meant for
  * the background, within their share of the day (geminiKeys.ts).
  */
@@ -252,20 +253,26 @@ export function wakeStoryAudio(): void {
   kick();
 }
 
-/** A learner's stories in the order background audio makes them: the next chapters of books being read, then the newest unread. */
-function backgroundCandidates(userId: number): string[] {
+/**
+ * A learner's stories in the order background audio makes them: the next
+ * chapters of books being read, then the newest unread, then the read ones.
+ */
+export function backgroundCandidates(userId: number): string[] {
   const stories = listStories(userId);
   const reading = new Set(listSeries(userId).filter((s) => s.status === "reading").map((s) => s.id));
   const nextChapters = stories
     .filter((s) => s.seriesId && reading.has(s.seriesId) && s.status !== "read")
     .sort((a, b) => (a.seriesId === b.seriesId ? (a.chapter ?? 0) - (b.chapter ?? 0) : 0));
-  // Newest first; a book's chapters together and in their order (where the book's newest chapter falls).
-  const rest = stories.filter((s) => s.status !== "read" && !nextChapters.includes(s));
+  const rest = stories.filter((s) => !nextChapters.includes(s));
+  return [...nextChapters, ...newestFirst(rest.filter((s) => s.status !== "read")), ...newestFirst(rest.filter((s) => s.status === "read"))].map((s) => s.id);
+}
+
+/** Newest first; a book's chapters together and in their order (where the book's newest chapter falls). */
+function newestFirst(list: StorySummary[]): StorySummary[] {
   const newestOf = new Map<string, number>();
-  for (const s of rest) if (s.seriesId) newestOf.set(s.seriesId, Math.max(newestOf.get(s.seriesId) ?? 0, s.createdAt));
+  for (const s of list) if (s.seriesId) newestOf.set(s.seriesId, Math.max(newestOf.get(s.seriesId) ?? 0, s.createdAt));
   const at = (s: StorySummary) => (s.seriesId ? newestOf.get(s.seriesId)! : s.createdAt);
-  const newest = rest.sort((a, b) => at(b) - at(a) || (a.seriesId ?? a.id).localeCompare(b.seriesId ?? b.id) || (a.chapter ?? 0) - (b.chapter ?? 0));
-  return [...nextChapters, ...newest].map((s) => s.id);
+  return [...list].sort((a, b) => at(b) - at(a) || (a.seriesId ?? a.id).localeCompare(b.seriesId ?? b.id) || (a.chapter ?? 0) - (b.chapter ?? 0));
 }
 
 export function resetBackgroundForTests(): void {

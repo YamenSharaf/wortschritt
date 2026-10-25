@@ -246,7 +246,7 @@ export function GeminiVoices({ cfg, onChange }: { cfg: TtsAdminSettings; onChang
             <div className="font-medium">Generate audiobooks automatically</div>
             <p className="text-xs text-ink-muted">
               Makes the audio for stories ahead of time, for everyone whose reading voice is a Gemini voice: the next chapters of books they're
-              reading first, then their newest unread stories. It only uses entries with Background on (keep that to free keys and it costs
+              reading first, then their newest unread stories, then the ones already read (to listen to again). It only uses entries with Background on (keep that to free keys and it costs
               nothing), and anything someone asks for goes first.
             </p>
           </div>

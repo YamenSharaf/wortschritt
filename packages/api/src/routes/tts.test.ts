@@ -584,6 +584,15 @@ test("background audio: off by default; on, it makes unread stories by itself, w
   }
   assert.equal(state, "ready", "made by itself");
 
+  // Read stories come last (to listen to again), after the unread ones.
+  const { backgroundCandidates } = await import("../services/storyAudio");
+  assert.equal((await me("POST", "/api/stories", { story: { ...EXAMPLE_STORY, id: "schon-gelesen", body: "Diese kenne ich schon." } })).statusCode, 200);
+  assert.equal((await me("POST", "/api/stories", { story: { ...EXAMPLE_STORY, id: "noch-neu", body: "Diese ist noch neu." } })).statusCode, 200);
+  assert.equal((await me("POST", "/api/stories/schon-gelesen/read")).statusCode, 200);
+  const order = backgroundCandidates(1);
+  assert.ok(order.includes("schon-gelesen"), "read stories are made too");
+  assert.ok(order.indexOf("noch-neu") < order.indexOf("schon-gelesen"), order.join(", "));
+
   // Its share used up (80 of 100 for the background, 20 kept for people): no room left.
   const { db, schema } = await import("../db/client");
   const { googleDay, backgroundRoom } = await import("../tts/geminiKeys");
