@@ -84,13 +84,9 @@ all the settings: [docs/self-hosting.md](docs/self-hosting.md).
 prereleases*). Enter your server's address and sign in. Details:
 [docs/self-hosting.md#android-app](docs/self-hosting.md#android-app).
 
-**iPhone and iPad**: in preparation, as a TestFlight beta
-([docs/ios.md](docs/ios.md)).
-
 ## Documentation
 
 - [Self-hosting](docs/self-hosting.md): Docker, updates, backups, voices, the Android app.
-- [The iOS app](docs/ios.md): building for iPhone and iPad, and getting it on TestFlight.
 - [Authoring content](docs/authoring-content.md): writing exercises, cheat sheets and stories (also with an LLM).
 - [API and MCP server](docs/api.md): scripting the app and connecting AI agents.
 - [Development](docs/development.md): the stack, running it locally, the data model.

@@ -9,8 +9,7 @@ name: iOS
 # it archives a signed release build and uploads it to App Store Connect,
 # where it shows up in TestFlight after Apple has processed it. Signing is
 # automatic: Xcode makes and renews the certificate and provisioning profile
-# with an App Store Connect API key. That needs these repository secrets
-# (docs/ios.md says where each comes from):
+# with an App Store Connect API key. That needs these repository secrets:
 #   APPLE_TEAM_ID                  the developer team's ID (10 characters)
 #   APP_STORE_CONNECT_KEY_ID       the API key's ID
 #   APP_STORE_CONNECT_ISSUER_ID    the issuer ID shown above the API keys
@@ -124,7 +123,7 @@ jobs:
         run: |
           set -o pipefail
           if [ -z "$TEAM_ID" ] || [ -z "$KEY_ID" ] || [ -z "$ISSUER_ID" ] || [ -z "$KEY" ]; then
-            echo "::error::The App Store Connect secrets are missing (see docs/ios.md)."
+            echo "::error::The App Store Connect secrets are missing (APPLE_TEAM_ID, APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY)."
             exit 1
           fi
           key="$RUNNER_TEMP/AuthKey_$KEY_ID.p8"
