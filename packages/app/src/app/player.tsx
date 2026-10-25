@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, Pressable, View, type LayoutChangeEvent } from "react-native";
+import { Alert, Pressable, ScrollView, View, type LayoutChangeEvent } from "react-native";
 import { router } from "expo-router";
 import { Image } from "expo-image";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -92,17 +92,18 @@ export default function PlayerScreen() {
         </Pressable>
       </View>
 
-      <View style={{ alignItems: "center", flexShrink: 1 }}>
+      {/* The cover takes the room the text leaves (smaller for a long paragraph, never under 96). */}
+      <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 0, minHeight: 96, alignItems: "center" }}>
         {state.art ? (
           <Image
             source={{ uri: state.art, headers: mediaHeaders() }}
             cachePolicy="disk"
             contentFit="cover"
-            style={{ width: 200, aspectRatio: 2 / 3, borderRadius: radii.panel, backgroundColor: colors.surfaceSunken }}
+            style={{ height: "100%", maxHeight: 300, aspectRatio: 2 / 3, borderRadius: radii.panel, backgroundColor: colors.surfaceSunken }}
             accessibilityIgnoresInvertColors
           />
         ) : (
-          <View style={{ width: 200, aspectRatio: 2 / 3, borderRadius: radii.panel, backgroundColor: colors.surfaceSunken }} />
+          <View style={{ height: "100%", maxHeight: 300, aspectRatio: 2 / 3, borderRadius: radii.panel, backgroundColor: colors.surfaceSunken }} />
         )}
       </View>
 
@@ -118,11 +119,15 @@ export default function PlayerScreen() {
       ) : state.phase === "error" ? (
         <Text style={{ color: colors.danger }}>Couldn't play: {state.error}</Text>
       ) : sentence ? (
-        <View style={{ padding: 12, borderRadius: radii.control + 2, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
-          <Text style={{ fontFamily: READER_FONTS.libron.regular, fontSize: 16, lineHeight: 24 }} numberOfLines={3}>
-            {sentence}
-          </Text>
-        </View>
+        // The whole paragraph; when even a small cover leaves too little room, it scrolls (from its start for each new one).
+        <ScrollView
+          key={state.paragraph}
+          style={{ flexGrow: 0, flexShrink: 1, minHeight: 72, borderRadius: radii.control + 2, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
+          contentContainerStyle={{ padding: 12 }}
+          accessibilityLabel="The paragraph being read"
+        >
+          <Text style={{ fontFamily: READER_FONTS.libron.regular, fontSize: 16, lineHeight: 24 }}>{sentence}</Text>
+        </ScrollView>
       ) : null}
 
       {state.partial && (

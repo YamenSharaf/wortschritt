@@ -162,6 +162,7 @@ export function PlayerPanel() {
 
   if (!ls.open || !ls.storyId) return null;
   const sentence = paragraphs[ls.paragraph] ?? "";
+  const long = sentence.length > 220;
   const sleepLabel = !ls.sleep ? "Sleep" : "chapterEnd" in ls.sleep ? "Sleep · end of chapter" : `Sleep · ${Math.max(1, Math.round((ls.sleep.until - Date.now()) / 60_000))} min`;
   const pill = (label: string, onClick: () => void, icon?: ReactNode) => (
     <button type="button" onClick={onClick} className="inline-flex h-9 items-center gap-1.5 rounded-full border border-line-control px-3.5 text-[13px] font-medium hover:bg-surface-sunken">
@@ -191,11 +192,12 @@ export function PlayerPanel() {
           </button>
         </div>
 
+        {/* A smaller cover leaves room for a long paragraph. */}
         <div className="flex justify-center">
           {ls.art ? (
-            <img src={ls.art} alt="" className="aspect-[2/3] w-44 rounded-panel bg-surface-sunken object-cover shadow-card sm:w-48" />
+            <img src={ls.art} alt="" className={`aspect-[2/3] rounded-panel bg-surface-sunken object-cover shadow-card ${long ? "w-28" : "w-44 sm:w-48"}`} />
           ) : (
-            <div className="aspect-[2/3] w-44 rounded-panel bg-surface-sunken sm:w-48" />
+            <div className={`aspect-[2/3] rounded-panel bg-surface-sunken ${long ? "w-28" : "w-44 sm:w-48"}`} />
           )}
         </div>
 
@@ -211,7 +213,7 @@ export function PlayerPanel() {
         ) : ls.phase === "error" ? (
           <p className="text-danger">Couldn't play: {ls.error}</p>
         ) : sentence ? (
-          <p className="line-clamp-3 rounded-control border border-line bg-surface p-3 font-content leading-relaxed" lang="de">
+          <p key={ls.paragraph} className="max-h-[35vh] overflow-y-auto rounded-control border border-line bg-surface p-3 font-content leading-relaxed" lang="de" tabIndex={0} aria-label="The paragraph being read">
             {sentence}
           </p>
         ) : null}
