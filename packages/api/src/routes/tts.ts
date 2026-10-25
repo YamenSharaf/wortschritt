@@ -1,7 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { ttsAdminBody, ttsAdminSettings as ttsAdminDto, ttsStatus, ttsTestBody } from "@mdb/shared";
+import { ttsAdminBody, ttsAdminSettings as ttsAdminDto, ttsEntriesBody, ttsKeyBody, ttsStatus, ttsTestBody } from "@mdb/shared";
+import { addKey, deleteKey, saveEntries, TtsKeyError, updateKey } from "../tts/geminiKeys";
 import { requireAdmin, requireAuth } from "../auth/session";
 import { clip } from "../tts/cache";
 import {
@@ -82,6 +83,47 @@ export async function ttsRoutes(app: FastifyInstance) {
       return ttsAdminSettings();
     },
   );
+  // Gemini keys (several projects, free and paid) and the order they're tried in.
+  const keyParams = z.object({ id: z.coerce.number().int() });
+  /** Run a change to the keys or the order: 404 when it names nothing, 400 for a bad change. */
+  const change = (fn: () => boolean | void): { error: string; code: 400 | 404 } | null => {
+    try {
+      return fn() === false ? { error: "not found", code: 404 } : null;
+    } catch (err) {
+      if (err instanceof TtsKeyError) return { error: err.message, code: 400 };
+      throw err;
+    }
+  };
+  r.post(
+    "/api/admin/tts/gemini/keys",
+    { preHandler: requireAdmin, schema: { tags: ["admin"], body: ttsKeyBody, response: { 200: ttsAdminDto, 400: failure } } },
+    async (req, reply) => {
+      const failed = change(() => addKey(req.body));
+      return failed ? reply.code(400).send({ error: failed.error }) : ttsAdminSettings();
+    },
+  );
+  r.put(
+    "/api/admin/tts/gemini/keys/:id",
+    { preHandler: requireAdmin, schema: { tags: ["admin"], params: keyParams, body: ttsKeyBody, response: { 200: ttsAdminDto, 400: failure, 404: failure } } },
+    async (req, reply) => {
+      const failed = change(() => updateKey(req.params.id, req.body));
+      return failed ? reply.code(failed.code).send({ error: failed.error }) : ttsAdminSettings();
+    },
+  );
+  r.delete(
+    "/api/admin/tts/gemini/keys/:id",
+    { preHandler: requireAdmin, schema: { tags: ["admin"], params: keyParams, response: { 200: ttsAdminDto, 404: failure } } },
+    async (req, reply) => (deleteKey(req.params.id) ? ttsAdminSettings() : reply.code(404).send({ error: "not found" })),
+  );
+  r.put(
+    "/api/admin/tts/gemini/entries",
+    { preHandler: requireAdmin, schema: { tags: ["admin"], body: ttsEntriesBody, response: { 200: ttsAdminDto, 400: failure } } },
+    async (req, reply) => {
+      const failed = change(() => saveEntries(req.body.entries));
+      return failed ? reply.code(400).send({ error: failed.error }) : ttsAdminSettings();
+    },
+  );
+
   // Try a voice end to end (uncached), reporting the provider's error.
   r.post(
     "/api/admin/tts/test",

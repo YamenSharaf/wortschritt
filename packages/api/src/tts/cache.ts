@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { env } from "../env";
+import type { TtsPurpose } from "@mdb/shared";
 import { synthesize, synthesizeGroup } from "./providers";
 
 // Synthesized clips live on the app's own data volume (no sharing needed).
@@ -22,14 +23,16 @@ export const isCached = (text: string, voice: string) => existsSync(fileFor(text
  * A cached clip for this voice and text, or a fresh one (then cached).
  * `background` (story audio from the queue) doesn't count as live use.
  */
-export async function clip(text: string, voice: string, opts: { background?: boolean } = {}): Promise<{ audio: Buffer; type: string }> {
+export async function clip(text: string, voice: string, opts: { background?: boolean; purpose?: TtsPurpose } = {}): Promise<{ audio: Buffer; type: string }> {
   const file = fileFor(text, voice);
   if (existsSync(file)) return { audio: readFileSync(file), type: "audio/mpeg" };
-  if (!opts.background) lastLive = Date.now();
-  const out = await synthesize(text, voice);
+  const purpose = opts.purpose ?? (opts.background ? "background" : "taps");
+  if (purpose === "taps") lastLive = Date.now();
+  const out = await synthesize(text, voice, purpose);
   try {
     if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
-    if (out.ext === "mp3") writeFileSync(file, out.audio);
+    // Another voice read it (a fallback): not this voice's clip to keep.
+    if (out.ext === "mp3" && !out.fallback) writeFileSync(file, out.audio);
   } catch {
     /* caching is best-effort */
   }
@@ -38,12 +41,12 @@ export async function clip(text: string, voice: string, opts: { background?: boo
 
 /**
  * Clips for several texts in one request (a voice whose limit counts
- * requests, see providers.groupsParagraphs), each then cached on its own.
- * Always in the background (story audio).
+ * requests, see providers.groupsParagraphs), each then cached on its own
+ * (story audio: in the background, or for someone waiting).
  */
-export async function clipGroup(texts: string[], voice: string): Promise<Buffer[]> {
-  if (texts.length === 1) return [(await clip(texts[0]!, voice, { background: true })).audio];
-  const audio = await synthesizeGroup(texts, voice);
+export async function clipGroup(texts: string[], voice: string, purpose: TtsPurpose): Promise<Buffer[]> {
+  if (texts.length === 1) return [(await clip(texts[0]!, voice, { purpose })).audio];
+  const audio = await synthesizeGroup(texts, voice, purpose);
   try {
     if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
     texts.forEach((t, i) => writeFileSync(fileFor(t, voice), audio[i]!));

@@ -291,3 +291,18 @@ test("v7 → v8: attempts keep their rows, with no response and auto grading", (
   assert.equal((db.prepare("SELECT COUNT(*) AS n FROM vocab_reviews").get() as { n: number }).n, 0, "cascades");
   db.close();
 });
+
+test("v23: the one Gemini key stored before becomes the first of the order, used for everything", () => {
+  const db = new Database(":memory:");
+  runMigrations(db, null, migrations.filter((m) => m.version <= 22));
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('tts.gemini', ?)").run(JSON.stringify({ key: "enc:abc", model: "gemini-3.8-flash-lite-tts" }));
+  runMigrations(db, null);
+
+  assert.deepEqual(db.prepare("SELECT label, kind, key_enc AS k, user_id AS u FROM tts_keys").all(), [{ label: "Gemini", kind: "paid", k: "enc:abc", u: null }]);
+  assert.deepEqual(
+    db.prepare("SELECT model, position, use_background AS b, use_waiting AS w, use_taps AS t, daily_limit AS d FROM tts_entries").all(),
+    [{ model: "gemini-3.8-flash-lite-tts", position: 0, b: 1, w: 1, t: 1, d: 100 }],
+  );
+  assert.equal(db.prepare("SELECT 1 FROM app_settings WHERE key = 'tts.gemini'").get(), undefined, "the old setting is gone");
+  db.close();
+});

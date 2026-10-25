@@ -8,10 +8,12 @@ import { db, schema } from "../db/client";
 import { env } from "../env";
 import { cachedClipFile, clip, clipGroup, isCached, liveSince } from "../tts/cache";
 import { mp3Frames } from "../tts/mp3";
+import { backgroundRoom } from "../tts/geminiKeys";
 import { groupsParagraphs, TtsRateLimited, usableVoices } from "../tts/providers";
+import { backgroundSettings } from "../tts/settings";
 import { getSettings } from "./settings";
-import { getSeriesView } from "./series";
-import { getStory } from "./stories";
+import { getSeriesView, listSeries } from "./series";
+import { getStory, listStories } from "./stories";
 
 /**
  * A story as one audio file, for listening like an audiobook: made on demand
@@ -28,6 +30,12 @@ import { getStory } from "./stories";
  * voices live (tapping words, reading aloud), the queue pauses so it doesn't
  * use up the limit they need. A voice whose limit counts requests (Gemini's)
  * is asked for several paragraphs at once, cut back apart in the pauses.
+ *
+ * Background audio (an admin setting): when nothing else is due, the server
+ * queues a story itself, for everyone whose reading voice is Gemini's: the
+ * next chapters of books being read first, then the newest unread stories.
+ * Those go behind anything asked for, and use only the entries meant for
+ * the background, within their share of the day (geminiKeys.ts).
  */
 
 const dir = join(dirname(resolve(env.DATABASE_PATH)), "story-audio");
@@ -183,6 +191,8 @@ export function startStoryAudio(userId: number, storyId: string, logger: Fastify
       .where(and(eq(schema.storyAudioQueue.userId, userId), eq(schema.storyAudioQueue.storyId, storyId), ne(schema.storyAudioQueue.key, key)))
       .run();
     const row = queued(key);
+    // Asked for now: ahead of what the server queued by itself.
+    if (row?.auto) db.update(schema.storyAudioQueue).set({ auto: false }).where(eq(schema.storyAudioQueue.key, key)).run();
     if (!row) {
       const total = paras.map((p) => (p ? chunkText(p) : [])).flat().length;
       db.insert(schema.storyAudioQueue).values({ key, userId, storyId, voice, queuedAt: nowS(), nextTryAt: nowS(), total }).run();
@@ -195,10 +205,64 @@ export function startStoryAudio(userId: number, storyId: string, logger: Fastify
   return storyAudioStatus(userId, storyId, waiting);
 }
 
+/** At most this many stories queued by the server itself at a time. */
+const AUTO_AT_ONCE = 2;
+let lastFill = 0;
+
+/**
+ * Background audio: queue the next stories nobody asked for yet (see the
+ * top), if it's on, there's room in today's background requests, and the
+ * server's own ones are done. Checked at most every ten minutes. Whether it
+ * queued any.
+ */
+function fillBackground(): boolean {
+  if (!backgroundSettings().enabled || Date.now() - lastFill < 10 * 60_000) return false;
+  lastFill = Date.now();
+  const q = schema.storyAudioQueue;
+  if (db.select().from(q).where(eq(q.auto, true)).get()) return false;
+  if (backgroundRoom() <= 0) return false;
+  let added = 0;
+  for (const { id: userId } of db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.disabled, false)).orderBy(asc(schema.users.id)).all()) {
+    const voice = readingVoice(userId);
+    if (!voice || !groupsParagraphs(voice)) continue;
+    for (const storyId of backgroundCandidates(userId)) {
+      if (added >= AUTO_AT_ONCE) break;
+      const view = getStory(userId, storyId);
+      if (!view) continue;
+      const paras = spoken(view.story.body);
+      const key = keyFor(voice, paras);
+      if (readMeta(key) || queued(key)) continue;
+      const total = paras.map((p) => (p ? chunkText(p) : [])).flat().length;
+      db.insert(q).values({ key, userId, storyId, voice, queuedAt: nowS(), nextTryAt: nowS(), total, auto: true }).run();
+      log?.info({ storyId, userId }, "story audio queued in the background");
+      added++;
+      break; // one per learner per round, so everyone's get made
+    }
+  }
+  return added > 0;
+}
+
+/** A learner's stories in the order background audio makes them: the next chapters of books being read, then the newest unread. */
+function backgroundCandidates(userId: number): string[] {
+  const stories = listStories(userId);
+  const reading = new Set(listSeries(userId).filter((s) => s.status === "reading").map((s) => s.id));
+  const nextChapters = stories
+    .filter((s) => s.seriesId && reading.has(s.seriesId) && s.status !== "read")
+    .sort((a, b) => (a.seriesId === b.seriesId ? (a.chapter ?? 0) - (b.chapter ?? 0) : 0));
+  const newest = stories.filter((s) => s.status !== "read" && !nextChapters.includes(s)).sort((a, b) => b.createdAt - a.createdAt);
+  return [...nextChapters, ...newest].map((s) => s.id);
+}
+
+export function resetBackgroundForTests(): void {
+  lastFill = 0;
+}
+
 /** Carry on with the queue after a restart. */
 export function resumeStoryAudio(logger: FastifyBaseLogger): void {
   log = logger;
   kick();
+  // Background audio looks for work now and then, even with nothing queued.
+  setInterval(kick, 10 * 60_000).unref?.();
 }
 
 /** Make the next due story, if nothing else is being made; else wait for the next one due. */
@@ -208,8 +272,10 @@ function kick(): void {
   timer = null;
   const q = schema.storyAudioQueue;
   // Oldest first; a book's chapters, queued together, in their order.
-  const due = db.select().from(q).where(and(isNull(q.error), lte(q.nextTryAt, nowS()))).orderBy(asc(q.queuedAt), sql`rowid`).get();
+  // What someone asked for first; then the oldest; a book's chapters, queued together, in their order.
+  const due = db.select().from(q).where(and(isNull(q.error), lte(q.nextTryAt, nowS()))).orderBy(asc(q.auto), asc(q.queuedAt), sql`rowid`).get();
   if (!due) {
+    if (fillBackground()) return kick();
     const next = db.select().from(q).where(and(isNull(q.error), isNotNull(q.nextTryAt))).orderBy(asc(q.nextTryAt)).get();
     if (next) wake(next.nextTryAt! - nowS());
     return;
@@ -237,6 +303,8 @@ async function run(row: typeof schema.storyAudioQueue.$inferSelect): Promise<voi
   }
   const chunks = paras.map((p) => (p ? chunkText(p) : []));
   const job: Job = { done: 0, total: chunks.flat().length, stop: false };
+  // Asked for by someone: no longer the server's own.
+  if (row.auto && waitedFor(row.key)) db.update(q).set({ auto: false }).where(eq(q.key, row.key)).run();
   running = { key: row.key, job };
   try {
     await build(row.key, row.voice, chunks, job);
@@ -306,10 +374,12 @@ async function build(key: string, voice: string, chunks: string[][], job: Job): 
       const group = groups[next++]!;
       const made = group.every((k) => isCached(texts[k]!, voice));
       if (!made && liveSince(LIVE_PAUSE_MS) && !waitedFor(key)) throw new Paused();
+      // Someone waiting for it may use the keys meant for that (a paid one); else the background's.
+      const purpose = waitedFor(key) ? "waiting" : "background";
       const audio =
         group.length === 1
-          ? [(await clip(texts[group[0]!]!, voice, { background: true })).audio]
-          : await clipGroup(group.map((k) => texts[k]!), voice);
+          ? [(await clip(texts[group[0]!]!, voice, { purpose })).audio]
+          : await clipGroup(group.map((k) => texts[k]!), voice, purpose);
       group.forEach((k, i) => (clips[k] = audio[i]!));
       job.done += group.length;
     }

@@ -45,7 +45,14 @@ export function audioFromFrame(buf: Buffer): Buffer | null {
 }
 
 /** Synthesize `text` with an Edge voice (e.g. "de-DE-KatjaNeural") as MP3. */
+/** Tests replace the connection (it's a WebSocket to Microsoft). */
+let override: ((text: string, voice: string) => Promise<Buffer>) | null = null;
+export function setEdgeForTests(fn: typeof override): void {
+  override = fn;
+}
+
 export function edgeSynthesize(text: string, voice: string, rate = 1): Promise<Buffer> {
+  if (override) return override(text, voice);
   if (!/^[a-z]{2,3}-[A-Z]{2}-[A-Za-z]+Neural$/.test(voice)) {
     return Promise.reject(new Error(`unknown Edge voice "${voice}"`));
   }

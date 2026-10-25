@@ -20,6 +20,9 @@ export class GeminiLimitError extends Error {
   constructor(
     message: string,
     public retryAfter: number | null,
+    /** A daily limit (it resets at midnight Pacific), and how many requests it allows, if Google says. */
+    public daily = false,
+    public quota: number | null = null,
   ) {
     super(message);
   }
@@ -54,7 +57,10 @@ export async function geminiPcm(text: string, voice: string, cfg: { key: string;
         await new Promise((r) => setTimeout(r, (wait + 1) * 1000));
         continue;
       }
-      throw new GeminiLimitError(limitReason(body, cfg.model), wait);
+      const v = violation(body);
+      const what = `${v?.quotaMetric ?? ""} ${v?.quotaId ?? ""}`.toLowerCase();
+      const quota = Number(v?.quotaValue);
+      throw new GeminiLimitError(limitReason(body, cfg.model), wait, /per_?day/.test(what), Number.isFinite(quota) && quota > 0 ? quota : null);
     }
     if (!res.ok) {
       const detail = ((await res.json().catch(() => null)) as { error?: { message?: string } } | null)?.error?.message;
@@ -71,10 +77,15 @@ export async function geminiPcm(text: string, voice: string, cfg: { key: string;
  * Which limit a 429 is about, from its QuotaFailure: "Gemini's daily limit
  * is used up (100 requests a day for gemini-3.8-flash-tts, Tier 1)".
  */
-export function limitReason(body: unknown, model: string): string {
-  type Violation = { quotaMetric?: string; quotaId?: string; quotaValue?: string; description?: string };
+type Violation = { quotaMetric?: string; quotaId?: string; quotaValue?: string; description?: string };
+/** The first QuotaFailure violation of a 429, if it has one. */
+function violation(body: unknown): Violation | undefined {
   const details = (body as { error?: { details?: { "@type"?: string; violations?: Violation[] }[] } } | null)?.error?.details ?? [];
-  const v = details.find((d) => d["@type"]?.endsWith("QuotaFailure"))?.violations?.[0];
+  return details.find((d) => d["@type"]?.endsWith("QuotaFailure"))?.violations?.[0];
+}
+
+export function limitReason(body: unknown, model: string): string {
+  const v = violation(body);
   if (!v) return "Gemini's limit is used up for now";
   const what = `${v.quotaMetric ?? ""} ${v.quotaId ?? ""}`.toLowerCase();
   const per = /per_?day/.test(what) ? "day" : /per_?minute/.test(what) ? "minute" : null;

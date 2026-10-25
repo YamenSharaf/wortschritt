@@ -1,40 +1,28 @@
-import { eq } from "drizzle-orm";
-import { GEMINI_TTS_MODELS, serverVoices, ttsProviderOf, type TtsAdminSettings, type TtsProvider } from "@mdb/shared";
+import { serverVoices, ttsProviderOf, type TtsAdminSettings, type TtsProvider, type TtsPurpose } from "@mdb/shared";
 import { guardedFetch } from "../assistant/egress";
 import { decryptSecret, encryptSecret, isEncryptionAvailable } from "../assistant/secrets";
-import { db, schema } from "../db/client";
 import { edgeSynthesize } from "./edge";
-import { GeminiLimitError, geminiPcm, geminiSynthesize, pcmToMp3 } from "./gemini";
+import { TtsRateLimited, TtsUnavailable } from "./errors";
+import { geminiPcm, pcmToMp3 } from "./gemini";
+import { geminiReady, listEntries, listKeys, withGemini } from "./geminiKeys";
+import { backgroundSettings, edgeFallback, readSetting, setBackgroundSettings, setEdgeFallback, writeSetting } from "./settings";
 import { splitPcm } from "./split";
+
+export { TtsRateLimited, TtsUnavailable } from "./errors";
 
 /**
  * Read-aloud providers. A voice id says which one speaks it:
  * - Azure Speech neural voices (admin stores a key + region): "azure:<name>";
  * - the Edge "Read aloud" endpoint (unofficial, admin opt-in): "edge:<name>";
- * - Gemini text-to-speech (admin stores a Google AI Studio key): "gemini:<name>".
+ * - Gemini text-to-speech (admin stores Google AI Studio keys, tried in
+ *   order: geminiKeys.ts): "gemini:<name>".
  * Settings live in app_settings; the keys are encrypted like AI keys.
  */
 
 const AZURE_KEY = "tts.azure";
 const EDGE_KEY = "tts.edge";
-const GEMINI_KEY = "tts.gemini";
-type GeminiModel = (typeof GEMINI_TTS_MODELS)[number];
 
 type AzureConfig = { region: string; key: string };
-
-function readSetting(key: string): string | null {
-  return db.select().from(schema.appSettings).where(eq(schema.appSettings.key, key)).get()?.value ?? null;
-}
-function writeSetting(key: string, value: string | null): void {
-  if (value === null) {
-    db.delete(schema.appSettings).where(eq(schema.appSettings.key, key)).run();
-    return;
-  }
-  db.insert(schema.appSettings)
-    .values({ key, value })
-    .onConflictDoUpdate({ target: schema.appSettings.key, set: { value } })
-    .run();
-}
 
 function azureConfig(): AzureConfig | null {
   const raw = readSetting(AZURE_KEY);
@@ -50,22 +38,6 @@ function azureConfig(): AzureConfig | null {
 
 const edgeEnabled = () => readSetting(EDGE_KEY) === "1";
 
-function geminiStored(): { key: string; model: GeminiModel } | null {
-  const raw = readSetting(GEMINI_KEY);
-  if (!raw) return null;
-  try {
-    const { key, model } = JSON.parse(raw) as { key: string; model?: string };
-    return { key, model: (GEMINI_TTS_MODELS as readonly string[]).includes(model ?? "") ? (model as GeminiModel) : GEMINI_TTS_MODELS[0] };
-  } catch {
-    return null;
-  }
-}
-function geminiConfig(): { key: string; model: GeminiModel } | null {
-  const stored = geminiStored();
-  const key = stored && decryptSecret(stored.key);
-  return stored && key ? { key, model: stored.model } : null;
-}
-
 export function ttsAdminSettings(): TtsAdminSettings {
   const raw = readSetting(AZURE_KEY);
   let region = "";
@@ -77,7 +49,9 @@ export function ttsAdminSettings(): TtsAdminSettings {
   return {
     azure: { configured: azureConfig() !== null, region, canStoreKey: isEncryptionAvailable },
     edge: { enabled: edgeEnabled() },
-    gemini: { configured: geminiConfig() !== null, model: geminiStored()?.model ?? GEMINI_TTS_MODELS[0] },
+    gemini: { keys: listKeys(), entries: listEntries() },
+    background: backgroundSettings(),
+    edgeFallback: edgeFallback(),
   };
 }
 
@@ -87,7 +61,8 @@ export class TtsConfigError extends Error {}
 export function updateTtsSettings(body: {
   azure?: { region: string; key?: string } | null;
   edge?: boolean;
-  gemini?: { key?: string; model: GeminiModel } | null;
+  background?: { enabled: boolean; reserve: number };
+  edgeFallback?: boolean;
 }): void {
   if (body.azure === null) writeSetting(AZURE_KEY, null);
   else if (body.azure) {
@@ -103,16 +78,8 @@ export function updateTtsSettings(body: {
     writeSetting(AZURE_KEY, JSON.stringify({ region: body.azure.region, key: stored }));
   }
   if (body.edge !== undefined) writeSetting(EDGE_KEY, body.edge ? "1" : null);
-  if (body.gemini === null) writeSetting(GEMINI_KEY, null);
-  else if (body.gemini) {
-    let stored = geminiStored()?.key ?? null;
-    if (body.gemini.key) {
-      if (!isEncryptionAvailable) throw new TtsConfigError("set ENCRYPTION_KEY on the server to store keys");
-      stored = encryptSecret(body.gemini.key);
-    }
-    if (!stored) throw new TtsConfigError("enter the Gemini API key");
-    writeSetting(GEMINI_KEY, JSON.stringify({ key: stored, model: body.gemini.model }));
-  }
+  if (body.background) setBackgroundSettings(body.background);
+  if (body.edgeFallback !== undefined) setEdgeFallback(body.edgeFallback);
 }
 
 export type VoiceOption = { id: string; label: string; provider: TtsProvider };
@@ -122,7 +89,7 @@ export function usableVoices(): VoiceOption[] {
   const out: VoiceOption[] = [];
   if (azureConfig()) for (const v of serverVoices("azure")) out.push({ id: `azure:${v.name}`, label: `${v.label} · Azure`, provider: "azure" });
   if (edgeEnabled()) for (const v of serverVoices("edge")) out.push({ id: `edge:${v.name}`, label: `${v.label} · Edge`, provider: "edge" });
-  if (geminiConfig()) for (const v of serverVoices("gemini")) out.push({ id: `gemini:${v.name}`, label: `${v.label} · Gemini`, provider: "gemini" });
+  if (geminiReady()) for (const v of serverVoices("gemini")) out.push({ id: `gemini:${v.name}`, label: `${v.label} · Gemini`, provider: "gemini" });
   return out;
 }
 
@@ -146,17 +113,6 @@ const VOICE_NAMES = {
 };
 const xmlEscape = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
-
-export class TtsUnavailable extends Error {}
-/** The provider's limit is reached for now; `retryAfter` is when to try again (seconds), if it says. */
-export class TtsRateLimited extends TtsUnavailable {
-  constructor(
-    message: string,
-    public retryAfter: number | null,
-  ) {
-    super(message);
-  }
-}
 
 // The voices an Azure region offers (its voices/list), kept for an hour.
 let regionList: { region: string; at: number; names: Set<string> } | null = null;
@@ -182,22 +138,28 @@ export const groupsParagraphs = (voice: string) => ttsProviderOf(voice) === "gem
  * Several paragraphs in one request, cut back into one MP3 each (in the
  * pauses between them, see split.ts). Only for voices that group paragraphs.
  */
-export async function synthesizeGroup(texts: string[], voice: string): Promise<Buffer[]> {
+export async function synthesizeGroup(texts: string[], voice: string, purpose: TtsPurpose): Promise<Buffer[]> {
   const name = voice.slice("gemini:".length);
   if (!groupsParagraphs(voice) || !VOICE_NAMES.gemini.has(name)) throw new TtsUnavailable(`unknown voice "${voice}"`);
-  const cfg = geminiConfig();
-  if (!cfg) throw new TtsUnavailable("Gemini isn't set up");
-  try {
+  return withGemini(purpose, async (cfg) => {
     const pcm = await geminiPcm(texts.join("\n\n"), name, cfg);
-    return splitPcm(pcm, texts.map((t) => t.length)).map(pcmToMp3);
-  } catch (err) {
-    if (err instanceof GeminiLimitError) throw new TtsRateLimited(err.message, err.retryAfter);
-    throw err;
-  }
+    return { result: splitPcm(pcm, texts.map((t) => t.length)).map(pcmToMp3), seconds: pcm.length / 48_000 };
+  });
 }
 
-/** Synthesize with whichever provider the voice belongs to. */
-export async function synthesize(text: string, voice: string): Promise<{ audio: Buffer; type: string; ext: string }> {
+/** Edge's voice for taps when every Gemini entry is used up. */
+const FALLBACK_VOICE = "de-DE-KatjaNeural";
+
+/**
+ * Synthesize with whichever provider the voice belongs to, for `purpose`
+ * (which Gemini entries may be used). `fallback`: read by another voice
+ * (Edge, for a tap when Gemini is used up), so not to be kept as this one's.
+ */
+export async function synthesize(
+  text: string,
+  voice: string,
+  purpose: TtsPurpose = "taps",
+): Promise<{ audio: Buffer; type: string; ext: string; fallback?: boolean }> {
   const provider = ttsProviderOf(voice);
   if (!provider) throw new TtsUnavailable(`unknown voice "${voice}"`);
   const name = voice.slice(provider.length + 1);
@@ -207,12 +169,17 @@ export async function synthesize(text: string, voice: string): Promise<{ audio: 
     return { audio: await edgeSynthesize(text, name), type: "audio/mpeg", ext: "mp3" };
   }
   if (provider === "gemini") {
-    const cfg = geminiConfig();
-    if (!cfg) throw new TtsUnavailable("Gemini isn't set up");
+    if (!geminiReady()) throw new TtsUnavailable("Gemini isn't set up");
     try {
-      return { audio: await geminiSynthesize(text, name, cfg), type: "audio/mpeg", ext: "mp3" };
+      const audio = await withGemini(purpose, async (cfg) => {
+        const pcm = await geminiPcm(text, name, cfg);
+        return { result: pcmToMp3(pcm), seconds: pcm.length / 48_000 };
+      });
+      return { audio, type: "audio/mpeg", ext: "mp3" };
     } catch (err) {
-      if (err instanceof GeminiLimitError) throw new TtsRateLimited(err.message, err.retryAfter);
+      if (err instanceof TtsRateLimited && purpose === "taps" && edgeFallback()) {
+        return { audio: await edgeSynthesize(text, FALLBACK_VOICE), type: "audio/mpeg", ext: "mp3", fallback: true };
+      }
       throw err;
     }
   }

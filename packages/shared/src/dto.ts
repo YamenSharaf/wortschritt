@@ -1043,6 +1043,42 @@ export type ApiVersion = z.infer<typeof apiVersion>;
 
 // --- read-aloud providers (admin) ----------------------------------------------
 
+/** What a request for speech is for: the audiobook queue, someone waiting to listen, or a tap on a word or sentence. */
+export const TTS_PURPOSES = ["background", "waiting", "taps"] as const;
+export type TtsPurpose = (typeof TTS_PURPOSES)[number];
+
+/** A Gemini key as the admin sees it (never the key itself). */
+export const ttsKeyView = z.object({
+  id: z.number().int(),
+  label: z.string(),
+  /** "free": a project without billing; "paid": one with billing (each request costs). */
+  kind: z.enum(["free", "paid"]),
+  /** The key's last four characters, to tell keys apart. */
+  hint: z.string(),
+  /** It can't be decrypted any more (ENCRYPTION_KEY changed): enter it again. */
+  unreadable: z.boolean(),
+});
+export type TtsKeyView = z.infer<typeof ttsKeyView>;
+
+/** One entry of the order: a key and a model, what it may be used for, and how much of today's limit is used. */
+export const ttsEntryView = z.object({
+  id: z.number().int(),
+  keyId: z.number().int(),
+  model: z.enum(GEMINI_TTS_MODELS),
+  background: z.boolean(),
+  waiting: z.boolean(),
+  taps: z.boolean(),
+  /** Requests this server made with it today (Google's day: midnight Pacific), of its daily limit. */
+  usedToday: z.number().int(),
+  dailyLimit: z.number().int(),
+  /** Seconds of audio it made today (for an idea of the cost). */
+  secondsToday: z.number(),
+  /** At a limit until then (unix seconds), and which one. */
+  limitedUntil: z.number().int().nullable(),
+  limitReason: z.string().nullable(),
+});
+export type TtsEntryView = z.infer<typeof ttsEntryView>;
+
 /** The server's read-aloud providers, as the admin sees them. */
 export const ttsAdminSettings = z.object({
   azure: z.object({
@@ -1052,9 +1088,38 @@ export const ttsAdminSettings = z.object({
     canStoreKey: z.boolean(),
   }),
   edge: z.object({ enabled: z.boolean() }),
-  gemini: z.object({ configured: z.boolean(), model: z.enum(GEMINI_TTS_MODELS) }),
+  gemini: z.object({
+    keys: z.array(ttsKeyView),
+    /** In the order they're tried. */
+    entries: z.array(ttsEntryView),
+  }),
+  /** Make audio for stories by itself (background entries only), keeping `reserve` of each day's requests. */
+  background: z.object({ enabled: z.boolean(), reserve: z.number().min(0).max(0.9) }),
+  /** When every Gemini entry is used up, read taps with Edge's Katja (never story audio). */
+  edgeFallback: z.boolean(),
 });
 export type TtsAdminSettings = z.infer<typeof ttsAdminSettings>;
+
+
+export const ttsKeyBody = z.object({
+  label: z.string().trim().min(1).max(40),
+  kind: z.enum(["free", "paid"]),
+  /** Required when adding; omitted keeps the stored one. */
+  key: z.string().trim().min(10).max(200).optional(),
+});
+export const ttsEntriesBody = z.object({
+  entries: z
+    .array(
+      z.object({
+        keyId: z.number().int(),
+        model: z.enum(GEMINI_TTS_MODELS),
+        background: z.boolean(),
+        waiting: z.boolean(),
+        taps: z.boolean(),
+      }),
+    )
+    .max(12),
+});
 
 /** Change providers: Azure (key optional to keep the stored one; null removes it), Edge on/off, Gemini. */
 export const ttsAdminBody = z.object({
@@ -1066,14 +1131,8 @@ export const ttsAdminBody = z.object({
     .nullable()
     .optional(),
   edge: z.boolean().optional(),
-  /** Gemini: key optional to keep the stored one; null removes it. */
-  gemini: z
-    .object({
-      key: z.string().trim().min(10).max(200).optional(),
-      model: z.enum(GEMINI_TTS_MODELS).default(GEMINI_TTS_MODELS[0]),
-    })
-    .nullable()
-    .optional(),
+  background: z.object({ enabled: z.boolean(), reserve: z.number().min(0).max(0.9) }).optional(),
+  edgeFallback: z.boolean().optional(),
 });
 
 /** Try a voice: synthesizes a short sentence. */

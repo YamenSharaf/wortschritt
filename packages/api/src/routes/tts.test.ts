@@ -37,8 +37,15 @@ let azureAudio = (_body: string): Uint8Array => new Uint8Array([0xff, 0xf3, 1, 2
 /** The voices "Azure" says its region has. */
 let regionVoiceNames = ["de-DE-KatjaNeural", "de-DE-ConradNeural", "de-DE-Seraphina:DragonHDLatestNeural", "de-DE-Florian:DragonHDLatestNeural"];
 /** What "Gemini" answers (tests swap it): by default a second of quiet PCM. */
-let geminiReply = (): Response =>
+const defaultGemini = (): Response =>
   new Response(JSON.stringify({ candidates: [{ content: { parts: [{ inlineData: { data: Buffer.alloc(48_000).toString("base64") } }] } }] }), { status: 200 });
+let geminiReply = defaultGemini;
+/** As if Google's day had turned: every entry's limit and count start afresh. */
+async function newGoogleDay() {
+  const { db, schema } = await import("../db/client");
+  db.update(schema.ttsEntries).set({ limitedUntil: null, limitReason: null }).run();
+  db.delete(schema.ttsUsage).run();
+}
 before(async () => {
   const { buildApp } = await import("../app");
   const { setTransportForTests } = await import("../assistant/egress");
@@ -71,7 +78,9 @@ test("no providers: no server voices, and cloud voices are refused", async () =>
   assert.deepEqual((await me("GET", "/api/admin/tts")).json(), {
     azure: { configured: false, region: "", canStoreKey: true },
     edge: { enabled: false },
-    gemini: { configured: false, model: "gemini-3.8-flash-tts" },
+    gemini: { keys: [], entries: [] },
+    background: { enabled: false, reserve: 0.2 },
+    edgeFallback: false,
   });
 });
 
@@ -309,10 +318,15 @@ test("an Azure 400 for a voice the region doesn't offer says so", async () => {
 });
 
 test("Gemini: a stored key adds its voices; PCM comes back as MP3 of the same length; its limit is said plainly", async () => {
-  assert.equal((await me("PUT", "/api/admin/tts", { gemini: {} })).statusCode, 400, "a key is needed");
-  const set = await me("PUT", "/api/admin/tts", { gemini: { key: "secret-gemini-key-123", model: "gemini-3.8-flash-lite-tts" } });
+  assert.equal((await me("POST", "/api/admin/tts/gemini/keys", { label: "Free", kind: "free" })).statusCode, 400, "a key is needed");
+  const set = await me("POST", "/api/admin/tts/gemini/keys", { label: "Free", kind: "free", key: "secret-gemini-key-123" });
   assert.equal(set.statusCode, 200, set.body);
-  assert.deepEqual(set.json().gemini, { configured: true, model: "gemini-3.8-flash-lite-tts" });
+  assert.deepEqual(set.json().gemini.keys, [{ id: set.json().gemini.keys[0].id, label: "Free", kind: "free", hint: "-123", unreadable: false }]);
+  assert.deepEqual(
+    set.json().gemini.entries.map((x: { model: string; background: boolean }) => [x.model, x.background]),
+    [["gemini-3.8-flash-tts", true], ["gemini-3.8-flash-lite-tts", true]],
+    "a key joins the order with both models",
+  );
   assert.ok(!set.body.includes("secret-gemini"), "the key is never sent back");
   const status = (await me("GET", "/api/tts/status")).json();
   assert.ok(status.voices.some((v: { id: string; provider: string }) => v.id === "gemini:Kore" && v.provider === "gemini"));
@@ -322,7 +336,7 @@ test("Gemini: a stored key adds its voices; PCM comes back as MP3 of the same le
   assert.equal(clip.statusCode, 200, clip.body);
   assert.equal(clip.headers["content-type"], "audio/mpeg");
   const call = calls.find((c) => c.url.includes("generativelanguage"))!;
-  assert.equal(call.url, "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-lite-tts:generateContent");
+  assert.equal(call.url, "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent");
   assert.equal(call.headers["x-goog-api-key"], "secret-gemini-key-123");
   const body = JSON.parse(call.body);
   assert.equal(body.contents[0].parts[0].text, "Guten Morgen!");
@@ -340,12 +354,15 @@ test("Gemini: a stored key adds its voices; PCM comes back as MP3 of the same le
   const { retryDelay } = await import("../tts/gemini");
   assert.equal(retryDelay({ error: { details: [{ "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "12.4s" }] } }), 13);
   assert.equal(retryDelay(null), null);
-  assert.equal((await me("PUT", "/api/admin/tts", { gemini: null })).json().gemini.configured, false);
+  const removed = await me("DELETE", `/api/admin/tts/gemini/keys/${set.json().gemini.keys[0].id}`);
+  assert.deepEqual(removed.json().gemini, { keys: [], entries: [] });
+  geminiReply = defaultGemini;
 });
 
 test("Gemini story audio: paragraphs asked for together and cut in the pauses; its daily limit is said; the first paragraphs can be heard meanwhile", async () => {
   const { EXAMPLE_STORY } = await import("@mdb/shared");
-  assert.equal((await me("PUT", "/api/admin/tts", { gemini: { key: "secret-gemini-key-123", model: "gemini-3.8-flash-tts" } })).statusCode, 200);
+  const added = await me("POST", "/api/admin/tts/gemini/keys", { label: "Free", kind: "free", key: "secret-gemini-key-123" });
+  assert.equal(added.statusCode, 200, added.body);
   const settings = (await me("GET", "/api/settings")).json();
   await me("PUT", "/api/settings", { ...settings, ttsVoice: "", readerVoice: "gemini:Kore" });
   const { setLivePauseForTests } = await import("../services/storyAudio");
@@ -424,8 +441,10 @@ test("Gemini story audio: paragraphs asked for together and cut in the pauses; i
   await me("POST", "/api/stories/limit/audio");
   const waiting = await until("limit", "waiting");
   assert.equal(waiting.state, "waiting", JSON.stringify(waiting));
-  assert.equal(waiting.waitReason, "Gemini's daily limit is used up (100 requests a day for gemini-3.8-flash-tts, Tier 1)");
-  assert.ok(waiting.retryAt > Date.now() / 1000 + 22_000);
+  // Both models of the key met it (Google's limits are per model); someone was waiting, so: listening.
+  assert.match(waiting.waitReason, /^Every Gemini key for listening is at its limit; the first back: Gemini's daily limit is used up \(100 requests a day for gemini-3.8-flash-tts, Tier 1\)/);
+  const { nextReset } = await import("../tts/geminiKeys");
+  assert.ok(Math.abs(waiting.retryAt - nextReset()) < 5, "a daily limit: back when Google's day starts");
   assert.ok(waiting.readyParagraphs > 0 && waiting.readyParagraphs < 8, JSON.stringify(waiting));
   assert.equal(waiting.paragraphs, 8);
   const brief = (await me("GET", "/api/story-audio")).json().limit;
@@ -440,8 +459,9 @@ test("Gemini story audio: paragraphs asked for together and cut in the pauses; i
   assert.equal(file.statusCode, 200);
   assert.ok(file.rawPayload.length > 0);
 
-  // The limit lifts: asked again, it finishes (the rest only), and the whole file replaces the partial one.
+  // The limit lifts (a new day): asked again, it finishes (the rest only), and the whole file replaces the partial one.
   limitAfter = Infinity;
+  await newGoogleDay();
   await me("POST", "/api/stories/limit/audio");
   const done = await until("limit", "ready");
   assert.equal(done.state, "ready", JSON.stringify(done));
@@ -454,8 +474,127 @@ test("Gemini story audio: paragraphs asked for together and cut in the pauses; i
     "Gemini's per-minute limit is used up (10 requests a minute for m, free tier)",
   );
 
-  geminiReply = () =>
-    new Response(JSON.stringify({ candidates: [{ content: { parts: [{ inlineData: { data: Buffer.alloc(48_000).toString("base64") } }] } }] }), { status: 200 });
+  geminiReply = defaultGemini;
   await me("PUT", "/api/settings", settings);
-  await me("PUT", "/api/admin/tts", { gemini: null });
+  await me("DELETE", `/api/admin/tts/gemini/keys/${added.json().gemini.keys[0].id}`);
+});
+
+test("Gemini keys in order: a limit passes to the next; paid only where allowed; counted per day; Edge reads taps when all are used up", async () => {
+  const free = (await me("POST", "/api/admin/tts/gemini/keys", { label: "Free", kind: "free", key: "free-key-0000000001" })).json();
+  const both = (await me("POST", "/api/admin/tts/gemini/keys", { label: "Paid", kind: "paid", key: "paid-key-0000000002" })).json();
+  const [freeId, paidId] = both.gemini.keys.map((x: { id: number }) => x.id);
+  assert.ok(free.gemini.keys.length === 1 && both.gemini.keys.length === 2);
+  // A paid key isn't for the background unless switched on.
+  assert.deepEqual(
+    both.gemini.entries.map((x: { keyId: number; model: string; background: boolean; waiting: boolean; taps: boolean }) => [x.keyId, x.model.includes("lite"), x.background, x.waiting, x.taps]),
+    [
+      [freeId, false, true, true, true],
+      [freeId, true, true, true, true],
+      [paidId, false, false, true, true],
+      [paidId, true, false, true, true],
+    ],
+  );
+  // The order is what's saved: free Flash for everything, then paid Flash when waiting and for taps.
+  const saved = await me("PUT", "/api/admin/tts/gemini/entries", {
+    entries: [
+      { keyId: freeId, model: "gemini-3.8-flash-tts", background: true, waiting: true, taps: true },
+      { keyId: paidId, model: "gemini-3.8-flash-tts", background: false, waiting: true, taps: true },
+    ],
+  });
+  assert.equal(saved.statusCode, 200, saved.body);
+  assert.equal(saved.json().gemini.entries.length, 2);
+  assert.equal((await me("PUT", "/api/admin/tts/gemini/entries", { entries: [{ keyId: 999, model: "gemini-3.8-flash-tts", background: true, waiting: true, taps: true }] })).statusCode, 400);
+
+  // The free key is at its daily limit; the paid one answers.
+  const daily = () =>
+    new Response(
+      JSON.stringify({
+        error: {
+          code: 429,
+          details: [
+            { "@type": "type.googleapis.com/google.rpc.QuotaFailure", violations: [{ quotaMetric: "generate_requests_per_model_per_day", quotaValue: "100", description: "on Free tier" }] },
+            { "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "20000s" },
+          ],
+        },
+      }),
+      { status: 429 },
+    );
+  geminiReply = () => (calls.at(-1)!.headers["x-goog-api-key"] === "free-key-0000000001" ? daily() : defaultGemini());
+  calls.length = 0;
+  const tapped = await tts("gemini:Kore", "Ein Satz zum Tippen.");
+  assert.equal(tapped.statusCode, 200, tapped.body);
+  assert.deepEqual(
+    calls.map((c) => c.headers["x-goog-api-key"]),
+    ["free-key-0000000001", "paid-key-0000000002"],
+  );
+  const view = (await me("GET", "/api/admin/tts")).json();
+  const [f, p] = view.gemini.entries;
+  assert.ok(f.limitedUntil > Date.now() / 1000 && /daily limit/.test(f.limitReason), JSON.stringify(f));
+  assert.equal(p.usedToday, 1);
+  assert.ok(p.secondsToday > 0.9, "about a second of audio");
+
+  // The background may not use the paid key: with the free one at its limit, it waits.
+  const { withGemini } = await import("../tts/geminiKeys");
+  await assert.rejects(
+    withGemini("background", async () => ({ result: 1, seconds: 0 })),
+    (err: Error) => err.constructor.name === "TtsRateLimited" && /daily limit/.test(err.message),
+  );
+
+  // Everything used up: taps are read by Edge (not kept as Kore's); story audio isn't.
+  geminiReply = daily;
+  const { setEdgeForTests } = await import("../tts/edge");
+  setEdgeForTests(async () => Buffer.from(frame()));
+  assert.equal((await tts("gemini:Kore", "Noch ein anderer Satz.")).statusCode, 503, "no fallback until it's on");
+  assert.equal((await me("PUT", "/api/admin/tts", { edgeFallback: true })).json().edgeFallback, true);
+  const fallback = await tts("gemini:Kore", "Noch ein anderer Satz.");
+  assert.equal(fallback.statusCode, 200, fallback.body);
+  const { isCached } = await import("../tts/cache");
+  assert.equal(isCached("Noch ein anderer Satz.", "gemini:Kore"), false, "Edge's reading isn't kept as Kore's");
+
+  setEdgeForTests(null);
+  geminiReply = defaultGemini;
+  await me("PUT", "/api/admin/tts", { edgeFallback: false });
+  await newGoogleDay();
+  await me("DELETE", `/api/admin/tts/gemini/keys/${freeId}`);
+  await me("DELETE", `/api/admin/tts/gemini/keys/${paidId}`);
+});
+
+test("background audio: off by default; on, it makes unread stories by itself, within its share of the day", async () => {
+  const { EXAMPLE_STORY } = await import("@mdb/shared");
+  const key = (await me("POST", "/api/admin/tts/gemini/keys", { label: "Free", kind: "free", key: "free-key-0000000003" })).json().gemini.keys[0].id;
+  const settings = (await me("GET", "/api/settings")).json();
+  await me("PUT", "/api/settings", { ...settings, ttsVoice: "", readerVoice: "gemini:Charon" });
+  const { resetBackgroundForTests, resumeStoryAudio, setLivePauseForTests } = await import("../services/storyAudio");
+  setLivePauseForTests(0);
+  assert.equal((await me("POST", "/api/stories", { story: { ...EXAMPLE_STORY, id: "von-selbst", body: "Diese Geschichte wartet auf ihre Stimme." } })).statusCode, 200);
+  const status = async () => (await me("GET", "/api/story-audio")).json()["von-selbst"].state;
+
+  resetBackgroundForTests();
+  resumeStoryAudio(app.log);
+  await new Promise((r) => setTimeout(r, 50));
+  assert.equal(await status(), "none", "off: nothing is made by itself");
+
+  assert.deepEqual((await me("PUT", "/api/admin/tts", { background: { enabled: true, reserve: 0.2 } })).json().background, { enabled: true, reserve: 0.2 });
+  resetBackgroundForTests();
+  resumeStoryAudio(app.log);
+  let state = await status();
+  for (let i = 0; i < 200 && state !== "ready"; i++) {
+    await new Promise((r) => setTimeout(r, 20));
+    state = await status();
+  }
+  assert.equal(state, "ready", "made by itself");
+
+  // Its share used up (80 of 100 for the background, 20 kept for people): no room left.
+  const { db, schema } = await import("../db/client");
+  const { googleDay, backgroundRoom } = await import("../tts/geminiKeys");
+  db.delete(schema.ttsUsage).run();
+  for (const entry of db.select().from(schema.ttsEntries).all()) {
+    db.insert(schema.ttsUsage).values({ entryId: entry.id, day: googleDay(), requests: 80, seconds: 0 }).run();
+  }
+  assert.equal(backgroundRoom(), 0);
+
+  await me("PUT", "/api/admin/tts", { background: { enabled: false, reserve: 0.2 } });
+  await newGoogleDay();
+  await me("PUT", "/api/settings", settings);
+  await me("DELETE", `/api/admin/tts/gemini/keys/${key}`);
 });

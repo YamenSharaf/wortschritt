@@ -823,6 +823,63 @@ export const migrations: Migration[] = [
       db.exec(`ALTER TABLE story_audio_queue ADD COLUMN wait_reason TEXT;`);
     },
   },
+  {
+    version: 23,
+    // Several Gemini keys (free and paid projects) and the order they're
+    // tried in, each entry a key + model with what it may be used for and
+    // its own daily count (Google's limits are per project and model). The
+    // one key stored before becomes the first, used for everything as it
+    // was. user_id is for keys a learner adds themselves later (null: the
+    // server's). Stories queued by the server itself (auto) wait behind
+    // the ones someone asked for.
+    name: "tts-keys-and-order",
+    up(db) {
+      db.exec(`
+        CREATE TABLE tts_keys (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          label TEXT NOT NULL,
+          kind TEXT NOT NULL DEFAULT 'free',
+          key_enc TEXT NOT NULL,
+          created_at INTEGER NOT NULL DEFAULT (unixepoch())
+        );
+        CREATE TABLE tts_entries (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          key_id INTEGER NOT NULL REFERENCES tts_keys(id) ON DELETE CASCADE,
+          model TEXT NOT NULL,
+          position INTEGER NOT NULL,
+          use_background INTEGER NOT NULL DEFAULT 1,
+          use_waiting INTEGER NOT NULL DEFAULT 1,
+          use_taps INTEGER NOT NULL DEFAULT 1,
+          daily_limit INTEGER NOT NULL DEFAULT 100,
+          limited_until INTEGER,
+          limit_reason TEXT
+        );
+        CREATE TABLE tts_usage (
+          entry_id INTEGER NOT NULL REFERENCES tts_entries(id) ON DELETE CASCADE,
+          day TEXT NOT NULL,
+          requests INTEGER NOT NULL DEFAULT 0,
+          seconds REAL NOT NULL DEFAULT 0,
+          PRIMARY KEY (entry_id, day)
+        );
+        ALTER TABLE story_audio_queue ADD COLUMN auto INTEGER NOT NULL DEFAULT 0;
+      `);
+      const old = db.prepare("SELECT value FROM app_settings WHERE key = 'tts.gemini'").get() as { value: string } | undefined;
+      if (old) {
+        try {
+          const { key, model } = JSON.parse(old.value) as { key?: string; model?: string };
+          if (key) {
+            const id = db.prepare("INSERT INTO tts_keys (label, kind, key_enc) VALUES ('Gemini', 'paid', ?)").run(key).lastInsertRowid;
+            db.prepare("INSERT INTO tts_entries (key_id, model, position) VALUES (?, ?, 0)").run(id, model ?? "gemini-3.8-flash-tts");
+          }
+        } catch {
+          /* unreadable: set it up again */
+        }
+        db.prepare("DELETE FROM app_settings WHERE key = 'tts.gemini'").run();
+      }
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

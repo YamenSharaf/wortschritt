@@ -384,7 +384,48 @@ export const storyAudioQueue = sqliteTable("story_audio_queue", {
   error: text("error"),
   /** While it waits: which limit (as the provider says it). */
   waitReason: text("wait_reason"),
+  /** Queued by the server itself (background audio): after the ones someone asked for. */
+  auto: integer("auto", { mode: "boolean" }).notNull().default(false),
 });
+
+/** Gemini keys (migration 23); user_id null: the server's (the admin's). */
+export const ttsKeys = sqliteTable("tts_keys", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id"),
+  label: text("label").notNull(),
+  kind: text("kind", { enum: ["free", "paid"] }).notNull().default("free"),
+  keyEnc: text("key_enc").notNull(),
+  createdAt: integer("created_at")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+/** The order Gemini keys + models are tried in, and what each may be used for. */
+export const ttsEntries = sqliteTable("tts_entries", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id"),
+  keyId: integer("key_id").notNull(),
+  model: text("model").notNull(),
+  position: integer("position").notNull(),
+  useBackground: integer("use_background", { mode: "boolean" }).notNull().default(true),
+  useWaiting: integer("use_waiting", { mode: "boolean" }).notNull().default(true),
+  useTaps: integer("use_taps", { mode: "boolean" }).notNull().default(true),
+  dailyLimit: integer("daily_limit").notNull().default(100),
+  limitedUntil: integer("limited_until"),
+  limitReason: text("limit_reason"),
+});
+
+/** Requests and seconds of audio per entry per day (Google's day, Pacific). */
+export const ttsUsage = sqliteTable(
+  "tts_usage",
+  {
+    entryId: integer("entry_id").notNull(),
+    day: text("day").notNull(),
+    requests: integer("requests").notNull().default(0),
+    seconds: real("seconds").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.entryId, t.day] })],
+);
 
 /** Which of a learner's items changed (filled by triggers, see migration 14). */
 export const syncLog = sqliteTable("sync_log", {

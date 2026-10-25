@@ -266,8 +266,20 @@ export function createApi(o: ClientOptions) {
       req<{ ok: true }>(`/api/admin/users/${id}`, { method: "DELETE" }),
     adminRegistration: () => req<RegistrationStatus>("/api/admin/registration"),
     adminTts: () => req<TtsAdminSettings>("/api/admin/tts"),
-    adminSetTts: (body: { azure?: { region: string; key?: string } | null; edge?: boolean; gemini?: { key?: string; model: (typeof GEMINI_TTS_MODELS)[number] } | null }) =>
-      req<TtsAdminSettings>("/api/admin/tts", { method: "PUT", body: JSON.stringify(body) }),
+    adminSetTts: (body: {
+      azure?: { region: string; key?: string } | null;
+      edge?: boolean;
+      background?: { enabled: boolean; reserve: number };
+      edgeFallback?: boolean;
+    }) => req<TtsAdminSettings>("/api/admin/tts", { method: "PUT", body: JSON.stringify(body) }),
+    /** Gemini keys (each a Google project, free or paid) and the order they're tried in. */
+    adminAddTtsKey: (body: { label: string; kind: "free" | "paid"; key: string }) =>
+      req<TtsAdminSettings>("/api/admin/tts/gemini/keys", { method: "POST", body: JSON.stringify(body) }),
+    adminUpdateTtsKey: (id: number, body: { label: string; kind: "free" | "paid"; key?: string }) =>
+      req<TtsAdminSettings>(`/api/admin/tts/gemini/keys/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+    adminDeleteTtsKey: (id: number) => req<TtsAdminSettings>(`/api/admin/tts/gemini/keys/${id}`, { method: "DELETE" }),
+    adminSetTtsEntries: (entries: { keyId: number; model: (typeof GEMINI_TTS_MODELS)[number]; background: boolean; waiting: boolean; taps: boolean }[]) =>
+      req<TtsAdminSettings>("/api/admin/tts/gemini/entries", { method: "PUT", body: JSON.stringify({ entries }) }),
     adminTestTts: (voice: string) =>
       req<{ ok: true; bytes: number }>("/api/admin/tts/test", { method: "POST", body: JSON.stringify({ voice }) }),
     adminSetRegistration: (open: boolean) =>
