@@ -7,6 +7,16 @@
     "icon": "./assets/images/icon.png",
     "scheme": "eu.yamen.wortschritt",
     "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "eu.yamen.wortschritt",
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      }
+    },
     "android": {
       "package": "eu.yamen.wortschritt",
       "adaptiveIcon": {
@@ -26,14 +36,21 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": false
+        }
+      ],
       "expo-web-browser",
       "expo-sqlite",
+      "expo-background-task",
       [
         "expo-audio",
         {
           "recordAudioAndroid": false,
-          "enableBackgroundPlayback": true
+          "enableBackgroundPlayback": true,
+          "microphonePermission": false
         }
       ],
       [
