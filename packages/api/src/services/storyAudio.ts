@@ -212,15 +212,19 @@ let lastFill = 0;
 /**
  * Background audio: queue the next stories nobody asked for yet (see the
  * top), if it's on, there's room in today's background requests, and the
- * server's own ones are done. Checked at most every ten minutes. Whether it
+ * server's own ones are done; one done, the next follows at once. When
+ * there was nothing to do, it looks again after ten minutes. Whether it
  * queued any.
  */
 function fillBackground(): boolean {
   if (!backgroundSettings().enabled || Date.now() - lastFill < 10 * 60_000) return false;
-  lastFill = Date.now();
   const q = schema.storyAudioQueue;
   if (db.select().from(q).where(eq(q.auto, true)).get()) return false;
-  if (backgroundRoom() <= 0) return false;
+  const nothing = () => {
+    lastFill = Date.now();
+    return false;
+  };
+  if (backgroundRoom() <= 0) return nothing();
   let added = 0;
   for (const { id: userId } of db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.disabled, false)).orderBy(asc(schema.users.id)).all()) {
     const voice = readingVoice(userId);
@@ -239,7 +243,13 @@ function fillBackground(): boolean {
       break; // one per learner per round, so everyone's get made
     }
   }
-  return added > 0;
+  return added > 0 || nothing();
+}
+
+/** Background audio was switched on (or changed): look for work now. */
+export function wakeStoryAudio(): void {
+  lastFill = 0;
+  kick();
 }
 
 /** A learner's stories in the order background audio makes them: the next chapters of books being read, then the newest unread. */

@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { ttsAdminBody, ttsAdminSettings as ttsAdminDto, ttsEntriesBody, ttsKeyBody, ttsStatus, ttsTestBody } from "@mdb/shared";
+import { wakeStoryAudio } from "../services/storyAudio";
 import { addKey, deleteKey, saveEntries, TtsKeyError, updateKey } from "../tts/geminiKeys";
 import { requireAdmin, requireAuth } from "../auth/session";
 import { clip } from "../tts/cache";
@@ -80,6 +81,7 @@ export async function ttsRoutes(app: FastifyInstance) {
         if (err instanceof TtsConfigError) return reply.code(400).send({ error: err.message });
         throw err;
       }
+      if (req.body.background?.enabled) wakeStoryAudio();
       return ttsAdminSettings();
     },
   );
