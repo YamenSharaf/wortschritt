@@ -67,6 +67,8 @@ type Props = {
   animated?: boolean;
   /** A tap on the left or right quarter turns the page (else every tap shows or hides the bars). */
   tapToTurn?: boolean;
+  /** Pages mode: two pages side by side, turned together (a tablet in landscape). */
+  spread?: boolean;
 };
 
 type Line = { text: string; height: number };
@@ -77,6 +79,8 @@ const before = (a: Pos, b: Pos) => a.para < b.para || (a.para === b.para && a.ch
 
 const H_PAD = 24;
 const V_PAD = 24;
+/** Between the two pages of a spread (a rule down the middle). */
+const GUTTER = 64;
 /** A swipe this long (dp), or this fast (dp/s) in its direction, turns the page. */
 const SWIPE_DISTANCE = 40;
 const SWIPE_VELOCITY = 350;
@@ -292,7 +296,11 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
     textTapAt.current = Date.now();
   }, []);
 
-  const width = size ? Math.min(size.w - H_PAD * 2, p.typo.maxWidth) : 0;
+  // A spread shows pages two at a time: `page` is then always the left one (even),
+  // and the strip below moves a spread (`slot`) at a time.
+  const per = p.spread ? 2 : 1;
+  const snap = (n: number) => n - (n % per);
+  const width = size ? Math.min(p.spread ? (size.w - H_PAD * 2 - GUTTER) / 2 : size.w - H_PAD * 2, p.typo.maxWidth) : 0;
   const styles = useMemo(() => new Map(p.pieces.map((x) => [x.key, styleFor(x, p.typo, p.colors)])), [p.pieces, p.typo, p.colors]);
   // A new layout (text, size or type): measure again.
   const layoutKey = `${width}x${size?.h}|${p.typo.regular}|${p.typo.size}|${p.typo.lineHeight}|${p.pieces.map((x) => `${x.key}:${x.text.length}`).join(",")}`;
@@ -308,7 +316,7 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
     if (!restored.current) {
       restored.current = true;
       lastCount.current = count;
-      setPage(p.resumeAt === null ? 0 : Math.min(count - 1, Math.floor(p.resumeAt * count)));
+      setPage(snap(p.resumeAt === null ? 0 : Math.min(count - 1, Math.floor(p.resumeAt * count))));
       return;
     }
     // Stay on the end page; else the last page starting at or before your place.
@@ -319,6 +327,7 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
         const start = pg.find((x) => x.at)?.at;
         if (start && before(start, anchor.current!)) target = i;
       });
+    target = snap(target);
     lastCount.current = count;
     if (target !== page) {
       layoutMove.current = true;
@@ -336,7 +345,8 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
     }
     onProgress(page / count);
     onPage?.(page, count);
-    if (onVisible) onVisible([...new Set([...(pages[page] ?? []), ...(pages[page + 1] ?? [])].map((s) => s.piece.para).filter((x) => x >= 0))]);
+    if (onVisible)
+      onVisible([...new Set(pages.slice(page, page + per * 2).flat().map((s) => s.piece.para).filter((x) => x >= 0))]);
   }, [page, count]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sliding pages (not on e-ink): every page sits at its own place in a long
@@ -350,20 +360,22 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
   const aim = useRef(page);
   useLayoutEffect(() => {
     aim.current = page;
-    pos.value = page;
-  }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
+    pos.value = page / per;
+  }, [page, per]); // eslint-disable-line react-hooks/exhaustive-deps
+  /** The last spread (or page): the end page's. */
+  const lastSlot = Math.floor(count / per);
   const settle = useCallback((target: number) => setPage(target), []);
   const turn = useCallback(
     (d: number) => {
-      const target = Math.max(0, Math.min(count, aim.current + d));
+      const target = snap(Math.max(0, Math.min(count, aim.current + d * per)));
       if (target === aim.current) return;
       aim.current = target;
       if (!p.animated) return setPage(target);
-      pos.value = withTiming(target, { duration: 240, easing: Easing.out(Easing.cubic) }, (done) => {
+      pos.value = withTiming(target / per, { duration: 240, easing: Easing.out(Easing.cubic) }, (done) => {
         if (done) scheduleOnRN(settle, target);
       });
     },
-    [count, p.animated], // eslint-disable-line react-hooks/exhaustive-deps
+    [count, p.animated, per], // eslint-disable-line react-hooks/exhaustive-deps
   );
   useImperativeHandle(
     ref,
@@ -372,7 +384,7 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
       firstPara: () => Math.max(0, pages[Math.min(page, count - 1)]?.find((x) => x.piece.para >= 0)?.piece.para ?? 0),
       showPara: (i) => {
         const at = pages.findIndex((pg) => pg.some((x) => x.piece.para === i));
-        if (at >= 0) setPage(at);
+        if (at >= 0) setPage(snap(at));
       },
     }),
     [turn, pages, page, count],
@@ -382,7 +394,7 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
     const w = size?.w ?? 0;
     if (p.tapToTurn === false) return p.onCenter();
     if (x < w * 0.25 && page > 0) turn(-1);
-    else if (x > w * 0.75 && page < count) turn(1);
+    else if (x > w * 0.75 && page < snap(count)) turn(1);
     else p.onCenter();
   };
 
@@ -413,23 +425,37 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
       })
       .onUpdate((e) => {
         const from = Math.round(pos.value);
-        const blocked = (e.translationX < 0 && from >= count) || (e.translationX > 0 && from <= 0);
+        const blocked = (e.translationX < 0 && from >= lastSlot) || (e.translationX > 0 && from <= 0);
         drag.value = blocked ? e.translationX * 0.25 : e.translationX;
       })
       .onEnd((e) => {
         const from = Math.round(pos.value);
         const far = Math.abs(e.translationX) > SWIPE_DISTANCE;
         const fast = Math.abs(e.velocityX) > SWIPE_VELOCITY && Math.sign(e.velocityX) === Math.sign(e.translationX);
-        const target = far || fast ? Math.max(0, Math.min(count, from + (e.translationX < 0 ? 1 : -1))) : from;
+        const target = far || fast ? Math.max(0, Math.min(lastSlot, from + (e.translationX < 0 ? 1 : -1))) : from;
         // Fold the pull into the position, then glide to the page.
         pos.value = pos.value - drag.value / pageW;
         drag.value = 0;
         pos.value = withTiming(target, { duration: 220, easing: Easing.out(Easing.cubic) }, (done) => {
-          if (done && target !== from) scheduleOnRN(settle, target);
+          if (done && target !== from) scheduleOnRN(settle, target * per);
         });
       });
-  }, [turn, p.animated, count, pageW]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [turn, p.animated, count, pageW, lastSlot, per]); // eslint-disable-line react-hooks/exhaustive-deps
   const strip = useAnimatedStyle(() => ({ transform: [{ translateX: -pos.value * pageW + drag.value }] }));
+
+  /** Spread (or page) `slot`: its pages side by side, a rule between. */
+  const slotView = (slot: number) =>
+    per === 1 ? (
+      pageView(slot)
+    ) : (
+      <View style={{ flex: 1, flexDirection: "row", alignSelf: "stretch", justifyContent: "center" }}>
+        {pageView(slot * 2)}
+        <View style={{ width: GUTTER, alignItems: "center" }}>
+          <View style={{ width: StyleSheet.hairlineWidth, flex: 1, backgroundColor: p.colors.rule }} />
+        </View>
+        {slot * 2 + 1 <= count ? pageView(slot * 2 + 1) : <View style={{ width }} />}
+      </View>
+    );
 
   /** Page n's content (n === count is the end). */
   const pageView = (n: number) =>
@@ -479,8 +505,8 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
             >
               {p.animated ? (
                 <Animated.View style={[StyleSheet.absoluteFill, strip]}>
-                  {[page - 1, page, page + 1]
-                    .filter((n) => n >= 0 && n <= count)
+                  {[page / per - 1, page / per, page / per + 1]
+                    .filter((n) => n >= 0 && n <= lastSlot)
                     .map((n) => (
                       <View
                         key={n}
@@ -496,12 +522,12 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
                           backgroundColor: p.colors.bg,
                         }}
                       >
-                        {pageView(n)}
+                        {slotView(n)}
                       </View>
                     ))}
                 </Animated.View>
               ) : (
-                pageView(page)
+                slotView(page / per)
               )}
             </Pressable>
           </GestureDetector>

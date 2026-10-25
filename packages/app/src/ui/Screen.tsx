@@ -1,6 +1,7 @@
 import { useRef, type ReactNode } from "react";
 import { RefreshControl, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useLayout } from "@/lib/layout";
 import { useListening } from "@/lib/listening";
 import { useTheme } from "@/lib/theme";
 import { MINI_PLAYER_SPACE } from "./MiniPlayer";
@@ -13,6 +14,7 @@ export function Screen({
   dock = true,
   transparent = false,
   onNearEnd,
+  maxWidth,
 }: {
   children: ReactNode;
   onRefresh?: () => void;
@@ -23,12 +25,17 @@ export function Screen({
   transparent?: boolean;
   /** Called when scrolled to within a screen of the end (to show more of something long). */
   onNearEnd?: () => void;
+  /** Widest the content gets (720, or 1080 on a tablet in landscape). */
+  maxWidth?: number;
 }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const viewport = useRef(0);
   // The mini-player sits over the dock while a story plays: room for it too.
   const playing = useListening().state.phase !== "idle";
+  // Beside the rail (tablet in landscape) there's no dock below, only the mini-player.
+  const { wide } = useLayout();
+  const bottom = !dock ? 24 : wide ? 24 + (playing ? MINI_PLAYER_SPACE : 0) : 112 + (playing ? MINI_PLAYER_SPACE : 0);
   return (
     <View style={{ flex: 1, backgroundColor: transparent ? "transparent" : colors.bg }}>
       <ScrollView
@@ -47,11 +54,11 @@ export function Screen({
         // Too little to scroll yet: ask for more straight away.
         onContentSizeChange={onNearEnd ? (_w, h) => viewport.current > 0 && h < viewport.current * 2 && onNearEnd() : undefined}
         contentContainerStyle={{
-          paddingTop: insets.top + 16,
-          paddingBottom: insets.bottom + (dock ? 112 + (playing ? MINI_PLAYER_SPACE : 0) : 24),
-          paddingHorizontal: 20,
+          paddingTop: insets.top + (wide ? 28 : 16),
+          paddingBottom: insets.bottom + bottom,
+          paddingHorizontal: wide ? 32 : 20,
           gap: 16,
-          maxWidth: 720,
+          maxWidth: maxWidth ?? (wide && dock ? 1080 : 720),
           width: "100%",
           alignSelf: "center",
         }}

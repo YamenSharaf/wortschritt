@@ -70,6 +70,7 @@ E-readers (the owner reads on a Boox Page: monochrome, slow refresh) get their o
 - **Account menu**: everything that isn't learning content: Settings (Learning, Account, Connections), Administration for admins, and log out. A dropdown on wide screens, a sheet from the bottom on phones. Import is a button on Practice and Cheat sheets, not a setting.
 - **Tab pills** for in-page sections and view toggles (Settings, Recent / A–Z, Covers / List). The active pill is lit from above.
 - **Dock** on phones: a floating glass pill with every section, above the home indicator. Pages keep 112px of bottom padding so nothing hides behind it.
+- **Side rail** on a tablet in landscape (at least 900 wide and 600 tall): the dock stands on its side at the left edge, the mini-player moves to the bottom right, and pages that can split do: Home in two columns, the reader as two pages, the player with the paragraph beside the cover, an exercise with the answers and the tutor beside the task. Phones turned sideways keep the phone layouts and scroll.
 - **Exercises** stack labelled layers, not boxes: TASK, a quoted context line, a word bank of dashed chips, the gaps, one result row, then WHY under a hairline.
 - **Tutor**: Hint, Translate and Why was I wrong? are chips under the exercise; one panel holds the answer as prose and follow-ups as a chat with a round send button.
 
@@ -270,6 +271,8 @@ The phone navigation: a floating pill of very subtle glass above the home indica
 
 `nav.ws-dock` sits 12px from the screen edges and 10px above the safe-area inset: a `dock-from` → `dock-to` gradient over an 18px blur with 170% saturation, a `dock-border` hairline, a `dock-highlight` top edge and a soft `dock-shadow`. Items are a 20px Lucide icon over a 10px label; the current one (`aria-current="page"`) sits in a `brand-soft` pill with `brand-ink`. Page content scrolls behind it, so pages keep 112px of bottom padding on phones.
 
+In landscape at least 900 by 600 (the `rail:` screen) the same pill stands upright at the left edge as a side rail, 28px corners, with the mark above it and the account button below; the header bar goes. The Android and iOS app do the same (`useLayout().wide`).
+
 *In the app:* `App.tsx` (`ws-dock` in `index.css`)
 
 ### ExerciseItem
@@ -300,7 +303,7 @@ A floating bar at the top of every page: the mark and name on the left, the sect
 
 `header.ws-header` floats 12–16px in from the page edges with 16px corners, a `border` hairline, a translucent `bar-from` → `bar-to` gradient over a 12px blur, and a `bar-highlight` along its top edge. Section links are plain text in `ink-muted`; the current one (`aria-current="page"`) gets `surface-sunken` behind `ink`. The account button (`ws-avatar`) opens the AccountMenu.
 
-On phones the sections move to the Dock and only the mark and the account button stay in the bar.
+On phones the sections move to the Dock and only the mark and the account button stay in the bar. In landscape at least 900 by 600 the bar gives way to the side rail.
 
 *In the app:* `App.tsx` (`ws-bar` in `index.css`)
 

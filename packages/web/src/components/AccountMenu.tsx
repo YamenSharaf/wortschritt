@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth, useAvatar } from "@mdb/client/react";
@@ -32,7 +32,7 @@ export function AccountMenu() {
   const { user, logout } = useAuth();
   const { avatar } = useAvatar();
   const [open, setOpen] = useState(false);
-  const [anchor, setAnchor] = useState<{ top: number; right: number } | null>(null);
+  const [anchor, setAnchor] = useState<CSSProperties | null>(null);
   const button = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const id = useId();
@@ -45,7 +45,13 @@ export function AccountMenu() {
     if (!open) return;
     const place = () => {
       const r = button.current?.getBoundingClientRect();
-      if (r) setAnchor({ top: r.bottom + 8, right: window.innerWidth - r.right });
+      // Under the button in the top bar; beside it, opening upwards, in the side rail (bottom left).
+      if (r)
+        setAnchor(
+          r.left < window.innerWidth / 2
+            ? { left: r.right + 12, bottom: window.innerHeight - r.bottom }
+            : { top: r.bottom + 8, right: window.innerWidth - r.right },
+        );
     };
     place();
     window.addEventListener("resize", place);
@@ -97,7 +103,7 @@ export function AccountMenu() {
               className="ws-sheet fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+10px)] z-50 p-2 md:inset-x-auto md:bottom-auto md:w-64 md:p-1.5"
               style={
                 anchor && window.matchMedia("(min-width: 768px)").matches
-                  ? { top: anchor.top, right: anchor.right }
+                  ? anchor
                   : undefined
               }
             >

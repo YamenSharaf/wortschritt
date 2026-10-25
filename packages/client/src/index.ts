@@ -16,3 +16,4 @@ export * from "./avatar";
 export * from "./storyAudio";
 export * from "./attachments";
 export * from "./wordOrder";
+export * from "./reading";

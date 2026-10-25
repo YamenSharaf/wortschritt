@@ -11,6 +11,10 @@ export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      screens: {
+        // A tablet in landscape (or a wide window): the sections move to a side rail (as in the app).
+        rail: { raw: "(min-width: 900px) and (min-height: 600px) and (orientation: landscape)" },
+      },
       colors: {
         // Cool neutrals tuned to the design system; existing slate-* classes
         // pick these up, so screens not yet restyled still match.

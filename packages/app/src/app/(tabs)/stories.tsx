@@ -56,11 +56,13 @@ export default function Stories() {
 
 function Bookshelf({ books }: { books: SeriesSummary[] }) {
   const [view, setView] = usePreference(preferences.shelfView);
-  const { width } = useWindowDimensions();
-  const cols = width > 700 ? 5 : 3;
-  const coverWidth = (Math.min(width, 900) - 40 - 16 * (cols - 1)) / cols;
+  // Sized to the room the shelf has (beside the rail on a tablet in landscape): covers about 150 wide, at least 3 a row.
+  const { width: screen } = useWindowDimensions();
+  const [width, setWidth] = useState(Math.min(screen, 720) - 40);
+  const cols = Math.max(3, Math.floor((width + 16) / 166));
+  const coverWidth = Math.floor((width - 16 * (cols - 1)) / cols);
   return (
-    <View style={{ gap: 12 }}>
+    <View style={{ gap: 12 }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         <Text variant="heading">Books</Text>
         <Segmented value={view} options={[["covers", "Covers"], ["list", "List"]]} onChange={setView} />

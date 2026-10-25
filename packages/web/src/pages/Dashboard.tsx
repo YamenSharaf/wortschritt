@@ -6,7 +6,8 @@ import { Pill, SectionHeading, btn, cardLink } from "../components/ui";
 import { SectionIcon, type Section } from "../components/SectionIcon";
 import { api } from "../lib/api";
 import { useAuth } from "@mdb/client/react";
-import { timeAgo } from "@mdb/client";
+import { recentReading, timeAgo } from "@mdb/client";
+import { Cover } from "../components/Cover";
 import { useAsync, useFavorites } from "@mdb/client/react";
 import { LastRunBadge } from "./Exercises";
 
@@ -24,6 +25,9 @@ export function Dashboard() {
   const [allFavorites, setAllFavorites] = useState(false);
   const sheets = useAsync(() => api.sheetViews(5), []);
   const notes = useAsync(() => api.notes(), []);
+  const stories = useAsync(() => api.stories(), []);
+  const books = useAsync(() => api.seriesList(), []);
+  const reading = stories.status === "ready" && books.status === "ready" ? recentReading(stories.data, books.data, READING_SHOWN) : null;
   const recentRuns = runs.status === "ready" ? runs.data.slice(0, 5) : [];
   const recentSheets = sheets.status === "ready" ? sheets.data.slice(0, 4) : [];
   const recentNotes = notes.status === "ready" ? notes.data.slice(0, 4) : [];
@@ -139,29 +143,47 @@ export function Dashboard() {
         </div>
       )}
 
-      {favoriteRows.length > 0 && (
-        <section className="space-y-3">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-xl font-semibold tracking-[-0.01em]">Favourites</h2>
-            {favoriteRows.length > FAVORITES_SHOWN && (
-              <button type="button" onClick={() => setAllFavorites((v) => !v)} className="text-sm font-medium text-ink-muted hover:text-ink">
-                {allFavorites ? "Show fewer" : `Show all (${favoriteRows.length})`}
-              </button>
-            )}
-          </div>
-          <div className="divide-y divide-[var(--border)] overflow-hidden rounded-card border border-line bg-surface shadow-card">
-            {(allFavorites ? favoriteRows : favoriteRows.slice(0, FAVORITES_SHOWN)).map((r) => (
-              <Row
-                key={r.key}
-                to={r.to}
-                section={r.section}
-                title={r.title}
-                meta={r.meta}
-                end={r.run ? <LastRunBadge run={r.run} /> : <StarIcon className="h-4 w-4 fill-[var(--reward-1)] text-[#e0a800]" aria-hidden />}
-              />
-            ))}
-          </div>
-        </section>
+      {(favoriteRows.length > 0 || (reading && reading.items.length > 0)) && (
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          {favoriteRows.length > 0 && (
+            <section className="min-w-0 space-y-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-xl font-semibold tracking-[-0.01em]">Favourites</h2>
+                {favoriteRows.length > FAVORITES_SHOWN && (
+                  <button type="button" onClick={() => setAllFavorites((v) => !v)} className="text-sm font-medium text-ink-muted hover:text-ink">
+                    {allFavorites ? "Show fewer" : `Show all (${favoriteRows.length})`}
+                  </button>
+                )}
+              </div>
+              <div className="divide-y divide-[var(--border)] overflow-hidden rounded-card border border-line bg-surface shadow-card">
+                {(allFavorites ? favoriteRows : favoriteRows.slice(0, FAVORITES_SHOWN)).map((r) => (
+                  <Row
+                    key={r.key}
+                    to={r.to}
+                    section={r.section}
+                    title={r.title}
+                    meta={r.meta}
+                    end={r.run ? <LastRunBadge run={r.run} /> : <StarIcon className="h-4 w-4 fill-[var(--reward-1)] text-[#e0a800]" aria-hidden />}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {reading && reading.items.length > 0 && (
+            <ListSection title={reading.reading ? "Continue reading" : "New to read"} more={{ to: "/stories", label: "All stories" }}>
+              {reading.items.map((r) => (
+                <Link key={`${r.kind}:${r.id}`} to={`/stories/${r.storyId}`} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-sunken">
+                  <Cover kind={r.kind} id={r.id} version={r.cover} fallbackKey={r.coverKey} className="w-8 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium leading-6">{r.title}</p>
+                    <p className="truncate text-xs text-ink-subtle">{r.detail}</p>
+                  </div>
+                </Link>
+              ))}
+            </ListSection>
+          )}
+        </div>
       )}
 
       <section className="space-y-3">
@@ -209,6 +231,8 @@ export function Dashboard() {
 
 /** How many favourites Home lists before "Show all". */
 const FAVORITES_SHOWN = 3;
+/** How many stories Home suggests reading on. */
+const READING_SHOWN = 3;
 
 function greeting(): string {
   const h = new Date().getHours();

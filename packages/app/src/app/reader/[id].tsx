@@ -36,6 +36,7 @@ import { DownloadRow, ListenBar } from "@/reader/Listen";
 import { useListening } from "@/lib/listening";
 import { Icon } from "@/ui/icons";
 import { Text } from "@/ui/Text";
+import { useLayout } from "@/lib/layout";
 import { BookOpenText, Check, ChevronLeft, ChevronRight, Headphones, Languages, Pause, Square, Type, Volume2 } from "lucide-react-native";
 import { useVolumeKeys, volumeKeysSupported } from "../../../modules/volume-keys";
 
@@ -81,6 +82,8 @@ function Reader({ id }: { id: string }) {
   const [sheet, setSheet] = useState<"settings" | "glossary" | null>(null);
   const [word, setWord] = useState<{ word: string; context: string } | null>(null);
   const [where, setWhere] = useState<{ page: number; count: number } | null>(null);
+  // A tablet in landscape reads like an open book: two pages at a time.
+  const spread = useLayout().wide && reader.layout === "pages";
   /** Bumped by "Read again": the text starts over at the top. */
   const [round, setRound] = useState(0);
   const controls = useRef<ReaderControls>(null);
@@ -215,6 +218,7 @@ function Reader({ id }: { id: string }) {
             speaking={listeningHere ? ls.paragraph : aloud.speaking}
             animated={theme.motion.base > 0}
             tapToTurn={tapToTurn}
+            spread={spread}
             onPage={(page, count) => {
               setWhere({ page, count });
               setChrome(false);
@@ -317,10 +321,14 @@ function Reader({ id }: { id: string }) {
             style={{ position: "absolute", left: 0, right: 0, bottom: insets.bottom + 4, height: 24, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 }}
           >
             <Text style={{ fontFamily: font.mono, fontSize: 12, color: colors.muted }}>
-              {where.page >= where.count ? "End" : `${where.page + 1} / ${where.count}`}
+              {where.page >= where.count
+                ? "End"
+                : spread && where.page + 2 <= where.count
+                  ? `${where.page + 1}–${where.page + 2} / ${where.count}`
+                  : `${where.page + 1} / ${where.count}`}
             </Text>
             <View style={{ width: 72, height: 2, borderRadius: 1, backgroundColor: colors.rule, overflow: "hidden" }}>
-              <View style={{ width: `${Math.round((Math.min(where.page + 1, where.count) / where.count) * 100)}%`, height: "100%", backgroundColor: colors.mark }} />
+              <View style={{ width: `${Math.round((Math.min(where.page + (spread ? 2 : 1), where.count) / where.count) * 100)}%`, height: "100%", backgroundColor: colors.mark }} />
             </View>
           </View>
         )}

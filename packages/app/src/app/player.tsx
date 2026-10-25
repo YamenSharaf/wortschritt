@@ -8,6 +8,7 @@ import { plainText, storyParagraphs } from "@mdb/shared";
 import { useApi, useAsync } from "@mdb/client/react";
 import { audioProgressText, retryText } from "@mdb/client";
 import { clock, RATE_CHOICES, SKIP_CHOICES, useListening, type ListeningController, type ListeningState } from "@/lib/listening";
+import { useLayout } from "@/lib/layout";
 import { useServer } from "@/lib/server";
 import { font, useTheme } from "@/lib/theme";
 import { Segmented, Sheet } from "@/reader/ReaderSheets";
@@ -29,6 +30,8 @@ export default function PlayerScreen() {
   const { controller, state } = useListening();
   const { colors, radii } = useTheme();
   const insets = useSafeAreaInsets();
+  const { wide, height } = useLayout();
+  const short = !wide && height < 640;
   const [sheet, setSheet] = useState<null | "speed" | "sleep" | "back" | "forward">(null);
   const view = useAsync(() => (state.storyId ? api.story(state.storyId) : Promise.resolve(null)), [api, state.storyId]);
   const paragraphs = view.status === "ready" && view.data ? storyParagraphs(view.data.story.body) : [];
@@ -74,46 +77,49 @@ export default function PlayerScreen() {
     </Pressable>
   );
 
-  return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 8, paddingBottom: insets.bottom + 20, paddingHorizontal: 24, gap: 16 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Close the player" hitSlop={10} style={{ width: 44, height: 44, justifyContent: "center" }}>
-          <Icon icon={ChevronDown} size={24} color={colors.inkMuted} />
-        </Pressable>
-        <Text variant="eyebrow">Listening</Text>
-        <Pressable
-          onPress={() => (downloaded ? undefined : void controller.download({ id: state.storyId!, title: state.title, book: state.book }))}
-          accessibilityRole="button"
-          accessibilityLabel={downloaded ? "Downloaded for listening offline" : "Download for listening offline"}
-          hitSlop={10}
-          style={{ width: 44, height: 44, alignItems: "flex-end", justifyContent: "center" }}
-        >
-          <Icon icon={Download} size={20} color={downloaded ? colors.success : colors.inkMuted} />
-        </Pressable>
-      </View>
-
-      {/* The cover takes the room the text leaves (smaller for a long paragraph, never under 96). */}
-      <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 0, minHeight: 96, alignItems: "center" }}>
-        {state.art ? (
-          <Image
-            source={{ uri: state.art, headers: mediaHeaders() }}
-            cachePolicy="disk"
-            contentFit="cover"
-            style={{ height: "100%", maxHeight: 300, aspectRatio: 2 / 3, borderRadius: radii.panel, backgroundColor: colors.surfaceSunken }}
-            accessibilityIgnoresInvertColors
-          />
-        ) : (
-          <View style={{ height: "100%", maxHeight: 300, aspectRatio: 2 / 3, borderRadius: radii.panel, backgroundColor: colors.surfaceSunken }} />
-        )}
-      </View>
-
-      <View style={{ gap: 2 }}>
-        <Text style={{ fontFamily: font.semibold, fontSize: 20, lineHeight: 26 }} numberOfLines={2}>
-          {state.title}
-        </Text>
-        <Text variant="muted">{[state.book, state.chapter && `Chapter ${state.chapter.n} of ${state.chapter.total}`].filter(Boolean).join(" · ") || "Story"}</Text>
-      </View>
-
+  const headerView = (
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+      <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Close the player" hitSlop={10} style={{ width: 44, height: 44, justifyContent: "center" }}>
+        <Icon icon={ChevronDown} size={24} color={colors.inkMuted} />
+      </Pressable>
+      <Text variant="eyebrow">Listening</Text>
+      <Pressable
+        onPress={() => (downloaded ? undefined : void controller.download({ id: state.storyId!, title: state.title, book: state.book }))}
+        accessibilityRole="button"
+        accessibilityLabel={downloaded ? "Downloaded for listening offline" : "Download for listening offline"}
+        hitSlop={10}
+        style={{ width: 44, height: 44, alignItems: "flex-end", justifyContent: "center" }}
+      >
+        <Icon icon={Download} size={20} color={downloaded ? colors.success : colors.inkMuted} />
+      </Pressable>
+    </View>
+  );
+  // The cover takes the room the text leaves (smaller for a long paragraph, never under 96).
+  const coverView = (
+    <View style={short ? { height: 200, alignItems: "center" } : { flexGrow: 1, flexShrink: 1, flexBasis: 0, minHeight: 96, alignItems: "center" }}>
+      {state.art ? (
+        <Image
+          source={{ uri: state.art, headers: mediaHeaders() }}
+          cachePolicy="disk"
+          contentFit="cover"
+          style={{ height: "100%", maxHeight: wide ? 420 : 300, aspectRatio: 2 / 3, borderRadius: radii.panel, backgroundColor: colors.surfaceSunken }}
+          accessibilityIgnoresInvertColors
+        />
+      ) : (
+        <View style={{ height: "100%", maxHeight: wide ? 420 : 300, aspectRatio: 2 / 3, borderRadius: radii.panel, backgroundColor: colors.surfaceSunken }} />
+      )}
+    </View>
+  );
+  const titleView = (
+    <View style={{ gap: 2 }}>
+      <Text style={{ fontFamily: font.semibold, fontSize: 20, lineHeight: 26 }} numberOfLines={2}>
+        {state.title}
+      </Text>
+      <Text variant="muted">{[state.book, state.chapter && `Chapter ${state.chapter.n} of ${state.chapter.total}`].filter(Boolean).join(" · ") || "Story"}</Text>
+    </View>
+  );
+  const statusView = (
+    <>
       {state.phase === "preparing" ? (
         <Waiting state={state} controller={controller} />
       ) : state.phase === "error" ? (
@@ -122,11 +128,12 @@ export default function PlayerScreen() {
         // The whole paragraph; when even a small cover leaves too little room, it scrolls (from its start for each new one).
         <ScrollView
           key={state.paragraph}
-          style={{ flexGrow: 0, flexShrink: 1, minHeight: 72, borderRadius: radii.control + 2, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
-          contentContainerStyle={{ padding: 12 }}
+          style={{ flexGrow: 0, flexShrink: 1, minHeight: 72, maxHeight: short ? 220 : undefined, borderRadius: radii.control + 2, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}
+          contentContainerStyle={{ padding: wide ? 28 : 12 }}
           accessibilityLabel="The paragraph being read"
+          nestedScrollEnabled
         >
-          <Text style={{ fontFamily: READER_FONTS.libron.regular, fontSize: 16, lineHeight: 24 }}>{sentence}</Text>
+          <Text style={{ fontFamily: READER_FONTS.libron.regular, fontSize: wide ? 22 : 16, lineHeight: wide ? 34 : 24 }}>{sentence}</Text>
         </ScrollView>
       ) : null}
 
@@ -135,7 +142,10 @@ export default function PlayerScreen() {
           The first {state.partial.paragraphs} of {state.partial.of} paragraphs; the rest follows by itself once it's made.
         </Text>
       )}
-
+    </>
+  );
+  const controlsView = (
+    <>
       <Scrubber position={state.position} duration={state.duration} onSeek={controller.seekTo} />
 
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
@@ -158,7 +168,10 @@ export default function PlayerScreen() {
         {pill(sleepLabel, () => setSheet("sleep"), Moon)}
         {pill("Read along", () => router.push(`/reader/${state.storyId}`), BookOpen)}
       </View>
-
+    </>
+  );
+  const sheets = (
+    <>
       {sheet === "speed" && (
         <Sheet title="Speed" onClose={() => setSheet(null)}>
           <Segmented
@@ -189,6 +202,47 @@ export default function PlayerScreen() {
           />
         </Sheet>
       )}
+    </>
+  );
+
+  // A tablet in landscape: cover and controls on the left, the paragraph on the right.
+  if (wide)
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 8, paddingBottom: insets.bottom + 24, paddingHorizontal: 40, gap: 12 }}>
+        {headerView}
+        <View style={{ flex: 1, minHeight: 0, flexDirection: "row", gap: 48 }}>
+          <View style={{ width: 420, gap: 16 }}>
+            {coverView}
+            {titleView}
+            {controlsView}
+          </View>
+          <View style={{ flex: 1, minWidth: 0, gap: 12, justifyContent: "center" }}>{statusView}</View>
+        </View>
+        {sheets}
+      </View>
+    );
+  // Too short for it all (a phone turned sideways): the page scrolls.
+  if (short)
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <ScrollView contentContainerStyle={{ paddingTop: insets.top + 8, paddingBottom: insets.bottom + 20, paddingLeft: insets.left + 24, paddingRight: insets.right + 24, gap: 16, maxWidth: 640, width: "100%", alignSelf: "center" }}>
+          {headerView}
+          {coverView}
+          {titleView}
+          {statusView}
+          {controlsView}
+        </ScrollView>
+        {sheets}
+      </View>
+    );
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top + 8, paddingBottom: insets.bottom + 20, paddingHorizontal: 24, gap: 16 }}>
+      {headerView}
+      {coverView}
+      {titleView}
+      {statusView}
+      {controlsView}
+      {sheets}
     </View>
   );
 }

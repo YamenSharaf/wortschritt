@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Alert, KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
@@ -10,7 +10,8 @@ import { useFeedback } from "@/lib/feedback";
 import { font, useTheme } from "@/lib/theme";
 import { ItemView } from "@/practice/ItemView";
 import { TutorButtons, TutorPanel, useTutor } from "@/practice/TutorHelp";
-import { ExerciseLayout, type CheckSlot } from "@/practice/layout";
+import { AnswerHost, answerSlot, ExerciseLayout, type CheckSlot } from "@/practice/layout";
+import { useLayout } from "@/lib/layout";
 import { QuestionSlide } from "@/practice/QuestionSlide";
 import { Segmented } from "@/reader/ReaderSheets";
 import { Button } from "@/ui/Button";
@@ -76,6 +77,7 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
   const { items, index, item, results, answered, lastCorrect, done, correctCount, answeredCount, next, goTo } = run;
   const { colors, radii, motion } = useTheme();
   const insets = useSafeAreaInsets();
+  const { wide } = useLayout();
   const [navOpen, setNavOpen] = useState(false);
 
   const feedback = useFeedback();
@@ -188,7 +190,7 @@ function Runner({ set, extra, initial }: { set: ExerciseSet; extra: ExerciseItem
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.bg }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       {/* The question is a sheet filling the screen between the header and the buttons (at thumb height); it scrolls inside, swipes anywhere. */}
-      <View style={{ flex: 1, width: "100%", maxWidth: 720, alignSelf: "center", paddingTop: insets.top + 16, paddingHorizontal: 20, gap: 12 }}>
+      <View style={{ flex: 1, width: "100%", maxWidth: wide ? 1180 : 720, alignSelf: "center", paddingTop: insets.top + 16, paddingHorizontal: wide ? 40 : 20, gap: 12 }}>
       <View
         style={{
           flexDirection: "row",
@@ -327,7 +329,10 @@ function Question({
   const tutor = useTutor(item, run.lastResponse);
   const [check, setCheck] = useState<CheckSlot | null>(null);
   const panel = run.assistantEnabled ? <TutorPanel tutor={tutor} answered={answered} lastCorrect={lastCorrect} lastResponse={run.lastResponse} /> : null;
-  const layout = useMemo(() => ({ panel, setCheck }), [panel]);
+  // A tablet in landscape: the task on the left, the answers and the bar on the right (in thumb reach).
+  const { wide } = useLayout();
+  const answers = useMemo(() => (wide ? answerSlot() : undefined), [wide]);
+  const layout = useMemo(() => ({ panel, setCheck, answers }), [panel, answers]);
 
   let main: ReactNode;
   if (answered) main = <Button tall kind="primary" label={run.isLast ? "Finish" : "Next"} icon={<Icon icon={ChevronRight} size={16} color={colors.brandInk} />} onPress={next} />;
@@ -336,88 +341,185 @@ function Question({
 
   return (
     <ExerciseLayout.Provider value={layout}>
-      <QuestionSlide
-        dir={dir}
-        verdict={answered ? lastCorrect : null}
-        animated={motion.base > 0}
-        canPrev={index > 0}
-        canNext={index + 1 < items.length || answered}
-        onPrev={() => goTo(index - 1)}
-        onNext={onSwipeNext}
-      >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-            borderWidth: 1,
-            borderRadius: radii.panel,
-            boxShadow: elevation.cardHover === "none" ? undefined : elevation.cardHover,
-            overflow: "hidden",
-          }}
-        >
-          {/* Scrolls a focused field (an answer, the tutor chat) above the keyboard. */}
-          <KeyboardAwareScrollView bottomOffset={24} contentContainerStyle={{ flexGrow: 1, padding: 20, paddingRight: run.isGenerated(item.id) ? 44 : 20 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-            <View style={{ flex: 1 }}>
-              {answeredEarlier && (
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 16 }}>
-                  <Icon icon={RotateCcw} size={14} color={colors.inkSubtle} />
-                  <Text variant="subtle" style={{ flex: 1 }}>
-                    You answered this{" "}
-                    <Text style={{ fontSize: 13, fontFamily: font.medium, color: prior ? colors.success : colors.danger }}>{prior ? "correctly" : "incorrectly"}</Text> this run.
-                    Answer again to change it.
-                  </Text>
+      {answers ? (
+        <View style={{ flex: 1, flexDirection: "row", gap: 32 }}>
+          <View style={{ flex: 1.1, minWidth: 0 }}>
+              <QuestionSlide
+                dir={dir}
+                verdict={answered ? lastCorrect : null}
+                animated={motion.base > 0}
+                canPrev={index > 0}
+                canNext={index + 1 < items.length || answered}
+                onPrev={() => goTo(index - 1)}
+                onNext={onSwipeNext}
+              >
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                    borderWidth: 1,
+                    borderRadius: radii.panel,
+                    boxShadow: elevation.cardHover === "none" ? undefined : elevation.cardHover,
+                    overflow: "hidden",
+                  }}
+                >
+                  {/* Scrolls a focused field (an answer, the tutor chat) above the keyboard. */}
+                  <KeyboardAwareScrollView bottomOffset={24} contentContainerStyle={{ flexGrow: 1, padding: 20, paddingRight: run.isGenerated(item.id) ? 44 : 20 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+                    <View style={{ flex: 1 }}>
+                      {answeredEarlier && (
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                          <Icon icon={RotateCcw} size={14} color={colors.inkSubtle} />
+                          <Text variant="subtle" style={{ flex: 1 }}>
+                            You answered this{" "}
+                            <Text style={{ fontSize: 13, fontFamily: font.medium, color: prior ? colors.success : colors.danger }}>{prior ? "correctly" : "incorrectly"}</Text> this run.
+                            Answer again to change it.
+                          </Text>
+                        </View>
+                      )}
+                      <ItemView key={`${item.id}-${index}`} item={item} submit={run.submit} />
+                    </View>
+                  </KeyboardAwareScrollView>
+                  {run.isGenerated(item.id) && (
+                    <Pressable
+                      onPress={() =>
+                        Alert.alert("Generated for you", "Your tutor wrote this exercise for you. Remove it from the set?", [
+                          { text: "Cancel", style: "cancel" },
+                          {
+                            text: "Remove",
+                            style: "destructive",
+                            onPress: () => void run.removeItem(item.id).catch((e) => Alert.alert("Couldn't remove it", e instanceof Error ? e.message : String(e))),
+                          },
+                        ])
+                      }
+                      accessibilityRole="button"
+                      accessibilityLabel="More about this exercise"
+                      hitSlop={8}
+                      style={{ position: "absolute", top: 8, right: 8, width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" }}
+                    >
+                      <Icon icon={Ellipsis} size={18} color={colors.inkSubtle} />
+                    </Pressable>
+                  )}
                 </View>
-              )}
-              <ItemView key={`${item.id}-${index}`} item={item} submit={run.submit} />
-            </View>
-          </KeyboardAwareScrollView>
-          {run.isGenerated(item.id) && (
-            <Pressable
-              onPress={() =>
-                Alert.alert("Generated for you", "Your tutor wrote this exercise for you. Remove it from the set?", [
-                  { text: "Cancel", style: "cancel" },
-                  {
-                    text: "Remove",
-                    style: "destructive",
-                    onPress: () => void run.removeItem(item.id).catch((e) => Alert.alert("Couldn't remove it", e instanceof Error ? e.message : String(e))),
-                  },
-                ])
-              }
-              accessibilityRole="button"
-              accessibilityLabel="More about this exercise"
-              hitSlop={8}
-              style={{ position: "absolute", top: 8, right: 8, width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" }}
-            >
-              <Icon icon={Ellipsis} size={18} color={colors.inkSubtle} />
-            </Pressable>
-          )}
+              </QuestionSlide>
+          </View>
+          <View style={{ flex: 1, minWidth: 0, gap: 12 }}>
+            {/* The tutor's replies at the top (they scroll), the answers and the bar at the bottom. */}
+            <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
+              {panel}
+            </ScrollView>
+            <AnswerHost slot={answers} />
+              <View style={{ flexDirection: "row", gap: 8, paddingTop: 4, paddingBottom: insets.bottom + 12 }}>
+                <Pressable
+                  onPress={() => goTo(index - 1)}
+                  disabled={index === 0}
+                  accessibilityRole="button"
+                  accessibilityLabel="Previous question"
+                  style={({ pressed }) => ({
+                    width: 52,
+                    height: 52,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: radii.control,
+                    borderWidth: 1,
+                    borderColor: colors.borderControl,
+                    backgroundColor: pressed ? colors.surfaceSunken : "transparent",
+                    opacity: index === 0 ? 0.45 : 1,
+                  })}
+                >
+                  <Icon icon={ChevronLeft} size={18} color={colors.ink} />
+                </Pressable>
+                {run.assistantEnabled && <TutorButtons tutor={tutor} />}
+                <View style={{ flex: 1, justifyContent: "center" }}>{main}</View>
+              </View>
+          </View>
         </View>
-      </QuestionSlide>
+      ) : (
+        <>
+          <QuestionSlide
+            dir={dir}
+            verdict={answered ? lastCorrect : null}
+            animated={motion.base > 0}
+            canPrev={index > 0}
+            canNext={index + 1 < items.length || answered}
+            onPrev={() => goTo(index - 1)}
+            onNext={onSwipeNext}
+          >
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                borderWidth: 1,
+                borderRadius: radii.panel,
+                boxShadow: elevation.cardHover === "none" ? undefined : elevation.cardHover,
+                overflow: "hidden",
+              }}
+            >
+              {/* Scrolls a focused field (an answer, the tutor chat) above the keyboard. */}
+              <KeyboardAwareScrollView bottomOffset={24} contentContainerStyle={{ flexGrow: 1, padding: 20, paddingRight: run.isGenerated(item.id) ? 44 : 20 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+                <View style={{ flex: 1 }}>
+                  {answeredEarlier && (
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                      <Icon icon={RotateCcw} size={14} color={colors.inkSubtle} />
+                      <Text variant="subtle" style={{ flex: 1 }}>
+                        You answered this{" "}
+                        <Text style={{ fontSize: 13, fontFamily: font.medium, color: prior ? colors.success : colors.danger }}>{prior ? "correctly" : "incorrectly"}</Text> this run.
+                        Answer again to change it.
+                      </Text>
+                    </View>
+                  )}
+                  <ItemView key={`${item.id}-${index}`} item={item} submit={run.submit} />
+                </View>
+              </KeyboardAwareScrollView>
+              {run.isGenerated(item.id) && (
+                <Pressable
+                  onPress={() =>
+                    Alert.alert("Generated for you", "Your tutor wrote this exercise for you. Remove it from the set?", [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Remove",
+                        style: "destructive",
+                        onPress: () => void run.removeItem(item.id).catch((e) => Alert.alert("Couldn't remove it", e instanceof Error ? e.message : String(e))),
+                      },
+                    ])
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel="More about this exercise"
+                  hitSlop={8}
+                  style={{ position: "absolute", top: 8, right: 8, width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" }}
+                >
+                  <Icon icon={Ellipsis} size={18} color={colors.inkSubtle} />
+                </Pressable>
+              )}
+            </View>
+          </QuestionSlide>
 
-      <View style={{ flexDirection: "row", gap: 8, paddingTop: 4, paddingBottom: insets.bottom + 12 }}>
-        <Pressable
-          onPress={() => goTo(index - 1)}
-          disabled={index === 0}
-          accessibilityRole="button"
-          accessibilityLabel="Previous question"
-          style={({ pressed }) => ({
-            width: 52,
-            height: 52,
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: radii.control,
-            borderWidth: 1,
-            borderColor: colors.borderControl,
-            backgroundColor: pressed ? colors.surfaceSunken : "transparent",
-            opacity: index === 0 ? 0.45 : 1,
-          })}
-        >
-          <Icon icon={ChevronLeft} size={18} color={colors.ink} />
-        </Pressable>
-        {run.assistantEnabled && <TutorButtons tutor={tutor} />}
-        <View style={{ flex: 1, justifyContent: "center" }}>{main}</View>
-      </View>
+          <View style={{ flexDirection: "row", gap: 8, paddingTop: 4, paddingBottom: insets.bottom + 12 }}>
+            <Pressable
+              onPress={() => goTo(index - 1)}
+              disabled={index === 0}
+              accessibilityRole="button"
+              accessibilityLabel="Previous question"
+              style={({ pressed }) => ({
+                width: 52,
+                height: 52,
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: radii.control,
+                borderWidth: 1,
+                borderColor: colors.borderControl,
+                backgroundColor: pressed ? colors.surfaceSunken : "transparent",
+                opacity: index === 0 ? 0.45 : 1,
+              })}
+            >
+              <Icon icon={ChevronLeft} size={18} color={colors.ink} />
+            </Pressable>
+            {run.assistantEnabled && <TutorButtons tutor={tutor} />}
+            <View style={{ flex: 1, justifyContent: "center" }}>{main}</View>
+          </View>
+        </>
+      )}
     </ExerciseLayout.Provider>
   );
 }

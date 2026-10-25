@@ -75,7 +75,7 @@ export function App() {
     <VocabProvider>
     <div className="min-h-screen">
       {/* A floating bar (Raycast-style): the mark left, sections centred, account right. */}
-      <div className="sticky top-0 z-30 px-3 pt-3 sm:px-4 print:hidden">
+      <div className="sticky top-0 z-30 px-3 pt-3 sm:px-4 rail:hidden print:hidden">
         <header className="ws-bar mx-auto grid h-14 max-w-5xl grid-cols-[1fr_auto] items-center gap-3 px-3 sm:px-4 md:grid-cols-[1fr_auto_1fr]">
           <NavLink to="/" className="min-w-0 justify-self-start rounded-control text-base font-semibold tracking-tight">
             <AppTitle />
@@ -102,7 +102,34 @@ export function App() {
         </header>
       </div>
 
-      <main className={`mx-auto max-w-5xl px-4 pt-6 sm:px-5 ${listening ? "pb-48 md:pb-28" : "pb-28 md:pb-16"} print:max-w-none print:p-0`}>
+      {/* Wide and landscape: the sections stand on their side at the left edge, the mark above, the account below. */}
+      <div className="fixed inset-y-0 left-0 z-30 hidden w-[104px] flex-col items-center py-5 rail:flex print:hidden">
+        <NavLink to="/" aria-label="Home" className="rounded-control">
+          <img src="/favicon.svg" alt="" className="h-9 w-9" />
+        </NavLink>
+        <div className="flex flex-1 items-center">
+          <nav aria-label="Main" className="ws-dock flex flex-col gap-1 !rounded-[28px] p-1.5">
+            {navItems.map(({ to, label, end, Icon }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                className={({ isActive }) =>
+                  `flex h-14 w-16 flex-col items-center justify-center gap-0.5 rounded-[20px] text-[10.5px] font-medium leading-tight transition-colors ${
+                    isActive ? "bg-brand-soft text-brand-ink" : "text-ink-muted hover:text-ink"
+                  }`
+                }
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                <span>{label}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </div>
+        <AccountMenu />
+      </div>
+
+      <main className={`mx-auto max-w-5xl px-4 pt-6 sm:px-5 rail:max-w-[1200px] rail:pl-[128px] rail:pr-8 rail:pt-8 ${listening ? "pb-48 md:pb-28" : "pb-28 md:pb-16"} print:max-w-none print:p-0`}>
         <Outlet />
       </main>
 
