@@ -59,11 +59,8 @@ export function AudioChip({ story, audio, onGenerated }: { story: StoryRef; audi
     label = `Waiting · ${audio.done} of ${audio.total}`;
     tone = "warning";
     icon = Clock;
-    onPress = () =>
-      Alert.alert("Waiting for the voice's limit", "The audio carries on by itself when the voice can be used again. Try now?", [
-        { text: "Later", style: "cancel" },
-        { text: "Try now", onPress: () => void generate() },
-      ]);
+    // The player says why, and offers what's made so far and trying now.
+    onPress = play;
   } else if (audio?.state === "error") {
     label = "Couldn't make it · Try again";
     tone = "danger";

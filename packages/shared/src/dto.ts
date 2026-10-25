@@ -141,11 +141,26 @@ export const storyAudio = z.object({
   starts: z.array(z.number()),
   /** While waiting: when it tries again (unix seconds). */
   retryAt: z.number().int().nullable().default(null),
+  /** While waiting: which limit, as the provider says it ("Gemini's daily limit: 100 requests a day…"). */
+  waitReason: z.string().nullable().default(null),
+  /** Until it's ready: how many paragraphs from the start are made already (they can be listened to), of how many. */
+  readyParagraphs: z.number().int().default(0),
+  paragraphs: z.number().int().default(0),
 });
 export type StoryAudio = z.infer<typeof storyAudio>;
 /** A story's audio in short, for lists (cards, a book's chapters). */
-export const storyAudioBrief = storyAudio.pick({ state: true, done: true, total: true, duration: true, retryAt: true });
+export const storyAudioBrief = storyAudio.pick({ state: true, done: true, total: true, duration: true, retryAt: true, waitReason: true });
 export type StoryAudioBrief = z.infer<typeof storyAudioBrief>;
+/** The paragraphs made so far, from the start, as a file to listen to while the rest waits. */
+export const partialStoryAudio = z.object({
+  key: z.string(),
+  duration: z.number(),
+  starts: z.array(z.number()),
+  /** Paragraphs in it, of the story's. */
+  paragraphs: z.number().int(),
+  of: z.number().int(),
+});
+export type PartialStoryAudio = z.infer<typeof partialStoryAudio>;
 
 export const ttsProvider = z.enum(["azure", "edge", "gemini"]);
 export type TtsProvider = z.infer<typeof ttsProvider>;

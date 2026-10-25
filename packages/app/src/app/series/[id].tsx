@@ -3,6 +3,7 @@ import { Alert, Pressable, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useApi, useAsync } from "@mdb/client/react";
 import { useSync } from "@/lib/sync";
+import { retryText } from "@mdb/client";
 import { clock, useListening, useStoryAudio } from "@/lib/listening";
 import { font, useTheme } from "@/lib/theme";
 import { Pill } from "@/ui/Pill";
@@ -150,7 +151,7 @@ function AudiobookBox({ book: b, audio, onChange }: { book: SeriesView; audio: R
   const explain = all
     ? `All ${written.length} chapters are ready${minutes ? ` · ${minutes} min` : ""}.`
     : waiting
-      ? `Waiting for the voice's limit${waiting.retryAt ? ` (again at ${new Date(waiting.retryAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})` : ""}. It carries on by itself, chapter by chapter.`
+      ? `${waiting.waitReason ?? "Waiting for the voice's limit"}. It carries on by itself${waiting.retryAt ? ` ${retryText(waiting.retryAt)}` : ""}, chapter by chapter; the chapters made already can be played.`
       : queued.length
         ? `Making the audio, chapter by chapter. You can listen to the ready ones already.`
         : failed.length

@@ -4,7 +4,8 @@ import { guardedFetch } from "../assistant/egress";
 import { decryptSecret, encryptSecret, isEncryptionAvailable } from "../assistant/secrets";
 import { db, schema } from "../db/client";
 import { edgeSynthesize } from "./edge";
-import { GeminiLimitError, geminiSynthesize } from "./gemini";
+import { GeminiLimitError, geminiPcm, geminiSynthesize, pcmToMp3 } from "./gemini";
+import { splitPcm } from "./split";
 
 /**
  * Read-aloud providers. A voice id says which one speaks it:
@@ -169,6 +170,30 @@ async function regionVoices(cfg: AzureConfig): Promise<Set<string>> {
   const list = (await res.json()) as { ShortName?: string }[];
   regionList = { region: cfg.region, at: Date.now(), names: new Set(list.map((v) => v.ShortName ?? "")) };
   return regionList.names;
+}
+
+/**
+ * Whether a voice is better asked for several paragraphs at once (its limit
+ * counts requests, not length): Gemini's.
+ */
+export const groupsParagraphs = (voice: string) => ttsProviderOf(voice) === "gemini";
+
+/**
+ * Several paragraphs in one request, cut back into one MP3 each (in the
+ * pauses between them, see split.ts). Only for voices that group paragraphs.
+ */
+export async function synthesizeGroup(texts: string[], voice: string): Promise<Buffer[]> {
+  const name = voice.slice("gemini:".length);
+  if (!groupsParagraphs(voice) || !VOICE_NAMES.gemini.has(name)) throw new TtsUnavailable(`unknown voice "${voice}"`);
+  const cfg = geminiConfig();
+  if (!cfg) throw new TtsUnavailable("Gemini isn't set up");
+  try {
+    const pcm = await geminiPcm(texts.join("\n\n"), name, cfg);
+    return splitPcm(pcm, texts.map((t) => t.length)).map(pcmToMp3);
+  } catch (err) {
+    if (err instanceof GeminiLimitError) throw new TtsRateLimited(err.message, err.retryAfter);
+    throw err;
+  }
 }
 
 /** Synthesize with whichever provider the voice belongs to. */

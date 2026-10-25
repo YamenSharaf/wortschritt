@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, useSyncExterna
 import { Platform } from "react-native";
 import { createAudioPlayer, requestNotificationPermissionsAsync, setAudioModeAsync, type AudioPlayer, type AudioStatus } from "expo-audio";
 import { Directory, File, Paths } from "expo-file-system";
-import type { StoryAudioBrief } from "@mdb/shared";
+import type { PartialStoryAudio, StoryAudioBrief } from "@mdb/shared";
 import { isNetworkError, paragraphAt, prepareStoryAudio, type Api, type AudioProgress } from "@mdb/client";
 import { deviceStore } from "./storage";
 
@@ -51,6 +51,8 @@ export type ListeningState = {
   downloading: string[];
   /** The reading voice is a server voice, so stories can be listened to (downloads play regardless). */
   enabled: boolean;
+  /** Playing only the paragraphs made so far (the rest waits for the voice's limit). */
+  partial: { paragraphs: number; of: number } | null;
 };
 
 type Entry = { key: string; starts: number[]; duration: number; title: string };
@@ -60,6 +62,8 @@ const native = Platform.OS !== "web";
 const dir = native ? new Directory(Paths.document, "story-audio") : null;
 const indexFile = dir ? new File(dir, "index.json") : null;
 const artDir = native ? new Directory(Paths.cache, "listen-art") : null;
+/** The paragraphs made so far, while the rest waits (not kept as downloads). */
+const partialDir = native ? new Directory(Paths.cache, "story-audio-partial") : null;
 const PREFS = "mdb-listening";
 const POSITIONS = "mdb-listen-positions";
 /** Choices for the skip buttons (a long press picks one). */
@@ -96,6 +100,7 @@ export function createListening(api: Api, headers: () => Record<string, string>)
     downloaded: Object.keys(index),
     downloading: [],
     enabled: false,
+    partial: null,
   };
   const listeners = new Set<() => void>();
   const set = (next: Partial<ListeningState>) => {
@@ -103,7 +108,7 @@ export function createListening(api: Api, headers: () => Record<string, string>)
     listeners.forEach((l) => l());
   };
   let player: AudioPlayer | null = null;
-  let current: (Entry & { id: string }) | null = null;
+  let current: (Entry & { id: string; book: string | null; partial: ListeningState["partial"] }) | null = null;
   let run = 0; // the latest listen(); an older one gives up
   let sleepTimer: ReturnType<typeof setTimeout> | null = null;
   let lastSaved = 0;
@@ -132,7 +137,9 @@ export function createListening(api: Api, headers: () => Record<string, string>)
     lastSaved = Date.now();
     const duration = current.duration || player.duration || 0;
     const t = player.currentTime;
-    const positions = { ...state.positions, [current.id]: { t, duration, done: done || (duration > 0 && t >= duration - 2) } };
+    // The end of the paragraphs made so far isn't the end of the story.
+    const end = !current.partial && (done || (duration > 0 && t >= duration - 2));
+    const positions = { ...state.positions, [current.id]: { t, duration, done: end } };
     set({ positions });
     store(POSITIONS, positions);
   }
@@ -223,6 +230,7 @@ export function createListening(api: Api, headers: () => Record<string, string>)
 
   /** At the end of a chapter, the next one (unless the sleep timer says stop); else done. */
   async function finished() {
+    if (current?.partial) return morePartial();
     keepPosition(true, true);
     const next = state.chapter?.next;
     if (state.sleep && "chapterEnd" in state.sleep) {
@@ -253,6 +261,59 @@ export function createListening(api: Api, headers: () => Record<string, string>)
   }
 
   /**
+   * The paragraphs made so far ran out: the whole story if it's ready now
+   * (from the next paragraph), else any made since, else wait for the rest.
+   */
+  async function morePartial() {
+    const was = current!;
+    const story = { id: was.id, title: was.title, book: was.book };
+    const next = was.partial!.paragraphs;
+    try {
+      if ((await api.storyAudio(was.id)).state !== "ready") {
+        const more = await api.partialStoryAudio(was.id).catch(() => null);
+        if (more && more.paragraphs > next) return void playPartial(story, more, more.starts[next] ?? 0);
+      }
+    } catch {}
+    await listen(story, next); // ready: plays on; else shows the wait and plays on when it's made
+  }
+
+  /** Start the paragraphs made so far (from `at` seconds). */
+  async function playPartial(story: StoryRef, part: PartialStoryAudio, at: number) {
+    const mine = ++run;
+    try {
+      if (!partialDir) throw new Error("Listening needs the app.");
+      if (!partialDir.exists) partialDir.create({ intermediates: true, idempotent: true });
+      const file = new File(partialDir, `${part.key}.mp3`);
+      if (!file.exists || !file.size) await File.downloadFileAsync(api.storyAudioUrl(story.id, part.key), file, { headers: headers(), idempotent: true });
+      if (mine !== run) return;
+      const p = await ensurePlayer();
+      current = { key: part.key, starts: part.starts, duration: part.duration, title: story.title, id: story.id, book: story.book ?? null, partial: { paragraphs: part.paragraphs, of: part.of } };
+      p.replace({ uri: file.uri });
+      p.setPlaybackRate(state.rate);
+      p.setActiveForLockScreen(true, { title: story.title, artist: state.book ?? story.book ?? "Wortschritt" }, { showSeekBackward: true, showSeekForward: true });
+      await p.seekTo(at);
+      p.play();
+      set({ phase: "playing", progress: null, partial: current.partial, paragraph: paragraphAt(part.starts, at), position: at, duration: part.duration, error: null });
+      void describe(story, mine);
+    } catch (e) {
+      if (mine === run) set({ phase: "error", error: e instanceof Error ? e.message : String(e) });
+    }
+  }
+
+  /**
+   * While the story's audio waits for the voice's limit: listen to the
+   * paragraphs made so far (from where it was left, if that's in them). At
+   * their end it goes on by itself once the rest is made.
+   */
+  async function listenPartial() {
+    if (!state.storyId) return;
+    const story = { id: state.storyId, title: state.title, book: state.book };
+    const part = await api.partialStoryAudio(story.id);
+    const saved = state.positions[story.id];
+    await playPartial(story, part, saved && !saved.done && saved.t < part.duration - 3 ? saved.t : 0);
+  }
+
+  /**
    * Listen to a story: from paragraph `from`, or (none given) where it was
    * left, else from the start. Its audio is made and downloaded first if needed.
    */
@@ -260,13 +321,14 @@ export function createListening(api: Api, headers: () => Record<string, string>)
     const mine = ++run;
     keepPosition(true);
     player?.pause();
-    set({ storyId: story.id, title: story.title, book: story.book ?? null, chapter: null, art: null, phase: "preparing", progress: null, paragraph: from ?? 0, position: 0, duration: 0, error: null });
+    const same = state.storyId === story.id;
+    set({ storyId: story.id, title: story.title, book: story.book ?? null, ...(same ? {} : { chapter: null, art: null }), phase: "preparing", progress: null, partial: null, paragraph: from ?? 0, position: 0, duration: 0, error: null });
     void describe(story, mine);
     try {
       const entry = await fetchAudio(story, (p) => mine === run && set({ progress: p }), () => mine !== run);
       if (mine !== run) return;
       const p = await ensurePlayer();
-      current = { ...entry, id: story.id };
+      current = { ...entry, id: story.id, book: story.book ?? null, partial: null };
       p.replace({ uri: new File(dir!, `${entry.key}.mp3`).uri });
       p.setPlaybackRate(state.rate);
       p.setActiveForLockScreen(true, { title: story.title, artist: state.book ?? story.book ?? "Wortschritt" }, { showSeekBackward: true, showSeekForward: true });
@@ -291,7 +353,7 @@ export function createListening(api: Api, headers: () => Record<string, string>)
       player.pause();
       player.setActiveForLockScreen(false);
     }
-    set({ storyId: null, title: "", book: null, chapter: null, art: null, phase: "idle", progress: null, error: null, paragraph: 0, position: 0, duration: 0 });
+    set({ storyId: null, title: "", book: null, chapter: null, art: null, phase: "idle", progress: null, partial: null, error: null, paragraph: 0, position: 0, duration: 0 });
   }
 
   function seekTo(t: number) {
@@ -337,6 +399,7 @@ export function createListening(api: Api, headers: () => Record<string, string>)
       savePrefs();
     },
     listen,
+    listenPartial,
     stop,
     pause() {
       player?.pause();
@@ -429,6 +492,7 @@ const idle: ListeningState = {
   downloaded: [],
   downloading: [],
   enabled: false,
+  partial: null,
 };
 
 /** The app's listening player and its state (null outside a signed-in session). */

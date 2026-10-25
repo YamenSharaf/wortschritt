@@ -3,7 +3,7 @@ import { test } from "node:test";
 import type { StoryAudio } from "@mdb/shared";
 import { audioProgressText, paragraphAt, prepareStoryAudio } from "./storyAudio";
 
-const base: StoryAudio = { state: "none", voice: "v", done: 0, total: 0, error: null, key: null, duration: 0, bytes: 0, starts: [], retryAt: null };
+const base: StoryAudio = { state: "none", voice: "v", done: 0, total: 0, error: null, key: null, duration: 0, bytes: 0, starts: [], retryAt: null, waitReason: null, readyParagraphs: 0, paragraphs: 0 };
 
 test("paragraphAt: the last paragraph started (an empty one is passed over)", () => {
   const starts = [0, 2.5, 6, 6, 9];
@@ -49,6 +49,10 @@ test("prepareStoryAudio: waits while the voice's limit is reached (the server ca
   assert.equal(audioProgressText({ done: 2, total: 4, retryAt: null }), "Preparing the audio… · 2 of 4");
   assert.equal(
     audioProgressText({ done: 2, total: 4, retryAt: 1_000 + 25 * 60 }, 1_000_000),
-    "Waiting for the voice's limit · 2 of 4 · carries on by itself (next try in 25 min)",
+    "Waiting for the voice's limit · 2 of 4 · carries on by itself in 25 min",
+  );
+  assert.match(
+    audioProgressText({ done: 2, total: 4, retryAt: 1_000 + 6 * 3600, reason: "Gemini's daily limit is used up (100 requests a day)" }, 1_000_000),
+    /^Gemini's daily limit is used up \(100 requests a day\) · 2 of 4 · carries on by itself at \d{1,2}[:.]\d{2}/,
   );
 });

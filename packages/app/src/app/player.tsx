@@ -1,17 +1,19 @@
 import { useState } from "react";
-import { Pressable, View, type LayoutChangeEvent } from "react-native";
+import { Alert, Pressable, View, type LayoutChangeEvent } from "react-native";
 import { router } from "expo-router";
 import { Image } from "expo-image";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { plainText, storyParagraphs } from "@mdb/shared";
 import { useApi, useAsync } from "@mdb/client/react";
-import { clock, RATE_CHOICES, SKIP_CHOICES, useListening } from "@/lib/listening";
+import { audioProgressText, retryText } from "@mdb/client";
+import { clock, RATE_CHOICES, SKIP_CHOICES, useListening, type ListeningController, type ListeningState } from "@/lib/listening";
 import { useServer } from "@/lib/server";
 import { font, useTheme } from "@/lib/theme";
 import { Segmented, Sheet } from "@/reader/ReaderSheets";
 import { READER_FONTS } from "@/reader/style";
 import { Icon } from "@/ui/icons";
+import { Button } from "@/ui/Button";
 import { Text } from "@/ui/Text";
 import { BookOpen, ChevronDown, Download, Moon, Pause, Play, RotateCcw, RotateCw, SkipBack, SkipForward } from "lucide-react-native";
 
@@ -111,10 +113,10 @@ export default function PlayerScreen() {
         <Text variant="muted">{[state.book, state.chapter && `Chapter ${state.chapter.n} of ${state.chapter.total}`].filter(Boolean).join(" · ") || "Story"}</Text>
       </View>
 
-      {state.phase === "preparing" || state.phase === "error" ? (
-        <Text style={{ color: state.phase === "error" ? colors.danger : colors.inkMuted }}>
-          {state.phase === "error" ? `Couldn't play: ${state.error}` : "Preparing the audio…"}
-        </Text>
+      {state.phase === "preparing" ? (
+        <Waiting state={state} controller={controller} />
+      ) : state.phase === "error" ? (
+        <Text style={{ color: colors.danger }}>Couldn't play: {state.error}</Text>
       ) : sentence ? (
         <View style={{ padding: 12, borderRadius: radii.control + 2, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
           <Text style={{ fontFamily: READER_FONTS.libron.regular, fontSize: 16, lineHeight: 24 }} numberOfLines={3}>
@@ -122,6 +124,12 @@ export default function PlayerScreen() {
           </Text>
         </View>
       ) : null}
+
+      {state.partial && (
+        <Text variant="subtle">
+          The first {state.partial.paragraphs} of {state.partial.of} paragraphs; the rest follows by itself once it's made.
+        </Text>
+      )}
 
       <Scrubber position={state.position} duration={state.duration} onSeek={controller.seekTo} />
 
@@ -176,6 +184,49 @@ export default function PlayerScreen() {
           />
         </Sheet>
       )}
+    </View>
+  );
+}
+
+/**
+ * While the audio is being made or waits for the voice's limit: why, and
+ * (when some paragraphs are made) listening to those meanwhile, or trying
+ * again now (saying so when the limit still holds).
+ */
+function Waiting({ state, controller }: { state: ListeningState; controller: ListeningController }) {
+  const { colors, radii } = useTheme();
+  const [tried, setTried] = useState<number | null>(null);
+  const p = state.progress;
+  const waiting = p?.retryAt != null;
+  const ready = p?.ready ?? 0;
+  const stillLimited = waiting && tried !== null && Date.now() - tried > 1500;
+  return (
+    <View style={{ gap: 10, padding: 12, borderRadius: radii.control + 2, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
+      <Text style={{ color: waiting ? colors.warning : colors.inkMuted }}>{waiting ? `${p!.reason ?? "Waiting for the voice's limit"}.` : audioProgressText(p)}</Text>
+      {waiting && (
+        <Text variant="subtle">
+          {p!.done} of {p!.total} parts made · it carries on by itself {retryText(p!.retryAt!)}.{stillLimited ? " Tried again just now: the limit still holds." : ""}
+        </Text>
+      )}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {ready > 0 && (
+          <Button
+            kind="primary"
+            label={`Listen to what's ready (${ready} of ${p?.paragraphs})`}
+            icon={<Icon icon={Play} size={16} />}
+            onPress={() => void controller.listenPartial().catch((e) => Alert.alert("Nothing to listen to yet", e instanceof Error ? e.message : String(e)))}
+          />
+        )}
+        {waiting && (
+          <Button
+            label="Try now"
+            onPress={() => {
+              setTried(Date.now());
+              void controller.listen({ id: state.storyId!, title: state.title, book: state.book });
+            }}
+          />
+        )}
+      </View>
     </View>
   );
 }

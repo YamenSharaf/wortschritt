@@ -35,6 +35,7 @@ import type {
   SeriesView,
   SheetView,
   Story,
+  PartialStoryAudio,
   StoryAudio,
   StoryAudioBrief,
   StoryContext,
@@ -481,6 +482,8 @@ export function createApi(o: ClientOptions) {
     /** A story as one audio file: where it stands, making it (poll storyAudio after), and the file. */
     storyAudio: (id: string) => req<StoryAudio>(`/api/stories/${encodeURIComponent(id)}/audio`),
     startStoryAudio: (id: string) => req<StoryAudio>(`/api/stories/${encodeURIComponent(id)}/audio`, { method: "POST" }),
+    /** While it waits: the paragraphs made so far as a file to listen to (an error when there are none yet). */
+    partialStoryAudio: (id: string) => req<PartialStoryAudio>(`/api/stories/${encodeURIComponent(id)}/audio/partial`, { method: "POST" }),
     /** Every story's audio in short, by story id; and generating a book's (all its chapters, queued in order). */
     allStoryAudio: () => req<Record<string, StoryAudioBrief>>("/api/story-audio"),
     startSeriesAudio: (id: string) =>

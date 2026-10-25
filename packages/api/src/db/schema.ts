@@ -382,6 +382,8 @@ export const storyAudioQueue = sqliteTable("story_audio_queue", {
   done: integer("done").notNull().default(0),
   total: integer("total").notNull().default(0),
   error: text("error"),
+  /** While it waits: which limit (as the provider says it). */
+  waitReason: text("wait_reason"),
 });
 
 /** Which of a learner's items changed (filled by triggers, see migration 14). */

@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { StoryAudioBrief } from "@mdb/shared";
-import { audioProgressText } from "@mdb/client";
+import { audioProgressText, retryText } from "@mdb/client";
 import { plainText, storyParagraphs } from "@mdb/shared";
 import { api } from "../lib/api";
 import {
   chapter,
   clock,
   listen,
+  listenPartial,
   openPlayer,
   pause,
   RATE_CHOICES,
@@ -38,6 +39,7 @@ import {
   SkipForwardIcon,
   SkipForwardSecondsIcon,
 } from "./icons";
+import { btn } from "./ui";
 
 /**
  * The listening player (as the app's): a panel with the cover, the paragraph
@@ -204,13 +206,21 @@ export function PlayerPanel() {
           <p className="text-ink-muted">{[ls.book, ls.chapter && `Chapter ${ls.chapter.n} of ${ls.chapter.total}`].filter(Boolean).join(" · ") || "Story"}</p>
         </div>
 
-        {ls.phase === "preparing" || ls.phase === "error" ? (
-          <p className={ls.phase === "error" ? "text-danger" : "text-ink-muted"}>{ls.phase === "error" ? `Couldn't play: ${ls.error}` : audioProgressText(ls.progress)}</p>
+        {ls.phase === "preparing" ? (
+          <Waiting ls={ls} />
+        ) : ls.phase === "error" ? (
+          <p className="text-danger">Couldn't play: {ls.error}</p>
         ) : sentence ? (
           <p className="line-clamp-3 rounded-control border border-line bg-surface p-3 font-content leading-relaxed" lang="de">
             {sentence}
           </p>
         ) : null}
+
+        {ls.partial && ls.phase !== "preparing" && (
+          <p className="text-sm text-ink-muted">
+            The first {ls.partial.paragraphs} of {ls.partial.of} paragraphs; the rest follows by itself once it's made.
+          </p>
+        )}
 
         <Scrubber position={ls.position} duration={ls.duration} />
 
@@ -264,6 +274,52 @@ export function PlayerPanel() {
             onPick={(s) => setSkip(menu, s)}
             onClose={() => setMenu(null)}
           />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * While the audio is being made or waits for the voice's limit: why, and
+ * (when some paragraphs are made) listening to those meanwhile, or trying
+ * again now (saying so when the limit still holds).
+ */
+function Waiting({ ls }: { ls: ListeningState }) {
+  const [tried, setTried] = useState<number | null>(null);
+  const p = ls.progress;
+  const waiting = p?.retryAt != null;
+  const ready = p?.ready ?? 0;
+  const stillLimited = waiting && tried !== null && Date.now() - tried > 1500;
+  return (
+    <div className="space-y-3 rounded-control border border-line bg-surface p-3">
+      <p className={waiting ? "text-warning" : "text-ink-muted"}>
+        {waiting ? `${p!.reason ?? "Waiting for the voice's limit"}.` : audioProgressText(p)}
+      </p>
+      {waiting && (
+        <p className="text-sm text-ink-muted">
+          {p!.done} of {p!.total} parts made · it carries on by itself {retryText(p!.retryAt!)}.
+          {stillLimited ? " Tried again just now: the limit still holds." : ""}
+        </p>
+      )}
+      <div className="flex flex-wrap gap-2">
+        {ready > 0 && (
+          <button type="button" className={`${btn.primary} ${btn.sm}`} onClick={() => void listenPartial()}>
+            <PlayIcon className="h-4 w-4" />
+            Listen to what's ready ({ready} of {p?.paragraphs} paragraphs)
+          </button>
+        )}
+        {waiting && (
+          <button
+            type="button"
+            className={`${btn.secondary} ${btn.sm}`}
+            onClick={() => {
+              setTried(Date.now());
+              void listen({ id: ls.storyId!, title: ls.title, book: ls.book });
+            }}
+          >
+            Try now
+          </button>
         )}
       </div>
     </div>
@@ -393,12 +449,10 @@ export function AudioChip({ story, audio, onGenerated }: { story: StoryRef; audi
     icon = <ClockIcon className="h-3.5 w-3.5" />;
     onClick = null;
   } else if (audio?.state === "waiting") {
+    // The player says why, and offers what's made so far and trying now.
     label = `Waiting · ${audio.done} of ${audio.total}`;
     tone = "border-transparent bg-warning-soft text-warning";
     icon = <ClockIcon className="h-3.5 w-3.5" />;
-    onClick = () => {
-      if (window.confirm("Waiting for the voice's limit: the audio carries on by itself when the voice can be used again. Try now?")) void generate();
-    };
   } else if (audio?.state === "error") {
     label = "Couldn't make it · Try again";
     tone = "border-transparent bg-danger-soft text-danger";

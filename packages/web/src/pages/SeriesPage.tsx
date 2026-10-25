@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { SeriesChapter, SeriesView, StoryAudioBrief } from "@mdb/shared";
 import { playInPlayer } from "../components/Player";
+import { retryText } from "@mdb/client";
 import { clock, useListening, useStoryAudio } from "../lib/listening";
 import { Cover } from "../components/Cover";
 import { CoverUpload } from "../components/CoverUpload";
@@ -218,7 +219,7 @@ function AudiobookBox({ book: b, audio, onChange }: { book: SeriesView; audio: R
     ready.length === written.length
       ? `All ${written.length} chapters are ready${minutes ? ` · ${minutes} min` : ""}.`
       : waiting
-        ? `Waiting for the voice's limit${waiting.retryAt ? ` (again at ${new Date(waiting.retryAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})` : ""}. It carries on by itself, chapter by chapter.`
+        ? `${waiting.waitReason ?? "Waiting for the voice's limit"}. It carries on by itself${waiting.retryAt ? ` ${retryText(waiting.retryAt)}` : ""}, chapter by chapter; the chapters made already can be played.`
         : queued.length
           ? "Making the audio, chapter by chapter. You can listen to the ready ones already."
           : failed.length
@@ -276,7 +277,7 @@ function ChapterAudio({ storyId, title, book, audio }: { storyId: string; title:
   if (!ls.enabled) return null;
   if (audio?.state === "building" || audio?.state === "waiting")
     return (
-      <span className={`px-2 ${audio.state === "waiting" ? "text-warning" : "text-ink-subtle"}`} title={audio.state === "waiting" ? "Waiting for the voice's limit" : "Making the audio"}>
+      <span className={`px-2 ${audio.state === "waiting" ? "text-warning" : "text-ink-subtle"}`} title={audio.state === "waiting" ? (audio.waitReason ?? "Waiting for the voice's limit") : "Making the audio"}>
         <ClockIcon className="h-4 w-4" />
       </span>
     );

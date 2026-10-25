@@ -814,6 +814,15 @@ export const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 22,
+    // Which limit a waiting story waits for, as the provider says it
+    // ("Gemini's daily limit is used up (100 requests a day…)").
+    name: "story-audio-wait-reason",
+    up(db) {
+      db.exec(`ALTER TABLE story_audio_queue ADD COLUMN wait_reason TEXT;`);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

@@ -2,9 +2,9 @@ import { createReadStream } from "node:fs";
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { storyAudio, storyAudioBrief } from "@mdb/shared";
+import { partialStoryAudio as partialDto, storyAudio, storyAudioBrief } from "@mdb/shared";
 import { requireAuth } from "../auth/session";
-import { allStoryAudio, startSeriesAudio, startStoryAudio, StoryAudioError, storyAudioPath, storyAudioStatus } from "../services/storyAudio";
+import { allStoryAudio, partialStoryAudio, startSeriesAudio, startStoryAudio, StoryAudioError, storyAudioPath, storyAudioStatus } from "../services/storyAudio";
 
 /** A story as one audio file: its status, making it, and the file (with Range, so players can seek). */
 export async function storyAudioRoutes(app: FastifyInstance) {
@@ -66,6 +66,20 @@ export async function storyAudioRoutes(app: FastifyInstance) {
         throw err;
       }
     },
+  );
+
+  r.post(
+    "/api/stories/:id/audio/partial",
+    {
+      preHandler: requireAuth,
+      schema: {
+        tags: ["stories"],
+        description: "While the audio waits: the paragraphs made so far, from the start, as a file to listen to (404 when there are none, or it's ready).",
+        params,
+        response: { 200: partialDto, 404: failure },
+      },
+    },
+    async (req, reply) => partialStoryAudio(req.user!.id, req.params.id) ?? reply.code(404).send({ error: "nothing to listen to yet" }),
   );
 
   r.get(

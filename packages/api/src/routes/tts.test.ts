@@ -342,3 +342,120 @@ test("Gemini: a stored key adds its voices; PCM comes back as MP3 of the same le
   assert.equal(retryDelay(null), null);
   assert.equal((await me("PUT", "/api/admin/tts", { gemini: null })).json().gemini.configured, false);
 });
+
+test("Gemini story audio: paragraphs asked for together and cut in the pauses; its daily limit is said; the first paragraphs can be heard meanwhile", async () => {
+  const { EXAMPLE_STORY } = await import("@mdb/shared");
+  assert.equal((await me("PUT", "/api/admin/tts", { gemini: { key: "secret-gemini-key-123", model: "gemini-3.8-flash-tts" } })).statusCode, 200);
+  const settings = (await me("GET", "/api/settings")).json();
+  await me("PUT", "/api/settings", { ...settings, ttsVoice: "", readerVoice: "gemini:Kore" });
+  const { setLivePauseForTests } = await import("../services/storyAudio");
+  setLivePauseForTests(0);
+
+  // "Gemini" reads each paragraph (blank lines between) as a tone as long as its text, with a pause after it.
+  const RATE = 24_000;
+  let requests = 0;
+  let limitAfter = Infinity;
+  geminiReply = () => {
+    const text = JSON.parse(calls.at(-1)!.body).contents[0].parts[0].text as string;
+    if (requests++ >= limitAfter) {
+      return new Response(
+        JSON.stringify({
+          error: {
+            code: 429,
+            details: [
+              {
+                "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                violations: [
+                  {
+                    description: "Generate content requests per day limit exceeded on Tier 1.",
+                    quotaMetric: "generativelanguage.googleapis.com/generate_requests_per_model_per_day",
+                    quotaId: "GenerateRequestsPerDayPerProjectPerModel",
+                    quotaValue: "100",
+                  },
+                ],
+              },
+              { "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "22695s" },
+            ],
+          },
+        }),
+        { status: 429 },
+      );
+    }
+    const samples: number[] = [];
+    for (const p of text.split("\n\n")) {
+      for (let i = 0; i < p.length * 0.05 * RATE; i++) samples.push(Math.round(8000 * Math.sin(i / 7)));
+      for (let i = 0; i < 0.5 * RATE; i++) samples.push(0);
+    }
+    const pcm = Buffer.alloc(samples.length * 2);
+    samples.forEach((v, i) => pcm.writeInt16LE(v, i * 2));
+    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ inlineData: { data: pcm.toString("base64") } }] } }] }), { status: 200 });
+  };
+  const until = async (id: string, state: string) => {
+    let s = (await me("GET", `/api/stories/${id}/audio`)).json();
+    for (let i = 0; i < 200 && s.state !== state; i++) {
+      await new Promise((r) => setTimeout(r, 20));
+      s = (await me("GET", `/api/stories/${id}/audio`)).json();
+    }
+    return s;
+  };
+
+  // Five short paragraphs: one request; each paragraph starts where its tone does.
+  const paras = ["Eins zwei drei.", "Hier ist der zweite Absatz, er ist länger.", "Kurz.", "Der vierte Absatz ist wieder etwas länger als die anderen.", "Ende."];
+  assert.equal((await me("POST", "/api/stories", { story: { ...EXAMPLE_STORY, id: "gruppe", body: paras.join("\n\n") } })).statusCode, 200);
+  await me("POST", "/api/stories/gruppe/audio");
+  const ready = await until("gruppe", "ready");
+  assert.equal(ready.state, "ready", JSON.stringify(ready));
+  assert.equal(requests, 1, "one request for the whole story");
+  let t = 0;
+  paras.forEach((p, i) => {
+    assert.ok(Math.abs(ready.starts[i] - t) < 0.4, `paragraph ${i} starts near ${t.toFixed(2)}, got ${ready.starts[i]}`);
+    t += p.length * 0.05 + 0.5;
+  });
+  // Each paragraph's clip is cached on its own: "Read aloud" of one needs no request.
+  assert.equal((await tts("gemini:Kore", paras[3]!)).statusCode, 200);
+  assert.equal(requests, 1);
+
+  // Eight long paragraphs make two requests; the second meets the daily limit.
+  const long = Array.from({ length: 8 }, (_, i) => `Absatz ${i + 1}. ${"Das ist ein langer Satz über einen Tag in der Stadt. ".repeat(7)}`);
+  assert.equal((await me("POST", "/api/stories", { story: { ...EXAMPLE_STORY, id: "limit", body: long.join("\n\n") } })).statusCode, 200);
+  requests = 0;
+  limitAfter = 1;
+  assert.equal((await me("POST", "/api/stories/limit/audio/partial")).statusCode, 404, "nothing made yet");
+  await me("POST", "/api/stories/limit/audio");
+  const waiting = await until("limit", "waiting");
+  assert.equal(waiting.state, "waiting", JSON.stringify(waiting));
+  assert.equal(waiting.waitReason, "Gemini's daily limit is used up (100 requests a day for gemini-3.8-flash-tts, Tier 1)");
+  assert.ok(waiting.retryAt > Date.now() / 1000 + 22_000);
+  assert.ok(waiting.readyParagraphs > 0 && waiting.readyParagraphs < 8, JSON.stringify(waiting));
+  assert.equal(waiting.paragraphs, 8);
+  const brief = (await me("GET", "/api/story-audio")).json().limit;
+  assert.equal(brief.waitReason, waiting.waitReason);
+
+  const partial = await me("POST", "/api/stories/limit/audio/partial");
+  assert.equal(partial.statusCode, 200, partial.body);
+  assert.equal(partial.json().paragraphs, waiting.readyParagraphs);
+  assert.equal(partial.json().of, 8);
+  assert.equal(partial.json().starts.length, waiting.readyParagraphs);
+  const file = await me("GET", `/api/stories/limit/audio/${partial.json().key}.mp3`);
+  assert.equal(file.statusCode, 200);
+  assert.ok(file.rawPayload.length > 0);
+
+  // The limit lifts: asked again, it finishes (the rest only), and the whole file replaces the partial one.
+  limitAfter = Infinity;
+  await me("POST", "/api/stories/limit/audio");
+  const done = await until("limit", "ready");
+  assert.equal(done.state, "ready", JSON.stringify(done));
+  assert.equal((await me("POST", "/api/stories/limit/audio/partial")).statusCode, 404, "it's ready: the whole file");
+
+  const { limitReason } = await import("../tts/gemini");
+  assert.equal(limitReason(null, "m"), "Gemini's limit is used up for now");
+  assert.equal(
+    limitReason({ error: { details: [{ "@type": "x.QuotaFailure", violations: [{ quotaId: "GenerateRequestsPerMinutePerProjectPerModel-FreeTier", quotaValue: "10" }] }] } }, "m"),
+    "Gemini's per-minute limit is used up (10 requests a minute for m, free tier)",
+  );
+
+  geminiReply = () =>
+    new Response(JSON.stringify({ candidates: [{ content: { parts: [{ inlineData: { data: Buffer.alloc(48_000).toString("base64") } }] } }] }), { status: 200 });
+  await me("PUT", "/api/settings", settings);
+  await me("PUT", "/api/admin/tts", { gemini: null });
+});

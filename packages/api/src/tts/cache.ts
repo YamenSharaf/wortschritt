@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { env } from "../env";
-import { synthesize } from "./providers";
+import { synthesize, synthesizeGroup } from "./providers";
 
 // Synthesized clips live on the app's own data volume (no sharing needed).
 const cacheDir = join(dirname(resolve(env.DATABASE_PATH)), "tts-cache");
@@ -14,6 +14,8 @@ export const liveSince = (ms: number) => Date.now() - lastLive < ms;
 
 const fileFor = (text: string, voice: string) => join(cacheDir, `${createHash("sha256").update(`${voice}\n${text}`).digest("hex")}.mp3`);
 /** Whether this clip is made already (costs nothing to use). */
+/** The cache file for a clip (whether it exists or not). */
+export const cachedClipFile = fileFor;
 export const isCached = (text: string, voice: string) => existsSync(fileFor(text, voice));
 
 /**
@@ -32,4 +34,21 @@ export async function clip(text: string, voice: string, opts: { background?: boo
     /* caching is best-effort */
   }
   return out;
+}
+
+/**
+ * Clips for several texts in one request (a voice whose limit counts
+ * requests, see providers.groupsParagraphs), each then cached on its own.
+ * Always in the background (story audio).
+ */
+export async function clipGroup(texts: string[], voice: string): Promise<Buffer[]> {
+  if (texts.length === 1) return [(await clip(texts[0]!, voice, { background: true })).audio];
+  const audio = await synthesizeGroup(texts, voice);
+  try {
+    if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
+    texts.forEach((t, i) => writeFileSync(fileFor(t, voice), audio[i]!));
+  } catch {
+    /* caching is best-effort */
+  }
+  return audio;
 }

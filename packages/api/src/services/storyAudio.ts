@@ -3,12 +3,12 @@ import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSyn
 import { dirname, join, resolve } from "node:path";
 import type { FastifyBaseLogger } from "fastify";
 import { and, asc, eq, isNotNull, isNull, lte, ne, sql } from "drizzle-orm";
-import { chunkText, plainText, storyParagraphs, type StoryAudio, type StoryAudioBrief } from "@mdb/shared";
+import { chunkText, plainText, storyParagraphs, type PartialStoryAudio, type StoryAudio, type StoryAudioBrief } from "@mdb/shared";
 import { db, schema } from "../db/client";
 import { env } from "../env";
-import { clip, isCached, liveSince } from "../tts/cache";
+import { cachedClipFile, clip, clipGroup, isCached, liveSince } from "../tts/cache";
 import { mp3Frames } from "../tts/mp3";
-import { TtsRateLimited, usableVoices } from "../tts/providers";
+import { groupsParagraphs, TtsRateLimited, usableVoices } from "../tts/providers";
 import { getSettings } from "./settings";
 import { getSeriesView } from "./series";
 import { getStory } from "./stories";
@@ -21,15 +21,23 @@ import { getStory } from "./stories";
  * another voice makes a new one; the old one is simply no longer asked for.
  *
  * Stories are made one at a time from a queue in the database. When a
- * voice's (free) limit is reached, the story waits and carries on later by
- * itself, also after a restart; the clips made so far are cached. While
- * someone is using voices live (tapping words, reading aloud), the queue
- * pauses so it doesn't use up the limit they need.
+ * voice's limit is reached (per minute or per day, on any tier), every story
+ * in that voice waits and carries on later by itself, also after a restart;
+ * the clips made so far are cached, and the paragraphs made from the start
+ * can be listened to meanwhile (partialStoryAudio). While someone is using
+ * voices live (tapping words, reading aloud), the queue pauses so it doesn't
+ * use up the limit they need. A voice whose limit counts requests (Gemini's)
+ * is asked for several paragraphs at once, cut back apart in the pauses.
  */
 
 const dir = join(dirname(resolve(env.DATABASE_PATH)), "story-audio");
 
 type Meta = { duration: number; starts: number[]; bytes: number };
+/** A file of the first paragraphs, while the rest waits: of which full version, how many paragraphs. */
+type PartialMeta = Meta & { of: string; paragraphs: number };
+/** At most this much text in one request (about two minutes of speech), and this many clips. */
+const GROUP_CHARS = 1500;
+const GROUP_CLIPS = 12;
 type Job = { done: number; total: number; stop: boolean };
 /** The story being made right now (one at a time). */
 let running: { key: string; job: Job } | null = null;
@@ -88,7 +96,20 @@ const empty = (voice: string | null): StoryAudio => ({
   bytes: 0,
   starts: [],
   retryAt: null,
+  waitReason: null,
+  readyParagraphs: 0,
+  paragraphs: 0,
 });
+
+/** How many paragraphs from the start have all their clips made (they can be listened to). */
+function readyFromStart(voice: string, paras: string[]): number {
+  let n = 0;
+  for (const p of paras) {
+    if (p && !chunkText(p).every((c) => isCached(c, voice))) break;
+    n++;
+  }
+  return n;
+}
 
 /**
  * Where a story's audio stands for this learner; null when there's no such
@@ -107,12 +128,14 @@ function statusOf(voice: string | null, body: string, watch: boolean): StoryAudi
   const meta = readMeta(key);
   if (meta) return { ...empty(voice), state: "ready", key, ...meta };
   if (watch) watched.set(key, Date.now());
-  if (running?.key === key) return { ...empty(voice), state: "building", done: running.job.done, total: running.job.total };
+  // Only someone looking at this story needs to know how much of it can be heard already.
+  const ready = watch ? { readyParagraphs: readyFromStart(voice, paras), paragraphs: paras.length } : {};
+  if (running?.key === key) return { ...empty(voice), ...ready, state: "building", done: running.job.done, total: running.job.total };
   const row = queued(key);
-  if (!row) return empty(voice);
-  const base = { ...empty(voice), done: row.done, total: row.total };
+  if (!row) return { ...empty(voice), ...ready };
+  const base = { ...empty(voice), ...ready, done: row.done, total: row.total };
   if (row.error) return { ...base, state: "error", error: row.error };
-  if (row.nextTryAt !== null && row.nextTryAt > nowS()) return { ...base, state: "waiting", retryAt: row.nextTryAt };
+  if (row.nextTryAt !== null && row.nextTryAt > nowS()) return { ...base, state: "waiting", retryAt: row.nextTryAt, waitReason: row.waitReason };
   return { ...base, state: "building" };
 }
 
@@ -125,8 +148,8 @@ export function allStoryAudio(userId: number): Record<string, StoryAudioBrief> {
   for (const row of db.select({ id: schema.stories.id, data: schema.stories.data }).from(schema.stories).where(eq(schema.stories.userId, userId)).all()) {
     const body = (row.data as { body?: unknown } | null)?.body;
     if (typeof body !== "string") continue;
-    const { state, done, total, duration, retryAt } = statusOf(voice, body, false);
-    out[row.id] = { state, done, total, duration, retryAt };
+    const { state, done, total, duration, retryAt, waitReason } = statusOf(voice, body, false);
+    out[row.id] = { state, done, total, duration, retryAt, waitReason };
   }
   return out;
 }
@@ -223,8 +246,13 @@ async function run(row: typeof schema.storyAudioQueue.$inferSelect): Promise<voi
     const progress = { done: job.done, total: job.total };
     if (err instanceof TtsRateLimited) {
       const wait = Math.max(err.retryAfter ?? LIMIT_RETRY_S, 30);
-      db.update(q).set({ ...progress, nextTryAt: nowS() + wait }).where(eq(q.key, row.key)).run();
-      log?.info({ storyId: row.storyId, done: job.done, total: job.total, wait }, "story audio waits for the voice's limit");
+      db.update(q).set(progress).where(eq(q.key, row.key)).run();
+      // The limit is the voice's: every story in it waits (rather than each spending a request to find out).
+      db.update(q)
+        .set({ nextTryAt: nowS() + wait, waitReason: err.message.slice(0, 300) })
+        .where(and(eq(q.voice, row.voice), isNull(q.error)))
+        .run();
+      log?.warn({ storyId: row.storyId, voice: row.voice, done: job.done, total: job.total, wait, reason: err.message }, "story audio waits for the voice's limit");
     } else if (err instanceof Paused) {
       db.update(q).set({ ...progress, nextTryAt: nowS() + 90 }).where(eq(q.key, row.key)).run();
     } else {
@@ -238,18 +266,52 @@ async function run(row: typeof schema.storyAudioQueue.$inferSelect): Promise<voi
   kick();
 }
 
-/** Synthesize every clip in order (a few at a time), join them, and keep the file and its timings. */
+/**
+ * The clips to ask for together: each one alone, or (a voice whose limit
+ * counts requests) runs of clips not made yet, up to GROUP_CHARS of text.
+ */
+function plan(texts: string[], voice: string): number[][] {
+  if (!groupsParagraphs(voice)) return texts.map((_, k) => [k]);
+  const groups: number[][] = [];
+  let cur: number[] = [];
+  let chars = 0;
+  const close = () => {
+    if (cur.length) groups.push(cur);
+    cur = [];
+    chars = 0;
+  };
+  texts.forEach((t, k) => {
+    if (isCached(t, voice)) {
+      close();
+      groups.push([k]);
+      return;
+    }
+    if (cur.length && (chars + t.length > GROUP_CHARS || cur.length >= GROUP_CLIPS)) close();
+    cur.push(k);
+    chars += t.length;
+  });
+  close();
+  return groups;
+}
+
+/** Synthesize every clip in order (a few requests at a time), join them, and keep the file and its timings. */
 async function build(key: string, voice: string, chunks: string[][], job: Job): Promise<void> {
   const all = chunks.flatMap((cs, para) => cs.map((text) => ({ para, text })));
+  const texts = all.map((a) => a.text);
   const clips: Buffer[] = new Array(all.length);
+  const groups = plan(texts, voice);
   let next = 0;
   const worker = async () => {
-    while (next < all.length && !job.stop) {
-      const k = next++;
-      const text = all[k]!.text;
-      if (!isCached(text, voice) && liveSince(LIVE_PAUSE_MS) && !waitedFor(key)) throw new Paused();
-      clips[k] = (await clip(text, voice, { background: true })).audio;
-      job.done++;
+    while (next < groups.length && !job.stop) {
+      const group = groups[next++]!;
+      const made = group.every((k) => isCached(texts[k]!, voice));
+      if (!made && liveSince(LIVE_PAUSE_MS) && !waitedFor(key)) throw new Paused();
+      const audio =
+        group.length === 1
+          ? [(await clip(texts[group[0]!]!, voice, { background: true })).audio]
+          : await clipGroup(group.map((k) => texts[k]!), voice);
+      group.forEach((k, i) => (clips[k] = audio[i]!));
+      job.done += group.length;
     }
   };
   // The first failure stops the others; the clips under way still finish (and stay cached).
@@ -263,7 +325,11 @@ async function build(key: string, voice: string, chunks: string[][], job: Job): 
   );
   const failed = results.find((r): r is PromiseRejectedResult => r.status === "rejected");
   if (failed) throw failed.reason;
+  write(key, joinClips(chunks, clips));
+}
 
+/** Clips (in chunk order) joined into one file, with where each paragraph starts. */
+function joinClips(chunks: string[][], clips: Buffer[]): { audio: Buffer; meta: Meta } {
   const parts: Buffer[] = [];
   const starts: number[] = [];
   let t = 0;
@@ -277,16 +343,54 @@ async function build(key: string, voice: string, chunks: string[][], job: Job): 
     }
   });
   const audio = Buffer.concat(parts);
+  return { audio, meta: { duration: Math.round(t * 1000) / 1000, starts, bytes: audio.length } };
+}
+
+function write(key: string, { audio, meta }: { audio: Buffer; meta: Meta | PartialMeta }): void {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   writeFileSync(`${audioFile(key)}.tmp`, audio);
-  writeFileSync(metaFile(key), JSON.stringify({ duration: Math.round(t * 1000) / 1000, starts, bytes: audio.length } satisfies Meta));
+  writeFileSync(metaFile(key), JSON.stringify(meta));
   renameSync(`${audioFile(key)}.tmp`, audioFile(key));
+}
+
+const partialKey = (key: string, paragraphs: number) => createHash("sha256").update(`${key}:${paragraphs}`).digest("hex").slice(0, 32);
+
+/**
+ * The paragraphs made so far, from the start, as one file (to listen to
+ * while the rest waits); null when there's no such story, it's ready (use
+ * the whole file), or not even its first paragraph is made yet.
+ */
+export function partialStoryAudio(userId: number, storyId: string): PartialStoryAudio | null {
+  const view = getStory(userId, storyId);
+  const voice = readingVoice(userId);
+  if (!view || !voice) return null;
+  const paras = spoken(view.story.body);
+  const key = keyFor(voice, paras);
+  if (readMeta(key)) return null;
+  const n = readyFromStart(voice, paras);
+  if (n === 0 || !paras.slice(0, n).some(Boolean)) return null;
+  const pkey = partialKey(key, n);
+  let meta = readMeta(pkey) as PartialMeta | null;
+  if (!meta) {
+    const chunks = paras.slice(0, n).map((p) => (p ? chunkText(p) : []));
+    const clips = chunks.flat().map((c) => readFileSync(cachedClipFile(c, voice)));
+    const joined = joinClips(chunks, clips);
+    meta = { ...joined.meta, of: key, paragraphs: n };
+    write(pkey, { audio: joined.audio, meta });
+  }
+  return { key: pkey, duration: meta.duration, starts: meta.starts, paragraphs: n, of: paras.length };
 }
 
 /** The file for a story's current audio, when `key` is still current. */
 export function storyAudioPath(userId: number, storyId: string, key: string): { path: string; size: number } | null {
   const status = storyAudioStatus(userId, storyId);
-  if (status?.state !== "ready" || status.key !== key) return null;
+  if (!status) return null;
+  if (status.state !== "ready" || status.key !== key) {
+    // The first paragraphs of the version being made, while the rest waits.
+    const view = getStory(userId, storyId);
+    const meta = readMeta(key) as PartialMeta | null;
+    if (!view || !status.voice || meta?.of !== keyFor(status.voice, spoken(view.story.body))) return null;
+  }
   const path = audioFile(key);
   return { path, size: statSync(path).size };
 }

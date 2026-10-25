@@ -16,16 +16,26 @@ export function paragraphAt(starts: number[], t: number): number {
 
 export type ReadyAudio = StoryAudio & { state: "ready"; key: string };
 
-/** How far making a story's audio has got; `retryAt` (unix seconds) while it waits for the voice's limit. */
-export type AudioProgress = { done: number; total: number; retryAt: number | null };
+/**
+ * How far making a story's audio has got: `retryAt` (unix seconds) and
+ * `reason` (which limit) while it waits; `ready` paragraphs from the start
+ * can be listened to already.
+ */
+export type AudioProgress = { done: number; total: number; retryAt: number | null; reason?: string | null; ready?: number; paragraphs?: number };
+
+/** When a wait ends, as people say it: "in 12 min", "at 08:00". */
+export function retryText(retryAt: number, now = Date.now()): string {
+  const ms = retryAt * 1000 - now;
+  if (ms < 90 * 60_000) return `in ${Math.max(1, Math.round(ms / 60_000))} min`;
+  return `at ${new Date(retryAt * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+}
 
 /** The progress as a line for the listen bar. */
 export function audioProgressText(p: AudioProgress | null, now = Date.now()): string {
   if (!p) return "Preparing the audio…";
   const parts = p.total ? ` · ${p.done} of ${p.total}` : "";
   if (p.retryAt === null) return `Preparing the audio…${parts}`;
-  const minutes = Math.max(1, Math.round((p.retryAt * 1000 - now) / 60_000));
-  return `Waiting for the voice's limit${parts} · carries on by itself (next try in ${minutes} min)`;
+  return `${p.reason ?? "Waiting for the voice's limit"}${parts} · carries on by itself ${retryText(p.retryAt, now)}`;
 }
 
 /**
@@ -42,7 +52,14 @@ export async function prepareStoryAudio(
   if (s.state !== "ready") s = await api.startStoryAudio(id);
   while (s.state === "building" || s.state === "waiting") {
     const waiting = s.state === "waiting";
-    opts.onProgress?.({ done: s.done, total: s.total, retryAt: waiting ? (s.retryAt ?? null) : null });
+    opts.onProgress?.({
+      done: s.done,
+      total: s.total,
+      retryAt: waiting ? (s.retryAt ?? null) : null,
+      reason: waiting ? s.waitReason : null,
+      ready: s.readyParagraphs,
+      paragraphs: s.paragraphs,
+    });
     await new Promise<void>((r) => timers.setTimeout(r, waiting ? (opts.waitingInterval ?? 30_000) : (opts.interval ?? 1000)));
     if (opts.isCancelled?.()) throw new Error("cancelled");
     s = await api.storyAudio(id);
