@@ -92,20 +92,26 @@ test("useStoryTranslations: batches missing paragraphs, at most four at a time",
   h.unmount();
 });
 
-test("useReadingProgress: only moves forward, and saves on leaving", async () => {
-  const saved: number[] = [];
-  const h = renderHook(() => useReadingProgress(view()), {
-    storyProgress: async (_id, p) => void saved.push(p) as never,
-  });
-  h.current().see(0.6);
-  h.current().see(0.4);
+test("useReadingProgress: only moves forward, with its spot, and leaving saves any step", async () => {
+  const saved: unknown[] = [];
+  const save = { storyProgress: async (_id: string, p: number, spot?: unknown) => void saved.push([p, spot]) as never };
+  const h = renderHook(() => useReadingProgress(view()), save);
+  h.current().see(0.6, { para: 4, char: 120 });
+  h.current().see(0.4, { para: 2, char: 0 });
   h.unmount();
-  assert.deepEqual(saved, [0.6]);
+  assert.deepEqual(saved, [[0.6, { para: 4, char: 120 }]]);
 
-  const again = renderHook(() => useReadingProgress(view()), { storyProgress: async (_id, p) => void saved.push(p) as never });
-  again.current().see(0.31);
+  // One page further in a long story (under the 2% the timer waits for) is still saved on leaving.
+  const again = renderHook(() => useReadingProgress(view()), save);
+  again.current().see(0.31, { para: 1, char: 0 });
   again.unmount();
-  assert.deepEqual(saved, [0.6], "too small a step from the server's 0.3 to save");
+  assert.deepEqual(saved[1], [0.31, { para: 1, char: 0 }]);
+
+  // Nothing further: nothing to save.
+  const idle = renderHook(() => useReadingProgress(view()), save);
+  idle.current().see(0.2);
+  idle.unmount();
+  assert.equal(saved.length, 2);
 });
 
 test("useStoryQuiz: records a finished quiz once per round", async () => {

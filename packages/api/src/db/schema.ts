@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { integer, primaryKey, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import type { ExerciseItem, FavoriteKind, Series, Settings, Story, WordDetails } from "@mdb/shared";
+import type { ExerciseItem, FavoriteKind, Series, Settings, Story, StorySpot, WordDetails } from "@mdb/shared";
 
 /** Per-user settings blob (one row per user). */
 export const settings = sqliteTable("settings", {
@@ -306,6 +306,8 @@ export const stories = sqliteTable("stories", {
   data: text("data", { mode: "json" }).$type<Story>().notNull(),
   /** How far they've scrolled, 0–1. */
   progress: real("progress").notNull().default(0),
+  /** Exactly where that is (paragraph and character), when the client said. */
+  spot: text("spot", { mode: "json" }).$type<StorySpot>(),
   readAt: integer("read_at"),
   /** When the read state last changed (read, or "Read again"). */
   readStateAt: integer("read_state_at"),

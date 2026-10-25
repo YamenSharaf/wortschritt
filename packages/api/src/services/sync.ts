@@ -228,7 +228,7 @@ function apply(userId: number, op: SyncOp): Omit<Result, "opId" | "duplicate"> {
       // Progress only moves forward, whichever device read further; read
       // state changes apply in time order (an older one is stale).
       const at = Math.min(op.at, Math.floor(Date.now() / 1000));
-      const r = op.type === "storyProgress" ? advanceStoryProgress(userId, op.storyId, op.progress, at) : setStoryRead(userId, op.storyId, op.read, at);
+      const r = op.type === "storyProgress" ? advanceStoryProgress(userId, op.storyId, op.progress, at, op.spot) : setStoryRead(userId, op.storyId, op.read, at);
       if (r === "missing") return { ok: false, error: "no such story" };
       return r === "stale" ? { ok: true, stale: true } : { ok: true };
     }

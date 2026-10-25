@@ -41,6 +41,7 @@ import type {
   StoryContext,
   StoryContextOptions,
   StoryTranslations,
+  StorySpot,
   StorySummary,
   StoryView,
   SyncChanges,
@@ -212,11 +213,11 @@ export function createApi(o: ClientOptions) {
       }),
     deleteStory: (id: string) =>
       req<{ ok: true }>(`/api/stories/${encodeURIComponent(id)}`, { method: "DELETE" }),
-    /** How far you've read; the server keeps the further position. */
-    storyProgress: (id: string, progress: number) =>
+    /** How far you've read (and exactly where); the server keeps the further position, and the end counts as read. */
+    storyProgress: (id: string, progress: number, spot?: StorySpot) =>
       req<{ ok: true }>(`/api/stories/${encodeURIComponent(id)}/progress`, {
         method: "PUT",
-        body: JSON.stringify({ progress }),
+        body: JSON.stringify({ progress, spot }),
       }),
     markStoryRead: (id: string) =>
       req<{ ok: true }>(`/api/stories/${encodeURIComponent(id)}/read`, { method: "POST" }),

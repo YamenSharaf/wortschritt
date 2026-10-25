@@ -809,6 +809,13 @@ export type StorySeriesInfo = z.infer<typeof storySeriesInfo>;
  * done, or "Next chapter").
  */
 export const readingStatus = z.enum(["unread", "reading", "read"]);
+
+/** Seeing this far into a story (its end) counts as having read it. */
+export const STORY_END = 0.98;
+
+/** A place in a story's text: a paragraph (0-based) and a character in it, where reading resumes. */
+export const storySpot = z.object({ para: z.number().int().min(0), char: z.number().int().min(0) });
+export type StorySpot = z.infer<typeof storySpot>;
 export type ReadingStatus = z.infer<typeof readingStatus>;
 
 export const storySummary = z.object({
@@ -846,6 +853,8 @@ export const storyView = z.object({
   status: readingStatus.default("unread"),
   /** Where the reader should reopen (0–1), or null to start at the top. */
   resumeAt: z.number().nullable().default(null),
+  /** The same place exactly (paragraph and character), when the reader or player said; null: use `resumeAt`. */
+  resumeSpot: storySpot.nullable().default(null),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
 });
@@ -857,9 +866,11 @@ export const saveStoryBody = z.object({
   overwrite: z.boolean().default(false),
 });
 
-/** How far the learner has read; the server keeps the further position. */
+/** How far the learner has read; the server keeps the further position (and reaching the end counts as read). */
 export const storyProgressBody = z.object({
   progress: z.number().min(0).max(1),
+  /** Exactly where (the start of the page or paragraph), for reopening there. */
+  spot: storySpot.optional(),
 });
 
 /** Batch lemma lookup (offline dictionary): surface form → base form. */
@@ -1265,7 +1276,14 @@ export const syncOp = z.discriminatedUnion("type", [
    * Progress only moves forward (max of server and app). `at`: when (unix
    * seconds); skipped as stale if the story was marked read or read again since.
    */
-  z.object({ opId, type: z.literal("storyProgress"), storyId: z.string().min(1), progress: z.number().min(0).max(1), at: z.number().int() }),
+  z.object({
+    opId,
+    type: z.literal("storyProgress"),
+    storyId: z.string().min(1),
+    progress: z.number().min(0).max(1),
+    spot: storySpot.optional(),
+    at: z.number().int(),
+  }),
   /** Mark read (`read: true`) or "Read again" (false: unread, back to the start); stale when the read state changed later. */
   z.object({ opId, type: z.literal("storyRead"), storyId: z.string().min(1), read: z.boolean(), at: z.number().int() }),
   z.object({ opId, type: z.literal("vocabSave"), data: saveVocabBody }),

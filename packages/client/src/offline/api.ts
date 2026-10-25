@@ -1,4 +1,5 @@
 import {
+  STORY_END,
   gradeItem,
   responseText,
   vocabKey,
@@ -15,6 +16,7 @@ import {
   type SeriesSummary,
   type SeriesView,
   type Settings,
+  type StorySpot,
   type StorySummary,
   type StoryView,
   type SyncOp,
@@ -369,12 +371,27 @@ export function createOfflineApi(o: {
 
     // --- reading ---------------------------------------------------------------
 
-    storyProgress: (id, progress) => {
-      // Only forward, like the server; the status stays the server's until the next sync.
-      const mirror = () => updateStory(id, (s) => void (s.progress = Math.max(s.progress, progress)));
+    storyProgress: (id, progress, spot?: StorySpot) => {
+      // As the server does it: only forward (the spot with it), and the end counts as read.
+      const mirror = () =>
+        updateStory(id, (s) => {
+          if (progress > s.progress) {
+            s.progress = progress;
+            s.resumeAt = progress > 0.02 ? progress : null;
+            s.resumeSpot = spot ?? null;
+            if (s.status === "unread") s.status = "reading";
+          }
+          if (!s.readAt && progress >= STORY_END) {
+            s.readAt = nowS();
+            s.progress = 1;
+            s.status = "read";
+            s.resumeAt = null;
+            s.resumeSpot = null;
+          }
+        });
       return write(
-        { type: "storyProgress", storyId: id, progress, at: nowS() },
-        () => api.storyProgress(id, progress),
+        { type: "storyProgress", storyId: id, progress, spot, at: nowS() },
+        () => api.storyProgress(id, progress, spot),
         mirror,
         async () => (await mirror(), { ok: true as const }),
       );
@@ -385,6 +402,7 @@ export function createOfflineApi(o: {
           s.readAt = nowS();
           s.status = "read";
           s.resumeAt = null;
+          s.resumeSpot = null;
         });
       return write(
         { type: "storyRead", storyId: id, read: true, at: nowS() },
@@ -400,6 +418,7 @@ export function createOfflineApi(o: {
           s.progress = 0;
           s.status = "unread";
           s.resumeAt = null;
+          s.resumeSpot = null;
         });
       return write(
         { type: "storyRead", storyId: id, read: false, at: nowS() },

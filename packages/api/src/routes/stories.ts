@@ -104,7 +104,7 @@ export async function storyRoutes(app: FastifyInstance) {
     },
     // The further position wins; only "Read again" moves it back.
     async (req, reply) =>
-      advanceStoryProgress(req.user!.id, req.params.id, req.body.progress) === "missing"
+      advanceStoryProgress(req.user!.id, req.params.id, req.body.progress, undefined, req.body.spot) === "missing"
         ? reply.code(404).send({ error: "no such story" })
         : { ok: true as const },
   );

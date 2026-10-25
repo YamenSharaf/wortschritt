@@ -72,15 +72,24 @@ test("edit keeps progress; the id can't change; overwrite via create", async () 
 test("progress and read state; reader settings are saved per account", async () => {
   const view = async () => (await me("GET", `/api/stories/${ID}`)).json();
   // Progress only moves forward; the server says where to reopen.
-  await me("PUT", `/api/stories/${ID}/progress`, { progress: 0.5 });
-  await me("PUT", `/api/stories/${ID}/progress`, { progress: 0.3 });
+  // The exact spot goes with the further position, and only with it.
+  await me("PUT", `/api/stories/${ID}/progress`, { progress: 0.5, spot: { para: 3, char: 40 } });
+  await me("PUT", `/api/stories/${ID}/progress`, { progress: 0.3, spot: { para: 1, char: 0 } });
   let v = await view();
-  assert.deepEqual([v.progress, v.status, v.resumeAt], [0.5, "reading", 0.5]);
+  assert.deepEqual([v.progress, v.status, v.resumeAt, v.resumeSpot], [0.5, "reading", 0.5, { para: 3, char: 40 }]);
   assert.ok(v.minutes >= 1, "reading time from the server");
-  await me("PUT", `/api/stories/${ID}/progress`, { progress: 0.99 });
-  assert.equal((await view()).resumeAt, null, "nearly done: reopen at the top");
+  // Further without a spot (an older client): the fraction alone.
+  await me("PUT", `/api/stories/${ID}/progress`, { progress: 0.6 });
+  v = await view();
+  assert.deepEqual([v.resumeAt, v.resumeSpot], [0.6, null]);
 
-  // Marked read: the end, no resume point.
+  // Reaching the end counts as read: no resume point, reopen at the top.
+  await me("PUT", `/api/stories/${ID}/progress`, { progress: 0.99, spot: { para: 9, char: 0 } });
+  v = await view();
+  assert.deepEqual([v.progress, v.status, v.resumeAt, v.resumeSpot], [1, "read", null, null]);
+  assert.ok(v.readAt);
+
+  // Marking it read as well changes nothing.
   assert.equal((await me("POST", `/api/stories/${ID}/read`)).statusCode, 200);
   v = await view();
   assert.deepEqual([v.progress, v.status, v.resumeAt], [1, "read", null]);

@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { PartialStoryAudio, StoryAudioBrief } from "@mdb/shared";
-import { paragraphAt, prepareStoryAudio, type AudioProgress } from "@mdb/client";
+import { listeningProgress, paragraphAt, prepareStoryAudio, type AudioProgress } from "@mdb/client";
 import { api } from "./api";
 
 /**
@@ -126,6 +126,10 @@ function positionState() {
   } catch {}
 }
 
+/** Listening counts as reading (the story's progress follows the paragraphs heard). */
+const heard = listeningProgress(api);
+const storyHeard = () => ({ id: current!.id, starts: current!.starts, duration: current!.duration, partial: Boolean(current!.partial) });
+
 function player(): HTMLAudioElement {
   if (audio) return audio;
   audio = new Audio();
@@ -134,6 +138,7 @@ function player(): HTMLAudioElement {
     if (!current || !audio) return;
     set({ paragraph: paragraphAt(current.starts, audio.currentTime), position: audio.currentTime });
     keepPosition();
+    if (!audio.paused) heard(storyHeard(), audio.currentTime);
   });
   audio.addEventListener("durationchange", () => {
     if (current && audio && !current.duration && Number.isFinite(audio.duration)) set({ duration: audio.duration });
@@ -205,6 +210,7 @@ async function describe(story: StoryRef, mine: number) {
 async function finished() {
   if (current?.partial) return morePartial();
   keepPosition(true, true);
+  if (current) heard(storyHeard(), 0, true);
   const next = state.chapter?.next;
   if (state.sleep && "chapterEnd" in state.sleep) return setSleep(null);
   if (next) await playStory(next, 0);

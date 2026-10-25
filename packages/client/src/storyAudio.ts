@@ -14,6 +14,28 @@ export function paragraphAt(starts: number[], t: number): number {
   return at;
 }
 
+/**
+ * Listening counts as reading: as the player moves into a new paragraph, the
+ * story's reading progress moves there too (the paragraph's start as a share
+ * of the audio, with the paragraph as the exact spot), and hearing it to the
+ * end counts as having read it. The server keeps the further position, so
+ * listening back over something read already changes nothing. Partial audio
+ * (the first paragraphs only) doesn't say how far into the story that is, so
+ * it isn't reported.
+ */
+export function listeningProgress(api: Pick<Api, "storyProgress">) {
+  let last = "";
+  return (story: { id: string; starts: number[]; duration: number; partial: boolean }, t: number, done = false) => {
+    if (story.partial || !(story.duration > 0)) return;
+    const para = paragraphAt(story.starts, t);
+    const key = done ? `${story.id}:end` : `${story.id}:${para}`;
+    if (key === last) return;
+    last = key;
+    const fraction = done ? 1 : Math.min(1, (story.starts[para] ?? 0) / story.duration);
+    api.storyProgress(story.id, Math.round(fraction * 1000) / 1000, done ? undefined : { para, char: 0 }).catch(() => {});
+  };
+}
+
 export type ReadyAudio = StoryAudio & { state: "ready"; key: string };
 
 /**

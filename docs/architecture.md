@@ -104,7 +104,8 @@ computes, like the web does with HTML; it keeps no business logic.
     "peek" is blurred until tapped, a grey bar on e-ink).
   - **Pages**: each piece's lines are measured off screen (`onTextLayout`)
     and packed into pages; a re-layout (size, font, English lines) keeps the
-    first paragraph on the page; it opens at the server's `resumeAt`; after
+    first paragraph on the page; it opens at the server's `resumeSpot` (the
+    page with that paragraph and character on it), else `resumeAt`; after
     the last page comes the end (finished / read again / chapters). Scroll
     is one ScrollView. The web preview has no `onTextLayout`, so pages stay
     blank there (scroll works).
@@ -293,9 +294,15 @@ computes, like the web does with HTML; it keeps no business logic.
   rules (`services/stories.ts`): progress only moves forward
   (`PUT /api/stories/:id/progress`), `POST|DELETE /api/stories/:id/read` mark
   read (progress to the end) or "Read again" (unread, back to 0: the only way
-  back), finishing a story's questions marks it read, and every story,
-  chapter and book comes with a `status` (unread / reading past 2% / read)
-  and stories with `resumeAt` (where to reopen, or null for the top).
+  back), finishing a story's questions marks it read, and so does reaching
+  the end (progress 0.98, `STORY_END`), and every story, chapter and book
+  comes with a `status` (unread / reading past 2% / read) and stories with
+  `resumeAt` (where to reopen, or null for the top) and `resumeSpot` (the
+  same place exactly: paragraph and character, saved with the furthest
+  progress when the client sends it). The readers send the start of the page
+  or screen; the players (`listeningProgress`) send each paragraph heard, and
+  hearing a story to the end reads it. Leaving the reader saves any step
+  further; while reading it saves every 2%.
   `stories.read_state_at` orders read-state changes, so the app's older
   queued actions come back `stale`. Its settings are
   `settings.reader` (per account). Paragraphs (blank-line blocks) are the

@@ -909,6 +909,20 @@ export const migrations: Migration[] = [
       }
     },
   },
+  {
+    version: 25,
+    // Where reading resumes, exactly (paragraph and character), next to how
+    // far (0–1). And reaching a story's end now counts as having read it:
+    // stories read to the end but never marked read become read.
+    name: "story-spot-and-read-at-end",
+    up(db) {
+      db.exec(`
+        ALTER TABLE stories ADD COLUMN spot TEXT;
+        UPDATE stories SET read_at = unixepoch(), read_state_at = unixepoch(), progress = 1
+          WHERE read_at IS NULL AND progress >= 0.98;
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

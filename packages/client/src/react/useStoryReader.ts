@@ -8,6 +8,7 @@ import {
   type ReaderSettings,
   type Settings,
   type Story,
+  type StorySpot,
   type StoryView,
 } from "@mdb/shared";
 import { timers, type TimerId } from "../timers";
@@ -191,6 +192,7 @@ export function useStoryTranslations({ storyId, enabled }: { storyId?: string; e
 export function useReadingProgress(view: StoryView | null) {
   const api = useApi();
   const progress = useRef(0);
+  const spot = useRef<StorySpot | undefined>(undefined);
   const saved = useRef(0);
   const storyId = view?.story.id;
   const start = view?.progress ?? 0;
@@ -198,26 +200,32 @@ export function useReadingProgress(view: StoryView | null) {
   useEffect(() => {
     if (!storyId) return;
     progress.current = saved.current = start;
-    const save = () => {
-      if (Math.abs(progress.current - saved.current) < 0.02) return;
+    spot.current = undefined;
+    // While reading: every 2% or so. On leaving: anything further at all.
+    const save = (step: number) => {
+      if (progress.current - saved.current < step || progress.current <= saved.current) return;
       saved.current = progress.current;
-      api.storyProgress(storyId, Math.round(progress.current * 1000) / 1000).catch(() => {});
+      api.storyProgress(storyId, Math.round(progress.current * 1000) / 1000, spot.current).catch(() => {});
     };
-    const timer = timers.setInterval(save, 2000);
+    const timer = timers.setInterval(() => save(0.02), 2000);
     return () => {
       timers.clearInterval(timer);
-      save();
+      save(0);
     };
   }, [api, storyId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
-    /** The learner has seen up to `fraction` of the story. */
-    see(fraction: number) {
-      progress.current = Math.max(progress.current, Math.min(1, Math.max(0, fraction)));
+    /** The learner has seen up to `fraction` of the story; `at` is exactly where that page or screen starts. */
+    see(fraction: number, at?: StorySpot) {
+      const f = Math.min(1, Math.max(0, fraction));
+      if (f <= progress.current) return;
+      progress.current = f;
+      spot.current = at;
     },
     /** Back to the start (after "Read again", which the server records itself). */
     reset() {
       progress.current = saved.current = 0;
+      spot.current = undefined;
     },
   };
 }

@@ -209,6 +209,7 @@ function Reader({ id }: { id: string }) {
             colors={colors}
             isSaved={reader.highlightVocab ? isSaved : undefined}
             resumeAt={round > 0 ? null : view.resumeAt}
+            resumeSpot={round > 0 ? null : view.resumeSpot}
             ending={ending}
             onWord={(w, context) => setWord({ word: w, context })}
             onReveal={tr.reveal}

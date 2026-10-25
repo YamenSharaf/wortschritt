@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { and, asc, desc, eq, notInArray, sql } from "drizzle-orm";
-import { storyParagraphs, story as storySchema, type ExerciseItem, type ReadingStatus, type Story, type StorySeriesInfo, type StorySummary, type StoryView } from "@mdb/shared";
+import { STORY_END, storyParagraphs, story as storySchema, type ExerciseItem, type ReadingStatus, type Story, type StorySeriesInfo, type StorySpot, type StorySummary, type StoryView } from "@mdb/shared";
 import { db, schema } from "../db/client";
 import { coverVersion } from "./covers";
 import { readingMinutes } from "./rules";
@@ -43,8 +43,8 @@ export function wordCount(markdown: string): number {
 
 /** Past this, a story counts as started ("reading"). */
 const STARTED = 0.02;
-/** From here on, reopening starts at the top rather than at the very end. */
-const NEAR_END = 0.98;
+/** From here on (the end), a story counts as read and reopens at the top. */
+const NEAR_END = STORY_END;
 
 export function readingStatus(progress: number, readAt: number | null): ReadingStatus {
   return readAt ? "read" : progress > STARTED ? "reading" : "unread";
@@ -104,6 +104,7 @@ export function getStory(userId: number, id: string): StoryView | null {
     readAt: row.readAt,
     status: readingStatus(row.progress, row.readAt),
     resumeAt: resumeAt(row.progress, row.readAt),
+    resumeSpot: resumeAt(row.progress, row.readAt) === null ? null : (row.spot ?? null),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -173,16 +174,31 @@ export function deleteStory(userId: number, id: string): boolean {
 type ReadOutcome = "ok" | "stale" | "missing";
 
 /**
- * Record how far the learner has read: the further position wins. `at` (from
- * the app's queue) older than the last read-state change is stale: reading
- * done before "Read again" doesn't count towards the new pass.
+ * Record how far the learner has read: the further position wins, with the
+ * exact spot the client gave for it (else none: the fraction alone). Reaching
+ * the end (STORY_END) counts as having read the story. `at` (from the app's
+ * queue) older than the last read-state change is stale: reading done before
+ * "Read again" doesn't count towards the new pass.
  */
-export function advanceStoryProgress(userId: number, id: string, progress: number, at?: number): ReadOutcome {
-  const row = db.select({ readStateAt: schema.stories.readStateAt }).from(schema.stories).where(key(userId, id)).get();
+export function advanceStoryProgress(userId: number, id: string, progress: number, at?: number, spot?: StorySpot): ReadOutcome {
+  const row = db
+    .select({ progress: schema.stories.progress, spot: schema.stories.spot, readAt: schema.stories.readAt, readStateAt: schema.stories.readStateAt })
+    .from(schema.stories)
+    .where(key(userId, id))
+    .get();
   if (!row) return "missing";
   if (at !== undefined && row.readStateAt && at < row.readStateAt) return "stale";
+  const further = progress > row.progress;
+  // The same place again, now with its exact spot: keep that too.
+  const spotOnly = !further && progress === row.progress && spot && !row.spot;
+  const finished = !row.readAt && progress >= STORY_END;
+  if (!further && !spotOnly && !finished) return "ok";
+  const when = Math.min(at ?? now(), now());
   db.update(schema.stories)
-    .set({ progress: sql`max(${schema.stories.progress}, ${progress})` })
+    .set({
+      ...(further || spotOnly ? { progress: Math.max(progress, row.progress), spot: spot ?? null } : {}),
+      ...(finished ? { readAt: when, readStateAt: when, progress: 1, spot: null } : {}),
+    })
     .where(key(userId, id))
     .run();
   return "ok";
@@ -204,7 +220,7 @@ export function setStoryRead(userId: number, id: string, read: boolean, at?: num
   if (read && row.readAt) return "ok";
   const when = Math.min(at ?? now(), now());
   db.update(schema.stories)
-    .set(read ? { readAt: when, progress: 1, readStateAt: when } : { readAt: null, progress: 0, readStateAt: when })
+    .set(read ? { readAt: when, progress: 1, readStateAt: when, spot: null } : { readAt: null, progress: 0, readStateAt: when, spot: null })
     .where(key(userId, id))
     .run();
   return "ok";

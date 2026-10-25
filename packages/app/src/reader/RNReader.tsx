@@ -49,12 +49,14 @@ type Props = {
   isSaved?: (word: string) => boolean;
   /** Where to open (0–1), or null for the top. */
   resumeAt: number | null;
+  /** Exactly where (paragraph and character), when known: wins over `resumeAt`. */
+  resumeSpot?: Pos | null;
   /** After the text: finished / read again / next chapter (its own page in pages mode). */
   ending: ReactNode;
   onWord: (word: string, context: string) => void;
   onReveal: (key: string) => void;
-  /** How far the learner has seen (0–1). */
-  onProgress: (fraction: number) => void;
+  /** How far the learner has seen (0–1), and exactly where that page or screen starts. */
+  onProgress: (fraction: number, at?: Pos) => void;
   /** Paragraphs on screen or about to be (to translate them). */
   onVisible?: (paras: number[]) => void;
   /** A tap beside the words in the middle: show or hide the bars. */
@@ -225,7 +227,10 @@ const ScrollReader = forwardRef<ReaderControls, Props>(function ScrollReader(p, 
     (y: number) => {
       scrollY.current = y;
       if (!content.current) return;
-      onProgress((y + viewport.current) / content.current);
+      // Exactly where: the paragraph at the top of the screen.
+      let para = -1;
+      for (const [k, top] of Object.entries(tops.current)) if (top <= y + 8 && Number(k) > para) para = Number(k);
+      onProgress((y + viewport.current) / content.current, para >= 0 ? { para, char: 0 } : undefined);
       if (onVisible) {
         const lo = y - 200;
         const hi = y + viewport.current + 200;
@@ -245,7 +250,10 @@ const ScrollReader = forwardRef<ReaderControls, Props>(function ScrollReader(p, 
         content.current = h;
         if (!restored.current && viewport.current) {
           restored.current = true;
-          if (p.resumeAt !== null) scroller.current?.scrollTo({ y: Math.max(0, p.resumeAt * h - viewport.current), animated: false });
+          // The paragraph it was at, else the fraction (the bottom of the screen then).
+          const top = p.resumeSpot ? tops.current[p.resumeSpot.para] : undefined;
+          if (top !== undefined) scroller.current?.scrollTo({ y: top, animated: false });
+          else if (p.resumeAt !== null) scroller.current?.scrollTo({ y: Math.max(0, p.resumeAt * h - viewport.current), animated: false });
           report(0);
         }
       }}
@@ -316,7 +324,16 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
     if (!restored.current) {
       restored.current = true;
       lastCount.current = count;
-      setPage(snap(p.resumeAt === null ? 0 : Math.min(count - 1, Math.floor(p.resumeAt * count))));
+      // The page with the exact spot on it, else the same share of the pages.
+      let at = p.resumeAt === null ? 0 : Math.min(count - 1, Math.floor(p.resumeAt * count));
+      if (p.resumeSpot) {
+        at = 0;
+        pages.forEach((pg, i) => {
+          const start = pg.find((x) => x.at)?.at;
+          if (start && before(start, p.resumeSpot!)) at = i;
+        });
+      }
+      setPage(snap(at));
       return;
     }
     // Stay on the end page; else the last page starting at or before your place.
@@ -343,7 +360,7 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
       layoutMove.current = false;
       lastPage.current = page;
     }
-    onProgress(page / count);
+    onProgress(page / count, page < count ? pages[page]!.find((x) => x.at)?.at : undefined);
     onPage?.(page, count);
     if (onVisible)
       onVisible([...new Set(pages.slice(page, page + per * 2).flat().map((s) => s.piece.para).filter((x) => x >= 0))]);

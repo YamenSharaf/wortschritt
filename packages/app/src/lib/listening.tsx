@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import { createAudioPlayer, requestNotificationPermissionsAsync, setAudioModeAsync, type AudioPlayer, type AudioStatus } from "expo-audio";
 import { Directory, File, Paths } from "expo-file-system";
 import type { PartialStoryAudio, StoryAudioBrief } from "@mdb/shared";
-import { isNetworkError, paragraphAt, prepareStoryAudio, type Api, type AudioProgress } from "@mdb/client";
+import { isNetworkError, listeningProgress, paragraphAt, prepareStoryAudio, type Api, type AudioProgress } from "@mdb/client";
 import { deviceStore } from "./storage";
 
 /**
@@ -130,6 +130,10 @@ export function createListening(api: Api, headers: () => Record<string, string>)
   const store = (key: string, value: unknown) => void Promise.resolve(deviceStore.set(key, JSON.stringify(value))).catch(() => {});
   const savePrefs = () => store(PREFS, { rate: state.rate, skipBack: state.skipBack, skipForward: state.skipForward });
 
+  /** Listening counts as reading (the story's progress follows the paragraphs heard). */
+  const heard = listeningProgress(api);
+  const storyHeard = () => ({ id: current!.id, starts: current!.starts, duration: current!.duration, partial: Boolean(current!.partial) });
+
   /** Remember where the story playing is (now, or at most every few seconds). */
   function keepPosition(force = false, done = false) {
     if (!current || !player) return;
@@ -225,6 +229,7 @@ export function createListening(api: Api, headers: () => Record<string, string>)
     const phase = state.phase === "playing" || state.phase === "paused" ? (s.playing ? "playing" : "paused") : state.phase;
     set({ paragraph, phase, position: s.currentTime, duration: current.duration || s.duration || state.duration });
     keepPosition(!s.playing);
+    if (s.playing) heard(storyHeard(), s.currentTime);
     if (s.didJustFinish) void finished();
   }
 
@@ -232,6 +237,7 @@ export function createListening(api: Api, headers: () => Record<string, string>)
   async function finished() {
     if (current?.partial) return morePartial();
     keepPosition(true, true);
+    if (current) heard(storyHeard(), 0, true);
     const next = state.chapter?.next;
     if (state.sleep && "chapterEnd" in state.sleep) {
       setSleep(null);

@@ -224,9 +224,16 @@ function StoryReaderView() {
     reflowing.current = restored.current;
     if (!restored.current) {
       restored.current = true;
-      // The server says where to reopen (null: at the top).
+      // The server says where to reopen (null: at the top): the share of the
+      // pages, kept within the paragraph it was at when that's known.
       const p = view.resumeAt;
-      setPage(p === null ? 0 : Math.min(count - 1, Math.floor(p * count)));
+      let at = p === null ? 0 : Math.min(count - 1, Math.floor(p * count));
+      const spot = view.resumeSpot;
+      if (p !== null && spot && starts[spot.para] !== undefined) {
+        at = Math.min(Math.max(at, starts[spot.para]!), blockEnds.current[spot.para] ?? at);
+        anchor.current = spot.para;
+      }
+      setPage(at);
     } else {
       setPage(wasEnd ? count : Math.min(count - 1, starts[anchor.current] ?? 0));
     }
@@ -252,7 +259,7 @@ function StoryReaderView() {
     else if (page < pageCount) anchor.current = firstOnPage(blockEnds.current, page);
     // Pages turned past count as read (the page you're on doesn't yet); the
     // end page counts as all of it.
-    reading.see(page / pageCount);
+    reading.see(page / pageCount, page < pageCount ? { para: firstOnPage(blockEnds.current, page), char: 0 } : undefined);
   }, [paged, page, pageCount, blockPages]);
 
   const turn = useCallback((delta: number) => {
@@ -273,7 +280,11 @@ function StoryReaderView() {
       restored.current = true;
       const sc = scrollerRef.current;
       const el = articleRef.current;
-      if (view.resumeAt !== null) {
+      // The paragraph it was at, else the fraction (the bottom of the screen then).
+      const spot = view.resumeAt !== null ? view.resumeSpot : null;
+      const block = spot ? blockRefs.current[spot.para] : null;
+      if (block) sc.scrollTop = Math.max(0, block.offsetTop - 64);
+      else if (view.resumeAt !== null) {
         sc.scrollTop = el.offsetTop + view.resumeAt * el.offsetHeight - sc.clientHeight;
       }
     } else {
@@ -286,12 +297,12 @@ function StoryReaderView() {
     let last = sc.scrollTop;
     const onScroll = () => {
       const el = articleRef.current;
-      if (el) {
-        const seen = sc.scrollTop + sc.clientHeight - el.offsetTop;
-        reading.see(seen / el.offsetHeight);
-      }
       const i = blockRefs.current.findIndex((b) => b && b.offsetTop + b.offsetHeight > sc.scrollTop + 64);
       if (i >= 0) anchor.current = i;
+      if (el) {
+        const seen = sc.scrollTop + sc.clientHeight - el.offsetTop;
+        reading.see(seen / el.offsetHeight, i >= 0 ? { para: i, char: 0 } : undefined);
+      }
       const d = sc.scrollTop - last;
       if (Math.abs(d) > 8) {
         setChrome(d < 0 || sc.scrollTop < 40);

@@ -323,3 +323,20 @@ test("v24: keys get a provider; background audio switched on for the server is n
   assert.equal(db.prepare("SELECT 1 FROM app_settings WHERE key = 'tts.background'").get(), undefined);
   db.close();
 });
+
+test("v25: stories read to the end but never marked read become read; a place for the exact spot", () => {
+  const db = new Database(":memory:");
+  runMigrations(db, null, migrations.filter((m) => m.version <= 24));
+  db.prepare("INSERT INTO users (username, password_hash, role) VALUES ('me', 'x', 'user')").run();
+  const add = db.prepare("INSERT INTO stories (user_id, id, data, progress, read_at) VALUES (1, ?, '{}', ?, ?)");
+  add.run("done", 1, null);
+  add.run("half", 0.5, null);
+  add.run("marked", 1, 1000);
+  runMigrations(db, null);
+
+  const row = (id: string) => db.prepare("SELECT progress, read_at IS NOT NULL AS read, spot FROM stories WHERE id = ?").get(id) as { progress: number; read: number; spot: null };
+  assert.deepEqual(row("done"), { progress: 1, read: 1, spot: null });
+  assert.deepEqual(row("half"), { progress: 0.5, read: 0, spot: null });
+  assert.equal((db.prepare("SELECT read_at FROM stories WHERE id = 'marked'").get() as { read_at: number }).read_at, 1000, "already read stays as it was");
+  db.close();
+});
