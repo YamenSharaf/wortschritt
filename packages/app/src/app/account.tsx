@@ -41,6 +41,13 @@ export default function Account() {
       </View>
 
       <View style={{ gap: 10 }}>
+        <Text variant="heading">Reading aloud</Text>
+        <Card>
+          <LinkRow label="Voices, audiobooks and your voice keys" onPress={() => router.push("/reading-aloud")} first />
+        </Card>
+      </View>
+
+      <View style={{ gap: 10 }}>
         <Text variant="heading">Appearance</Text>
         <Text variant="subtle">On this device only.</Text>
         <Card style={{ padding: 16, gap: 16 }}>
@@ -117,7 +124,7 @@ export default function Account() {
             </Text>
           </View>
           <LinkRow
-            label="Password, AI tutor, voices, connected apps (web)"
+            label="Password, AI tutor, connected apps (web)"
             onPress={() => server && void WebBrowser.openBrowserAsync(`${server}/settings`)}
           />
         </Card>

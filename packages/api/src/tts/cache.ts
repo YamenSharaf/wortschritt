@@ -20,15 +20,15 @@ export const cachedClipFile = fileFor;
 export const isCached = (text: string, voice: string) => existsSync(fileFor(text, voice));
 
 /**
- * A cached clip for this voice and text, or a fresh one (then cached).
- * `background` (story audio from the queue) doesn't count as live use.
+ * A cached clip for this voice and text, or a fresh one (then cached),
+ * made with this learner's keys. Only `taps` (the default) count as live use.
  */
-export async function clip(text: string, voice: string, opts: { background?: boolean; purpose?: TtsPurpose } = {}): Promise<{ audio: Buffer; type: string }> {
+export async function clip(text: string, voice: string, userId: number, opts: { purpose?: TtsPurpose } = {}): Promise<{ audio: Buffer; type: string }> {
   const file = fileFor(text, voice);
   if (existsSync(file)) return { audio: readFileSync(file), type: "audio/mpeg" };
-  const purpose = opts.purpose ?? (opts.background ? "background" : "taps");
+  const purpose = opts.purpose ?? "taps";
   if (purpose === "taps") lastLive = Date.now();
-  const out = await synthesize(text, voice, purpose);
+  const out = await synthesize(text, voice, purpose, userId);
   try {
     if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
     // Another voice read it (a fallback): not this voice's clip to keep.
@@ -44,9 +44,9 @@ export async function clip(text: string, voice: string, opts: { background?: boo
  * requests, see providers.groupsParagraphs), each then cached on its own
  * (story audio: in the background, or for someone waiting).
  */
-export async function clipGroup(texts: string[], voice: string, purpose: TtsPurpose): Promise<Buffer[]> {
-  if (texts.length === 1) return [(await clip(texts[0]!, voice, { purpose })).audio];
-  const audio = await synthesizeGroup(texts, voice, purpose);
+export async function clipGroup(texts: string[], voice: string, purpose: TtsPurpose, userId: number): Promise<Buffer[]> {
+  if (texts.length === 1) return [(await clip(texts[0]!, voice, userId, { purpose })).audio];
+  const audio = await synthesizeGroup(texts, voice, purpose, userId);
   try {
     if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true });
     texts.forEach((t, i) => writeFileSync(fileFor(t, voice), audio[i]!));

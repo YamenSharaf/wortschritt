@@ -306,3 +306,20 @@ test("v23: the one Gemini key stored before becomes the first of the order, used
   assert.equal(db.prepare("SELECT 1 FROM app_settings WHERE key = 'tts.gemini'").get(), undefined, "the old setting is gone");
   db.close();
 });
+
+test("v24: keys get a provider; background audio switched on for the server is now on for its admins", () => {
+  const db = new Database(":memory:");
+  runMigrations(db, null, migrations.filter((m) => m.version <= 23));
+  db.prepare("INSERT INTO users (username, password_hash, role) VALUES ('boss', 'x', 'admin'), ('pupil', 'x', 'user')").run();
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('tts.background', ?)").run(JSON.stringify({ enabled: true, reserve: 0.3 }));
+  db.prepare("INSERT INTO tts_keys (label, kind, key_enc) VALUES ('Old', 'free', 'enc')").run();
+  runMigrations(db, null);
+
+  assert.deepEqual(db.prepare("SELECT provider, region FROM tts_keys").all(), [{ provider: "gemini", region: null }]);
+  const audiobooks = (name: string) =>
+    (db.prepare("SELECT json_extract(s.data, '$.audiobooks') AS a FROM settings s JOIN users u ON u.id = s.user_id WHERE u.username = ?").get(name) as { a: string } | undefined)?.a;
+  assert.deepEqual(JSON.parse(audiobooks("boss")!), { auto: true, reserve: 0.3 });
+  assert.equal(audiobooks("pupil"), undefined);
+  assert.equal(db.prepare("SELECT 1 FROM app_settings WHERE key = 'tts.background'").get(), undefined);
+  db.close();
+});

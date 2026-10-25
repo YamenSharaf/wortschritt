@@ -4,7 +4,7 @@ import { api, ApiError } from "../lib/api";
 import { useAuth } from "@mdb/client/react";
 import { timeAgo } from "@mdb/client";
 import { btn } from "../components/ui";
-import { GeminiVoices } from "../components/GeminiVoices";
+import { Toggle, VoiceKeys } from "../components/VoiceKeys";
 
 const smallBtn =
   "rounded-control border border-line-control px-2.5 py-1 text-xs font-medium hover:border-line-strong disabled:opacity-50 ";
@@ -400,9 +400,79 @@ function TtsProviders() {
         {!cfg.azure.canStoreKey ? (
           <p className="text-xs text-warning">Set ENCRYPTION_KEY on the server to store a key.</p>
         ) : (
-          <GeminiVoices cfg={cfg} onChange={setCfg} />
+          <VoiceKeys
+            keys={cfg.gemini.keys}
+            entries={cfg.gemini.entries}
+            ops={{
+              add: (b) => api.adminAddTtsKey(b).then(setCfg),
+              update: (id, b) => api.adminUpdateTtsKey(id, b).then(setCfg),
+              remove: (id) => api.adminDeleteTtsKey(id).then(setCfg),
+              saveEntries: (list) => api.adminSetTtsEntries(list).then(setCfg),
+            }}
+          />
         )}
       </div>
+
+      <div className="space-y-3 rounded-card border border-line p-4">
+        <h3 className="font-medium">Who may use the server's voices</h3>
+        <p className="text-xs text-ink-muted">
+          Its Gemini and Azure keys. Everyone can also add their own under Settings › Reading aloud; theirs are tried first.
+        </p>
+        {(
+          [
+            ["all", "Everyone", "As now. Requests from others count against the same daily limits."],
+            ["free", "Everyone, free keys only", "Others never use a paid key: only admins do."],
+            ["admins", "Only admins", "Others bring their own keys or use their device's voice."],
+          ] as const
+        ).map(([value, label, hint]) => (
+          <label key={value} className="flex items-start gap-2 text-sm">
+            <input
+              type="radio"
+              name="tts-share"
+              checked={cfg.share === value}
+              disabled={busy}
+              onChange={() => run(() => api.adminSetTts({ share: value }), "Saved.")}
+              className="mt-1"
+            />
+            <span>
+              <span className="font-medium">{label}</span>
+              <span className="block text-xs text-ink-muted">{hint}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+
+      <div className="flex items-start gap-4 rounded-card border border-line p-4">
+        <div className="flex-1">
+          <div className="font-medium">Read taps with Edge when Gemini is used up</div>
+          <p className="text-xs text-ink-muted">
+            When every Gemini key for taps is at its limit, a word or sentence is read by Edge's Katja (unofficial, no key) instead of failing. Story
+            audio always waits for its own voice.
+          </p>
+        </div>
+        <Toggle on={cfg.edgeFallback} label="Read taps with Edge when Gemini is used up" disabled={busy} onChange={(on) => void run(() => api.adminSetTts({ edgeFallback: on }), "Saved.")} />
+      </div>
+
+      {cfg.gemini.keys.length > 0 && (
+        <div className="space-y-2 rounded-card border border-line p-4">
+          <div className="font-medium">Make them yours</div>
+          <p className="text-xs text-ink-muted">
+            The Gemini keys above are the server's. Moved to your account, they're used for your stories and taps first and no longer shared (find them
+            under Settings › Reading aloud).
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            className={smallBtn}
+            onClick={() =>
+              window.confirm("Move the server's Gemini keys and their order to your account? Others then use their own keys (or none).") &&
+              run(() => api.adminMoveTtsKeysToMe(), "Moved to your account.")
+            }
+          >
+            Move to my account…
+          </button>
+        </div>
+      )}
 
       {testable && (
         <div className="flex flex-wrap items-center gap-2">

@@ -79,7 +79,7 @@ test("no providers: no server voices, and cloud voices are refused", async () =>
     azure: { configured: false, region: "", canStoreKey: true },
     edge: { enabled: false },
     gemini: { keys: [], entries: [] },
-    background: { enabled: false, reserve: 0.2 },
+    share: "all",
     edgeFallback: false,
   });
 });
@@ -321,7 +321,7 @@ test("Gemini: a stored key adds its voices; PCM comes back as MP3 of the same le
   assert.equal((await me("POST", "/api/admin/tts/gemini/keys", { label: "Free", kind: "free" })).statusCode, 400, "a key is needed");
   const set = await me("POST", "/api/admin/tts/gemini/keys", { label: "Free", kind: "free", key: "secret-gemini-key-123" });
   assert.equal(set.statusCode, 200, set.body);
-  assert.deepEqual(set.json().gemini.keys, [{ id: set.json().gemini.keys[0].id, label: "Free", kind: "free", hint: "-123", unreadable: false }]);
+  assert.deepEqual(set.json().gemini.keys, [{ id: set.json().gemini.keys[0].id, provider: "gemini", region: null, label: "Free", kind: "free", hint: "-123", unreadable: false }]);
   assert.deepEqual(
     set.json().gemini.entries.map((x: { model: string; background: boolean }) => [x.model, x.background]),
     [["gemini-3.8-flash-tts", true], ["gemini-3.8-flash-lite-tts", true]],
@@ -536,7 +536,7 @@ test("Gemini keys in order: a limit passes to the next; paid only where allowed;
   // The background may not use the paid key: with the free one at its limit, it waits.
   const { withGemini } = await import("../tts/geminiKeys");
   await assert.rejects(
-    withGemini("background", async () => ({ result: 1, seconds: 0 })),
+    withGemini("background", 1, async () => ({ result: 1, seconds: 0 })),
     (err: Error) => err.constructor.name === "TtsRateLimited" && /daily limit/.test(err.message),
   );
 
@@ -559,7 +559,7 @@ test("Gemini keys in order: a limit passes to the next; paid only where allowed;
   await me("DELETE", `/api/admin/tts/gemini/keys/${paidId}`);
 });
 
-test("background audio: off by default; on, it makes unread stories by itself, within its share of the day", async () => {
+test("audiobooks made ahead of time: each learner's own setting, off by default; on, unread stories by itself, within the learner's share of the day", async () => {
   const { EXAMPLE_STORY } = await import("@mdb/shared");
   const key = (await me("POST", "/api/admin/tts/gemini/keys", { label: "Free", kind: "free", key: "free-key-0000000003" })).json().gemini.keys[0].id;
   const settings = (await me("GET", "/api/settings")).json();
@@ -574,7 +574,8 @@ test("background audio: off by default; on, it makes unread stories by itself, w
   await new Promise((r) => setTimeout(r, 50));
   assert.equal(await status(), "none", "off: nothing is made by itself");
 
-  assert.deepEqual((await me("PUT", "/api/admin/tts", { background: { enabled: true, reserve: 0.2 } })).json().background, { enabled: true, reserve: 0.2 });
+  const on = await me("PUT", "/api/settings", { ...settings, ttsVoice: "", readerVoice: "gemini:Charon", audiobooks: { auto: true, reserve: 0.2 } });
+  assert.deepEqual(on.json().audiobooks, { auto: true, reserve: 0.2 });
   resetBackgroundForTests();
   resumeStoryAudio(app.log);
   let state = await status();
@@ -600,10 +601,76 @@ test("background audio: off by default; on, it makes unread stories by itself, w
   for (const entry of db.select().from(schema.ttsEntries).all()) {
     db.insert(schema.ttsUsage).values({ entryId: entry.id, day: googleDay(), requests: 80, seconds: 0 }).run();
   }
-  assert.equal(backgroundRoom(), 0);
+  assert.equal(backgroundRoom(1), 0);
 
-  await me("PUT", "/api/admin/tts", { background: { enabled: false, reserve: 0.2 } });
   await newGoogleDay();
   await me("PUT", "/api/settings", settings);
   await me("DELETE", `/api/admin/tts/gemini/keys/${key}`);
+});
+
+test("a learner's own voice keys: theirs first, never anyone else's; the server's after them as the admin shares them", async () => {
+  const anna = await login("anna", "anna-password");
+  const server = (await me("POST", "/api/admin/tts/gemini/keys", { label: "Server paid", kind: "paid", key: "server-key-000000009" })).json();
+  const serverKey = server.gemini.keys[0].id;
+
+  // Nothing of her own yet: the server's entries come after (all of them, as shared with everyone).
+  let mine = (await anna("GET", "/api/tts/mine")).json();
+  assert.deepEqual(mine.keys, []);
+  assert.equal(mine.server.entries.length, 2);
+  assert.ok((await anna("GET", "/api/tts/status")).json().voices.some((v: { id: string }) => v.id === "gemini:Kore"));
+
+  // Her own key: tried first for her taps.
+  const added = await anna("POST", "/api/tts/mine/keys", { label: "Mine", kind: "free", key: "anna-key-0000000001" });
+  assert.equal(added.statusCode, 200, added.body);
+  mine = added.json();
+  assert.equal(mine.keys.length, 1);
+  assert.equal(mine.entries.length, 2);
+  calls.length = 0;
+  assert.equal((await anna("GET", `/api/tts?${new URLSearchParams({ voice: "gemini:Kore", text: "Annas eigener Satz." })}`)).statusCode, 200);
+  assert.equal(calls.at(-1)!.headers["x-goog-api-key"], "anna-key-0000000001");
+
+  // Hers only: the admin's list doesn't show it, he can't change or remove it, his taps never use it.
+  assert.ok(!(await me("GET", "/api/admin/tts")).json().gemini.keys.some((x: { label: string }) => x.label === "Mine"));
+  assert.equal((await me("GET", "/api/tts/mine")).json().keys.length, 0);
+  assert.equal((await me("DELETE", `/api/tts/mine/keys/${mine.keys[0].id}`)).statusCode, 404);
+  assert.equal((await me("PUT", `/api/tts/mine/keys/${mine.keys[0].id}`, { label: "x", kind: "free" })).statusCode, 404);
+  assert.equal((await me("PUT", "/api/tts/mine/entries", { entries: [{ keyId: mine.keys[0].id, model: "gemini-3.8-flash-tts", background: true, waiting: true, taps: true }] })).statusCode, 400);
+  assert.equal((await anna("DELETE", `/api/admin/tts/gemini/keys/${serverKey}`)).statusCode, 403);
+  calls.length = 0;
+  assert.equal((await tts("gemini:Kore", "Der Satz des Admins.")).statusCode, 200);
+  assert.equal(calls.at(-1)!.headers["x-goog-api-key"], "server-key-000000009");
+
+  // An Azure key of her own: her Azure voices use it (and its region).
+  const azure = await anna("POST", "/api/tts/mine/keys", { provider: "azure", region: "swedencentral", label: "My Azure", kind: "free", key: "anna-azure-key-000001" });
+  assert.equal(azure.statusCode, 200, azure.body);
+  assert.deepEqual(
+    azure.json().keys.map((x: { provider: string; region: string | null }) => [x.provider, x.region]),
+    [["gemini", null], ["azure", "swedencentral"]],
+  );
+  calls.length = 0;
+  assert.equal((await anna("GET", `/api/tts?${new URLSearchParams({ voice: "azure:de-DE-KatjaNeural", text: "Anna mit Azure." })}`)).statusCode, 200);
+  assert.ok(calls.at(-1)!.url.startsWith("https://swedencentral.tts.speech.microsoft.com/"));
+  assert.equal(calls.at(-1)!.headers["Ocp-Apim-Subscription-Key"], "anna-azure-key-000001");
+
+  // Shared with admins only: without her own Gemini key, she has no Gemini voices; with "free only", only the free server keys.
+  await anna("DELETE", `/api/tts/mine/keys/${mine.keys[0].id}`);
+  assert.equal((await me("PUT", "/api/admin/tts", { share: "admins" })).json().share, "admins");
+  assert.equal((await anna("GET", "/api/tts/mine")).json().server.entries.length, 0);
+  assert.ok(!(await anna("GET", "/api/tts/status")).json().voices.some((v: { id: string }) => v.id === "gemini:Kore"));
+  assert.equal((await anna("GET", `/api/tts?${new URLSearchParams({ voice: "gemini:Kore", text: "Darf ich nicht." })}`)).statusCode, 503);
+  assert.ok((await me("GET", "/api/tts/status")).json().voices.some((v: { id: string }) => v.id === "gemini:Kore"), "the admin still may");
+  await me("PUT", "/api/admin/tts", { share: "free" });
+  assert.equal((await anna("GET", "/api/tts/mine")).json().server.entries.length, 0, "the server's only key is paid");
+
+  // The admin moves the server's keys to his own account.
+  await me("PUT", "/api/admin/tts", { share: "all" });
+  const moved = await me("POST", "/api/admin/tts/move-to-me");
+  assert.deepEqual(moved.json().gemini, { keys: [], entries: [] });
+  const his = (await me("GET", "/api/tts/mine")).json();
+  assert.equal(his.keys.length, 1);
+  assert.equal(his.entries.length, 2);
+  assert.equal((await anna("GET", "/api/tts/mine")).json().server.entries.length, 0, "no longer the server's");
+
+  await me("DELETE", `/api/tts/mine/keys/${his.keys[0].id}`);
+  await anna("DELETE", `/api/tts/mine/keys/${azure.json().keys[1].id}`);
 });

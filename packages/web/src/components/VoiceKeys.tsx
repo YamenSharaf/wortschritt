@@ -1,11 +1,20 @@
-import { useState } from "react";
-import { GEMINI_TTS_MODELS, type TtsAdminSettings, type TtsEntryView, type TtsKeyView } from "@mdb/shared";
+import { useState, type ReactNode } from "react";
+import { GEMINI_TTS_MODELS, type TtsEntryView, type TtsKeyView } from "@mdb/shared";
 import { retryText } from "@mdb/client";
-import { api, ApiError } from "../lib/api";
+import { ApiError } from "../lib/api";
 import { btn } from "./ui";
 
 type Model = (typeof GEMINI_TTS_MODELS)[number];
 type Entry = Pick<TtsEntryView, "keyId" | "model" | "background" | "waiting" | "taps">;
+type KeyForm = { provider: "gemini" | "azure"; region: string; label: string; kind: "free" | "paid"; key: string };
+export type KeyBody = { provider: "gemini" | "azure"; region?: string; label: string; kind: "free" | "paid"; key?: string };
+/** Changing keys and the order: each returns the keys and order as they are after it. */
+export type KeyOps = {
+  add: (b: KeyBody) => Promise<unknown>;
+  update: (id: number, b: KeyBody) => Promise<unknown>;
+  remove: (id: number) => Promise<unknown>;
+  saveEntries: (list: Entry[]) => Promise<unknown>;
+};
 
 /** Rough price of an hour of audio (USD, Google's list price through 2026), for "≈ $0.09 today" on paid keys. */
 const HOURLY: Record<Model, number> = { "gemini-3.8-flash-tts": 0.81, "gemini-3.8-flash-lite-tts": 0.54 };
@@ -17,7 +26,7 @@ const USES = [
 ] as const;
 
 /** A switch: a real checkbox, drawn as one. */
-function Toggle({ on, label, disabled, onChange }: { on: boolean; label: string; disabled?: boolean; onChange: (on: boolean) => void }) {
+export function Toggle({ on, label, disabled, onChange }: { on: boolean; label: string; disabled?: boolean; onChange: (on: boolean) => void }) {
   return (
     <label className="relative inline-flex cursor-pointer items-center" title={label}>
       <input type="checkbox" role="switch" checked={on} disabled={disabled} onChange={(e) => onChange(e.target.checked)} aria-label={label} className="peer sr-only" />
@@ -34,25 +43,39 @@ function Toggle({ on, label, disabled, onChange }: { on: boolean; label: string;
 }
 
 /**
- * Gemini, as several keys tried in order: each key is a Google project
- * (free, or paid with billing), each entry of the order a key + model with
- * its own daily limit, what it may be used for, and today's count. Then
- * background audio and the Edge fallback for taps.
+ * Voice keys and the order Gemini keys are tried in, for the server's keys
+ * (Administration) or a learner's own (Settings › Reading aloud). Each
+ * Gemini key is a Google project (free, or paid with billing); each entry of
+ * the order a key + model with its own daily limit, what it may be used for,
+ * and today's count. An Azure key (one, with its region) when `azure`.
+ * `after`: what's tried after this order (a learner's: the server's).
  */
-export function GeminiVoices({ cfg, onChange }: { cfg: TtsAdminSettings; onChange: (c: TtsAdminSettings) => void }) {
+export function VoiceKeys({
+  keys: allKeys,
+  entries,
+  ops,
+  azure,
+  after,
+}: {
+  keys: TtsKeyView[];
+  entries: TtsEntryView[];
+  ops: KeyOps;
+  azure?: boolean;
+  after?: ReactNode;
+}) {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [adding, setAdding] = useState<{ label: string; kind: "free" | "paid"; key: string } | null>(null);
-  const [editing, setEditing] = useState<{ id: number; label: string; kind: "free" | "paid"; key: string } | null>(null);
-  const keys = cfg.gemini.keys;
-  const entries = cfg.gemini.entries;
+  const [adding, setAdding] = useState<KeyForm | null>(null);
+  const [editing, setEditing] = useState<(KeyForm & { id: number }) | null>(null);
+  const keys = allKeys.filter((k) => k.provider === "gemini");
+  const azureKey = allKeys.find((k) => k.provider === "azure");
   const keyOf = (id: number) => keys.find((k) => k.id === id);
 
-  async function run(fn: () => Promise<TtsAdminSettings>, done?: string) {
+  async function run(fn: () => Promise<unknown>, done?: string) {
     setBusy(true);
     setMsg(null);
     try {
-      onChange(await fn());
+      await fn();
       if (done) setMsg({ ok: true, text: done });
       return true;
     } catch (err) {
@@ -62,7 +85,12 @@ export function GeminiVoices({ cfg, onChange }: { cfg: TtsAdminSettings; onChang
       setBusy(false);
     }
   }
-  const save = (list: Entry[]) => run(() => api.adminSetTtsEntries(list.map(({ keyId, model, background, waiting, taps }) => ({ keyId, model, background, waiting, taps }))));
+  const save = (list: Entry[]) => run(() => ops.saveEntries(list.map(({ keyId, model, background, waiting, taps }) => ({ keyId, model, background, waiting, taps }))));
+  const body = (f: KeyForm): KeyBody => ({ provider: f.provider, label: f.label, kind: f.kind, ...(f.provider === "azure" ? { region: f.region } : {}), ...(f.key ? { key: f.key } : {}) });
+  const newKey = (provider: "gemini" | "azure"): KeyForm =>
+    provider === "azure"
+      ? { provider, region: "", label: "Azure", kind: "free", key: "" }
+      : { provider, region: "", label: keys.length ? "Paid" : "Free", kind: keys.length ? "paid" : "free", key: "" };
   const move = (i: number, to: number) => {
     const list = [...entries];
     const [it] = list.splice(i, 1);
@@ -83,23 +111,31 @@ export function GeminiVoices({ cfg, onChange }: { cfg: TtsAdminSettings; onChang
       {/* Keys */}
       <div className="space-y-2">
         <div className="flex items-baseline justify-between gap-2">
-          <h3 className="font-medium">Gemini keys</h3>
+          <h3 className="font-medium">{azure ? "Keys" : "Gemini keys"}</h3>
           {!adding && (
-            <button type="button" className={`${btn.secondary} ${btn.sm}`} onClick={() => setAdding({ label: keys.length ? "Paid" : "Free", kind: keys.length ? "paid" : "free", key: "" })}>
-              Add key
-            </button>
+            <div className="flex gap-2">
+              <button type="button" className={`${btn.secondary} ${btn.sm}`} onClick={() => setAdding(newKey("gemini"))}>
+                Add Gemini key
+              </button>
+              {azure && (
+                <button type="button" className={`${btn.secondary} ${btn.sm}`} onClick={() => setAdding(newKey("azure"))}>
+                  {azureKey ? "Replace Azure key" : "Add Azure key"}
+                </button>
+              )}
+            </div>
           )}
         </div>
         <p className="text-xs text-ink-muted">
           Each key is a Google AI Studio project. Its limits are its own, per model: on the free tier 10 requests a day (each about a minute or two of audio), with billing (Tier 1) 100. A
           project without billing is free; on it Google may use what's read to improve its products. With billing, each request costs
           (about $0.81 an hour of audio with Flash, $0.54 with Flash-Lite).
+          {azure && " An Azure Speech key (its free tier has 0.5 million characters a month) gives Azure's voices, Seraphina, Florian and the HD ones."}
         </p>
         <ul className="divide-y divide-[var(--border)] overflow-hidden rounded-card border border-line bg-surface">
-          {keys.map((k: TtsKeyView) =>
+          {[...keys, ...(azureKey ? [azureKey] : [])].map((k: TtsKeyView) =>
             editing?.id === k.id ? (
               <li key={k.id} className="p-3">
-                <KeyForm
+                <KeyFields
                   value={editing}
                   submit="Save"
                   busy={busy}
@@ -107,7 +143,7 @@ export function GeminiVoices({ cfg, onChange }: { cfg: TtsAdminSettings; onChang
                   onChange={(v) => setEditing({ ...editing, ...v })}
                   onCancel={() => setEditing(null)}
                   onSubmit={async () => {
-                    if (await run(() => api.adminUpdateTtsKey(k.id, { label: editing.label, kind: editing.kind, ...(editing.key ? { key: editing.key } : {}) }), "Saved.")) setEditing(null);
+                    if (await run(() => ops.update(k.id, body(editing)), "Saved.")) setEditing(null);
                   }}
                 />
               </li>
@@ -116,21 +152,21 @@ export function GeminiVoices({ cfg, onChange }: { cfg: TtsAdminSettings; onChang
                 <div className="min-w-0 flex-1">
                   <div className="font-medium">{k.label}</div>
                   <div className="text-xs text-ink-muted">
-                    {k.kind === "free" ? "No billing" : "Billing"} · ····{k.hint}
+                    {k.provider === "azure" ? `Azure Speech · ${k.region}` : `Gemini · ${k.kind === "free" ? "no billing" : "billing"}`} · ····{k.hint}
                     {k.unreadable && <span className="text-danger"> · can't be read any more: enter it again</span>}
                   </div>
                 </div>
                 <span className={`inline-flex h-[22px] items-center rounded-full px-2 text-xs font-medium ${k.kind === "free" ? "bg-success-soft text-success" : "bg-brand-soft text-brand-ink"}`}>
                   {k.kind === "free" ? "Free" : "Paid"}
                 </span>
-                <button type="button" className={`${btn.ghost} ${btn.sm}`} onClick={() => setEditing({ id: k.id, label: k.label, kind: k.kind, key: "" })}>
+                <button type="button" className={`${btn.ghost} ${btn.sm}`} onClick={() => setEditing({ id: k.id, provider: k.provider, region: k.region ?? "", label: k.label, kind: k.kind, key: "" })}>
                   Edit
                 </button>
                 <button
                   type="button"
                   className={`${btn.ghost} ${btn.sm}`}
                   disabled={busy}
-                  onClick={() => window.confirm(`Remove the key “${k.label}” and its place in the order?`) && void run(() => api.adminDeleteTtsKey(k.id), "Removed.")}
+                  onClick={() => window.confirm(`Remove the key “${k.label}” and its place in the order?`) && void run(() => ops.remove(k.id), "Removed.")}
                 >
                   Remove
                 </button>
@@ -139,26 +175,27 @@ export function GeminiVoices({ cfg, onChange }: { cfg: TtsAdminSettings; onChang
           )}
           {adding && (
             <li className="p-3">
-              <KeyForm
+              <KeyFields
                 value={adding}
                 submit="Add"
                 busy={busy}
                 onChange={(v) => setAdding({ ...adding, ...v })}
                 onCancel={() => setAdding(null)}
                 onSubmit={async () => {
-                  if (await run(() => api.adminAddTtsKey(adding), "Added: it joins the end of the order with both models.")) setAdding(null);
+                  const done = adding.provider === "azure" ? "Added: Azure's voices are now yours to choose." : "Added: it joins the end of the order with both models.";
+                  if (await run(() => ops.add(body(adding)), done)) setAdding(null);
                 }}
               />
             </li>
           )}
-          {!keys.length && !adding && <li className="px-4 py-3 text-sm text-ink-muted">No Gemini key yet.</li>}
+          {!allKeys.length && !adding && <li className="px-4 py-3 text-sm text-ink-muted">No key yet.</li>}
         </ul>
       </div>
 
       {/* Order */}
-      {entries.length > 0 && (
+      {(entries.length > 0 || after) && (
         <div className="space-y-2">
-          <h3 className="font-medium">Order</h3>
+          <h3 className="font-medium">Order for Gemini voices</h3>
           <p className="text-xs text-ink-muted">
             Tried top to bottom. One at its limit is passed over until Google resets it (midnight Pacific). The counts are this server's own:
             Google doesn't say what's left.
@@ -213,6 +250,7 @@ export function GeminiVoices({ cfg, onChange }: { cfg: TtsAdminSettings; onChang
                 </li>
               );
             })}
+            {after}
           </ol>
           <div className="flex flex-wrap items-center gap-2">
             {missing.length > 0 && (
@@ -239,57 +277,12 @@ export function GeminiVoices({ cfg, onChange }: { cfg: TtsAdminSettings; onChang
         </div>
       )}
 
-      {/* Background audio */}
-      <div className="space-y-3 rounded-card border border-line bg-surface p-4">
-        <div className="flex items-start gap-4">
-          <div className="flex-1">
-            <div className="font-medium">Generate audiobooks automatically</div>
-            <p className="text-xs text-ink-muted">
-              Makes the audio for stories ahead of time, for everyone whose reading voice is a Gemini voice: the next chapters of books they're
-              reading first, then their newest unread stories, then the ones already read (to listen to again). It only uses entries with Background on (keep that to free keys and it costs
-              nothing), and anything someone asks for goes first.
-            </p>
-          </div>
-          <Toggle on={cfg.background.enabled} label="Generate audiobooks automatically" disabled={busy} onChange={(on) => void run(() => api.adminSetTts({ background: { ...cfg.background, enabled: on } }))} />
-        </div>
-        <label className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="font-medium">Keep for people each day</span>
-          <select
-            className="input w-auto"
-            value={String(cfg.background.reserve)}
-            disabled={busy}
-            onChange={(e) => void run(() => api.adminSetTts({ background: { ...cfg.background, reserve: Number(e.target.value) } }))}
-          >
-            {[0.1, 0.2, 0.3, 0.5].map((r) => (
-              <option key={r} value={r}>
-                {Math.round(r * 100)}%
-              </option>
-            ))}
-          </select>
-          <span className="text-xs text-ink-subtle">
-            of each entry's daily requests, for taps and what people ask for: the background stops at {Math.round((1 - cfg.background.reserve) * 100)} of 100.
-          </span>
-        </label>
-      </div>
-
-      {/* Edge fallback */}
-      <div className="flex items-start gap-4 rounded-card border border-line bg-surface p-4">
-        <div className="flex-1">
-          <div className="font-medium">Read taps with Edge when Gemini is used up</div>
-          <p className="text-xs text-ink-muted">
-            When every entry for taps is at its limit, a word or sentence is read by Edge's Katja (unofficial, no key) instead of failing. Story
-            audio always waits for its own voice.
-          </p>
-        </div>
-        <Toggle on={cfg.edgeFallback} label="Read taps with Edge when Gemini is used up" disabled={busy} onChange={(on) => void run(() => api.adminSetTts({ edgeFallback: on }))} />
-      </div>
-
       {msg && <p className={`text-sm ${msg.ok ? "text-success" : "text-danger"}`}>{msg.text}</p>}
     </div>
   );
 }
 
-function KeyForm({
+function KeyFields({
   value,
   submit,
   busy,
@@ -298,11 +291,11 @@ function KeyForm({
   onCancel,
   onSubmit,
 }: {
-  value: { label: string; kind: "free" | "paid"; key: string };
+  value: KeyForm;
   submit: string;
   busy: boolean;
   keyOptional?: boolean;
-  onChange: (v: Partial<{ label: string; kind: "free" | "paid"; key: string }>) => void;
+  onChange: (v: Partial<KeyForm>) => void;
   onCancel: () => void;
   onSubmit: () => void;
 }) {
@@ -315,6 +308,17 @@ function KeyForm({
       }}
     >
       <input value={value.label} onChange={(e) => onChange({ label: e.target.value })} placeholder="Name, e.g. Free" aria-label="Name" className="input w-32" maxLength={40} required />
+      {value.provider === "azure" && (
+        <input
+          value={value.region}
+          onChange={(e) => onChange({ region: e.target.value.trim() })}
+          placeholder="Region, e.g. swedencentral"
+          aria-label="Azure region"
+          className="input w-48"
+          pattern="[a-z0-9]{2,30}"
+          required
+        />
+      )}
       <select value={value.kind} onChange={(e) => onChange({ kind: e.target.value as "free" | "paid" })} aria-label="Kind" className="input w-auto">
         <option value="free">Free (no billing)</option>
         <option value="paid">Paid (billing)</option>
@@ -322,7 +326,7 @@ function KeyForm({
       <input
         value={value.key}
         onChange={(e) => onChange({ key: e.target.value })}
-        placeholder={keyOptional ? "API key (leave empty to keep)" : "API key"}
+        placeholder={`${value.provider === "azure" ? "Azure Speech key" : "Gemini API key"}${keyOptional ? " (leave empty to keep)" : ""}`}
         aria-label="API key"
         type="password"
         autoComplete="off"

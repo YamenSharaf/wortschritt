@@ -1,9 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { ttsAdminBody, ttsAdminSettings as ttsAdminDto, ttsEntriesBody, ttsKeyBody, ttsStatus, ttsTestBody } from "@mdb/shared";
-import { wakeStoryAudio } from "../services/storyAudio";
-import { addKey, deleteKey, saveEntries, TtsKeyError, updateKey } from "../tts/geminiKeys";
+import { myVoices as myVoicesDto, ttsAdminBody, ttsAdminSettings as ttsAdminDto, ttsEntriesBody, ttsKeyBody, ttsStatus, ttsTestBody } from "@mdb/shared";
+import { addKey, deleteKey, moveServerKeys, myVoices, saveEntries, TtsKeyError, updateKey } from "../tts/geminiKeys";
 import { requireAdmin, requireAuth } from "../auth/session";
 import { clip } from "../tts/cache";
 import {
@@ -25,8 +24,8 @@ export async function ttsRoutes(app: FastifyInstance) {
       preHandler: requireAuth,
       schema: { tags: ["tts"], response: { 200: ttsStatus } },
     },
-    async () => {
-      const voices = await offeredVoices();
+    async (req) => {
+      const voices = await offeredVoices(req.user!.id);
       return {
         available: voices.length > 0,
         installed: voices.map((v) => v.id),
@@ -52,7 +51,7 @@ export async function ttsRoutes(app: FastifyInstance) {
     async (req, reply) => {
       const { text, voice } = req.query;
       try {
-        const { audio, type } = await clip(text, voice);
+        const { audio, type } = await clip(text, voice, req.user!.id);
         return reply.type(type).header("cache-control", "public, max-age=31536000, immutable").send(audio);
       } catch (err) {
         if (err instanceof TtsUnavailable) {
@@ -81,7 +80,6 @@ export async function ttsRoutes(app: FastifyInstance) {
         if (err instanceof TtsConfigError) return reply.code(400).send({ error: err.message });
         throw err;
       }
-      if (req.body.background?.enabled) wakeStoryAudio();
       return ttsAdminSettings();
     },
   );
@@ -100,7 +98,7 @@ export async function ttsRoutes(app: FastifyInstance) {
     "/api/admin/tts/gemini/keys",
     { preHandler: requireAdmin, schema: { tags: ["admin"], body: ttsKeyBody, response: { 200: ttsAdminDto, 400: failure } } },
     async (req, reply) => {
-      const failed = change(() => addKey(req.body));
+      const failed = change(() => addKey(null, req.body));
       return failed ? reply.code(400).send({ error: failed.error }) : ttsAdminSettings();
     },
   );
@@ -108,21 +106,67 @@ export async function ttsRoutes(app: FastifyInstance) {
     "/api/admin/tts/gemini/keys/:id",
     { preHandler: requireAdmin, schema: { tags: ["admin"], params: keyParams, body: ttsKeyBody, response: { 200: ttsAdminDto, 400: failure, 404: failure } } },
     async (req, reply) => {
-      const failed = change(() => updateKey(req.params.id, req.body));
+      const failed = change(() => updateKey(null, req.params.id, req.body));
       return failed ? reply.code(failed.code).send({ error: failed.error }) : ttsAdminSettings();
     },
   );
   r.delete(
     "/api/admin/tts/gemini/keys/:id",
     { preHandler: requireAdmin, schema: { tags: ["admin"], params: keyParams, response: { 200: ttsAdminDto, 404: failure } } },
-    async (req, reply) => (deleteKey(req.params.id) ? ttsAdminSettings() : reply.code(404).send({ error: "not found" })),
+    async (req, reply) => (deleteKey(null, req.params.id) ? ttsAdminSettings() : reply.code(404).send({ error: "not found" })),
   );
   r.put(
     "/api/admin/tts/gemini/entries",
     { preHandler: requireAdmin, schema: { tags: ["admin"], body: ttsEntriesBody, response: { 200: ttsAdminDto, 400: failure } } },
     async (req, reply) => {
-      const failed = change(() => saveEntries(req.body.entries));
+      const failed = change(() => saveEntries(null, req.body.entries));
       return failed ? reply.code(400).send({ error: failed.error }) : ttsAdminSettings();
+    },
+  );
+
+  // The server's keys become the admin's own.
+  r.post(
+    "/api/admin/tts/move-to-me",
+    { preHandler: requireAdmin, schema: { tags: ["admin"], response: { 200: ttsAdminDto } } },
+    async (req) => {
+      moveServerKeys(req.user!.id);
+      return ttsAdminSettings();
+    },
+  );
+
+  // A learner's own voice keys (Gemini, Azure) and their order for Gemini voices.
+  r.get(
+    "/api/tts/mine",
+    { preHandler: requireAuth, schema: { tags: ["tts"], response: { 200: myVoicesDto } } },
+    async (req) => myVoices(req.user!.id),
+  );
+  r.post(
+    "/api/tts/mine/keys",
+    { preHandler: requireAuth, schema: { tags: ["tts"], body: ttsKeyBody, response: { 200: myVoicesDto, 400: failure } } },
+    async (req, reply) => {
+      const failed = change(() => addKey(req.user!.id, req.body));
+      return failed ? reply.code(400).send({ error: failed.error }) : myVoices(req.user!.id);
+    },
+  );
+  r.put(
+    "/api/tts/mine/keys/:id",
+    { preHandler: requireAuth, schema: { tags: ["tts"], params: keyParams, body: ttsKeyBody, response: { 200: myVoicesDto, 400: failure, 404: failure } } },
+    async (req, reply) => {
+      const failed = change(() => updateKey(req.user!.id, req.params.id, req.body));
+      return failed ? reply.code(failed.code).send({ error: failed.error }) : myVoices(req.user!.id);
+    },
+  );
+  r.delete(
+    "/api/tts/mine/keys/:id",
+    { preHandler: requireAuth, schema: { tags: ["tts"], params: keyParams, response: { 200: myVoicesDto, 404: failure } } },
+    async (req, reply) => (deleteKey(req.user!.id, req.params.id) ? myVoices(req.user!.id) : reply.code(404).send({ error: "not found" })),
+  );
+  r.put(
+    "/api/tts/mine/entries",
+    { preHandler: requireAuth, schema: { tags: ["tts"], body: ttsEntriesBody, response: { 200: myVoicesDto, 400: failure } } },
+    async (req, reply) => {
+      const failed = change(() => saveEntries(req.user!.id, req.body.entries));
+      return failed ? reply.code(400).send({ error: failed.error }) : myVoices(req.user!.id);
     },
   );
 
@@ -135,7 +179,7 @@ export async function ttsRoutes(app: FastifyInstance) {
     },
     async (req, reply) => {
       try {
-        const { audio } = await synthesize("Guten Tag! Ich lerne Deutsch.", req.body.voice);
+        const { audio } = await synthesize("Guten Tag! Ich lerne Deutsch.", req.body.voice, "taps", req.user!.id);
         return { ok: true as const, bytes: audio.length };
       } catch (err) {
         app.log.warn({ err, voice: req.body.voice }, "tts test failed");

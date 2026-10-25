@@ -132,6 +132,7 @@ function Root() {
         <Stack.Protected guard={status === "signed-in"}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="account" options={{ presentation: "modal" }} />
+          <Stack.Screen name="reading-aloud" />
           <Stack.Screen name="player" options={{ presentation: "modal" }} />
           <Stack.Screen name="reader/[id]" />
           <Stack.Screen name="series/[id]" />

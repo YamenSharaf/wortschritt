@@ -10,7 +10,6 @@ import { cachedClipFile, clip, clipGroup, isCached, liveSince } from "../tts/cac
 import { mp3Frames } from "../tts/mp3";
 import { backgroundRoom } from "../tts/geminiKeys";
 import { groupsParagraphs, TtsRateLimited, usableVoices } from "../tts/providers";
-import { backgroundSettings } from "../tts/settings";
 import { getSettings } from "./settings";
 import { getSeriesView, listSeries } from "./series";
 import { getStory, listStories } from "./stories";
@@ -31,8 +30,8 @@ import { getStory, listStories } from "./stories";
  * use up the limit they need. A voice whose limit counts requests (Gemini's)
  * is asked for several paragraphs at once, cut back apart in the pauses.
  *
- * Background audio (an admin setting): when nothing else is due, the server
- * queues a story itself, for everyone whose reading voice is Gemini's: the
+ * Background audio (each learner's setting): when nothing else is due, the
+ * server queues a story itself, for those whose reading voice is Gemini's: the
  * next chapters of books being read first, then the newest unread stories,
  * then (to listen to again) the ones already read.
  * Those go behind anything asked for, and use only the entries meant for
@@ -70,7 +69,7 @@ const queued = (key: string) => db.select().from(schema.storyAudioQueue).where(e
 export function readingVoice(userId: number): string | null {
   const s = getSettings(userId);
   const voice = s.readerVoice === "" ? s.ttsVoice : s.readerVoice === "device" ? "" : s.readerVoice;
-  return voice && usableVoices().some((v) => v.id === voice) ? voice : null;
+  return voice && usableVoices(userId).some((v) => v.id === voice) ? voice : null;
 }
 
 /** What's spoken for each paragraph (storyParagraphs order; "" for nothing to say). */
@@ -212,24 +211,25 @@ let lastFill = 0;
 
 /**
  * Background audio: queue the next stories nobody asked for yet (see the
- * top), if it's on, there's room in today's background requests, and the
- * server's own ones are done; one done, the next follows at once. When
+ * top), for each learner who switched it on and has room in today's
+ * background requests, once the server's own ones are done; one done, the next follows at once. When
  * there was nothing to do, it looks again after ten minutes. Whether it
  * queued any.
  */
 function fillBackground(): boolean {
-  if (!backgroundSettings().enabled || Date.now() - lastFill < 10 * 60_000) return false;
+  if (Date.now() - lastFill < 10 * 60_000) return false;
   const q = schema.storyAudioQueue;
   if (db.select().from(q).where(eq(q.auto, true)).get()) return false;
   const nothing = () => {
     lastFill = Date.now();
     return false;
   };
-  if (backgroundRoom() <= 0) return nothing();
   let added = 0;
   for (const { id: userId } of db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.disabled, false)).orderBy(asc(schema.users.id)).all()) {
+    // Each learner's own: switched on, a Gemini reading voice, and room left in their day.
+    if (!getSettings(userId).audiobooks.auto) continue;
     const voice = readingVoice(userId);
-    if (!voice || !groupsParagraphs(voice)) continue;
+    if (!voice || !groupsParagraphs(voice) || backgroundRoom(userId) <= 0) continue;
     for (const storyId of backgroundCandidates(userId)) {
       if (added >= AUTO_AT_ONCE) break;
       const view = getStory(userId, storyId);
@@ -329,7 +329,7 @@ async function run(row: typeof schema.storyAudioQueue.$inferSelect): Promise<voi
   if (row.auto && waitedFor(row.key)) db.update(q).set({ auto: false }).where(eq(q.key, row.key)).run();
   running = { key: row.key, job };
   try {
-    await build(row.key, row.voice, chunks, job);
+    await build(row.key, row.voice, chunks, job, row.userId);
     db.delete(q).where(eq(q.key, row.key)).run();
     watched.delete(row.key);
   } catch (err) {
@@ -337,10 +337,10 @@ async function run(row: typeof schema.storyAudioQueue.$inferSelect): Promise<voi
     if (err instanceof TtsRateLimited) {
       const wait = Math.max(err.retryAfter ?? LIMIT_RETRY_S, 30);
       db.update(q).set(progress).where(eq(q.key, row.key)).run();
-      // The limit is the voice's: every story in it waits (rather than each spending a request to find out).
+      // The limit is this learner's keys' for the voice: their other stories in it wait too (rather than each spending a request to find out).
       db.update(q)
         .set({ nextTryAt: nowS() + wait, waitReason: err.message.slice(0, 300) })
-        .where(and(eq(q.voice, row.voice), isNull(q.error)))
+        .where(and(eq(q.voice, row.voice), eq(q.userId, row.userId), isNull(q.error)))
         .run();
       log?.warn({ storyId: row.storyId, voice: row.voice, done: job.done, total: job.total, wait, reason: err.message }, "story audio waits for the voice's limit");
     } else if (err instanceof Paused) {
@@ -385,7 +385,7 @@ function plan(texts: string[], voice: string): number[][] {
 }
 
 /** Synthesize every clip in order (a few requests at a time), join them, and keep the file and its timings. */
-async function build(key: string, voice: string, chunks: string[][], job: Job): Promise<void> {
+async function build(key: string, voice: string, chunks: string[][], job: Job, userId: number): Promise<void> {
   const all = chunks.flatMap((cs, para) => cs.map((text) => ({ para, text })));
   const texts = all.map((a) => a.text);
   const clips: Buffer[] = new Array(all.length);
@@ -400,8 +400,8 @@ async function build(key: string, voice: string, chunks: string[][], job: Job): 
       const purpose = waitedFor(key) ? "waiting" : "background";
       const audio =
         group.length === 1
-          ? [(await clip(texts[group[0]!]!, voice, { purpose })).audio]
-          : await clipGroup(group.map((k) => texts[k]!), voice, purpose);
+          ? [(await clip(texts[group[0]!]!, voice, userId, { purpose })).audio]
+          : await clipGroup(group.map((k) => texts[k]!), voice, purpose, userId);
       group.forEach((k, i) => (clips[k] = audio[i]!));
       job.done += group.length;
     }

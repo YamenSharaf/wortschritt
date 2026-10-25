@@ -61,6 +61,13 @@ export const settingsSchema = z.object({
   ttsVoice: z.string().default(""),
   /** The story reader's "Read aloud": "" = the same as ttsVoice, "device" = the device's own, else a server voice id. */
   readerVoice: z.string().default(""),
+  /** Audiobooks: made ahead of time by the server (with keys meant for the background), keeping `reserve` of each key's day for this learner. */
+  audiobooks: z
+    .object({
+      auto: z.boolean().default(false),
+      reserve: z.number().min(0).max(0.9).default(0.2),
+    })
+    .default({}),
   reader: readerSettings.default({}),
   /** The account icon: a pixel pattern from the name (the seed picks another one) or the initial. */
   avatar: z
@@ -1047,9 +1054,12 @@ export type ApiVersion = z.infer<typeof apiVersion>;
 export const TTS_PURPOSES = ["background", "waiting", "taps"] as const;
 export type TtsPurpose = (typeof TTS_PURPOSES)[number];
 
-/** A Gemini key as the admin sees it (never the key itself). */
+/** A voice key (Gemini or Azure) as its owner sees it (never the key itself). */
 export const ttsKeyView = z.object({
   id: z.number().int(),
+  provider: z.enum(["gemini", "azure"]),
+  /** Azure's region. */
+  region: z.string().nullable(),
   label: z.string(),
   /** "free": a project without billing; "paid": one with billing (each request costs). */
   kind: z.enum(["free", "paid"]),
@@ -1093,15 +1103,36 @@ export const ttsAdminSettings = z.object({
     /** In the order they're tried. */
     entries: z.array(ttsEntryView),
   }),
-  /** Make audio for stories by itself (background entries only), keeping `reserve` of each day's requests. */
-  background: z.object({ enabled: z.boolean(), reserve: z.number().min(0).max(0.9) }),
+  /** Who may use the server's keys: everyone, everyone but only its free keys, or admins only. */
+  share: z.enum(["all", "free", "admins"]),
   /** When every Gemini entry is used up, read taps with Edge's Katja (never story audio). */
   edgeFallback: z.boolean(),
 });
 export type TtsAdminSettings = z.infer<typeof ttsAdminSettings>;
 
+/** A learner's own voice keys and order, and what of the server's comes after them. */
+export const myVoices = z.object({
+  canStoreKey: z.boolean(),
+  keys: z.array(ttsKeyView),
+  /** Their order for Gemini voices (their own keys only). */
+  entries: z.array(ttsEntryView),
+  /** The server's entries tried after theirs (as far as they may use them), and whether the server's Azure is theirs to use. */
+  server: z.object({
+    entries: z.array(z.object({ label: z.string(), model: z.string(), kind: z.enum(["free", "paid"]), uses: z.array(z.enum(TTS_PURPOSES)) })),
+    azure: z.boolean(),
+  }),
+});
+export type MyVoices = z.infer<typeof myVoices>;
+
 
 export const ttsKeyBody = z.object({
+  provider: z.enum(["gemini", "azure"]).default("gemini"),
+  /** Azure's region ("swedencentral"). */
+  region: z
+    .string()
+    .trim()
+    .regex(/^[a-z0-9]{2,30}$/, "an Azure region like swedencentral")
+    .optional(),
   label: z.string().trim().min(1).max(40),
   kind: z.enum(["free", "paid"]),
   /** Required when adding; omitted keeps the stored one. */
@@ -1131,7 +1162,7 @@ export const ttsAdminBody = z.object({
     .nullable()
     .optional(),
   edge: z.boolean().optional(),
-  background: z.object({ enabled: z.boolean(), reserve: z.number().min(0).max(0.9) }).optional(),
+  share: z.enum(["all", "free", "admins"]).optional(),
   edgeFallback: z.boolean().optional(),
 });
 

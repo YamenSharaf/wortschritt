@@ -392,6 +392,8 @@ export const storyAudioQueue = sqliteTable("story_audio_queue", {
 export const ttsKeys = sqliteTable("tts_keys", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id"),
+  provider: text("provider", { enum: ["gemini", "azure"] }).notNull().default("gemini"),
+  region: text("region"),
   label: text("label").notNull(),
   kind: text("kind", { enum: ["free", "paid"] }).notNull().default("free"),
   keyEnc: text("key_enc").notNull(),

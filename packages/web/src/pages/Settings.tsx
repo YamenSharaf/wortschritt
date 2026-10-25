@@ -6,6 +6,7 @@ import {
   ttsProviderOf,
   type ApiTokenView,
   type OAuthGrantView,
+  type MyVoices,
   type Settings,
 } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
@@ -29,9 +30,11 @@ import { AiSettings } from "./AiSettings";
 import { ShuffleIcon, SpeakerIcon } from "../components/icons";
 import { Avatar } from "../components/Avatar";
 import { btn } from "../components/ui";
+import { Toggle, VoiceKeys } from "../components/VoiceKeys";
 
 const SETTINGS_TABS = [
   { value: "learning", label: "Learning" },
+  { value: "reading", label: "Reading aloud" },
   { value: "account", label: "Account" },
   { value: "connections", label: "Connections" },
 ] as const;
@@ -61,6 +64,7 @@ export function SettingsPage() {
           <PracticeOnDevice />
         </>
       )}
+      {current === "reading" && <ReadingAloud />}
       {current === "account" && <Account />}
       {current === "connections" && <Connections />}
       <div className="mt-10 space-y-2 text-sm text-ink-subtle">
@@ -79,6 +83,124 @@ export function SettingsPage() {
 }
 
 /** Things outside the app that act for you: the AI tutor's provider, connected agents, tokens. */
+/**
+ * Reading aloud: the voices, audiobooks made ahead of time, and the
+ * learner's own voice keys (optional: without them the server's are used,
+ * as far as the admin shares them). Changes are saved as they're made.
+ */
+function ReadingAloud() {
+  const loaded = useAsync(() => api.settings(), []);
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [mine, setMine] = useState<MyVoices | null>(null);
+  const audio = useAsync(() => api.allStoryAudio(), []);
+  useEffect(() => {
+    if (loaded.status === "ready") setSettings(loaded.data);
+  }, [loaded.status]);
+  useEffect(() => {
+    api.myVoices().then(setMine).catch(() => {});
+  }, []);
+  if (!settings) return <p className="text-ink-muted">Loading…</p>;
+
+  const save = (change: Partial<Settings>) => {
+    const next = { ...settings, ...change };
+    setSettings(next);
+    void api.saveSettings(next).then(setSettings);
+  };
+  const briefs = audio.status === "ready" ? Object.values(audio.data) : [];
+  const ready = briefs.filter((b) => b.state === "ready");
+  const minutes = Math.round(ready.reduce((n, b) => n + b.duration, 0) / 60);
+  const making = briefs.filter((b) => b.state === "building" || b.state === "waiting").length;
+
+  return (
+    <div className="max-w-2xl space-y-10">
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold tracking-[-0.01em]">Voices</h2>
+        <div className="max-w-md space-y-4">
+          <VoiceSettings ttsVoice={settings.ttsVoice} readerVoice={settings.readerVoice} onChange={save} />
+        </div>
+        <p className="text-xs text-ink-subtle">Speed: the reader's own (Aa in the reader) for the device's voice, the player's own while listening.</p>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold tracking-[-0.01em]">Audiobooks</h2>
+        <div className="space-y-4 rounded-card border border-line bg-surface p-4 shadow-card">
+          <div className="flex items-start gap-4">
+            <div className="flex-1">
+              <div className="font-medium">Generate audiobooks automatically</div>
+              <p className="text-sm text-ink-muted">
+                Makes the audio for your stories ahead of time: the next chapters of books you're reading first, then unread stories, then ones
+                you've read. Only with keys switched on for Background, and only with a Gemini reading voice.
+              </p>
+            </div>
+            <Toggle on={settings.audiobooks.auto} label="Generate audiobooks automatically" onChange={(auto) => save({ audiobooks: { ...settings.audiobooks, auto } })} />
+          </div>
+          <label className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="font-medium">Keep for me each day</span>
+            <select
+              className="input w-auto"
+              value={String(settings.audiobooks.reserve)}
+              onChange={(e) => save({ audiobooks: { ...settings.audiobooks, reserve: Number(e.target.value) } })}
+            >
+              {[0.1, 0.2, 0.3, 0.5].map((r) => (
+                <option key={r} value={r}>
+                  {Math.round(r * 100)}%
+                </option>
+              ))}
+            </select>
+            <span className="text-xs text-ink-subtle">of each key's daily requests, for taps and what you ask for.</span>
+          </label>
+          {briefs.length > 0 && (
+            <p className="border-t border-line pt-3 text-sm text-ink-muted">
+              With audio: <span className="text-ink">{ready.length} of {briefs.length} stories{minutes ? ` · ${Math.floor(minutes / 60) ? `${Math.floor(minutes / 60)} h ` : ""}${minutes % 60} min` : ""}</span>
+              {making > 0 && ` · ${making} being made`}
+            </p>
+          )}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-xl font-semibold tracking-[-0.01em]">Your voice keys</h2>
+          <p className="text-sm text-ink-muted">
+            Optional. Without your own, the server's voices are used. Your keys are tried first, for your stories and taps only.
+          </p>
+        </div>
+        {!mine ? (
+          <p className="text-ink-muted">Loading…</p>
+        ) : !mine.canStoreKey ? (
+          <p className="text-sm text-warning">The server can't store keys (it needs ENCRYPTION_KEY set).</p>
+        ) : (
+          <VoiceKeys
+            keys={mine.keys}
+            entries={mine.entries}
+            azure
+            ops={{
+              add: (b) => api.addMyVoiceKey(b).then(setMine),
+              update: (id, b) => api.updateMyVoiceKey(id, b).then(setMine),
+              remove: (id) => api.deleteMyVoiceKey(id).then(setMine),
+              saveEntries: (list) => api.setMyVoiceEntries(list).then(setMine),
+            }}
+            after={
+              <li className="flex gap-3 border-t border-dashed border-line-strong bg-bg px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium text-ink-muted">Then the server's voices</div>
+                  <div className="text-xs text-ink-subtle">
+                    {mine.server.entries.length
+                      ? mine.server.entries
+                          .map((e) => `${e.label} · ${e.model.includes("lite") ? "Flash-Lite" : "Flash"}${e.uses.length < 3 ? ` (${e.uses.map((u) => (u === "waiting" ? "when waiting" : u)).join(", ")})` : ""}`)
+                          .join(", ") + ". Set up by the admin."
+                      : "None shared with you."}
+                  </div>
+                </div>
+              </li>
+            }
+          />
+        )}
+      </section>
+    </div>
+  );
+}
+
 function Connections() {
   return (
     <div className="max-w-xl space-y-10">
@@ -157,11 +279,6 @@ function Learning() {
           The default count for “Generate more” after finishing an exercise. You
           can still change it there each time.
         </p>
-        <VoiceSettings
-          ttsVoice={form.ttsVoice}
-          readerVoice={form.readerVoice}
-          onChange={(change) => setForm({ ...form, ...change })}
-        />
         <label className="flex items-center gap-2">
           <input
             type="checkbox"

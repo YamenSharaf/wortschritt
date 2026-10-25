@@ -4,8 +4,8 @@ import { decryptSecret, encryptSecret, isEncryptionAvailable } from "../assistan
 import { edgeSynthesize } from "./edge";
 import { TtsRateLimited, TtsUnavailable } from "./errors";
 import { geminiPcm, pcmToMp3 } from "./gemini";
-import { geminiReady, listEntries, listKeys, withGemini } from "./geminiKeys";
-import { backgroundSettings, edgeFallback, readSetting, setBackgroundSettings, setEdgeFallback, writeSetting } from "./settings";
+import { azureKeyFor, geminiReady, listEntries, listKeys, withGemini } from "./geminiKeys";
+import { edgeFallback, readSetting, serverShare, setEdgeFallback, setServerShare, writeSetting } from "./settings";
 import { splitPcm } from "./split";
 
 export { TtsRateLimited, TtsUnavailable } from "./errors";
@@ -49,8 +49,8 @@ export function ttsAdminSettings(): TtsAdminSettings {
   return {
     azure: { configured: azureConfig() !== null, region, canStoreKey: isEncryptionAvailable },
     edge: { enabled: edgeEnabled() },
-    gemini: { keys: listKeys(), entries: listEntries() },
-    background: backgroundSettings(),
+    gemini: { keys: listKeys(null), entries: listEntries(null) },
+    share: serverShare(),
     edgeFallback: edgeFallback(),
   };
 }
@@ -61,7 +61,7 @@ export class TtsConfigError extends Error {}
 export function updateTtsSettings(body: {
   azure?: { region: string; key?: string } | null;
   edge?: boolean;
-  background?: { enabled: boolean; reserve: number };
+  share?: "all" | "free" | "admins";
   edgeFallback?: boolean;
 }): void {
   if (body.azure === null) writeSetting(AZURE_KEY, null);
@@ -78,18 +78,25 @@ export function updateTtsSettings(body: {
     writeSetting(AZURE_KEY, JSON.stringify({ region: body.azure.region, key: stored }));
   }
   if (body.edge !== undefined) writeSetting(EDGE_KEY, body.edge ? "1" : null);
-  if (body.background) setBackgroundSettings(body.background);
+  if (body.share) setServerShare(body.share);
   if (body.edgeFallback !== undefined) setEdgeFallback(body.edgeFallback);
 }
 
 export type VoiceOption = { id: string; label: string; provider: TtsProvider };
 
 /** Every voice usable right now. */
-export function usableVoices(): VoiceOption[] {
+/** The Azure key a learner's Azure voices use (their own, else the server's if they may), if any. */
+function azureFor(userId: number): AzureConfig | null {
+  const which = azureKeyFor(userId);
+  return which === "server" ? azureConfig() : which;
+}
+
+/** Every voice this learner can use right now. */
+export function usableVoices(userId: number): VoiceOption[] {
   const out: VoiceOption[] = [];
-  if (azureConfig()) for (const v of serverVoices("azure")) out.push({ id: `azure:${v.name}`, label: `${v.label} · Azure`, provider: "azure" });
+  if (azureFor(userId)) for (const v of serverVoices("azure")) out.push({ id: `azure:${v.name}`, label: `${v.label} · Azure`, provider: "azure" });
   if (edgeEnabled()) for (const v of serverVoices("edge")) out.push({ id: `edge:${v.name}`, label: `${v.label} · Edge`, provider: "edge" });
-  if (geminiReady()) for (const v of serverVoices("gemini")) out.push({ id: `gemini:${v.name}`, label: `${v.label} · Gemini`, provider: "gemini" });
+  if (geminiReady(userId)) for (const v of serverVoices("gemini")) out.push({ id: `gemini:${v.name}`, label: `${v.label} · Gemini`, provider: "gemini" });
   return out;
 }
 
@@ -97,9 +104,9 @@ export function usableVoices(): VoiceOption[] {
  * The voices to offer: usableVoices, less Azure HD voices the region doesn't
  * have (HD voices are in some regions only). If Azure can't be asked, all of them.
  */
-export async function offeredVoices(): Promise<VoiceOption[]> {
-  const voices = usableVoices();
-  const cfg = azureConfig();
+export async function offeredVoices(userId: number): Promise<VoiceOption[]> {
+  const voices = usableVoices(userId);
+  const cfg = azureFor(userId);
   if (!cfg || !voices.some((v) => v.id.includes("DragonHD"))) return voices;
   const inRegion = await regionVoices(cfg).catch(() => null);
   if (!inRegion) return voices;
@@ -138,10 +145,10 @@ export const groupsParagraphs = (voice: string) => ttsProviderOf(voice) === "gem
  * Several paragraphs in one request, cut back into one MP3 each (in the
  * pauses between them, see split.ts). Only for voices that group paragraphs.
  */
-export async function synthesizeGroup(texts: string[], voice: string, purpose: TtsPurpose): Promise<Buffer[]> {
+export async function synthesizeGroup(texts: string[], voice: string, purpose: TtsPurpose, userId: number): Promise<Buffer[]> {
   const name = voice.slice("gemini:".length);
   if (!groupsParagraphs(voice) || !VOICE_NAMES.gemini.has(name)) throw new TtsUnavailable(`unknown voice "${voice}"`);
-  return withGemini(purpose, async (cfg) => {
+  return withGemini(purpose, userId, async (cfg) => {
     const pcm = await geminiPcm(texts.join("\n\n"), name, cfg);
     return { result: splitPcm(pcm, texts.map((t) => t.length)).map(pcmToMp3), seconds: pcm.length / 48_000 };
   });
@@ -158,7 +165,8 @@ const FALLBACK_VOICE = "de-DE-KatjaNeural";
 export async function synthesize(
   text: string,
   voice: string,
-  purpose: TtsPurpose = "taps",
+  purpose: TtsPurpose,
+  userId: number,
 ): Promise<{ audio: Buffer; type: string; ext: string; fallback?: boolean }> {
   const provider = ttsProviderOf(voice);
   if (!provider) throw new TtsUnavailable(`unknown voice "${voice}"`);
@@ -169,9 +177,9 @@ export async function synthesize(
     return { audio: await edgeSynthesize(text, name), type: "audio/mpeg", ext: "mp3" };
   }
   if (provider === "gemini") {
-    if (!geminiReady()) throw new TtsUnavailable("Gemini isn't set up");
+    if (!geminiReady(userId)) throw new TtsUnavailable("Gemini isn't set up");
     try {
-      const audio = await withGemini(purpose, async (cfg) => {
+      const audio = await withGemini(purpose, userId, async (cfg) => {
         const pcm = await geminiPcm(text, name, cfg);
         return { result: pcmToMp3(pcm), seconds: pcm.length / 48_000 };
       });
@@ -183,7 +191,7 @@ export async function synthesize(
       throw err;
     }
   }
-  const cfg = azureConfig();
+  const cfg = azureFor(userId);
   if (!cfg) throw new TtsUnavailable("Azure Speech isn't set up");
   const lang = name.split("-").slice(0, 2).join("-"); // "de-DE" (HD names have ":DragonHD…" after the speaker)
   const res = await guardedFetch(`https://${cfg.region}.tts.speech.microsoft.com/cognitiveservices/v1`, {

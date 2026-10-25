@@ -880,6 +880,35 @@ export const migrations: Migration[] = [
       }
     },
   },
+  {
+    version: 24,
+    // Voice keys per learner, Azure as well as Gemini (provider, region).
+    // Background audio becomes each learner's own setting: switched on for
+    // the server before, it's now on for its admins.
+    name: "tts-keys-per-user",
+    up(db) {
+      db.exec(`
+        ALTER TABLE tts_keys ADD COLUMN provider TEXT NOT NULL DEFAULT 'gemini';
+        ALTER TABLE tts_keys ADD COLUMN region TEXT;
+      `);
+      const old = db.prepare("SELECT value FROM app_settings WHERE key = 'tts.background'").get() as { value: string } | undefined;
+      if (old) {
+        try {
+          const { enabled, reserve } = JSON.parse(old.value) as { enabled?: boolean; reserve?: number };
+          if (enabled) {
+            const audiobooks = JSON.stringify({ auto: true, reserve: typeof reserve === "number" ? reserve : 0.2 });
+            for (const { id } of db.prepare("SELECT id FROM users WHERE role = 'admin'").all() as { id: number }[]) {
+              db.prepare("INSERT OR IGNORE INTO settings (user_id, data) VALUES (?, '{}')").run(id);
+              db.prepare("UPDATE settings SET data = json_set(data, '$.audiobooks', json(?)) WHERE user_id = ?").run(audiobooks, id);
+            }
+          }
+        } catch {
+          /* leave it off */
+        }
+        db.prepare("DELETE FROM app_settings WHERE key = 'tts.background'").run();
+      }
+    },
+  },
 ];
 
 export const LATEST_VERSION = migrations[migrations.length - 1]!.version;

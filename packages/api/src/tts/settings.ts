@@ -17,19 +17,15 @@ export function writeSetting(key: string, value: string | null): void {
     .run();
 }
 
-const BACKGROUND = "tts.background";
+const SHARE = "tts.share";
 const EDGE_FALLBACK = "tts.edgeFallback";
 
-/** Background audio: off unless turned on; it keeps `reserve` of each entry's daily requests for people. */
-export function backgroundSettings(): { enabled: boolean; reserve: number } {
-  try {
-    const v = JSON.parse(readSetting(BACKGROUND) ?? "{}") as { enabled?: boolean; reserve?: number };
-    return { enabled: v.enabled === true, reserve: typeof v.reserve === "number" ? Math.min(Math.max(v.reserve, 0), 0.9) : 0.2 };
-  } catch {
-    return { enabled: false, reserve: 0.2 };
-  }
+/** Who may use the server's voice keys: everyone (the default), everyone but only its free keys, or admins only. */
+export function serverShare(): "all" | "free" | "admins" {
+  const v = readSetting(SHARE);
+  return v === "free" || v === "admins" ? v : "all";
 }
-export const setBackgroundSettings = (v: { enabled: boolean; reserve: number }) => writeSetting(BACKGROUND, JSON.stringify(v));
+export const setServerShare = (v: "all" | "free" | "admins") => writeSetting(SHARE, v === "all" ? null : v);
 
 /** Taps fall back to Edge's Katja when every Gemini entry is used up. */
 export const edgeFallback = () => readSetting(EDGE_FALLBACK) === "1";

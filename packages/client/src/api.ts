@@ -22,7 +22,6 @@ import type {
   FavoriteKind,
   GenerateStoryBody,
   ImportBody,
-  GEMINI_TTS_MODELS,
   Note,
   NoteAttachment,
   ProgressSummary,
@@ -37,6 +36,7 @@ import type {
   Story,
   PartialStoryAudio,
   StoryAudio,
+  MyVoices,
   StoryAudioBrief,
   StoryContext,
   StoryContextOptions,
@@ -57,6 +57,7 @@ import type {
   GermanWord,
 } from "@mdb/shared";
 
+import type { GEMINI_TTS_MODELS } from "@mdb/shared";
 import { createHttp, type ClientOptions } from "./http";
 import { readSse, type SseEvent } from "./sse";
 
@@ -72,6 +73,11 @@ export function formsFromLookup(d: WordLookup): VocabFormsInput | undefined {
 }
 
 /** A tutor chat turn, and what a tutor request can ask for. */
+/** A voice key to add or change (Azure needs its region; the key itself is optional when changing). */
+export type TtsKeyBody = { provider?: "gemini" | "azure"; region?: string; label: string; kind: "free" | "paid"; key?: string };
+/** One entry of an order for Gemini voices. */
+export type TtsEntryBody = { keyId: number; model: (typeof GEMINI_TTS_MODELS)[number]; background: boolean; waiting: boolean; taps: boolean };
+
 export type ChatTurn = { role: "user" | "assistant"; content: string };
 export type AskBody = {
   task?:
@@ -269,16 +275,24 @@ export function createApi(o: ClientOptions) {
     adminSetTts: (body: {
       azure?: { region: string; key?: string } | null;
       edge?: boolean;
-      background?: { enabled: boolean; reserve: number };
+      share?: "all" | "free" | "admins";
       edgeFallback?: boolean;
     }) => req<TtsAdminSettings>("/api/admin/tts", { method: "PUT", body: JSON.stringify(body) }),
+    /** The server's voice keys become the admin's own. */
+    adminMoveTtsKeysToMe: () => req<TtsAdminSettings>("/api/admin/tts/move-to-me", { method: "POST" }),
+    /** A learner's own voice keys (Gemini, Azure) and their order for Gemini voices. */
+    myVoices: () => req<MyVoices>("/api/tts/mine"),
+    addMyVoiceKey: (body: TtsKeyBody) => req<MyVoices>("/api/tts/mine/keys", { method: "POST", body: JSON.stringify(body) }),
+    updateMyVoiceKey: (id: number, body: TtsKeyBody) => req<MyVoices>(`/api/tts/mine/keys/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+    deleteMyVoiceKey: (id: number) => req<MyVoices>(`/api/tts/mine/keys/${id}`, { method: "DELETE" }),
+    setMyVoiceEntries: (entries: TtsEntryBody[]) => req<MyVoices>("/api/tts/mine/entries", { method: "PUT", body: JSON.stringify({ entries }) }),
     /** Gemini keys (each a Google project, free or paid) and the order they're tried in. */
-    adminAddTtsKey: (body: { label: string; kind: "free" | "paid"; key: string }) =>
+    adminAddTtsKey: (body: TtsKeyBody) =>
       req<TtsAdminSettings>("/api/admin/tts/gemini/keys", { method: "POST", body: JSON.stringify(body) }),
-    adminUpdateTtsKey: (id: number, body: { label: string; kind: "free" | "paid"; key?: string }) =>
+    adminUpdateTtsKey: (id: number, body: TtsKeyBody) =>
       req<TtsAdminSettings>(`/api/admin/tts/gemini/keys/${id}`, { method: "PUT", body: JSON.stringify(body) }),
     adminDeleteTtsKey: (id: number) => req<TtsAdminSettings>(`/api/admin/tts/gemini/keys/${id}`, { method: "DELETE" }),
-    adminSetTtsEntries: (entries: { keyId: number; model: (typeof GEMINI_TTS_MODELS)[number]; background: boolean; waiting: boolean; taps: boolean }[]) =>
+    adminSetTtsEntries: (entries: TtsEntryBody[]) =>
       req<TtsAdminSettings>("/api/admin/tts/gemini/entries", { method: "PUT", body: JSON.stringify({ entries }) }),
     adminTestTts: (voice: string) =>
       req<{ ok: true; bytes: number }>("/api/admin/tts/test", { method: "POST", body: JSON.stringify({ voice }) }),

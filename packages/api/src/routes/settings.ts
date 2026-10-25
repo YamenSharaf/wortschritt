@@ -3,6 +3,7 @@ import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { settingsSchema } from "@mdb/shared";
 import { requireAuth } from "../auth/session";
 import { getSettings, saveSettings } from "../services/settings";
+import { wakeStoryAudio } from "../services/storyAudio";
 
 export async function settingsRoutes(app: FastifyInstance) {
   const r = app.withTypeProvider<ZodTypeProvider>();
@@ -26,6 +27,11 @@ export async function settingsRoutes(app: FastifyInstance) {
         response: { 200: settingsSchema },
       },
     },
-    async (req) => saveSettings(req.user!.id, req.body),
+    async (req) => {
+      const saved = saveSettings(req.user!.id, req.body);
+      // Audiobooks made ahead of time: start looking for work now.
+      if (saved.audiobooks.auto) wakeStoryAudio();
+      return saved;
+    },
   );
 }
