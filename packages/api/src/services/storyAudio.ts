@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSyn
 import { dirname, join, resolve } from "node:path";
 import type { FastifyBaseLogger } from "fastify";
 import { and, asc, eq, isNotNull, isNull, lte, ne, sql } from "drizzle-orm";
-import { chunkText, plainText, storyParagraphs, type PartialStoryAudio, type StoryAudio, type StoryAudioBrief } from "@mdb/shared";
+import { chunkText, plainText, storyParagraphs, type PartialStoryAudio, type StoryAudio, type StoryAudioBrief, type StorySummary } from "@mdb/shared";
 import { db, schema } from "../db/client";
 import { env } from "../env";
 import { cachedClipFile, clip, clipGroup, isCached, liveSince } from "../tts/cache";
@@ -259,7 +259,12 @@ function backgroundCandidates(userId: number): string[] {
   const nextChapters = stories
     .filter((s) => s.seriesId && reading.has(s.seriesId) && s.status !== "read")
     .sort((a, b) => (a.seriesId === b.seriesId ? (a.chapter ?? 0) - (b.chapter ?? 0) : 0));
-  const newest = stories.filter((s) => s.status !== "read" && !nextChapters.includes(s)).sort((a, b) => b.createdAt - a.createdAt);
+  // Newest first; a book's chapters together and in their order (where the book's newest chapter falls).
+  const rest = stories.filter((s) => s.status !== "read" && !nextChapters.includes(s));
+  const newestOf = new Map<string, number>();
+  for (const s of rest) if (s.seriesId) newestOf.set(s.seriesId, Math.max(newestOf.get(s.seriesId) ?? 0, s.createdAt));
+  const at = (s: StorySummary) => (s.seriesId ? newestOf.get(s.seriesId)! : s.createdAt);
+  const newest = rest.sort((a, b) => at(b) - at(a) || (a.seriesId ?? a.id).localeCompare(b.seriesId ?? b.id) || (a.chapter ?? 0) - (b.chapter ?? 0));
   return [...nextChapters, ...newest].map((s) => s.id);
 }
 

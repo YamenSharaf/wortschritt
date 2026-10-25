@@ -8,8 +8,8 @@ import { backgroundSettings } from "./settings";
 
 /**
  * Gemini keys and the order they're tried in. Google's limits are per
- * project and per model (100 requests a day for the TTS models, on the
- * free tier and Tier 1 alike), so each entry of the order is a key + a
+ * project and per model (for the TTS models: 10 requests a day on the free
+ * tier, 100 on Tier 1), so each entry of the order is a key + a
  * model with its own count. A request goes down the order: an entry not
  * meant for this purpose, at a limit, or (in the background) at its share
  * is passed over, and one that meets a limit is marked until Google says.
@@ -85,6 +85,13 @@ export function listEntries(now = Date.now()): TtsEntryView[] {
 }
 
 /**
+ * What a key's entries start out allowing a day: Google's answers to the
+ * TTS models say 10 requests on the free tier, 100 on Tier 1. Each entry
+ * then learns the real number from the first limit it meets.
+ */
+const dailyLimitFor = (kind: "free" | "paid") => (kind === "free" ? 10 : 100);
+
+/**
  * Add a key; it joins the end of the order with both models (a free key
  * for everything, a paid one only when someone is waiting and for taps).
  */
@@ -94,7 +101,7 @@ export function addKey(body: { label: string; kind: "free" | "paid"; key?: strin
   const id = db.insert(k).values({ label: body.label, kind: body.kind, keyEnc: encryptSecret(body.key) }).returning({ id: k.id }).get().id;
   let position = (db.select({ n: sql<number>`coalesce(max(${e.position}), -1)` }).from(e).where(isNull(e.userId)).get()?.n ?? -1) + 1;
   for (const model of GEMINI_TTS_MODELS) {
-    db.insert(e).values({ keyId: id, model, position: position++, useBackground: body.kind === "free" }).run();
+    db.insert(e).values({ keyId: id, model, position: position++, useBackground: body.kind === "free", dailyLimit: dailyLimitFor(body.kind) }).run();
   }
 }
 
@@ -124,7 +131,8 @@ export function deleteKey(id: number): boolean {
 
 /** The whole order at once (as listed); an entry kept (same key and model) keeps its counts and limits. */
 export function saveEntries(list: { keyId: number; model: Model; background: boolean; waiting: boolean; taps: boolean }[]): void {
-  const keys = new Set(listKeys().map((x) => x.id));
+  const keyKind = new Map(listKeys().map((x) => [x.id, x.kind]));
+  const keys = new Set(keyKind.keys());
   const seen = new Set<string>();
   for (const x of list) {
     if (!keys.has(x.keyId)) throw new TtsKeyError("unknown key");
@@ -138,7 +146,7 @@ export function saveEntries(list: { keyId: number; model: Model; background: boo
       const was = existing.find((r) => r.keyId === x.keyId && r.model === x.model);
       const set = { position, useBackground: x.background, useWaiting: x.waiting, useTaps: x.taps };
       if (was) tx.update(e).set(set).where(eq(e.id, was.id)).run();
-      else tx.insert(e).values({ keyId: x.keyId, model: x.model, ...set }).run();
+      else tx.insert(e).values({ keyId: x.keyId, model: x.model, ...set, dailyLimit: dailyLimitFor(keyKind.get(x.keyId)!) }).run();
     });
     for (const r of existing) {
       if (!seen.has(`${r.keyId}:${r.model}`)) {

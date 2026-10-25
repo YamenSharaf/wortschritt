@@ -91,7 +91,7 @@ export function GeminiVoices({ cfg, onChange }: { cfg: TtsAdminSettings; onChang
           )}
         </div>
         <p className="text-xs text-ink-muted">
-          Each key is a Google AI Studio project. Its limits are its own (100 requests a day per model, on the free tier and Tier 1 alike). A
+          Each key is a Google AI Studio project. Its limits are its own, per model: on the free tier 10 requests a day (each about a minute or two of audio), with billing (Tier 1) 100. A
           project without billing is free; on it Google may use what's read to improve its products. With billing, each request costs
           (about $0.81 an hour of audio with Flash, $0.54 with Flash-Lite).
         </p>
