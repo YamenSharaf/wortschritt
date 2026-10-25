@@ -49,6 +49,10 @@ export const preferences = {
   colorScheme: { key: "mdb-scheme", fallback: "system", parse: oneOf("system", "light", "dark") } as Preference<
     "system" | "light" | "dark"
   >,
+  /** The app's screen rotation: as the device turns, or held upright or sideways. */
+  orientation: { key: "mdb-orientation", fallback: "auto", parse: oneOf("auto", "portrait", "landscape") } as Preference<
+    "auto" | "portrait" | "landscape"
+  >,
   /** An e-ink screen (monochrome, slow refresh): plain styles, nothing moves. */
   display: { key: "mdb-display", fallback: "standard", parse: oneOf("standard", "eink") } as Preference<"standard" | "eink">,
   /** The note text size, in px. */

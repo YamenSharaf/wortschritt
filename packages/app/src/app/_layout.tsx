@@ -24,6 +24,7 @@ import { deviceStore } from "@/lib/storage";
 import { SyncProvider } from "@/lib/sync";
 import { ListeningProvider, useListening } from "@/lib/listening";
 import { ThemeProvider, useTheme } from "@/lib/theme";
+import { useOrientationLock } from "@/lib/orientation";
 import { checkForUpdate, updatesSupported } from "@/lib/updates";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -110,6 +111,7 @@ function useUpdateCheck() {
 function Root() {
   const { status } = useServer();
   useUpdateCheck();
+  useOrientationLock();
   const { colors, scheme, motion } = useTheme();
   useEffect(() => {
     SystemUI.setBackgroundColorAsync(colors.bg).catch(() => {});

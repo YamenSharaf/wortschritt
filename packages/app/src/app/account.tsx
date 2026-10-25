@@ -1,4 +1,4 @@
-import { Alert, Pressable, Switch, View } from "react-native";
+import { Alert, Platform, Pressable, Switch, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import { router } from "expo-router";
 import { preferences, type Preference } from "@mdb/client";
@@ -18,6 +18,26 @@ import { Text } from "@/ui/Text";
 import { LearningSettings } from "@/settings/Learning";
 import { checkForUpdate, currentBuild, updatesSupported } from "@/lib/updates";
 import { useUpdateState } from "@/lib/updateStore";
+
+/** Screen rotation on this device: as it turns, or held upright or sideways. */
+function Rotation() {
+  const [choice, setChoice] = usePreference(preferences.orientation);
+  return (
+    <View style={{ gap: 8 }}>
+      <Text style={{ fontFamily: font.medium }}>Screen rotation</Text>
+      <Segmented
+        value={choice}
+        options={[
+          ["auto", "Follow the device"],
+          ["portrait", "Portrait"],
+          ["landscape", "Landscape"],
+        ]}
+        onChange={setChoice}
+      />
+      {Platform.OS === "ios" && <Text variant="subtle">On an iPad, iPadOS may still turn the app (it keeps Split View working).</Text>}
+    </View>
+  );
+}
 
 /** The account sheet: who and where you are, how the app looks on this device, sign out. */
 export default function Account() {
@@ -84,6 +104,7 @@ export default function Account() {
               })}
             </View>
           </View>
+          <Rotation />
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
             <View style={{ flex: 1 }}>
               <Text style={{ fontFamily: font.medium }}>E-ink display</Text>
