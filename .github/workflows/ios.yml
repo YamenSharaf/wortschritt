@@ -2,14 +2,19 @@ name: iOS
 
 # Builds the app (packages/app) for iPhone and iPad.
 #
-# On every change to the app it compiles a simulator build, unsigned: no
-# Apple account needed, it only shows the iOS app still builds.
+# Every change to the app on main archives a signed release build and
+# uploads it to App Store Connect, where it shows up in TestFlight after
+# Apple has processed it (and reaches testers by itself where the TestFlight
+# group distributes new builds automatically). The same by hand: Actions →
+# iOS → Run workflow, "Upload to TestFlight" ticked.
 #
-# Run by hand (Actions → iOS → Run workflow, "Upload to TestFlight" ticked)
-# it archives a signed release build and uploads it to App Store Connect,
-# where it shows up in TestFlight after Apple has processed it. Signing is
-# automatic: Xcode makes and renews the certificate and provisioning profile
-# with an App Store Connect API key. That needs these repository secrets:
+# A pull request only compiles a simulator build, unsigned: no Apple account
+# needed, it shows the iOS app still builds.
+#
+# Signing is automatic: Xcode makes and renews the certificate and
+# provisioning profile with an App Store Connect API key (Admin access: App
+# Store signing uses a cloud-managed certificate). That needs these
+# repository secrets:
 #   APPLE_TEAM_ID                  the developer team's ID (10 characters)
 #   APP_STORE_CONNECT_KEY_ID       the API key's ID
 #   APP_STORE_CONNECT_ISSUER_ID    the issuer ID shown above the API keys
@@ -38,9 +43,11 @@ on:
         type: boolean
         default: true
 
+# A newer pull request build replaces an older one. On main a running upload
+# always finishes; pushes meanwhile wait, and only the newest of them runs.
 concurrency:
-  group: ios-${{ github.ref }}-${{ github.event_name }}
-  cancel-in-progress: true
+  group: ios-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   ios:
@@ -52,7 +59,7 @@ jobs:
       # Each build a higher build number (TestFlight takes each number once).
       APP_VERSION_CODE: ${{ github.run_number }}
       APP_VERSION: 0.1.${{ github.run_number }}
-      UPLOAD: ${{ github.event_name == 'workflow_dispatch' && inputs.testflight }}
+      UPLOAD: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.testflight) }}
 
     steps:
       - name: Checkout
