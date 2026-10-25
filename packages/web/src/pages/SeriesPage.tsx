@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import type { SeriesView } from "@mdb/shared";
+import type { SeriesChapter, SeriesView, StoryAudioBrief } from "@mdb/shared";
+import { playInPlayer } from "../components/Player";
+import { clock, useListening, useStoryAudio } from "../lib/listening";
 import { Cover } from "../components/Cover";
 import { CoverUpload } from "../components/CoverUpload";
-import { CheckIcon, ChevronLeftIcon, DownloadIcon, PlayIcon, TrashIcon } from "../components/icons";
+import { CheckIcon, ChevronLeftIcon, ClockIcon, DownloadIcon, HeadphonesIcon, PlayIcon, TrashIcon } from "../components/icons";
 import { Pill, btn } from "../components/ui";
 import { api } from "../lib/api";
 
@@ -13,6 +15,7 @@ export function SeriesPage() {
   const navigate = useNavigate();
   const [view, setView] = useState<SeriesView | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { audio, refresh } = useStoryAudio();
 
   const load = useCallback(
     () =>
@@ -109,6 +112,8 @@ export function SeriesPage() {
         </div>
       </header>
 
+      <AudiobookBox book={view} audio={audio} onChange={refresh} />
+
       <h2 className="-mb-4 text-xl font-semibold tracking-[-0.01em]">Chapters</h2>
 
       <ol className="divide-y divide-[var(--border)] overflow-hidden rounded-card border border-line bg-surface shadow-card">
@@ -148,6 +153,7 @@ export function SeriesPage() {
                   <Link to={`/stories/${c.storyId}`} className="block min-w-0 flex-1 transition-colors hover:bg-surface-sunken">
                     {body}
                   </Link>
+                  <ChapterAudio storyId={c.storyId} title={c.title} book={view.title} audio={audio[c.storyId]} />
                   <span className="pr-2">
                     <CoverUpload kind="story" id={c.storyId} hasArt={Boolean(c.cover)} onChange={() => void load()} compact />
                   </span>
@@ -181,5 +187,109 @@ export function SeriesPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+type Written = SeriesChapter & { storyId: string };
+
+/**
+ * The book as an audiobook: how many chapters have audio, "Generate
+ * audiobook" (only when asked — it queues every chapter in order and uses
+ * the voice's free limit as it comes back), and play from where you are.
+ */
+function AudiobookBox({ book: b, audio, onChange }: { book: SeriesView; audio: Record<string, StoryAudioBrief>; onChange: () => void }) {
+  const ls = useListening();
+  const [asking, setAsking] = useState(false);
+  const written = b.chapters.filter((c): c is Written => !!c.storyId);
+  if (!ls.enabled || written.length === 0) return null;
+
+  const isReady = (c: Written) => audio[c.storyId]?.state === "ready";
+  const ready = written.filter(isReady);
+  const queued = written.filter((c) => audio[c.storyId]?.state === "building" || audio[c.storyId]?.state === "waiting");
+  const failed = written.filter((c) => audio[c.storyId]?.state === "error");
+  const waiting = written.map((c) => audio[c.storyId]).find((a) => a?.state === "waiting");
+  const missing = written.filter((c) => !isReady(c) && !queued.includes(c));
+  const from = written.find((c) => c.storyId === b.continueId && isReady(c)) ?? ready[0];
+  const saved = from ? ls.positions[from.storyId] : undefined;
+  const minutes = Math.round(ready.reduce((n, c) => n + (audio[c.storyId]?.duration ?? 0), 0) / 60);
+  const pct = Math.round((ready.length / written.length) * 100);
+
+  const explain =
+    ready.length === written.length
+      ? `All ${written.length} chapters are ready${minutes ? ` · ${minutes} min` : ""}.`
+      : waiting
+        ? `Waiting for the voice's limit${waiting.retryAt ? ` (again at ${new Date(waiting.retryAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })})` : ""}. It carries on by itself, chapter by chapter.`
+        : queued.length
+          ? "Making the audio, chapter by chapter. You can listen to the ready ones already."
+          : failed.length
+            ? `${failed.length} chapter${failed.length === 1 ? "" : "s"} couldn't be made. Try again?`
+            : ready.length
+              ? `${missing.length} chapter${missing.length === 1 ? "" : "s"} still without audio.`
+              : "Turn the book into audio to listen with the tab in the background or the screen off.";
+
+  async function generate() {
+    setAsking(true);
+    try {
+      await api.startSeriesAudio(b.id);
+      onChange();
+    } catch (e) {
+      window.alert(`Couldn't generate the audiobook: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setAsking(false);
+    }
+  }
+
+  return (
+    <section className="space-y-3 rounded-card border border-line bg-surface p-4 shadow-card" aria-label="Audiobook">
+      <div className="flex items-center gap-2">
+        <HeadphonesIcon className="h-[18px] w-[18px] text-brand-ink" />
+        <h2 className="flex-1 font-semibold">Audiobook</h2>
+        <span className="text-sm tabular-nums text-ink-subtle">
+          {ready.length} of {written.length} ready
+        </span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-surface-sunken">
+        <div className="h-full rounded-full bg-brand" style={{ width: `${pct}%` }} />
+      </div>
+      <p className="text-sm text-ink-muted">{explain}</p>
+      <div className="flex flex-wrap gap-2">
+        {from && (
+          <button type="button" className={btn.primary} onClick={() => playInPlayer({ id: from.storyId, title: from.title, book: b.title }, ls)}>
+            <PlayIcon className="h-4 w-4" />
+            {saved && !saved.done && saved.t > 5 ? `Continue · Chapter ${from.chapter}` : `Play from chapter ${from.chapter}`}
+          </button>
+        )}
+        {(missing.length > 0 || failed.length > 0) && (
+          <button type="button" className={btn.secondary} disabled={asking} onClick={() => void generate()}>
+            <HeadphonesIcon className="h-4 w-4" />
+            {asking ? "Asking…" : ready.length || queued.length ? `Generate the rest (${missing.length})` : "Generate audiobook"}
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/** A chapter row's audio: play when it's ready, a clock while it's being made. */
+function ChapterAudio({ storyId, title, book, audio }: { storyId: string; title: string; book: string; audio: StoryAudioBrief | undefined }) {
+  const ls = useListening();
+  if (!ls.enabled) return null;
+  if (audio?.state === "building" || audio?.state === "waiting")
+    return (
+      <span className={`px-2 ${audio.state === "waiting" ? "text-warning" : "text-ink-subtle"}`} title={audio.state === "waiting" ? "Waiting for the voice's limit" : "Making the audio"}>
+        <ClockIcon className="h-4 w-4" />
+      </span>
+    );
+  if (audio?.state !== "ready") return null;
+  const saved = ls.positions[storyId];
+  return (
+    <button
+      type="button"
+      onClick={() => playInPlayer({ id: storyId, title, book }, ls)}
+      className="mx-1 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-soft text-brand-ink hover:bg-brand-soft/80"
+      aria-label={`Listen to ${title}${saved && !saved.done && saved.t > 5 ? `, ${clock(saved.duration - saved.t)} left` : ""}`}
+    >
+      <PlayIcon className="h-3.5 w-3.5" />
+    </button>
   );
 }

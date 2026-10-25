@@ -7,6 +7,8 @@ import { CheckIcon, PenLineIcon, SparklesIcon } from "../components/icons";
 import { SearchBox } from "../components/SearchBox";
 import { SectionIcon } from "../components/SectionIcon";
 import { Muted, PageHeader, Pill, btn, cardLink } from "../components/ui";
+import { AudioChip } from "../components/Player";
+import { useStoryAudio } from "../lib/listening";
 import { api } from "../lib/api";
 import { useAsync } from "@mdb/client/react";
 
@@ -19,6 +21,7 @@ function status(s: StorySummary): { label: string; tone: "success" | "brand" } |
 
 /** The learner's own stories (private). */
 export function StoriesPage() {
+  const { audio, refresh } = useStoryAudio();
   const stories = useAsync(() => api.stories(), []);
   const books = useAsync(() => api.seriesList(), []);
   const [q, setQ] = useState("");
@@ -106,6 +109,9 @@ export function StoriesPage() {
                       {st.label}
                     </Pill>
                   )}
+                </div>
+                <div className="pt-2.5 empty:hidden">
+                  <AudioChip story={{ id: s.id, title: s.title }} audio={audio[s.id]} onGenerated={refresh} />
                 </div>
               </div>
               {s.status === "reading" && (

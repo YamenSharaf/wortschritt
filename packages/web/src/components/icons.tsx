@@ -1,6 +1,11 @@
 import type { LucideIcon } from "lucide-react";
 import {
   ArrowUp,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Moon,
+  RotateCw,
   BookA,
   Maximize2,
   Minimize2,
@@ -112,3 +117,9 @@ export const FileIcon = wrap(FileGeneric);
 export const FileTextIcon = wrap(FileText);
 export const FileImageIcon = wrap(FileImage);
 export const FileAudioIcon = wrap(FileAudio);
+export const ChevronDownIcon = wrap(ChevronDown);
+export const ChevronUpIcon = wrap(ChevronUp);
+export const ClockIcon = wrap(Clock);
+export const MoonIcon = wrap(Moon);
+export const SkipBackSecondsIcon = wrap(RotateCcw);
+export const SkipForwardSecondsIcon = wrap(RotateCw);

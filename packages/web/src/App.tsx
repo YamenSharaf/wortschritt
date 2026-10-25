@@ -14,7 +14,8 @@ import {
 } from "./components/icons";
 import { serverTtsFor } from "@mdb/client";
 import { setServerTts } from "./lib/tts";
-import { setListeningEnabled } from "./lib/listening";
+import { setListeningEnabled, useListening } from "./lib/listening";
+import { MiniPlayer, PlayerPanel } from "./components/Player";
 import { VocabProvider } from "./lib/vocab";
 
 const navItems = [
@@ -28,6 +29,7 @@ const navItems = [
 
 export function App() {
   const { authenticated, loading } = useAuth();
+  const listening = useListening().phase !== "idle";
   // The story reader takes the whole screen (no header or tab bar).
   const storyMatch = useMatch("/stories/:id");
   const immersive = Boolean(storyMatch && !["new", "generate"].includes(storyMatch.params.id ?? ""));
@@ -64,6 +66,7 @@ export function App() {
     return (
       <VocabProvider>
         <Outlet />
+        <PlayerPanel />
       </VocabProvider>
     );
   }
@@ -99,7 +102,7 @@ export function App() {
         </header>
       </div>
 
-      <main className="mx-auto max-w-5xl px-4 pb-28 pt-6 sm:px-5 md:pb-16 print:max-w-none print:p-0">
+      <main className={`mx-auto max-w-5xl px-4 pt-6 sm:px-5 ${listening ? "pb-48 md:pb-28" : "pb-28 md:pb-16"} print:max-w-none print:p-0`}>
         <Outlet />
       </main>
 
@@ -123,6 +126,8 @@ export function App() {
           ))}
         </nav>
       </div>
+      <MiniPlayer />
+      <PlayerPanel />
     </div>
     </VocabProvider>
   );

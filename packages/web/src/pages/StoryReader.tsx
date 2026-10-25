@@ -39,12 +39,13 @@ import {
   PlayIcon,
   SkipBackIcon,
   SkipForwardIcon,
+  ChevronUpIcon,
   TypeIcon,
 } from "../components/icons";
 import { TapToTranslate } from "../components/TapToTranslate";
 import { btn, card } from "../components/ui";
 import { api } from "../lib/api";
-import { listen, pause as pauseListening, resume as resumeListening, seekParagraph, setListeningRate, stop as stopListening, useListening } from "../lib/listening";
+import { clock, listen, pause as pauseListening, resume as resumeListening, seekParagraph, openPlayer, stop as stopListening, useListening } from "../lib/listening";
 import { isEink, scrollBehavior } from "../lib/appearance";
 import { useVocab } from "../lib/vocab";
 
@@ -381,7 +382,6 @@ function StoryReaderView() {
     if (ls.enabled && view) {
       // A server reading voice: listen to the story's audio file instead.
       aloud.stop();
-      setListeningRate(reader.speechRate);
       if (listeningHere) return seekParagraph(start);
       return void listen({ id: view.story.id, title: view.story.title, book: view.series?.title ?? null }, start);
     }
@@ -396,7 +396,6 @@ function StoryReaderView() {
     if (listeningHere && ls.phase === "playing") follow(ls.paragraph);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listeningHere, ls.phase, ls.paragraph]);
-  useEffect(() => setListeningRate(reader.speechRate), [reader.speechRate]);
   // The player went on to the next chapter: so does the reader.
   const wasListening = useRef(false);
   useEffect(() => {
@@ -779,6 +778,10 @@ function StoryReaderView() {
               </button>
               <button type="button" onClick={() => seekParagraph(ls.paragraph + 1)} className="grid h-8 w-8 place-items-center rounded-full hover:bg-surface-sunken" aria-label="Next paragraph">
                 <SkipForwardIcon className="h-4 w-4" />
+              </button>
+              <button type="button" onClick={() => openPlayer()} className="inline-flex h-8 items-center gap-1 rounded-full px-2 font-mono text-xs tabular-nums text-ink-muted hover:bg-surface-sunken" aria-label="Open the player" title="Open the player">
+                {clock(Math.max(0, ls.duration - ls.position))} left
+                <ChevronUpIcon className="h-4 w-4" />
               </button>
             </>
           )}
