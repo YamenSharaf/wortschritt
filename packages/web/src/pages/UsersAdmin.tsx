@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { MIN_PASSWORD_LENGTH, serverVoices, type AdminUser, type RegistrationStatus, type TtsAdminSettings } from "@mdb/shared";
+import { MIN_PASSWORD_LENGTH, VOICE_SAMPLES, serverVoices, type AdminUser, type RegistrationStatus, type TtsAdminSettings } from "@mdb/shared";
 import { api, ApiError } from "../lib/api";
 import { useAuth } from "@mdb/client/react";
 import { timeAgo } from "@mdb/client";
@@ -309,7 +309,7 @@ function TtsProviders() {
     try {
       await api.adminTestTts(voice);
       // Play the sample too (served from the server, cached after the first time).
-      const sample = new Audio(api.ttsUrl(voice, "Guten Tag! Ich lerne Deutsch."));
+      const sample = new Audio(api.ttsUrl(voice, VOICE_SAMPLES.words));
       await sample.play().catch(() => {});
       setMsg({ ok: true, text: "It works. pick the voice under Preferences → Pronunciation voice." });
     } catch (err) {

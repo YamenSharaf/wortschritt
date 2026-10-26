@@ -674,3 +674,31 @@ test("a learner's own voice keys: theirs first, never anyone else's; the server'
   await me("DELETE", `/api/tts/mine/keys/${his.keys[0].id}`);
   await anna("DELETE", `/api/tts/mine/keys/${azure.json().keys[1].id}`);
 });
+
+test("voice samples are made ahead of time: Azure's at once, Gemini's a couple a round from background keys, none twice", async () => {
+  const { VOICE_SAMPLES } = await import("@mdb/shared");
+  const { makeVoiceSamples, setSamplesLivePauseForTests } = await import("../tts/samples");
+  const { storyAudioBusy } = await import("../services/storyAudio");
+  setSamplesLivePauseForTests(0);
+  assert.equal(storyAudioBusy(1), false, "no story audio waiting first");
+  const { isCached } = await import("../tts/cache");
+  assert.equal((await me("PUT", "/api/admin/tts", { azure: { region: "westeurope", key: "secret-azure-key-123" }, edge: false, share: "all" })).statusCode, 200);
+  const key = (await me("POST", "/api/admin/tts/gemini/keys", { label: "Free", kind: "free", key: "free-key-0000000009" })).json().gemini.keys[0].id;
+  await newGoogleDay();
+  calls.length = 0;
+
+  await makeVoiceSamples();
+  const azure = calls.filter((c) => c.url.includes("tts.speech.microsoft.com/cognitiveservices"));
+  const gemini = calls.filter((c) => c.url.startsWith("https://generativelanguage.googleapis.com/"));
+  assert.ok(isCached(VOICE_SAMPLES.words, "azure:de-DE-KatjaNeural") && isCached(VOICE_SAMPLES.reading, "azure:de-DE-KatjaNeural"), "Azure's, both texts");
+  assert.ok(azure.length > 0);
+  assert.ok(gemini.length > 0 && gemini.length <= 2, `Gemini: a couple per round (${gemini.length})`);
+
+  // Nothing made twice: the next round only adds Gemini samples, a couple more.
+  calls.length = 0;
+  await makeVoiceSamples();
+  assert.equal(calls.filter((c) => c.url.includes("cognitiveservices")).length, 0, "Azure's are made already");
+  assert.ok(calls.filter((c) => c.url.startsWith("https://generativelanguage.googleapis.com/")).length <= 2);
+
+  await me("DELETE", `/api/admin/tts/gemini/keys/${key}`);
+});

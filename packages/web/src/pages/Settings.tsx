@@ -3,6 +3,7 @@ import {
   generateCounts,
   MIN_PASSWORD_LENGTH,
   serverVoices,
+  VOICE_SAMPLES,
   ttsProviderOf,
   type ApiTokenView,
   type OAuthGrantView,
@@ -465,7 +466,7 @@ function VoiceSettings({
         <div className="mt-2">
           <button
             type="button"
-            onClick={() => void test("words", ttsVoice, "Guten Tag! Ich lerne Deutsch mit dem Baby.")}
+            onClick={() => void test("words", ttsVoice, VOICE_SAMPLES.words)}
             className="rounded-control border border-line-control px-3 py-1.5 text-sm hover:border-line-strong "
           >
             <SpeakerIcon className="h-4 w-4" />
@@ -485,7 +486,7 @@ function VoiceSettings({
           <button
             type="button"
             onClick={() =>
-              void test("reading", readerVoice === "" ? ttsVoice : readerVoice, "Es war einmal ein kleines Dorf am Rand eines großen Waldes.")
+              void test("reading", readerVoice === "" ? ttsVoice : readerVoice, VOICE_SAMPLES.reading)
             }
             className="rounded-control border border-line-control px-3 py-1.5 text-sm hover:border-line-strong "
           >

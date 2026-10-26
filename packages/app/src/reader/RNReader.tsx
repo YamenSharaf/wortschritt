@@ -118,17 +118,26 @@ function styleFor(piece: Piece, t: Typography, c: ReaderColors): TextStyle {
       // invisible (not "transparent": Android reads that as no colour, i.e. black)
       // and their shadow, blurred, is what shows. On e-ink a plain bar instead.
       if (c.eink) return { ...base, color: INVISIBLE, backgroundColor: rgbHex(hexToTriplet(c.muted), 0.22) };
+      // On a dark page the grey glow spreads too thin to see: the text's own
+      // (bright) colour there, a little tighter.
+      const dark = luminance(c.bg) < 0.5;
       return {
         ...base,
         color: INVISIBLE,
-        textShadowColor: rgbHex(hexToTriplet(c.muted), 0.9),
+        textShadowColor: rgbHex(hexToTriplet(dark ? c.fg : c.muted), dark ? 0.75 : 0.9),
         textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: Math.round(size * 0.75),
+        textShadowRadius: Math.round(size * (dark ? 0.55 : 0.75)),
       };
     }
     default:
       return { fontFamily: t.regular, fontSize: t.size, lineHeight: t.size * t.lineHeight, color: c.fg };
   }
+}
+
+/** How light a "#rrggbb" colour is, 0–1. */
+function luminance(hex: string): number {
+  const n = parseInt(hex.slice(1, 7), 16);
+  return (((n >> 16) & 255) * 0.299 + ((n >> 8) & 255) * 0.587 + (n & 255) * 0.114) / 255;
 }
 
 function hexToTriplet(hex: string): string {
@@ -286,6 +295,8 @@ const ScrollReader = forwardRef<ReaderControls, Props>(function ScrollReader(p, 
 const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, ref) {
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const [lines, setLines] = useState<Record<string, Line[]>>({});
+  /** Each piece's height as laid out: what its lines really take (the line heights a platform reports can fall short). */
+  const [blockH, setBlockH] = useState<Record<string, number>>({});
   const [page, setPage] = useState(0);
   const restored = useRef(false);
   const lastCount = useRef(0);
@@ -312,10 +323,24 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
   const styles = useMemo(() => new Map(p.pieces.map((x) => [x.key, styleFor(x, p.typo, p.colors)])), [p.pieces, p.typo, p.colors]);
   // A new layout (text, size or type): measure again.
   const layoutKey = `${width}x${size?.h}|${p.typo.regular}|${p.typo.size}|${p.typo.lineHeight}|${p.pieces.map((x) => `${x.key}:${x.text.length}`).join(",")}`;
-  useEffect(() => setLines({}), [layoutKey]);
+  useEffect(() => {
+    setLines({});
+    setBlockH({});
+  }, [layoutKey]);
 
-  const measured = size !== null && p.pieces.every((x) => lines[x.key]);
-  const pages = useMemo(() => (size && measured ? paginate(p.pieces, lines, size.h - V_PAD * 2, p.typo.size) : []), [measured, lines, size, p.pieces, p.typo.size]);
+  const measured = size !== null && p.pieces.every((x) => lines[x.key] && blockH[x.key] !== undefined);
+  const pages = useMemo(() => {
+    if (!size || !measured) return [];
+    // The lines share their piece's real height evenly, so a page never holds more than fits.
+    const real = Object.fromEntries(
+      p.pieces.map((x) => {
+        const ls = lines[x.key]!;
+        const each = ls.length ? Math.max(blockH[x.key]! / ls.length, ...ls.map((l) => l.height)) : 0;
+        return [x.key, ls.map((l) => ({ ...l, height: each }))];
+      }),
+    );
+    return paginate(p.pieces, real, size.h - V_PAD * 2, p.typo.size);
+  }, [measured, lines, blockH, size, p.pieces, p.typo.size]);
   const count = pages.length;
 
   // Where to be once laid out: the server's resume point the first time, then the anchor.
@@ -503,6 +528,10 @@ const PagedReader = forwardRef<ReaderControls, Props>(function PagedReader(p, re
               onTextLayout={(e: NativeSyntheticEvent<TextLayoutEventData>) => {
                 const ls = e.nativeEvent.lines.map((l) => ({ text: l.text, height: l.height }));
                 setLines((cur) => ({ ...cur, [x.key]: ls }));
+              }}
+              onLayout={(e: LayoutChangeEvent) => {
+                const h = e.nativeEvent.layout.height;
+                setBlockH((cur) => ({ ...cur, [x.key]: h }));
               }}
             >
               {x.text}

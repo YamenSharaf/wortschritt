@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, Switch, TextInput, View } from "react-native";
 import { router } from "expo-router";
-import { GEMINI_TTS_MODELS, type MyVoices, type Settings, type StoryAudioBrief, type TtsEntryView, type TtsKeyView, type TtsStatus } from "@mdb/shared";
+import { GEMINI_TTS_MODELS, VOICE_SAMPLES, type MyVoices, type Settings, type StoryAudioBrief, type TtsEntryView, type TtsKeyView, type TtsStatus } from "@mdb/shared";
 import { retryText, serverTtsFor, type TtsEntryBody, type TtsKeyBody } from "@mdb/client";
 import { useApi, useSpeech } from "@mdb/client/react";
 import { useListening } from "@/lib/listening";
@@ -100,13 +100,13 @@ export default function ReadingAloud() {
                 title="Words and sentences"
                 value={voiceLabel(settings.ttsVoice, "Device voice")}
                 onPick={() => setPicking("words")}
-                onHear={() => speech.speak("Guten Tag! Ich lerne Deutsch.")}
+                onHear={() => speech.speak(VOICE_SAMPLES.words)}
               />
               <VoiceRow
                 title="Stories and audiobooks"
                 value={voiceLabel(settings.readerVoice, "Same as for words")}
                 onPick={() => setPicking("reading")}
-                onHear={() => void speech.speakSequence(["Es war einmal ein kleines Dorf am Rand eines großen Waldes."])}
+                onHear={() => void speech.speakSequence([VOICE_SAMPLES.reading])}
                 divider
               />
             </Card>

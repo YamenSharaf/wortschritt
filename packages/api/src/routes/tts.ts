@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { myVoices as myVoicesDto, ttsAdminBody, ttsAdminSettings as ttsAdminDto, ttsEntriesBody, ttsKeyBody, ttsStatus, ttsTestBody } from "@mdb/shared";
+import { VOICE_SAMPLES, myVoices as myVoicesDto, ttsAdminBody, ttsAdminSettings as ttsAdminDto, ttsEntriesBody, ttsKeyBody, ttsStatus, ttsTestBody } from "@mdb/shared";
 import { addKey, deleteKey, moveServerKeys, myVoices, saveEntries, TtsKeyError, updateKey } from "../tts/geminiKeys";
 import { requireAdmin, requireAuth } from "../auth/session";
 import { clip } from "../tts/cache";
@@ -179,7 +179,7 @@ export async function ttsRoutes(app: FastifyInstance) {
     },
     async (req, reply) => {
       try {
-        const { audio } = await synthesize("Guten Tag! Ich lerne Deutsch.", req.body.voice, "taps", req.user!.id);
+        const { audio } = await synthesize(VOICE_SAMPLES.words, req.body.voice, "taps", req.user!.id);
         return { ok: true as const, bytes: audio.length };
       } catch (err) {
         app.log.warn({ err, voice: req.body.voice }, "tts test failed");

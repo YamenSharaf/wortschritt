@@ -275,6 +275,12 @@ function newestFirst(list: StorySummary[]): StorySummary[] {
   return [...list].sort((a, b) => at(b) - at(a) || (a.seriesId ?? a.id).localeCompare(b.seriesId ?? b.id) || (a.chapter ?? 0) - (b.chapter ?? 0));
 }
 
+/** Whether story audio is queued or being made for this learner (it goes before their voice samples). */
+export function storyAudioBusy(userId: number): boolean {
+  const q = schema.storyAudioQueue;
+  return Boolean(db.select({ key: q.key }).from(q).where(and(eq(q.userId, userId), isNull(q.error))).get());
+}
+
 export function resetBackgroundForTests(): void {
   lastFill = 0;
 }

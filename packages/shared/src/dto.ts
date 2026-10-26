@@ -810,6 +810,12 @@ export type StorySeriesInfo = z.infer<typeof storySeriesInfo>;
  */
 export const readingStatus = z.enum(["unread", "reading", "read"]);
 
+/** What the voice pickers play to try a voice (the server makes them ahead of time, so they play at once). */
+export const VOICE_SAMPLES = {
+  words: "Guten Tag! Ich lerne Deutsch.",
+  reading: "Es war einmal ein kleines Dorf am Rand eines großen Waldes.",
+} as const;
+
 /** Seeing this far into a story (its end) counts as having read it. */
 export const STORY_END = 0.98;
 
